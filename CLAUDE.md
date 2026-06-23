@@ -65,7 +65,7 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - [x] Phase 5 — Safety Engine
 - [x] Phase 6 — Storage Layer
 - [x] Phase 7 — IPC Bridge & Preload
-- [ ] Phase 8 — App Shell & Navigation
+- [x] Phase 8 — App Shell & Navigation
 - [ ] Phase 9 — Profile Management
 - [ ] Phase 10 — Repository Management
 - [ ] Phase 11 — Status & Staging UI
@@ -156,3 +156,11 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - Tests: Vitest 162/162 passed (30 new ipc-schemas unit tests; 132 pre-existing); Playwright 4/4 passed (1 pre-existing + 3 new: security flags, `profiles:list` round-trip, invalid-payload Zod rejection).
 - Exit criteria: ✅ met — renderer call round-trips to a main service and back, fully type-checked; invalid IPC payload rejected by Zod (`ok: false` returned); security flags (`contextIsolation`, `sandbox`, no `window.require`/`window.process`) asserted in Playwright; `tsc --noEmit` clean on both `tsconfig.node.json` and `tsconfig.web.json`.
 - Notes / follow-ups: `IpcResult<T>` envelope used instead of raw `throw` so renderer never needs `try/catch` over `window.api` calls. All 14 channels (5 profile + 5 repo + 2 settings + 2 git) wired. `window.api` type in `window.d.ts` mirrors the preload exactly — keep in sync when adding channels.
+
+### 2026-06-23 — Phase 8: App Shell & Navigation
+
+- Built: Zustand `appStore` (seeded with Personal profile, gitwarden repo, main branch, safe badge); `GlobalHeader` (repo · branch · profile chip · safety badge · inspector toggle); `Sidebar` (9 nav items in 3 groups: MANAGE / GIT / APP, highlighted active screen); `Inspector` (contextual panel with profile/repo/branch/safety state, closeable); placeholder `Screen` components for all 9 sections; `App.tsx` wired as a CSS-grid shell (header + sidebar + main + inspector); `data-testid` attributes on all navigable elements.
+- Files: added `src/renderer/store/appStore.ts`, `src/renderer/components/GlobalHeader.tsx`, `src/renderer/components/Sidebar.tsx`, `src/renderer/components/Inspector.tsx`, `src/renderer/screens/PlaceholderScreen.tsx`, `src/renderer/screens/RepositoriesScreen.tsx`, `src/renderer/screens/ProfilesScreen.tsx`, `src/renderer/screens/StatusScreen.tsx`, `src/renderer/screens/CommitScreen.tsx`, `src/renderer/screens/RemoteScreen.tsx`, `src/renderer/screens/BranchesScreen.tsx`, `src/renderer/screens/HistoryScreen.tsx`, `src/renderer/screens/SafetyCenterScreen.tsx`, `src/renderer/screens/SettingsScreen.tsx`, `tests/e2e/shell.spec.ts`; updated `src/renderer/App.tsx`, `CLAUDE.md`; added `zustand` dependency; formatted pre-existing Phase 7 files (`preload/index.ts`, `src/main/ipc/ipc-schemas.ts`, `tests/unit/ipc-schemas.test.ts`).
+- Tests: Vitest 162/162 passed (no new unit tests — this phase is UI-only); Playwright 8/8 passed (4 pre-existing + 4 new: header seeded state, navigate-all-screens, inspector visible, inspector toggle).
+- Exit criteria: ✅ met — Playwright navigates between all 9 screens; global header renders seeded store values (repo, branch, profile, safety badge); inspector toggles open/closed.
+- Notes / follow-ups: All screens are placeholders; content is added in Phases 9–17. Inspector is a read-only display for now; will gain contextual actions per screen. `SafetyBadge` seeded as `'safe'`; Phase 11+ will wire real `checkCommit` results.

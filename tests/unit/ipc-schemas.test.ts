@@ -105,14 +105,10 @@ describe('RepositoryCreatePayload', () => {
     expect(() => RepositoryCreatePayload.parse(validRepoInput)).not.toThrow()
   })
   it('rejects missing isFavorite', () => {
-    expect(() =>
-      RepositoryCreatePayload.parse({ name: 'x', localPath: '/tmp/x' })
-    ).toThrow()
+    expect(() => RepositoryCreatePayload.parse({ name: 'x', localPath: '/tmp/x' })).toThrow()
   })
   it('rejects non-boolean isFavorite', () => {
-    expect(() =>
-      RepositoryCreatePayload.parse({ ...validRepoInput, isFavorite: 'yes' })
-    ).toThrow()
+    expect(() => RepositoryCreatePayload.parse({ ...validRepoInput, isFavorite: 'yes' })).toThrow()
   })
 })
 

@@ -16,14 +16,11 @@ function invoke<T>(channel: string, payload?: unknown): Promise<IpcResult<T>> {
 export const api = {
   profiles: {
     list: (): Promise<IpcResult<Profile[]>> => invoke('profiles:list'),
-    get: (id: string): Promise<IpcResult<Profile | undefined>> =>
-      invoke('profiles:get', { id }),
+    get: (id: string): Promise<IpcResult<Profile | undefined>> => invoke('profiles:get', { id }),
     create: (input: Omit<Profile, 'id'>): Promise<IpcResult<Profile>> =>
       invoke('profiles:create', input),
-    update: (
-      id: string,
-      patch: Partial<Omit<Profile, 'id'>>
-    ): Promise<IpcResult<Profile>> => invoke('profiles:update', { id, patch }),
+    update: (id: string, patch: Partial<Omit<Profile, 'id'>>): Promise<IpcResult<Profile>> =>
+      invoke('profiles:update', { id, patch }),
     delete: (id: string): Promise<IpcResult<void>> => invoke('profiles:delete', { id }),
   },
   repositories: {

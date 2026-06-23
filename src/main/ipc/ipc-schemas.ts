@@ -1,9 +1,5 @@
 import { z } from 'zod'
-import {
-  ProfileSchema,
-  RepositoryRecordSchema,
-  AppSettingsSchema,
-} from '../../core/schemas.js'
+import { ProfileSchema, RepositoryRecordSchema, AppSettingsSchema } from '../../core/schemas.js'
 
 // Profile request payloads
 export const ProfileGetPayload = z.object({ id: z.string() })
