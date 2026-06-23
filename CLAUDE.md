@@ -63,7 +63,7 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - [x] Phase 3 — Git Execution Core (GitRunner)
 - [x] Phase 4 — Porcelain Parser & Status
 - [x] Phase 5 — Safety Engine
-- [ ] Phase 6 — Storage Layer
+- [x] Phase 6 — Storage Layer
 - [ ] Phase 7 — IPC Bridge & Preload
 - [ ] Phase 8 — App Shell & Navigation
 - [ ] Phase 9 — Profile Management
@@ -140,3 +140,11 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - Tests: Vitest 99/99 passed (36 new safety-engine unit + 3 new identity integration; 60 pre-existing).
 - Exit criteria: ✅ met — full issue-code matrix tested: NO_ACTIVE_PROFILE, REPO_UNASSIGNED, PROFILE_MISMATCH, IDENTITY_UNSET, EMAIL_MISMATCH, EMAIL_FROM_GLOBAL_ONLY, NOTHING_STAGED, EMPTY_MESSAGE, HAS_CONFLICTS, NO_REMOTE, REMOTE_HOST_MISMATCH; every branch of the engine exercised; lint + prettier clean.
 - Notes / follow-ups: `git --show-origin` emits `file:.git/config` (relative path on macOS) not an absolute path — `parseScope` uses `endsWith('.git/config')` rather than a regex. Conflicted files excluded from `hasStagedChanges` (must be resolved + re-staged). `GIT_CONFIG_NOSYSTEM=1` in GitRunner means system scope never appears; scope is either local or global.
+
+### 2026-06-23 — Phase 6: Storage Layer
+
+- Built: `JsonStore<T>` (atomic write via `.tmp`→`rename`, Zod-validated read, directory auto-create); `SecretStore` (Electron `safeStorage` wrapper with injectable encryptor for test isolation; token path stubbed for MVP); `ProfileService`, `RepositoryService`, `SettingsService` wired on top of `JsonStore`; interfaces (`IProfileService`, etc.) ready for IPC bridge.
+- Files: added `src/main/storage/JsonStore.ts`, `src/main/storage/SecretStore.ts`, `src/main/services/ProfileService.ts`, `src/main/services/RepositoryService.ts`, `src/main/services/SettingsService.ts`, `tests/unit/json-store.test.ts`, `tests/unit/profile-service.test.ts`, `tests/unit/repository-service.test.ts`, `tests/unit/settings-service.test.ts`; updated `src/core/schemas.ts` (added `ProfilesDataSchema`, `RepositoriesDataSchema`).
+- Tests: Vitest 132/132 passed (33 new: 8 JsonStore + 10 ProfileService + 10 RepositoryService + 5 SettingsService; 99 pre-existing).
+- Exit criteria: ✅ met — data persists across store instances (simulates relaunch); atomic-write test confirms original file intact when `.tmp` exists but rename hasn't run; Zod rejects malformed stored JSON.
+- Notes / follow-ups: `vi.spyOn` cannot intercept Node built-in `fs/promises.rename` (non-configurable); the interrupted-write test instead leaves an orphaned `.tmp` and asserts the main file is unchanged — tests the observable guarantee directly. `SecretStore` uses lazy `require('electron')` so it never loads Electron in Vitest.

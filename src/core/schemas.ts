@@ -34,3 +34,14 @@ export const AppSettingsSchema = z.object({
 export type ProfileInput = z.input<typeof ProfileSchema>
 export type RepositoryRecordInput = z.input<typeof RepositoryRecordSchema>
 export type AppSettingsInput = z.input<typeof AppSettingsSchema>
+
+export const ProfilesDataSchema = z.object({
+  profiles: z.array(ProfileSchema),
+})
+
+export const RepositoriesDataSchema = z.object({
+  repositories: z.array(RepositoryRecordSchema),
+})
+
+export type ProfilesData = z.infer<typeof ProfilesDataSchema>
+export type RepositoriesData = z.infer<typeof RepositoriesDataSchema>
