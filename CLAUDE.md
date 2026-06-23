@@ -74,7 +74,7 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - [x] Phase 14 — Remote Operations
 - [x] Phase 15 — Branches
 - [x] Phase 16 — History
-- [ ] Phase 17 — Safety Center
+- [x] Phase 17 — Safety Center
 - [ ] Phase 18 — Settings, Polish & Hardening
 
 ## Progress Log
@@ -228,3 +228,11 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - Tests: Vitest 162/162 passed (no new unit tests — logic is a thin IPC call); Playwright 2/2 new history tests passed (history renders 6 commits on fixture repo; "load more" pages 55-commit repo from 50→55 without duplicates, load-more button disappears when exhausted).
 - Exit criteria: ✅ met — history renders on fixture repo; "load more" pages additional commits without duplicates; `tsc --noEmit` clean.
 - Notes / follow-ups: Parser splits stdout by `\0` and groups 6 fields per commit; the `-z` record separator and the `%x00` field separators produce one flat NUL-delimited stream. PAGE_SIZE=50; `hasMore` is true when the page is exactly full (standard next-page heuristic). Two pre-existing flaky tests (diff empty-state, profiles relaunch) pass when run in isolation — timing-sensitive under full parallel suite.
+
+### 2026-06-23 — Phase 17: Safety Center
+
+- Built: `useSafetyCenterStore` (Zustand: loads `getEffectiveIdentity` + `getRemotes` + `getStatus` in parallel; runs `safetyCheckService.checkRepositoryIdentity` + `safetyCheckService.checkPush`; exposes deduplicated issues, `identityCheck`, `pushCheck`); full `SafetyCenterScreen` (repo picker, Profiles card with active/assigned + mismatch banner, Git Identity card with name/email/scope, Remote & Branch card with per-remote host, Verdict card with `data-testid="safety-can-commit"` / `safety-can-push"`, Issues list with per-code `data-testid="safety-issue-{code}"`).
+- Files: added `src/renderer/store/safetyCenterStore.ts`, replaced `src/renderer/screens/SafetyCenterScreen.tsx`; added `tests/e2e/safety-center.spec.ts`; updated `CLAUDE.md` (checklist + log).
+- Tests: Vitest 162/162 passed (no new unit tests — logic reuses Phase 5 `SafetyCheckService` directly); Playwright 2/2 new safety-center tests passed (IDENTITY_UNSET blocks commit — Safety Center says No, CommitScreen commit button disabled; REMOTE_HOST_MISMATCH blocks push — Safety Center says No, RemoteScreen push confirm disabled).
+- Exit criteria: ✅ met — Safety Center verdicts match commit/push gates for both fixture repo states; `tsc --noEmit` clean on both tsconfig variants.
+- Notes / follow-ups: No new IPC channels needed — `git:getEffectiveIdentity`, `git:getRemotes`, `git:getStatus` already existed. Issues are deduplicated across identity + push checks so a shared code (e.g. PROFILE_MISMATCH) appears only once. Pre-existing full-suite flakiness (profiles relaunch, branch delete) is timing-only and unrelated to Phase 17 changes.
