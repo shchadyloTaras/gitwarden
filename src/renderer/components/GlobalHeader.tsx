@@ -1,5 +1,6 @@
 import React from 'react'
 import { useAppStore, SafetyBadge } from '../store/appStore'
+import { useProfilesStore, profileColor } from '../store/profilesStore'
 
 const BADGE_STYLE: Record<SafetyBadge, React.CSSProperties> = {
   safe: { background: '#16a34a', color: '#fff' },
@@ -14,7 +15,10 @@ const BADGE_LABEL: Record<SafetyBadge, string> = {
 }
 
 export default function GlobalHeader(): React.ReactElement {
-  const { activeProfile, activeRepo, currentBranch, safetyBadge, toggleInspector } = useAppStore()
+  const { activeRepo, currentBranch, safetyBadge, toggleInspector } = useAppStore()
+  const profiles = useProfilesStore((s) => s.profiles)
+  const activeProfileId = useProfilesStore((s) => s.activeProfileId)
+  const activeProfile = profiles.find((p) => p.id === activeProfileId) ?? null
 
   return (
     <header
@@ -31,14 +35,12 @@ export default function GlobalHeader(): React.ReactElement {
         userSelect: 'none',
       }}
     >
-      {/* App logo */}
       <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: '-0.02em', marginRight: 8 }}>
         GitWarden
       </span>
 
       <div style={{ width: 1, height: 20, background: '#3f3f46' }} />
 
-      {/* Repo name */}
       <span
         data-testid="header-repo"
         style={{ fontSize: 13, color: activeRepo ? '#e4e4e7' : '#71717a' }}
@@ -46,7 +48,6 @@ export default function GlobalHeader(): React.ReactElement {
         {activeRepo ? activeRepo.name : 'No repository'}
       </span>
 
-      {/* Branch */}
       {currentBranch && (
         <>
           <span style={{ color: '#52525b', fontSize: 12 }}>on</span>
@@ -68,7 +69,6 @@ export default function GlobalHeader(): React.ReactElement {
 
       <div style={{ flex: 1 }} />
 
-      {/* Safety badge */}
       <span
         data-testid="header-safety-badge"
         style={{
@@ -86,30 +86,24 @@ export default function GlobalHeader(): React.ReactElement {
 
       <div style={{ width: 1, height: 20, background: '#3f3f46' }} />
 
-      {/* Active profile chip */}
       {activeProfile && (
         <div
           data-testid="header-profile"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-          }}
+          style={{ display: 'flex', alignItems: 'center', gap: 6 }}
         >
           <div
             style={{
               width: 10,
               height: 10,
               borderRadius: '50%',
-              background: activeProfile.color,
+              background: profileColor(activeProfile.id),
               flexShrink: 0,
             }}
           />
-          <span style={{ fontSize: 13, color: '#e4e4e7' }}>{activeProfile.name}</span>
+          <span style={{ fontSize: 13, color: '#e4e4e7' }}>{activeProfile.displayName}</span>
         </div>
       )}
 
-      {/* Inspector toggle */}
       <button
         aria-label="Toggle inspector"
         onClick={toggleInspector}

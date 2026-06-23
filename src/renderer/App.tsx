@@ -1,8 +1,9 @@
-import React, { Suspense } from 'react'
+import React, { Suspense, useEffect } from 'react'
 import GlobalHeader from './components/GlobalHeader'
 import Sidebar from './components/Sidebar'
 import Inspector from './components/Inspector'
 import { useAppStore } from './store/appStore'
+import { useProfilesStore } from './store/profilesStore'
 
 import RepositoriesScreen from './screens/RepositoriesScreen'
 import ProfilesScreen from './screens/ProfilesScreen'
@@ -42,6 +43,12 @@ function MainContent(): React.ReactElement {
 }
 
 export default function App(): React.ReactElement {
+  const load = useProfilesStore((s) => s.load)
+
+  useEffect(() => {
+    void load()
+  }, [load])
+
   return (
     <div
       style={{

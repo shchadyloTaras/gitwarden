@@ -66,7 +66,7 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - [x] Phase 6 — Storage Layer
 - [x] Phase 7 — IPC Bridge & Preload
 - [x] Phase 8 — App Shell & Navigation
-- [ ] Phase 9 — Profile Management
+- [x] Phase 9 — Profile Management
 - [ ] Phase 10 — Repository Management
 - [ ] Phase 11 — Status & Staging UI
 - [ ] Phase 12 — Diff Viewer
@@ -164,3 +164,11 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - Tests: Vitest 162/162 passed (no new unit tests — this phase is UI-only); Playwright 8/8 passed (4 pre-existing + 4 new: header seeded state, navigate-all-screens, inspector visible, inspector toggle).
 - Exit criteria: ✅ met — Playwright navigates between all 9 screens; global header renders seeded store values (repo, branch, profile, safety badge); inspector toggles open/closed.
 - Notes / follow-ups: All screens are placeholders; content is added in Phases 9–17. Inspector is a read-only display for now; will gain contextual actions per screen. `SafetyBadge` seeded as `'safe'`; Phase 11+ will wire real `checkCommit` results.
+
+### 2026-06-23 — Phase 9: Profile Management
+
+- Built: `useProfilesStore` (Zustand, IPC-backed CRUD: list/create/update/delete/setActive + load); `profileColor` (deterministic color from profile ID, palette of 6); full `ProfilesScreen` (list panel + create/edit form with all Profile fields, SSH-only auth, expectedRemoteHosts add/remove, delete confirm, Set-Active, per-field testids); `App.tsx` calls `load()` on mount; `GlobalHeader` and `Inspector` now read from `useProfilesStore` (real `Profile.displayName`, `gitAuthorName`, `gitAuthorEmail`); `appStore` stripped of `SeedProfile` and `activeProfile` (Phase 8 seed for repo/branch/safety kept for Phase 10+).
+- Files: added `src/renderer/store/profilesStore.ts`, `tests/e2e/profiles.spec.ts`; updated `src/renderer/store/appStore.ts`, `src/renderer/screens/ProfilesScreen.tsx`, `src/renderer/components/GlobalHeader.tsx`, `src/renderer/components/Inspector.tsx`, `src/renderer/App.tsx`, `tests/e2e/shell.spec.ts` (removed seeded-profile assertions — now tested in profiles.spec.ts), `CLAUDE.md`.
+- Tests: Vitest 162/162 passed (no new unit tests — logic is thin UI glue over Phase 6 services); Playwright 13/13 passed (8 pre-existing + 5 new: create-3-profiles, edit, delete, set-active in header, relaunch persistence).
+- Exit criteria: ✅ met — Playwright creates Personal/Work/Client, edits one to "Work Updated", deletes Client, sets Personal active (header-profile shows "Personal"), app relaunched → "Personal" still shown in header.
+- Notes / follow-ups: Color is computed from profile ID (no stored color field); `authenticationMethod` hardcoded to `'ssh'` in form (token option shown disabled, per MVP decision). `SEED_REPO` kept in `appStore` for Phase 10.

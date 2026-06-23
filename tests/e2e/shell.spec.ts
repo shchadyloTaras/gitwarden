@@ -9,7 +9,7 @@ async function launchApp() {
 }
 
 test.describe('App shell & navigation', () => {
-  test('global header shows seeded profile, repo, branch, and safety badge', async () => {
+  test('global header shows repo, branch, and safety badge', async () => {
     const app = await launchApp()
     try {
       const win = await app.firstWindow()
@@ -17,7 +17,6 @@ test.describe('App shell & navigation', () => {
 
       await expect(win.getByTestId('header-repo')).toHaveText('gitwarden')
       await expect(win.getByTestId('header-branch')).toHaveText('main')
-      await expect(win.getByTestId('header-profile')).toContainText('Personal')
       await expect(win.getByTestId('header-safety-badge')).toHaveText('Safe')
     } finally {
       await app.close()
@@ -51,15 +50,14 @@ test.describe('App shell & navigation', () => {
     }
   })
 
-  test('inspector panel is visible and shows context', async () => {
+  test('inspector panel is visible', async () => {
     const app = await launchApp()
     try {
       const win = await app.firstWindow()
       await win.waitForLoadState('domcontentloaded')
 
       await expect(win.getByTestId('inspector-panel')).toBeVisible()
-      // inspector should show the seeded profile name
-      await expect(win.getByTestId('inspector-panel')).toContainText('Personal')
+      await expect(win.getByTestId('inspector-panel')).toContainText('CONTEXT')
     } finally {
       await app.close()
     }

@@ -1,8 +1,12 @@
 import React from 'react'
 import { useAppStore } from '../store/appStore'
+import { useProfilesStore, profileColor } from '../store/profilesStore'
 
 export default function Inspector(): React.ReactElement {
-  const { activeProfile, activeRepo, currentBranch, safetyBadge, inspectorOpen } = useAppStore()
+  const { activeRepo, currentBranch, safetyBadge, inspectorOpen } = useAppStore()
+  const profiles = useProfilesStore((s) => s.profiles)
+  const activeProfileId = useProfilesStore((s) => s.activeProfileId)
+  const activeProfile = profiles.find((p) => p.id === activeProfileId) ?? null
 
   if (!inspectorOpen) return <></>
 
@@ -40,18 +44,18 @@ export default function Inspector(): React.ReactElement {
                 width: 8,
                 height: 8,
                 borderRadius: '50%',
-                background: activeProfile.color,
+                background: profileColor(activeProfile.id),
               }}
             />
-            <span style={{ color: '#e4e4e7' }}>{activeProfile.name}</span>
+            <span style={{ color: '#e4e4e7' }}>{activeProfile.displayName}</span>
           </div>
         ) : (
           <Empty>None</Empty>
         )}
         {activeProfile && (
           <>
-            <Row label="Name" value={activeProfile.gitName} />
-            <Row label="Email" value={activeProfile.gitEmail} />
+            <Row label="Name" value={activeProfile.gitAuthorName} />
+            <Row label="Email" value={activeProfile.gitAuthorEmail} />
           </>
         )}
       </Section>
