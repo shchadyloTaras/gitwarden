@@ -58,7 +58,7 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 ## Phase Checklist
 
 - [x] Phase 0 — Foundations & Decisions
-- [ ] Phase 1 — Repo & Toolchain Scaffold
+- [x] Phase 1 — Repo & Toolchain Scaffold
 - [ ] Phase 2 — Core Types & Domain Models
 - [ ] Phase 3 — Git Execution Core (GitRunner)
 - [ ] Phase 4 — Porcelain Parser & Status
@@ -98,3 +98,10 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - Tests: n/a (docs-only phase).
 - Exit criteria: ✅ met — git location + missing-git UX (all 3 OSes), SSH model + env forwarding (incl. Windows agent), token-deferred decision, SECURITY.md, concurrency/cancellation rules.
 - Notes / follow-ups: Min versions set (Node ≥20, Electron ≥30, git ≥2.30). Hook sandboxing deferred; risk documented in SECURITY.md §7.
+
+### 2026-06-23 — Phase 1: Repo & Toolchain Scaffold
+- Built: Electron 31 + React 18 + Vite 5 + TypeScript strict skeleton; Vitest + Playwright wired; full folder structure.
+- Files: added `package.json`, `electron.vite.config.ts`, `tsconfig.json`, `tsconfig.node.json`, `tsconfig.web.json`, `vitest.config.ts`, `playwright.config.ts`, `.eslintrc.cjs`, `.prettierrc`, `electron-builder.yml`, `electron/index.ts`, `preload/index.ts`, `src/renderer/{index.html,main.tsx,App.tsx}`, `tests/unit/sanity.test.ts`, `tests/e2e/window.spec.ts`; placeholder dirs for `src/core/`, `src/main/{services,git,storage}/`, `tests/integration/`, `resources/`.
+- Tests: Vitest 2/2 passed; Playwright 1/1 passed (`window opens with correct title`).
+- Exit criteria: ✅ met — `npm run dev` opens window; trivial Vitest test passes; Playwright "window opens" test passes.
+- Notes / follow-ups: `eslint --ext .ts,.tsx` uses ESLint 8 legacy config (`.eslintrc.cjs`); upgrade to flat config in Phase 18 polish. Audit warnings are in transitive electron-builder deps, not our code.

@@ -1,0 +1,20 @@
+appId: com.gitwarden.app
+productName: GitWarden
+directories:
+  buildResources: resources
+  output: dist
+files:
+  - out/**/*
+  - package.json
+mac:
+  category: public.app-category.developer-tools
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+linux:
+  target:
+    - target: AppImage
+    - target: deb
+win:
+  target:
+    - target: nsis
