@@ -18,6 +18,8 @@ import {
   GitDiffPayload,
   GitCommitPayload,
   GitSetIdentityPayload,
+  GitRemoteOpPayload,
+  GitRemoteBranchOpPayload,
 } from './ipc-schemas.js'
 
 export interface Services {
@@ -187,6 +189,34 @@ export function registerIpcHandlers(services: Services): void {
     wrap(async () => {
       const { repoPath, name, email } = GitSetIdentityPayload.parse(raw)
       return services.git.setLocalIdentity(repoPath, name, email)
+    })
+  )
+
+  ipcMain.handle('git:getRemotes', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath } = GitRepoPathPayload.parse(raw)
+      return services.git.getRemotes(repoPath)
+    })
+  )
+
+  ipcMain.handle('git:fetch', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath, remote } = GitRemoteOpPayload.parse(raw)
+      return services.git.fetch(repoPath, remote)
+    })
+  )
+
+  ipcMain.handle('git:pull', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath, remote, branch } = GitRemoteBranchOpPayload.parse(raw)
+      return services.git.pull(repoPath, remote, branch)
+    })
+  )
+
+  ipcMain.handle('git:push', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath, remote, branch } = GitRemoteBranchOpPayload.parse(raw)
+      return services.git.push(repoPath, remote, branch)
     })
   )
 }

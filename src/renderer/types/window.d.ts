@@ -4,6 +4,7 @@ import type {
   AppSettings,
   GitStatus,
   EffectiveGitIdentity,
+  GitRemote,
 } from '../../core/types.js'
 
 type IpcResult<T> = { ok: true; data: T } | { ok: false; error: string }
@@ -44,6 +45,10 @@ interface ElectronAPI {
     getDiff(repoPath: string, filePath: string, staged: boolean): Promise<IpcResult<string>>
     commit(repoPath: string, message: string): Promise<IpcResult<{ hash: string }>>
     setLocalIdentity(repoPath: string, name: string, email: string): Promise<IpcResult<void>>
+    getRemotes(repoPath: string): Promise<IpcResult<GitRemote[]>>
+    fetch(repoPath: string, remote: string): Promise<IpcResult<void>>
+    pull(repoPath: string, remote: string, branch: string): Promise<IpcResult<void>>
+    push(repoPath: string, remote: string, branch: string): Promise<IpcResult<void>>
   }
 }
 

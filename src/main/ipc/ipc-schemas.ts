@@ -41,3 +41,14 @@ export const GitSetIdentityPayload = z.object({
   name: z.string().min(1),
   email: z.string().min(1),
 })
+
+export const GitRemoteOpPayload = z.object({
+  repoPath: z.string(),
+  remote: z.string().min(1),
+})
+
+export const GitRemoteBranchOpPayload = z.object({
+  repoPath: z.string(),
+  remote: z.string().min(1),
+  branch: z.string().min(1),
+})

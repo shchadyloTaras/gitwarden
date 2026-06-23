@@ -5,6 +5,7 @@ import type {
   AppSettings,
   GitStatus,
   EffectiveGitIdentity,
+  GitRemote,
 } from '../src/core/types.js'
 
 export type IpcResult<T> = { ok: true; data: T } | { ok: false; error: string }
@@ -69,6 +70,14 @@ export const api = {
       name: string,
       email: string
     ): Promise<IpcResult<void>> => invoke('git:setLocalIdentity', { repoPath, name, email }),
+    getRemotes: (repoPath: string): Promise<IpcResult<GitRemote[]>> =>
+      invoke('git:getRemotes', { repoPath }),
+    fetch: (repoPath: string, remote: string): Promise<IpcResult<void>> =>
+      invoke('git:fetch', { repoPath, remote }),
+    pull: (repoPath: string, remote: string, branch: string): Promise<IpcResult<void>> =>
+      invoke('git:pull', { repoPath, remote, branch }),
+    push: (repoPath: string, remote: string, branch: string): Promise<IpcResult<void>> =>
+      invoke('git:push', { repoPath, remote, branch }),
   },
 }
 

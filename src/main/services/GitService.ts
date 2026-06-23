@@ -1,7 +1,32 @@
 import path from 'node:path'
-import type { GitStatus, EffectiveGitIdentity, GitConfigScope } from '../../core/types.js'
+import type { GitStatus, EffectiveGitIdentity, GitConfigScope, GitRemote } from '../../core/types.js'
 import { parsePorcelainV2 } from '../../core/parsers/PorcelainParser.js'
 import type { GitRunner } from '../git/GitRunner.js'
+
+function parseRemoteHost(url: string): string | undefined {
+  // SSH style: git@github.com:user/repo.git or git@github.com-work:user/repo.git
+  const sshMatch = url.match(/^[\w.+-]+@([^:]+):/)
+  if (sshMatch) return sshMatch[1]
+  // HTTPS / git:// style
+  try {
+    const parsed = new URL(url)
+    if (parsed.hostname) return parsed.hostname
+  } catch {
+    // local path or unparseable — no host
+  }
+  return undefined
+}
+
+function parseRemoteLines(output: string): GitRemote[] {
+  const seen = new Map<string, GitRemote>()
+  for (const line of output.split('\n')) {
+    const match = line.match(/^(\S+)\t(\S+)\s+\(fetch\)/)
+    if (!match) continue
+    const [, name, url] = match
+    seen.set(name, { name, url, host: parseRemoteHost(url) })
+  }
+  return Array.from(seen.values())
+}
 
 // Derive config scope from the origin string git emits, e.g. "file:/path/.git/config".
 // GIT_CONFIG_NOSYSTEM=1 suppresses system config, so what remains is local or global.
@@ -94,6 +119,42 @@ export class GitService {
       args: ['config', '--local', 'user.email', email],
       cwd: repoPath,
       readOnly: false,
+    })
+  }
+
+  async getRemotes(repoPath: string): Promise<GitRemote[]> {
+    const result = await this.runner.run({
+      args: ['remote', '-v'],
+      cwd: repoPath,
+      readOnly: true,
+    })
+    return parseRemoteLines(result.stdout.toString('utf8'))
+  }
+
+  async fetch(repoPath: string, remote: string): Promise<void> {
+    await this.runner.run({
+      args: ['fetch', remote],
+      cwd: repoPath,
+      readOnly: false,
+      timeoutMs: 60_000,
+    })
+  }
+
+  async pull(repoPath: string, remote: string, branch: string): Promise<void> {
+    await this.runner.run({
+      args: ['pull', remote, branch],
+      cwd: repoPath,
+      readOnly: false,
+      timeoutMs: 60_000,
+    })
+  }
+
+  async push(repoPath: string, remote: string, branch: string): Promise<void> {
+    await this.runner.run({
+      args: ['push', remote, branch],
+      cwd: repoPath,
+      readOnly: false,
+      timeoutMs: 60_000,
     })
   }
 

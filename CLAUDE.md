@@ -71,7 +71,7 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - [x] Phase 11 — Status & Staging UI
 - [x] Phase 12 — Diff Viewer
 - [x] Phase 13 — Commit Flow
-- [ ] Phase 14 — Remote Operations
+- [x] Phase 14 — Remote Operations
 - [ ] Phase 15 — Branches
 - [ ] Phase 16 — History
 - [ ] Phase 17 — Safety Center
@@ -196,6 +196,14 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - Tests: Vitest 162/162 passed (no new unit tests — logic is a thin IPC call); Playwright 21/21 passed (18 pre-existing + 3 new: empty state, unstaged diff renders with added/removed lines, staged diff renders with added/removed lines).
 - Exit criteria: ✅ met — Playwright confirms diff renders for staged and unstaged changes on fixture repos; `diff-empty` testid renders when no file is selected.
 - Notes / follow-ups: `getDiff` calls `git diff` as read-only (not queued). Diff mode auto-switches to 'staged' when clicking from the Staged section, 'unstaged' when clicking from Unstaged/Untracked. Parallel-worker storage race is not an issue in practice (full suite passes consistently); the suite previously had no worker cap and still passes with 21 tests.
+
+### 2026-06-23 — Phase 14: Remote Operations
+
+- Built: `GitService.getRemotes/fetch/pull/push` (4 new git operations); `parseRemoteHost` (SSH + HTTPS URL host extraction); `GitRemoteOpPayload` + `GitRemoteBranchOpPayload` Zod schemas; 4 new IPC channels (`git:getRemotes`, `git:fetch`, `git:pull`, `git:push`); `useRemoteStore` (Zustand: load remotes+status+identity, doFetch/doPull/doRemotePush); full `RemoteScreen` (repo picker, branch display, per-remote fetch/pull/push buttons, push confirmation sheet with repo/path/branch/remote URL+host/active profile+email/assigned profile/auth method/full `SafetyCheckService.checkPush` result); push blocked on any blocker; explicit confirm required.
+- Files: updated `src/main/services/GitService.ts` (getRemotes, fetch, pull, push, parseRemoteHost), `src/main/ipc/ipc-schemas.ts` (GitRemoteOpPayload, GitRemoteBranchOpPayload), `src/main/ipc/ipc-handlers.ts` (4 new handlers), `preload/index.ts`, `src/renderer/types/window.d.ts`; added `src/renderer/store/remoteStore.ts`, replaced `src/renderer/screens/RemoteScreen.tsx`; added `tests/e2e/remote.spec.ts`; updated `CLAUDE.md`.
+- Tests: Vitest 162/162 passed (no new unit tests — new git ops are thin wrappers); Playwright 25/25 passed (23 pre-existing + 2 new: push blocked on REMOTE_HOST_MISMATCH with confirm button disabled; push succeeds after explicit confirmation and bare repo receives the commit).
+- Exit criteria: ✅ met — Playwright: push blocked when profile has `expectedRemoteHosts: ['github.com']` and remote is a local bare repo (no host); confirm button disabled; push succeeds with `expectedRemoteHosts: []`, sheet confirms, `git log main` on bare repo shows "add feature".
+- Notes / follow-ups: `parseRemoteHost` handles SSH (`git@host:user/repo`) and HTTPS (`https://host/...`) patterns; local paths return `undefined`. Push uses `git push <remote> <branch>` (no `--set-upstream`; tracking established by fixture). Fetch/pull have 60s timeout. True IPC-level cancellation deferred (GitRunner supports AbortSignal but cross-process signalling is out of scope for MVP).
 
 ### 2026-06-23 — Phase 13: Commit Flow
 
