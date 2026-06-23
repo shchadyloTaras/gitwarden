@@ -67,7 +67,7 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - [x] Phase 7 — IPC Bridge & Preload
 - [x] Phase 8 — App Shell & Navigation
 - [x] Phase 9 — Profile Management
-- [ ] Phase 10 — Repository Management
+- [x] Phase 10 — Repository Management
 - [ ] Phase 11 — Status & Staging UI
 - [ ] Phase 12 — Diff Viewer
 - [ ] Phase 13 — Commit Flow
@@ -172,3 +172,11 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - Tests: Vitest 162/162 passed (no new unit tests — logic is thin UI glue over Phase 6 services); Playwright 13/13 passed (8 pre-existing + 5 new: create-3-profiles, edit, delete, set-active in header, relaunch persistence).
 - Exit criteria: ✅ met — Playwright creates Personal/Work/Client, edits one to "Work Updated", deletes Client, sets Personal active (header-profile shows "Personal"), app relaunched → "Personal" still shown in header.
 - Notes / follow-ups: Color is computed from profile ID (no stored color field); `authenticationMethod` hardcoded to `'ssh'` in form (token option shown disabled, per MVP decision). `SEED_REPO` kept in `appStore` for Phase 10.
+
+### 2026-06-23 — Phase 10: Repository Management
+
+- Built: `GitService.validateRepository` (`git rev-parse --show-toplevel` + optional `git remote get-url origin`); `dialog:openDirectory` IPC channel (Electron `dialog.showOpenDialog`); `git:validateRepository` IPC channel; `useRepositoriesStore` (Zustand, IPC-backed: load/addRepository/updateRepo/removeRepo); full `RepositoriesScreen` (list panel with per-item mismatch indicator, add-by-path form with Browse button, edit panel with name/profile assignment/notes/remove-with-confirm, profile-mismatch warning banner); `App.tsx` now loads both `profilesStore` and `repositoriesStore` on mount.
+- Files: updated `src/main/services/GitService.ts` (validateRepository), `src/main/ipc/ipc-handlers.ts` (dialog + validate channels), `preload/index.ts` (dialog.openDirectory, git.validateRepository), `src/renderer/types/window.d.ts`, `src/renderer/App.tsx`; added `src/renderer/store/repositoriesStore.ts`, `src/renderer/screens/RepositoriesScreen.tsx`, `tests/e2e/repositories.spec.ts`; updated `CLAUDE.md`.
+- Tests: Vitest 162/162 passed (no new unit tests — logic is thin IPC glue); Playwright 16/16 passed (13 pre-existing + 3 new: add+assign+mismatch-warning+remove, invalid-path rejection, no-warning when active profile unset).
+- Exit criteria: ✅ met — Playwright adds a local temp git repo, assigns Work profile, sees mismatch warning (active=Personal), removes it (file still on disk); invalid non-git path shows error.
+- Notes / follow-ups: `dialog:openDirectory` registered inside `registerIpcHandlers` using Electron `dialog` import (no parent window — acceptable for MVP). Clone is deferred (out of scope for MVP). `SEED_REPO` in `appStore` removed in favour of real `repositoriesStore`.

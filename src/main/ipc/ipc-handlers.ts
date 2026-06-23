@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { ipcMain, dialog } from 'electron'
 import type { IProfileService } from '../services/ProfileService.js'
 import type { IRepositoryService } from '../services/RepositoryService.js'
 import type { ISettingsService } from '../services/SettingsService.js'
@@ -107,6 +107,14 @@ export function registerIpcHandlers(services: Services): void {
     })
   )
 
+  // Dialog
+  ipcMain.handle('dialog:openDirectory', () =>
+    wrap(async () => {
+      const result = await dialog.showOpenDialog({ properties: ['openDirectory'] })
+      return result.canceled ? null : (result.filePaths[0] ?? null)
+    })
+  )
+
   // Git
   ipcMain.handle('git:getStatus', (_e, raw: unknown) =>
     wrap(async () => {
@@ -119,6 +127,13 @@ export function registerIpcHandlers(services: Services): void {
     wrap(async () => {
       const { repoPath } = GitRepoPathPayload.parse(raw)
       return services.git.getEffectiveIdentity(repoPath)
+    })
+  )
+
+  ipcMain.handle('git:validateRepository', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath } = GitRepoPathPayload.parse(raw)
+      return services.git.validateRepository(repoPath)
     })
   )
 }

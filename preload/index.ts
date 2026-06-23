@@ -14,6 +14,9 @@ function invoke<T>(channel: string, payload?: unknown): Promise<IpcResult<T>> {
 }
 
 export const api = {
+  dialog: {
+    openDirectory: (): Promise<IpcResult<string | null>> => invoke('dialog:openDirectory'),
+  },
   profiles: {
     list: (): Promise<IpcResult<Profile[]>> => invoke('profiles:list'),
     get: (id: string): Promise<IpcResult<Profile | undefined>> => invoke('profiles:get', { id }),
@@ -45,6 +48,10 @@ export const api = {
       invoke('git:getStatus', { repoPath }),
     getEffectiveIdentity: (repoPath: string): Promise<IpcResult<EffectiveGitIdentity>> =>
       invoke('git:getEffectiveIdentity', { repoPath }),
+    validateRepository: (
+      repoPath: string
+    ): Promise<IpcResult<{ name: string; remoteUrl?: string }>> =>
+      invoke('git:validateRepository', { repoPath }),
   },
 }
 

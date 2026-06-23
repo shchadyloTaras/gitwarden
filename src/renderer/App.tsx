@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar'
 import Inspector from './components/Inspector'
 import { useAppStore } from './store/appStore'
 import { useProfilesStore } from './store/profilesStore'
+import { useRepositoriesStore } from './store/repositoriesStore'
 
 import RepositoriesScreen from './screens/RepositoriesScreen'
 import ProfilesScreen from './screens/ProfilesScreen'
@@ -44,10 +45,12 @@ function MainContent(): React.ReactElement {
 
 export default function App(): React.ReactElement {
   const load = useProfilesStore((s) => s.load)
+  const loadRepos = useRepositoriesStore((s) => s.load)
 
   useEffect(() => {
     void load()
-  }, [load])
+    void loadRepos()
+  }, [load, loadRepos])
 
   return (
     <div

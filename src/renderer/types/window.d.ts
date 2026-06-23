@@ -9,6 +9,9 @@ import type {
 type IpcResult<T> = { ok: true; data: T } | { ok: false; error: string }
 
 interface ElectronAPI {
+  dialog: {
+    openDirectory(): Promise<IpcResult<string | null>>
+  }
   profiles: {
     list(): Promise<IpcResult<Profile[]>>
     get(id: string): Promise<IpcResult<Profile | undefined>>
@@ -33,6 +36,7 @@ interface ElectronAPI {
   git: {
     getStatus(repoPath: string): Promise<IpcResult<GitStatus>>
     getEffectiveIdentity(repoPath: string): Promise<IpcResult<EffectiveGitIdentity>>
+    validateRepository(repoPath: string): Promise<IpcResult<{ name: string; remoteUrl?: string }>>
   }
 }
 

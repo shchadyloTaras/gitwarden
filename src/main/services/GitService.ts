@@ -1,3 +1,4 @@
+import path from 'node:path'
 import type { GitStatus, EffectiveGitIdentity, GitConfigScope } from '../../core/types.js'
 import { parsePorcelainV2 } from '../../core/parsers/PorcelainParser.js'
 import type { GitRunner } from '../git/GitRunner.js'
@@ -20,6 +21,29 @@ export class GitService {
       readOnly: true,
     })
     return parsePorcelainV2(result.stdout)
+  }
+
+  async validateRepository(repoPath: string): Promise<{ name: string; remoteUrl?: string }> {
+    // Throws GitError if not a valid git working tree
+    await this.runner.run({
+      args: ['rev-parse', '--show-toplevel'],
+      cwd: repoPath,
+      readOnly: true,
+    })
+
+    let remoteUrl: string | undefined
+    try {
+      const res = await this.runner.run({
+        args: ['remote', 'get-url', 'origin'],
+        cwd: repoPath,
+        readOnly: true,
+      })
+      remoteUrl = res.stdout.toString('utf8').trim() || undefined
+    } catch {
+      // no remote is fine
+    }
+
+    return { name: path.basename(repoPath), remoteUrl }
   }
 
   async getEffectiveIdentity(repoPath: string): Promise<EffectiveGitIdentity> {
