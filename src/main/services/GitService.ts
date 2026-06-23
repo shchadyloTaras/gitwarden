@@ -70,6 +70,14 @@ export class GitService {
     })
   }
 
+  async getDiff(repoPath: string, filePath: string, staged: boolean): Promise<string> {
+    const args = ['diff', '--no-color']
+    if (staged) args.push('--staged')
+    args.push('--', filePath)
+    const result = await this.runner.run({ args, cwd: repoPath, readOnly: true })
+    return result.stdout.toString('utf8')
+  }
+
   async getEffectiveIdentity(repoPath: string): Promise<EffectiveGitIdentity> {
     const fetchConfig = async (
       key: string

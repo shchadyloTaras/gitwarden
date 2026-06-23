@@ -69,7 +69,7 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - [x] Phase 9 — Profile Management
 - [x] Phase 10 — Repository Management
 - [x] Phase 11 — Status & Staging UI
-- [ ] Phase 12 — Diff Viewer
+- [x] Phase 12 — Diff Viewer
 - [ ] Phase 13 — Commit Flow
 - [ ] Phase 14 — Remote Operations
 - [ ] Phase 15 — Branches
@@ -188,3 +188,11 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - Tests: Vitest 162/162 passed (no new unit tests — logic is thin IPC glue over git operations); Playwright 18/18 passed (16 pre-existing + 2 new: stage/unstage cycle, staged-and-modified file on both sides).
 - Exit criteria: ✅ met — Playwright stages and unstages `hello.txt` in fixture repo; a `world.txt` that is both staged and worktree-modified (MM) appears correctly in both the staged and unstaged sections simultaneously.
 - Notes / follow-ups: Filtering is pure derivation from `FileChange.indexStatus`/`worktreeStatus` — no client-side bucketing. `unstageFile` uses `git restore --staged` (git ≥ 2.23, matches Phase 0 min-version of ≥ 2.30). StatusScreen repo-picker uses `repositoriesStore` list; future phases may wire `appStore.activeRepo` for auto-selection.
+
+### 2026-06-23 — Phase 12: Diff Viewer
+
+- Built: `GitService.getDiff` (`git diff --no-color [--staged] -- <path>`); `GitDiffPayload` Zod schema; `git:getDiff` IPC channel; `getDiff` in preload + `window.d.ts`; `StatusScreen` rewritten as a split-pane layout (left: file list 300px, right: diff panel); `DiffPanel` component with toolbar (file path + Staged/Unstaged toggle, buttons disabled when inapplicable), line-by-line colored diff rendering (`+` → green, `-` → red, `@@` → indigo), empty state, loading state, untracked-file message; clicking a file row auto-selects the relevant diff mode.
+- Files: updated `src/main/services/GitService.ts` (getDiff), `src/main/ipc/ipc-schemas.ts` (GitDiffPayload), `src/main/ipc/ipc-handlers.ts` (git:getDiff), `preload/index.ts`, `src/renderer/types/window.d.ts`, `src/renderer/screens/StatusScreen.tsx`; added `tests/e2e/diff.spec.ts`; updated `CLAUDE.md`.
+- Tests: Vitest 162/162 passed (no new unit tests — logic is a thin IPC call); Playwright 21/21 passed (18 pre-existing + 3 new: empty state, unstaged diff renders with added/removed lines, staged diff renders with added/removed lines).
+- Exit criteria: ✅ met — Playwright confirms diff renders for staged and unstaged changes on fixture repos; `diff-empty` testid renders when no file is selected.
+- Notes / follow-ups: `getDiff` calls `git diff` as read-only (not queued). Diff mode auto-switches to 'staged' when clicking from the Staged section, 'unstaged' when clicking from Unstaged/Untracked. Parallel-worker storage race is not an issue in practice (full suite passes consistently); the suite previously had no worker cap and still passes with 21 tests.

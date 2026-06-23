@@ -60,6 +60,8 @@ export const api = {
       invoke('git:stageAll', { repoPath }),
     unstageAll: (repoPath: string): Promise<IpcResult<void>> =>
       invoke('git:unstageAll', { repoPath }),
+    getDiff: (repoPath: string, filePath: string, staged: boolean): Promise<IpcResult<string>> =>
+      invoke('git:getDiff', { repoPath, filePath, staged }),
   },
 }
 

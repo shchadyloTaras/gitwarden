@@ -41,6 +41,7 @@ interface ElectronAPI {
     unstageFile(repoPath: string, filePath: string): Promise<IpcResult<void>>
     stageAll(repoPath: string): Promise<IpcResult<void>>
     unstageAll(repoPath: string): Promise<IpcResult<void>>
+    getDiff(repoPath: string, filePath: string, staged: boolean): Promise<IpcResult<string>>
   }
 }
 

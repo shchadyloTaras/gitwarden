@@ -25,3 +25,8 @@ export const SettingsUpdatePayload = AppSettingsSchema.partial()
 // Git request payloads
 export const GitRepoPathPayload = z.object({ repoPath: z.string() })
 export const GitFilePathPayload = z.object({ repoPath: z.string(), filePath: z.string() })
+export const GitDiffPayload = z.object({
+  repoPath: z.string(),
+  filePath: z.string(),
+  staged: z.boolean(),
+})

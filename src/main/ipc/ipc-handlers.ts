@@ -15,6 +15,7 @@ import {
   SettingsUpdatePayload,
   GitRepoPathPayload,
   GitFilePathPayload,
+  GitDiffPayload,
 } from './ipc-schemas.js'
 
 export interface Services {
@@ -163,6 +164,13 @@ export function registerIpcHandlers(services: Services): void {
     wrap(async () => {
       const { repoPath } = GitRepoPathPayload.parse(raw)
       return services.git.unstageAll(repoPath)
+    })
+  )
+
+  ipcMain.handle('git:getDiff', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath, filePath, staged } = GitDiffPayload.parse(raw)
+      return services.git.getDiff(repoPath, filePath, staged)
     })
   )
 }
