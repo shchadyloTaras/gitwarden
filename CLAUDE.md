@@ -46,7 +46,14 @@ npm run build    # electron-builder package
 
 ## Definition of Done (per phase)
 
-Compiles with no TS/ESLint errors in touched files · phase Exit criteria met · logic phases have passing Vitest · UI phases have passing Playwright · new user-facing strings externalized · destructive/remote actions confirmed.
+Compiles with no TS/ESLint errors in touched files · phase Exit criteria met · logic phases have passing Vitest · UI phases have passing Playwright · new user-facing strings externalized · destructive/remote actions confirmed · **Progress Log updated and all changes committed** as `Phase N: <name>` (commit only on green; push stays manual).
+
+## Git workflow
+
+- **One commit per phase**, made only after the phase's exit criteria are green and the Progress Log entry is written (so the doc update is part of the commit).
+- Message convention: subject `Phase N: <name>`, a one-line body, and the `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>` trailer.
+- `git add -A` (the `.gitignore` already excludes `node_modules/`, build output, coverage, secrets).
+- **Do not push automatically** — pushing to `origin/main` happens only when the user asks. Intermediate WIP commits within a phase are fine; squash is optional.
 
 ## Phase Checklist
 

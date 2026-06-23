@@ -13,7 +13,8 @@ Build GitWarden phase by phase, in dependency order, keeping every step **locall
 3. **Implement** following the Architecture rules in `CLAUDE.md`.
 4. **Verify** by running the phase's tests (`npm test` / `npm run e2e`). A phase is not done until its Exit criteria tests are green.
 5. **Log progress** — append an entry to the `## Progress Log` in `CLAUDE.md` and tick the phase in the `## Phase Checklist`.
-6. **Stop and report** the test output honestly. If tests fail or a step was skipped, say so.
+6. **Commit** all changes once exit criteria are met: `git add -A && git commit -m "Phase N: <name>"` (with a one-line body and the `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>` trailer). Commit only on green; **do not push** unless the user explicitly asks.
+7. **Stop and report** the test output honestly. If tests fail or a step was skipped, say so.
 
 ## Build order (dependency-driven)
 

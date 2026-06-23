@@ -20,7 +20,11 @@ When the phase's Exit criteria are met:
    - Exit criteria: ✅ met  (or ⚠️ partial — explain what's left)
    - Notes / follow-ups: <anything worth knowing for next phase>
 2. Tick this phase's box in the "## Phase Checklist" in CLAUDE.md.
-3. Report the test output to me honestly. If anything failed or was skipped, say so explicitly — do not claim success without showing results.
+3. Commit ALL changes for this phase (only if exit criteria are met / tests are green):
+   git add -A
+   git commit -m "Phase N: <name>" -m "<one-line summary of what was built>" -m "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
+   Do NOT push — pushing stays manual unless I explicitly ask.
+4. Report the test output to me honestly. If anything failed or was skipped, say so explicitly — do not claim success without showing results.
 ```
 
 ---
