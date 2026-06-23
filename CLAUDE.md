@@ -51,7 +51,7 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 ## Git workflow
 
 - **One commit per phase**, made only after the phase's exit criteria are green and the Progress Log entry is written (so the doc update is part of the commit).
-- Message convention: subject `Phase N: <name>`, a one-line body, and the `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>` trailer.
+- Message convention: subject `Phase N: <name>`, a one-line body, and the `Co-Authored-By: Claude <noreply@anthropic.com>` trailer.
 - `git add -A` (the `.gitignore` already excludes `node_modules/`, build output, coverage, secrets).
 - **Do not push automatically** — pushing to `origin/main` happens only when the user asks. Intermediate WIP commits within a phase are fine; squash is optional.
 
