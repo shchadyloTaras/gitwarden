@@ -6,6 +6,7 @@ import type {
   EffectiveGitIdentity,
   GitRemote,
   GitBranch,
+  GitCommit,
 } from '../../core/types.js'
 
 type IpcResult<T> = { ok: true; data: T } | { ok: false; error: string }
@@ -54,6 +55,7 @@ interface ElectronAPI {
     switchBranch(repoPath: string, branch: string): Promise<IpcResult<void>>
     createBranch(repoPath: string, name: string): Promise<IpcResult<void>>
     deleteBranch(repoPath: string, branch: string): Promise<IpcResult<void>>
+    getCommitHistory(repoPath: string, limit: number, skip: number): Promise<IpcResult<GitCommit[]>>
   }
 }
 

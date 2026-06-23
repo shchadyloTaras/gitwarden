@@ -5,6 +5,7 @@ import type {
   GitConfigScope,
   GitRemote,
   GitBranch,
+  GitCommit,
 } from '../../core/types.js'
 import { parsePorcelainV2 } from '../../core/parsers/PorcelainParser.js'
 import type { GitRunner } from '../git/GitRunner.js'
@@ -204,6 +205,37 @@ export class GitService {
 
   async deleteBranch(repoPath: string, name: string): Promise<void> {
     await this.runner.run({ args: ['branch', '-D', name], cwd: repoPath, readOnly: false })
+  }
+
+  async getCommitHistory(repoPath: string, limit: number, skip: number): Promise<GitCommit[]> {
+    const result = await this.runner.run({
+      args: [
+        'log',
+        '-z',
+        '--format=%H%x00%h%x00%an%x00%ae%x00%aI%x00%s',
+        `-n`,
+        String(limit),
+        '--skip',
+        String(skip),
+      ],
+      cwd: repoPath,
+      readOnly: true,
+    })
+    const raw = result.stdout.toString('utf8')
+    if (!raw) return []
+    const fields = raw.split('\0').filter((f) => f !== '')
+    const commits: GitCommit[] = []
+    for (let i = 0; i + 5 < fields.length; i += 6) {
+      commits.push({
+        fullHash: fields[i],
+        shortHash: fields[i + 1],
+        authorName: fields[i + 2],
+        authorEmail: fields[i + 3],
+        date: fields[i + 4],
+        message: fields[i + 5],
+      })
+    }
+    return commits
   }
 
   async getDiff(repoPath: string, filePath: string, staged: boolean): Promise<string> {

@@ -73,7 +73,7 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - [x] Phase 13 — Commit Flow
 - [x] Phase 14 — Remote Operations
 - [x] Phase 15 — Branches
-- [ ] Phase 16 — History
+- [x] Phase 16 — History
 - [ ] Phase 17 — Safety Center
 - [ ] Phase 18 — Settings, Polish & Hardening
 
@@ -220,3 +220,11 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - Tests: Vitest 162/162 passed (no new unit tests — logic is thin IPC glue); Playwright 28/28 passed (25 pre-existing + 3 new: switch branch updates header, create branch creates-and-switches, delete branch with inline confirm removes from list).
 - Exit criteria: ✅ met — Playwright: switches to feature-a, header shows feature-a; creates feature-b from main, header shows feature-b; deletes feature-a via inline confirm, branch removed from list; `tsc --noEmit` clean.
 - Notes / follow-ups: `getBranches` uses two `for-each-ref` calls (local + remote) so `%(HEAD)` correctly marks only the locally checked-out branch. `deleteBranch` uses `-D` (force) since the user already confirmed in the UI. Delete button scoped to `data-testid="branches-local-item-{name}"` rows to avoid strict-mode failures when multiple non-current branches exist.
+
+### 2026-06-23 — Phase 16: History
+
+- Built: `GitService.getCommitHistory` (`git log -z --format=%H%x00%h%x00%an%x00%ae%x00%aI%x00%s -n <limit> --skip <skip>`, NUL-split parser grouping 6 fields per commit); `GitHistoryPayload` Zod schema; `git:getCommitHistory` IPC channel; `getCommitHistory` in preload + `window.d.ts`; `useHistoryStore` (Zustand: load first PAGE_SIZE=50, loadMore appending the next page, hasMore flag); full `HistoryScreen` (repo picker, sticky column header, commit list with short hash / message / author / date, "Load more" button).
+- Files: updated `src/main/services/GitService.ts` (getCommitHistory), `src/main/ipc/ipc-schemas.ts` (GitHistoryPayload), `src/main/ipc/ipc-handlers.ts` (git:getCommitHistory), `preload/index.ts`, `src/renderer/types/window.d.ts`; added `src/renderer/store/historyStore.ts`, replaced `src/renderer/screens/HistoryScreen.tsx`; added `tests/e2e/history.spec.ts`; updated `CLAUDE.md`.
+- Tests: Vitest 162/162 passed (no new unit tests — logic is a thin IPC call); Playwright 2/2 new history tests passed (history renders 6 commits on fixture repo; "load more" pages 55-commit repo from 50→55 without duplicates, load-more button disappears when exhausted).
+- Exit criteria: ✅ met — history renders on fixture repo; "load more" pages additional commits without duplicates; `tsc --noEmit` clean.
+- Notes / follow-ups: Parser splits stdout by `\0` and groups 6 fields per commit; the `-z` record separator and the `%x00` field separators produce one flat NUL-delimited stream. PAGE_SIZE=50; `hasMore` is true when the page is exactly full (standard next-page heuristic). Two pre-existing flaky tests (diff empty-state, profiles relaunch) pass when run in isolation — timing-sensitive under full parallel suite.

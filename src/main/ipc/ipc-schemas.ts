@@ -62,3 +62,9 @@ export const GitCreateBranchPayload = z.object({
   repoPath: z.string(),
   name: z.string().min(1),
 })
+
+export const GitHistoryPayload = z.object({
+  repoPath: z.string(),
+  limit: z.number().int().positive(),
+  skip: z.number().int().min(0),
+})

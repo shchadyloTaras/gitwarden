@@ -22,6 +22,7 @@ import {
   GitRemoteBranchOpPayload,
   GitBranchOpPayload,
   GitCreateBranchPayload,
+  GitHistoryPayload,
 } from './ipc-schemas.js'
 
 export interface Services {
@@ -247,6 +248,13 @@ export function registerIpcHandlers(services: Services): void {
     wrap(async () => {
       const { repoPath, branch } = GitBranchOpPayload.parse(raw)
       return services.git.deleteBranch(repoPath, branch)
+    })
+  )
+
+  ipcMain.handle('git:getCommitHistory', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath, limit, skip } = GitHistoryPayload.parse(raw)
+      return services.git.getCommitHistory(repoPath, limit, skip)
     })
   )
 }
