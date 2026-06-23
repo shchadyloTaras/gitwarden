@@ -66,7 +66,7 @@ function hasBlocker(issues: SafetyIssue[]): boolean {
 
 interface IdentityInput {
   repository: RepositoryRecord
-  activeProfile: Profile | undefined
+  activeProfile?: Profile
   identity: EffectiveGitIdentity
 }
 

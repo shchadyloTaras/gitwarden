@@ -64,7 +64,7 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - [x] Phase 4 — Porcelain Parser & Status
 - [x] Phase 5 — Safety Engine
 - [x] Phase 6 — Storage Layer
-- [ ] Phase 7 — IPC Bridge & Preload
+- [x] Phase 7 — IPC Bridge & Preload
 - [ ] Phase 8 — App Shell & Navigation
 - [ ] Phase 9 — Profile Management
 - [ ] Phase 10 — Repository Management
@@ -148,3 +148,11 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - Tests: Vitest 132/132 passed (33 new: 8 JsonStore + 10 ProfileService + 10 RepositoryService + 5 SettingsService; 99 pre-existing).
 - Exit criteria: ✅ met — data persists across store instances (simulates relaunch); atomic-write test confirms original file intact when `.tmp` exists but rename hasn't run; Zod rejects malformed stored JSON.
 - Notes / follow-ups: `vi.spyOn` cannot intercept Node built-in `fs/promises.rename` (non-configurable); the interrupted-write test instead leaves an orphaned `.tmp` and asserts the main file is unchanged — tests the observable guarantee directly. `SecretStore` uses lazy `require('electron')` so it never loads Electron in Vitest.
+
+### 2026-06-23 — Phase 7: IPC Bridge & Preload
+
+- Built: `src/main/ipc/ipc-schemas.ts` (Zod request payload schemas for all 14 channels); `src/main/ipc/ipc-handlers.ts` (`registerIpcHandlers()` wrapping every service call in a typed `IpcResult<T>` envelope); `preload/index.ts` rewritten with typed `contextBridge` API; `src/renderer/types/window.d.ts` declaring `window.api`; `electron/index.ts` updated to initialize all services and register handlers before `createWindow()`; pre-existing `IdentityInput.activeProfile` type narrowing bug fixed.
+- Files: added `src/main/ipc/ipc-schemas.ts`, `src/main/ipc/ipc-handlers.ts`, `src/renderer/types/window.d.ts`, `tests/unit/ipc-schemas.test.ts`, `tests/e2e/ipc-bridge.spec.ts`; updated `preload/index.ts`, `electron/index.ts`, `tsconfig.web.json` (added `src/core/**/*`), `src/core/safety/SafetyCheckService.ts` (type fix), `CLAUDE.md`.
+- Tests: Vitest 162/162 passed (30 new ipc-schemas unit tests; 132 pre-existing); Playwright 4/4 passed (1 pre-existing + 3 new: security flags, `profiles:list` round-trip, invalid-payload Zod rejection).
+- Exit criteria: ✅ met — renderer call round-trips to a main service and back, fully type-checked; invalid IPC payload rejected by Zod (`ok: false` returned); security flags (`contextIsolation`, `sandbox`, no `window.require`/`window.process`) asserted in Playwright; `tsc --noEmit` clean on both `tsconfig.node.json` and `tsconfig.web.json`.
+- Notes / follow-ups: `IpcResult<T>` envelope used instead of raw `throw` so renderer never needs `try/catch` over `window.api` calls. All 14 channels (5 profile + 5 repo + 2 settings + 2 git) wired. `window.api` type in `window.d.ts` mirrors the preload exactly — keep in sync when adding channels.

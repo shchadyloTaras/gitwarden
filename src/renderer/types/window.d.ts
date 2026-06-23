@@ -1,0 +1,45 @@
+import type {
+  Profile,
+  RepositoryRecord,
+  AppSettings,
+  GitStatus,
+  EffectiveGitIdentity,
+} from '../../core/types.js'
+
+type IpcResult<T> = { ok: true; data: T } | { ok: false; error: string }
+
+interface ElectronAPI {
+  profiles: {
+    list(): Promise<IpcResult<Profile[]>>
+    get(id: string): Promise<IpcResult<Profile | undefined>>
+    create(input: Omit<Profile, 'id'>): Promise<IpcResult<Profile>>
+    update(id: string, patch: Partial<Omit<Profile, 'id'>>): Promise<IpcResult<Profile>>
+    delete(id: string): Promise<IpcResult<void>>
+  }
+  repositories: {
+    list(): Promise<IpcResult<RepositoryRecord[]>>
+    get(id: string): Promise<IpcResult<RepositoryRecord | undefined>>
+    create(input: Omit<RepositoryRecord, 'id'>): Promise<IpcResult<RepositoryRecord>>
+    update(
+      id: string,
+      patch: Partial<Omit<RepositoryRecord, 'id'>>
+    ): Promise<IpcResult<RepositoryRecord>>
+    delete(id: string): Promise<IpcResult<void>>
+  }
+  settings: {
+    get(): Promise<IpcResult<AppSettings>>
+    update(patch: Partial<AppSettings>): Promise<IpcResult<AppSettings>>
+  }
+  git: {
+    getStatus(repoPath: string): Promise<IpcResult<GitStatus>>
+    getEffectiveIdentity(repoPath: string): Promise<IpcResult<EffectiveGitIdentity>>
+  }
+}
+
+declare global {
+  interface Window {
+    api: ElectronAPI
+  }
+}
+
+export {}
