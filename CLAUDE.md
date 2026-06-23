@@ -62,7 +62,7 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - [x] Phase 2 — Core Types & Domain Models
 - [x] Phase 3 — Git Execution Core (GitRunner)
 - [x] Phase 4 — Porcelain Parser & Status
-- [ ] Phase 5 — Safety Engine
+- [x] Phase 5 — Safety Engine
 - [ ] Phase 6 — Storage Layer
 - [ ] Phase 7 — IPC Bridge & Preload
 - [ ] Phase 8 — App Shell & Navigation
@@ -132,3 +132,11 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - Tests: Vitest 60/60 passed (13 new unit parser tests + 8 new integration getStatus tests).
 - Exit criteria: ✅ met — unit tests cover staged-and-modified (MM), rename with origPath, untracked, conflict, path with spaces and unicode; integration getStatus test passes on a temp repo with mixed changes.
 - Notes / follow-ups: Conflict integration test uses explicit `checkout -b trunk` to avoid dependency on git's default branch name. With `-z`, git emits raw unicode paths without quoting, so `?` entries work for unicode filenames correctly.
+
+### 2026-06-23 — Phase 5: Safety Engine
+
+- Built: `SafetyCheckService` (pure, synchronous) in `src/core/safety/`; `GitService.getEffectiveIdentity` via `git config --show-origin`; `parseScope` mapping origin path → local/global.
+- Files: added `src/core/safety/SafetyCheckService.ts`, `tests/unit/safety-engine.test.ts`, `tests/integration/git-service-identity.test.ts`; updated `src/main/services/GitService.ts`.
+- Tests: Vitest 99/99 passed (36 new safety-engine unit + 3 new identity integration; 60 pre-existing).
+- Exit criteria: ✅ met — full issue-code matrix tested: NO_ACTIVE_PROFILE, REPO_UNASSIGNED, PROFILE_MISMATCH, IDENTITY_UNSET, EMAIL_MISMATCH, EMAIL_FROM_GLOBAL_ONLY, NOTHING_STAGED, EMPTY_MESSAGE, HAS_CONFLICTS, NO_REMOTE, REMOTE_HOST_MISMATCH; every branch of the engine exercised; lint + prettier clean.
+- Notes / follow-ups: `git --show-origin` emits `file:.git/config` (relative path on macOS) not an absolute path — `parseScope` uses `endsWith('.git/config')` rather than a regex. Conflicted files excluded from `hasStagedChanges` (must be resolved + re-staged). `GIT_CONFIG_NOSYSTEM=1` in GitRunner means system scope never appears; scope is either local or global.

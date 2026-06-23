@@ -103,7 +103,10 @@ describe('parsePorcelainV2', () => {
   })
 
   it('parses a path with spaces', () => {
-    const buf = fixture('# branch.head main', '1 M. N... 100644 100644 100644 abc def src/my file with spaces.ts')
+    const buf = fixture(
+      '# branch.head main',
+      '1 M. N... 100644 100644 100644 abc def src/my file with spaces.ts'
+    )
     const status = parsePorcelainV2(buf)
     expect(status.files[0].path).toBe('src/my file with spaces.ts')
   })
