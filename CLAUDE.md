@@ -59,7 +59,7 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 
 - [x] Phase 0 — Foundations & Decisions
 - [x] Phase 1 — Repo & Toolchain Scaffold
-- [ ] Phase 2 — Core Types & Domain Models
+- [x] Phase 2 — Core Types & Domain Models
 - [ ] Phase 3 — Git Execution Core (GitRunner)
 - [ ] Phase 4 — Porcelain Parser & Status
 - [ ] Phase 5 — Safety Engine
@@ -105,3 +105,10 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - Tests: Vitest 2/2 passed; Playwright 1/1 passed (`window opens with correct title`).
 - Exit criteria: ✅ met — `npm run dev` opens window; trivial Vitest test passes; Playwright "window opens" test passes.
 - Notes / follow-ups: `eslint --ext .ts,.tsx` uses ESLint 8 legacy config (`.eslintrc.cjs`); upgrade to flat config in Phase 18 polish. Audit warnings are in transitive electron-builder deps, not our code.
+
+### 2026-06-23 — Phase 2: Core Types & Domain Models
+- Built: `src/core/types.ts` (all domain models from plan §10) and `src/core/schemas.ts` (Zod schemas for `Profile`, `RepositoryRecord`, `AppSettings`).
+- Files: added `src/core/types.ts`, `src/core/schemas.ts`, `tests/unit/zod-roundtrip.test.ts`.
+- Tests: Vitest 14/14 passed (12 new round-trip tests + 2 pre-existing sanity tests).
+- Exit criteria: ✅ met — types compile under strict TS (`tsc --noEmit` clean); Zod round-trip parse/serialize tests pass for all three persisted types.
+- Notes / follow-ups: `AuthenticationMethod = 'token'` is model-only (no storage/push path) per MVP decision in Phase 0.
