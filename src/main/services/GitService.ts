@@ -46,6 +46,30 @@ export class GitService {
     return { name: path.basename(repoPath), remoteUrl }
   }
 
+  async stageFile(repoPath: string, filePath: string): Promise<void> {
+    await this.runner.run({ args: ['add', '--', filePath], cwd: repoPath, readOnly: false })
+  }
+
+  async unstageFile(repoPath: string, filePath: string): Promise<void> {
+    await this.runner.run({
+      args: ['restore', '--staged', '--', filePath],
+      cwd: repoPath,
+      readOnly: false,
+    })
+  }
+
+  async stageAll(repoPath: string): Promise<void> {
+    await this.runner.run({ args: ['add', '-A'], cwd: repoPath, readOnly: false })
+  }
+
+  async unstageAll(repoPath: string): Promise<void> {
+    await this.runner.run({
+      args: ['restore', '--staged', '--', '.'],
+      cwd: repoPath,
+      readOnly: false,
+    })
+  }
+
   async getEffectiveIdentity(repoPath: string): Promise<EffectiveGitIdentity> {
     const fetchConfig = async (
       key: string

@@ -37,6 +37,10 @@ interface ElectronAPI {
     getStatus(repoPath: string): Promise<IpcResult<GitStatus>>
     getEffectiveIdentity(repoPath: string): Promise<IpcResult<EffectiveGitIdentity>>
     validateRepository(repoPath: string): Promise<IpcResult<{ name: string; remoteUrl?: string }>>
+    stageFile(repoPath: string, filePath: string): Promise<IpcResult<void>>
+    unstageFile(repoPath: string, filePath: string): Promise<IpcResult<void>>
+    stageAll(repoPath: string): Promise<IpcResult<void>>
+    unstageAll(repoPath: string): Promise<IpcResult<void>>
   }
 }
 

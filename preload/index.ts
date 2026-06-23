@@ -52,6 +52,14 @@ export const api = {
       repoPath: string
     ): Promise<IpcResult<{ name: string; remoteUrl?: string }>> =>
       invoke('git:validateRepository', { repoPath }),
+    stageFile: (repoPath: string, filePath: string): Promise<IpcResult<void>> =>
+      invoke('git:stageFile', { repoPath, filePath }),
+    unstageFile: (repoPath: string, filePath: string): Promise<IpcResult<void>> =>
+      invoke('git:unstageFile', { repoPath, filePath }),
+    stageAll: (repoPath: string): Promise<IpcResult<void>> =>
+      invoke('git:stageAll', { repoPath }),
+    unstageAll: (repoPath: string): Promise<IpcResult<void>> =>
+      invoke('git:unstageAll', { repoPath }),
   },
 }
 

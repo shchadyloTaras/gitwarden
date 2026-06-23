@@ -68,7 +68,7 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - [x] Phase 8 — App Shell & Navigation
 - [x] Phase 9 — Profile Management
 - [x] Phase 10 — Repository Management
-- [ ] Phase 11 — Status & Staging UI
+- [x] Phase 11 — Status & Staging UI
 - [ ] Phase 12 — Diff Viewer
 - [ ] Phase 13 — Commit Flow
 - [ ] Phase 14 — Remote Operations
@@ -180,3 +180,11 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - Tests: Vitest 162/162 passed (no new unit tests — logic is thin IPC glue); Playwright 16/16 passed (13 pre-existing + 3 new: add+assign+mismatch-warning+remove, invalid-path rejection, no-warning when active profile unset).
 - Exit criteria: ✅ met — Playwright adds a local temp git repo, assigns Work profile, sees mismatch warning (active=Personal), removes it (file still on disk); invalid non-git path shows error.
 - Notes / follow-ups: `dialog:openDirectory` registered inside `registerIpcHandlers` using Electron `dialog` import (no parent window — acceptable for MVP). Clone is deferred (out of scope for MVP). `SEED_REPO` in `appStore` removed in favour of real `repositoriesStore`.
+
+### 2026-06-23 — Phase 11: Status & Staging UI
+
+- Built: `GitService.stageFile/unstageFile/stageAll/unstageAll` (4 new git operations); `GitFilePathPayload` Zod schema; 4 new IPC channels (`git:stageFile`, `git:unstageFile`, `git:stageAll`, `git:unstageAll`); `useStatusStore` (Zustand, IPC-backed: `loadStatus`, `stageFile`, `unstageFile`, `stageAll`, `unstageAll`); full `StatusScreen` (repo dropdown picker, refresh button, three sections — Staged/Unstaged/Untracked — filtered by `indexStatus`/`worktreeStatus` without bucketing; per-file stage/unstage buttons; section-level bulk actions; opaque MM dual-side rendering).
+- Files: updated `src/main/services/GitService.ts`, `src/main/ipc/ipc-schemas.ts`, `src/main/ipc/ipc-handlers.ts`, `preload/index.ts`, `src/renderer/types/window.d.ts`; added `src/renderer/store/statusStore.ts`; replaced `src/renderer/screens/StatusScreen.tsx`; added `tests/e2e/status.spec.ts`; updated `CLAUDE.md`.
+- Tests: Vitest 162/162 passed (no new unit tests — logic is thin IPC glue over git operations); Playwright 18/18 passed (16 pre-existing + 2 new: stage/unstage cycle, staged-and-modified file on both sides).
+- Exit criteria: ✅ met — Playwright stages and unstages `hello.txt` in fixture repo; a `world.txt` that is both staged and worktree-modified (MM) appears correctly in both the staged and unstaged sections simultaneously.
+- Notes / follow-ups: Filtering is pure derivation from `FileChange.indexStatus`/`worktreeStatus` — no client-side bucketing. `unstageFile` uses `git restore --staged` (git ≥ 2.23, matches Phase 0 min-version of ≥ 2.30). StatusScreen repo-picker uses `repositoriesStore` list; future phases may wire `appStore.activeRepo` for auto-selection.

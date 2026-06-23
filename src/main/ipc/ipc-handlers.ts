@@ -14,6 +14,7 @@ import {
   RepositoryDeletePayload,
   SettingsUpdatePayload,
   GitRepoPathPayload,
+  GitFilePathPayload,
 } from './ipc-schemas.js'
 
 export interface Services {
@@ -134,6 +135,34 @@ export function registerIpcHandlers(services: Services): void {
     wrap(async () => {
       const { repoPath } = GitRepoPathPayload.parse(raw)
       return services.git.validateRepository(repoPath)
+    })
+  )
+
+  ipcMain.handle('git:stageFile', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath, filePath } = GitFilePathPayload.parse(raw)
+      return services.git.stageFile(repoPath, filePath)
+    })
+  )
+
+  ipcMain.handle('git:unstageFile', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath, filePath } = GitFilePathPayload.parse(raw)
+      return services.git.unstageFile(repoPath, filePath)
+    })
+  )
+
+  ipcMain.handle('git:stageAll', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath } = GitRepoPathPayload.parse(raw)
+      return services.git.stageAll(repoPath)
+    })
+  )
+
+  ipcMain.handle('git:unstageAll', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath } = GitRepoPathPayload.parse(raw)
+      return services.git.unstageAll(repoPath)
     })
   )
 }
