@@ -60,7 +60,7 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - [x] Phase 0 — Foundations & Decisions
 - [x] Phase 1 — Repo & Toolchain Scaffold
 - [x] Phase 2 — Core Types & Domain Models
-- [ ] Phase 3 — Git Execution Core (GitRunner)
+- [x] Phase 3 — Git Execution Core (GitRunner)
 - [ ] Phase 4 — Porcelain Parser & Status
 - [ ] Phase 5 — Safety Engine
 - [ ] Phase 6 — Storage Layer
@@ -81,6 +81,7 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 
 > Append a new entry at the bottom after each phase. Newest last. Do not rewrite past entries.
 > Format:
+>
 > ```
 > ### YYYY-MM-DD — Phase N: <name>
 > - Built: <what>
@@ -93,6 +94,7 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 <!-- progress entries go below this line -->
 
 ### 2026-06-23 — Phase 0: Foundations & Decisions
+
 - Built: Foundational decisions and threat-model docs (no app code).
 - Files: added `DECISIONS.md`, `SECURITY.md`; updated `CLAUDE.md` (checklist + log).
 - Tests: n/a (docs-only phase).
@@ -100,6 +102,7 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - Notes / follow-ups: Min versions set (Node ≥20, Electron ≥30, git ≥2.30). Hook sandboxing deferred; risk documented in SECURITY.md §7.
 
 ### 2026-06-23 — Phase 1: Repo & Toolchain Scaffold
+
 - Built: Electron 31 + React 18 + Vite 5 + TypeScript strict skeleton; Vitest + Playwright wired; full folder structure.
 - Files: added `package.json`, `electron.vite.config.ts`, `tsconfig.json`, `tsconfig.node.json`, `tsconfig.web.json`, `vitest.config.ts`, `playwright.config.ts`, `.eslintrc.cjs`, `.prettierrc`, `electron-builder.yml`, `electron/index.ts`, `preload/index.ts`, `src/renderer/{index.html,main.tsx,App.tsx}`, `tests/unit/sanity.test.ts`, `tests/e2e/window.spec.ts`; placeholder dirs for `src/core/`, `src/main/{services,git,storage}/`, `tests/integration/`, `resources/`.
 - Tests: Vitest 2/2 passed; Playwright 1/1 passed (`window opens with correct title`).
@@ -107,8 +110,17 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - Notes / follow-ups: `eslint --ext .ts,.tsx` uses ESLint 8 legacy config (`.eslintrc.cjs`); upgrade to flat config in Phase 18 polish. Audit warnings are in transitive electron-builder deps, not our code.
 
 ### 2026-06-23 — Phase 2: Core Types & Domain Models
+
 - Built: `src/core/types.ts` (all domain models from plan §10) and `src/core/schemas.ts` (Zod schemas for `Profile`, `RepositoryRecord`, `AppSettings`).
 - Files: added `src/core/types.ts`, `src/core/schemas.ts`, `tests/unit/zod-roundtrip.test.ts`.
 - Tests: Vitest 14/14 passed (12 new round-trip tests + 2 pre-existing sanity tests).
 - Exit criteria: ✅ met — types compile under strict TS (`tsc --noEmit` clean); Zod round-trip parse/serialize tests pass for all three persisted types.
 - Notes / follow-ups: `AuthenticationMethod = 'token'` is model-only (no storage/push path) per MVP decision in Phase 0.
+
+### 2026-06-23 — Phase 3: Git Execution Core (GitRunner)
+
+- Built: `GitLocator` (3-OS PATH scan + common locations + version verify), `PathValidator` (absolute path, symlink resolution, `.git` check), `GitRunner` (`spawn`-based, controlled env, `AbortSignal` cancellation, per-cwd mutation queue, concurrent stdout/stderr), `ErrorMapper` + `GitError` class (stderr/exit-code → typed `GitCommandError`).
+- Files: added `src/main/git/GitLocator.ts`, `src/main/git/PathValidator.ts`, `src/main/git/GitRunner.ts`, `src/main/git/ErrorMapper.ts`, `tests/unit/error-mapper.test.ts`, `tests/unit/path-validator.test.ts`, `tests/integration/git-runner.test.ts`; fixed pre-existing lint warning in `tests/unit/zod-roundtrip.test.ts`.
+- Tests: Vitest 39/39 passed (11 ErrorMapper + 6 PathValidator + 8 GitRunner integration, including abort test).
+- Exit criteria: ✅ met — integration test runs real git in a temp repo; `PathValidator` + `ErrorMapper` tests pass; aborting a long-running invocation (fake slow script) kills the process.
+- Notes / follow-ups: Abort test is `skipIf(win32)` (uses shell script). `GitRunner` rejects with `GitError extends Error` for proper error typing. `PathValidator` placed in `src/main/git/` (uses `fs`; not pure).

@@ -28,8 +28,8 @@ contents are untrusted input**, even on the user's own machine.
    - `GIT_TERMINAL_PROMPT=0` — never block on an interactive credential prompt.
    - `GIT_OPTIONAL_LOCKS=0` — for read-only ops, avoid taking optional locks.
    - `LC_ALL=C` — stable, parseable, locale-independent output.
-   Only the minimal env git/ssh need is forwarded (`HOME`/`USERPROFILE`, `PATH`,
-   `SSH_AUTH_SOCK`); nothing else from the host environment leaks through.
+     Only the minimal env git/ssh need is forwarded (`HOME`/`USERPROFILE`, `PATH`,
+     `SSH_AUTH_SOCK`); nothing else from the host environment leaks through.
 
 4. **Locked-down renderer.**
    The renderer runs with `contextIsolation: true`, `nodeIntegration: false`, and

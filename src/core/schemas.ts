@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod'
 
 export const ProfileSchema = z.object({
   id: z.string(),
@@ -11,7 +11,7 @@ export const ProfileSchema = z.object({
   expectedRemoteHosts: z.array(z.string()),
   defaultProjectsFolder: z.string().optional(),
   notes: z.string().optional(),
-});
+})
 
 export const RepositoryRecordSchema = z.object({
   id: z.string(),
@@ -22,15 +22,15 @@ export const RepositoryRecordSchema = z.object({
   lastOpenedAt: z.string().optional(),
   isFavorite: z.boolean(),
   notes: z.string().optional(),
-});
+})
 
 export const AppSettingsSchema = z.object({
   activeProfileId: z.string().optional(),
   lastOpenedRepositoryId: z.string().optional(),
   appearance: z.enum(['system', 'light', 'dark']),
   customGitPath: z.string().optional(),
-});
+})
 
-export type ProfileInput = z.input<typeof ProfileSchema>;
-export type RepositoryRecordInput = z.input<typeof RepositoryRecordSchema>;
-export type AppSettingsInput = z.input<typeof AppSettingsSchema>;
+export type ProfileInput = z.input<typeof ProfileSchema>
+export type RepositoryRecordInput = z.input<typeof RepositoryRecordSchema>
+export type AppSettingsInput = z.input<typeof AppSettingsSchema>
