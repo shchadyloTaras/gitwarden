@@ -30,3 +30,14 @@ export const GitDiffPayload = z.object({
   filePath: z.string(),
   staged: z.boolean(),
 })
+
+export const GitCommitPayload = z.object({
+  repoPath: z.string(),
+  message: z.string().min(1),
+})
+
+export const GitSetIdentityPayload = z.object({
+  repoPath: z.string(),
+  name: z.string().min(1),
+  email: z.string().min(1),
+})

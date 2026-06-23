@@ -132,6 +132,10 @@ export class GitRunner {
       env.SSH_AUTH_SOCK = process.env.SSH_AUTH_SOCK
     }
 
+    if (process.env.GIT_CONFIG_GLOBAL !== undefined) {
+      env.GIT_CONFIG_GLOBAL = process.env.GIT_CONFIG_GLOBAL
+    }
+
     if (readOnly) {
       env.GIT_OPTIONAL_LOCKS = '0'
     }

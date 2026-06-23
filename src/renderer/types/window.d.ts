@@ -42,6 +42,8 @@ interface ElectronAPI {
     stageAll(repoPath: string): Promise<IpcResult<void>>
     unstageAll(repoPath: string): Promise<IpcResult<void>>
     getDiff(repoPath: string, filePath: string, staged: boolean): Promise<IpcResult<string>>
+    commit(repoPath: string, message: string): Promise<IpcResult<{ hash: string }>>
+    setLocalIdentity(repoPath: string, name: string, email: string): Promise<IpcResult<void>>
   }
 }
 

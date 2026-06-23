@@ -16,6 +16,8 @@ import {
   GitRepoPathPayload,
   GitFilePathPayload,
   GitDiffPayload,
+  GitCommitPayload,
+  GitSetIdentityPayload,
 } from './ipc-schemas.js'
 
 export interface Services {
@@ -171,6 +173,20 @@ export function registerIpcHandlers(services: Services): void {
     wrap(async () => {
       const { repoPath, filePath, staged } = GitDiffPayload.parse(raw)
       return services.git.getDiff(repoPath, filePath, staged)
+    })
+  )
+
+  ipcMain.handle('git:commit', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath, message } = GitCommitPayload.parse(raw)
+      return services.git.commit(repoPath, message)
+    })
+  )
+
+  ipcMain.handle('git:setLocalIdentity', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath, name, email } = GitSetIdentityPayload.parse(raw)
+      return services.git.setLocalIdentity(repoPath, name, email)
     })
   )
 }

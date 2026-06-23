@@ -70,6 +70,33 @@ export class GitService {
     })
   }
 
+  async commit(repoPath: string, message: string): Promise<{ hash: string }> {
+    await this.runner.run({
+      args: ['commit', '-m', message],
+      cwd: repoPath,
+      readOnly: false,
+    })
+    const result = await this.runner.run({
+      args: ['rev-parse', '--short', 'HEAD'],
+      cwd: repoPath,
+      readOnly: true,
+    })
+    return { hash: result.stdout.toString('utf8').trim() }
+  }
+
+  async setLocalIdentity(repoPath: string, name: string, email: string): Promise<void> {
+    await this.runner.run({
+      args: ['config', '--local', 'user.name', name],
+      cwd: repoPath,
+      readOnly: false,
+    })
+    await this.runner.run({
+      args: ['config', '--local', 'user.email', email],
+      cwd: repoPath,
+      readOnly: false,
+    })
+  }
+
   async getDiff(repoPath: string, filePath: string, staged: boolean): Promise<string> {
     const args = ['diff', '--no-color']
     if (staged) args.push('--staged')

@@ -62,6 +62,13 @@ export const api = {
       invoke('git:unstageAll', { repoPath }),
     getDiff: (repoPath: string, filePath: string, staged: boolean): Promise<IpcResult<string>> =>
       invoke('git:getDiff', { repoPath, filePath, staged }),
+    commit: (repoPath: string, message: string): Promise<IpcResult<{ hash: string }>> =>
+      invoke('git:commit', { repoPath, message }),
+    setLocalIdentity: (
+      repoPath: string,
+      name: string,
+      email: string
+    ): Promise<IpcResult<void>> => invoke('git:setLocalIdentity', { repoPath, name, email }),
   },
 }
 

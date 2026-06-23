@@ -70,7 +70,7 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - [x] Phase 10 — Repository Management
 - [x] Phase 11 — Status & Staging UI
 - [x] Phase 12 — Diff Viewer
-- [ ] Phase 13 — Commit Flow
+- [x] Phase 13 — Commit Flow
 - [ ] Phase 14 — Remote Operations
 - [ ] Phase 15 — Branches
 - [ ] Phase 16 — History
@@ -196,3 +196,11 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - Tests: Vitest 162/162 passed (no new unit tests — logic is a thin IPC call); Playwright 21/21 passed (18 pre-existing + 3 new: empty state, unstaged diff renders with added/removed lines, staged diff renders with added/removed lines).
 - Exit criteria: ✅ met — Playwright confirms diff renders for staged and unstaged changes on fixture repos; `diff-empty` testid renders when no file is selected.
 - Notes / follow-ups: `getDiff` calls `git diff` as read-only (not queued). Diff mode auto-switches to 'staged' when clicking from the Staged section, 'unstaged' when clicking from Unstaged/Untracked. Parallel-worker storage race is not an issue in practice (full suite passes consistently); the suite previously had no worker cap and still passes with 21 tests.
+
+### 2026-06-23 — Phase 13: Commit Flow
+
+- Built: `GitService.commit` (`git commit -m <message>` + `git rev-parse --short HEAD` for returned hash); `GitService.setLocalIdentity` (`git config --local user.name/user.email` — never `--global`); `GitCommitPayload` + `GitSetIdentityPayload` Zod schemas; `git:commit` + `git:setLocalIdentity` IPC channels; `commit` + `setLocalIdentity` in preload + `window.d.ts`; `useCommitStore` (Zustand: load status+identity together, `applyLocalIdentity`, `doCommit` with post-commit status refresh); full `CommitScreen` (repo picker, staged-changes summary, commit message textarea, safety issues panel with ⛔ blockers + ⚠ warnings, "Set local identity" action button shown when identity issues exist + active profile available, commit button disabled on any blocker, success banner with short hash); `GitRunner.buildEnv` now forwards `GIT_CONFIG_GLOBAL` when set (required for test isolation and respecting per-process overrides).
+- Files: updated `src/main/services/GitService.ts` (commit, setLocalIdentity), `src/main/ipc/ipc-schemas.ts` (GitCommitPayload, GitSetIdentityPayload), `src/main/ipc/ipc-handlers.ts` (git:commit, git:setLocalIdentity), `preload/index.ts`, `src/renderer/types/window.d.ts`, `src/main/git/GitRunner.ts` (GIT_CONFIG_GLOBAL forwarding); added `src/renderer/store/commitStore.ts`, `src/renderer/screens/CommitScreen.tsx` (replaced placeholder), `tests/e2e/commit.spec.ts`; updated `CLAUDE.md`.
+- Tests: Vitest 162/162 passed (no new unit tests — logic is thin IPC glue over git operations); Playwright 23/23 passed (21 pre-existing + 2 new: screen renders/shows placeholder, identity-mismatch blocker → set-local-identity → commit creates correct author verified via `git log`).
+- Exit criteria: ✅ met — Playwright on fixture repo: IDENTITY_UNSET blocks commit (commit button disabled); "set local identity" action sets local git config from active profile; identity reload removes blocker; commit button enables; successful commit creates real commit; `git log` confirms author name=Alice Dev, email=alice@example.com matching the active profile.
+- Notes / follow-ups: `GIT_CONFIG_GLOBAL` forwarding in `GitRunner` is needed so the Playwright test can set an empty global config (via Electron's `env` option) to guarantee IDENTITY_UNSET fires reliably. Requires git ≥ 2.32 for `GIT_CONFIG_GLOBAL` support (test machines on macOS 2025 have git ≥ 2.39). `safetyCheckService.checkCommit` is imported directly in the renderer (pure module; Vite bundles it). The commit store holds its own status + identity state; StatusScreen and CommitScreen share no state on purpose.
