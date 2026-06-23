@@ -57,7 +57,7 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 
 ## Phase Checklist
 
-- [ ] Phase 0 — Foundations & Decisions
+- [x] Phase 0 — Foundations & Decisions
 - [ ] Phase 1 — Repo & Toolchain Scaffold
 - [ ] Phase 2 — Core Types & Domain Models
 - [ ] Phase 3 — Git Execution Core (GitRunner)
@@ -91,3 +91,10 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 > ```
 
 <!-- progress entries go below this line -->
+
+### 2026-06-23 — Phase 0: Foundations & Decisions
+- Built: Foundational decisions and threat-model docs (no app code).
+- Files: added `DECISIONS.md`, `SECURITY.md`; updated `CLAUDE.md` (checklist + log).
+- Tests: n/a (docs-only phase).
+- Exit criteria: ✅ met — git location + missing-git UX (all 3 OSes), SSH model + env forwarding (incl. Windows agent), token-deferred decision, SECURITY.md, concurrency/cancellation rules.
+- Notes / follow-ups: Min versions set (Node ≥20, Electron ≥30, git ≥2.30). Hook sandboxing deferred; risk documented in SECURITY.md §7.
