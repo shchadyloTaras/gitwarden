@@ -22,6 +22,7 @@ export default function GlobalHeader(): React.ReactElement {
 
   return (
     <header
+      data-testid="global-header"
       style={{
         display: 'flex',
         alignItems: 'center',

@@ -93,6 +93,8 @@ describe('AppSettings round-trip', () => {
     appearance: 'dark' as const,
     customGitPath: '/usr/local/bin/git',
     defaultProjectsFolder: '/home/alice/projects',
+    onboardingCompletedAt: '2026-06-23T12:00:00.000Z',
+    onboardingSkippedAt: '2026-06-23T11:00:00.000Z',
   }
 
   it('parses full settings', () => {
@@ -104,6 +106,7 @@ describe('AppSettings round-trip', () => {
     const result = AppSettingsSchema.parse(minimal)
     expect(result.appearance).toBe('system')
     expect(result.activeProfileId).toBeUndefined()
+    expect(result.onboardingCompletedAt).toBeUndefined()
   })
 
   it('serializes and re-parses without data loss', () => {

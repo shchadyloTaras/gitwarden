@@ -103,6 +103,8 @@ export interface AppSettings {
   appearance: AppearanceMode
   customGitPath?: string
   defaultProjectsFolder?: string
+  onboardingCompletedAt?: string
+  onboardingSkippedAt?: string
 }
 
 export type GitErrorCode =

@@ -53,6 +53,46 @@ export const STR = {
   SETTINGS_GIT_VALID: (version: string) => `Valid — ${version}`,
   SETTINGS_GIT_INVALID: 'Not a valid git executable.',
   SETTINGS_GIT_VALIDATE_HINT: 'Enter a path to validate it, or leave blank to use auto-detect.',
+  SETTINGS_ONBOARDING_LABEL: 'Walkthrough',
+  SETTINGS_ONBOARDING_HINT: 'Run the guided introduction again.',
+  SETTINGS_ONBOARDING_START: 'Start Walkthrough',
+
+  // ── Onboarding walkthrough ────────────────────────────────────────────────
+  ONBOARDING_PROGRESS: (current: number, total: number) => `${current} of ${total}`,
+  ONBOARDING_SKIP: 'Skip',
+  ONBOARDING_BACK: 'Back',
+  ONBOARDING_NEXT: 'Next',
+  ONBOARDING_FINISH: 'Finish',
+  ONBOARDING_STEP_WELCOME_TITLE: 'Welcome to GitWarden',
+  ONBOARDING_STEP_WELCOME_BODY:
+    'GitWarden keeps daily Git work tied to the right profile. This quick tour points out where profiles, repositories, safety, and Git actions live.',
+  ONBOARDING_STEP_HEADER_TITLE: 'Global header',
+  ONBOARDING_STEP_HEADER_BODY:
+    'Your current repository, branch, safety badge, and active profile stay visible here while you work.',
+  ONBOARDING_STEP_NAV_TITLE: 'Navigation',
+  ONBOARDING_STEP_NAV_BODY:
+    'Manage covers profiles and repositories. Git covers status, commits, remotes, branches, history, and the Safety Center. App holds settings.',
+  ONBOARDING_STEP_PROFILES_TITLE: 'Create profiles first',
+  ONBOARDING_STEP_PROFILES_BODY:
+    'Profiles hold your Git author name, email, GitHub username, SSH alias, and allowed remote hosts.',
+  ONBOARDING_STEP_REPOS_TITLE: 'Add repositories',
+  ONBOARDING_STEP_REPOS_BODY:
+    'Add an existing local repository, then assign it to exactly one profile so GitWarden can catch identity mixups.',
+  ONBOARDING_STEP_STATUS_TITLE: 'Review and stage changes',
+  ONBOARDING_STEP_STATUS_BODY:
+    'Status separates staged, unstaged, and untracked files. Pick a repository, inspect the diff, then stage only what belongs in the next commit.',
+  ONBOARDING_STEP_COMMIT_TITLE: 'Commit with safety checks',
+  ONBOARDING_STEP_COMMIT_BODY:
+    'The Commit screen checks profile assignment, local Git identity, staged changes, conflicts, and message before enabling a commit.',
+  ONBOARDING_STEP_REMOTE_TITLE: 'Push only after confirmation',
+  ONBOARDING_STEP_REMOTE_BODY:
+    'Remote operations use a confirmation sheet with branch, remote host, profile, identity, and safety blockers before anything leaves your machine.',
+  ONBOARDING_STEP_SAFETY_TITLE: 'Use Safety Center',
+  ONBOARDING_STEP_SAFETY_BODY:
+    'Safety Center audits identity, remote host, branch, and profile assignment in one place. Its verdict matches the commit and push gates.',
+  ONBOARDING_STEP_SETTINGS_TITLE: 'Replay any time',
+  ONBOARDING_STEP_SETTINGS_BODY:
+    'The walkthrough stays available here, so you can rerun it after setup or share the app with someone new.',
 
   // ── Status screen — discard tracked changes ────────────────────────────────
   DISCARD_TRACKED_LABEL: 'Discard',

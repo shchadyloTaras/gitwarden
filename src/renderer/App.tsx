@@ -1,11 +1,13 @@
-import React, { Suspense, useEffect, useState } from 'react'
+import React, { Suspense, useCallback, useEffect, useState } from 'react'
 import GlobalHeader from './components/GlobalHeader'
 import Sidebar from './components/Sidebar'
 import Inspector from './components/Inspector'
+import OnboardingTour from './components/OnboardingTour'
 import { useAppStore } from './store/appStore'
 import { useProfilesStore } from './store/profilesStore'
 import { useRepositoriesStore } from './store/repositoriesStore'
 import { useSettingsStore } from './store/settingsStore'
+import { useOnboardingStore } from './store/onboardingStore'
 import type { NavScreen } from './store/appStore'
 
 import RepositoriesScreen from './screens/RepositoriesScreen'
@@ -75,13 +77,33 @@ export default function App(): React.ReactElement {
   const loadRepos = useRepositoriesStore((s) => s.load)
   const loadSettings = useSettingsStore((s) => s.load)
   const appearance = useSettingsStore((s) => s.appearance)
+  const onboardingCompletedAt = useSettingsStore((s) => s.onboardingCompletedAt)
+  const onboardingSkippedAt = useSettingsStore((s) => s.onboardingSkippedAt)
+  const markOnboardingCompleted = useSettingsStore((s) => s.markOnboardingCompleted)
+  const markOnboardingSkipped = useSettingsStore((s) => s.markOnboardingSkipped)
+  const onboardingOpen = useOnboardingStore((s) => s.isOpen)
+  const startOnboarding = useOnboardingStore((s) => s.start)
+  const closeOnboarding = useOnboardingStore((s) => s.close)
   const navigate = useAppStore((s) => s.navigate)
   // Signal for tests: set to true once all initial store loads complete.
   const [storesReady, setStoresReady] = useState(false)
+  const [autoOnboardingChecked, setAutoOnboardingChecked] = useState(false)
 
   useEffect(() => {
     void Promise.all([load(), loadRepos(), loadSettings()]).then(() => setStoresReady(true))
   }, [load, loadRepos, loadSettings])
+
+  useEffect(() => {
+    if (autoOnboardingChecked || !storesReady || navigator.webdriver) return
+    setAutoOnboardingChecked(true)
+    if (!onboardingCompletedAt && !onboardingSkippedAt) startOnboarding()
+  }, [
+    autoOnboardingChecked,
+    onboardingCompletedAt,
+    onboardingSkippedAt,
+    startOnboarding,
+    storesReady,
+  ])
 
   // Apply theme whenever appearance setting changes
   useEffect(() => {
@@ -98,6 +120,7 @@ export default function App(): React.ReactElement {
   // Keyboard navigation: Cmd/Ctrl + 1-9 to jump to screens
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent): void {
+      if (onboardingOpen) return
       if (!e.metaKey && !e.ctrlKey) return
       const idx = parseInt(e.key, 10) - 1
       if (idx >= 0 && idx < NAV_ORDER.length) {
@@ -107,7 +130,17 @@ export default function App(): React.ReactElement {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [navigate])
+  }, [navigate, onboardingOpen])
+
+  const handleOnboardingComplete = useCallback(() => {
+    closeOnboarding()
+    void markOnboardingCompleted()
+  }, [closeOnboarding, markOnboardingCompleted])
+
+  const handleOnboardingSkip = useCallback(() => {
+    closeOnboarding()
+    void markOnboardingSkipped()
+  }, [closeOnboarding, markOnboardingSkipped])
 
   return (
     <div
@@ -145,6 +178,12 @@ export default function App(): React.ReactElement {
 
         <Inspector />
       </div>
+
+      <OnboardingTour
+        open={onboardingOpen}
+        onComplete={handleOnboardingComplete}
+        onSkip={handleOnboardingSkip}
+      />
     </div>
   )
 }

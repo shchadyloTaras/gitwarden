@@ -33,6 +33,7 @@ export default function Sidebar(): React.ReactElement {
 
   return (
     <nav
+      data-testid="sidebar-nav"
       style={{
         width: 180,
         flexShrink: 0,

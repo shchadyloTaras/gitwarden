@@ -30,6 +30,8 @@ export const AppSettingsSchema = z.object({
   appearance: z.enum(['system', 'light', 'dark']),
   customGitPath: z.string().optional(),
   defaultProjectsFolder: z.string().optional(),
+  onboardingCompletedAt: z.string().optional(),
+  onboardingSkippedAt: z.string().optional(),
 })
 
 export type ProfileInput = z.input<typeof ProfileSchema>

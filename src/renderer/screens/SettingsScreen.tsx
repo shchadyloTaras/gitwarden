@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useSettingsStore } from '../store/settingsStore'
+import { useOnboardingStore } from '../store/onboardingStore'
 import type { AppearanceMode } from '../../core/types'
 import { STR } from '../strings'
 
@@ -72,6 +73,7 @@ function AppearancePicker({
 export default function SettingsScreen(): React.ReactElement {
   const { appearance, customGitPath, defaultProjectsFolder, loading, load, update } =
     useSettingsStore()
+  const startOnboarding = useOnboardingStore((s) => s.start)
 
   const [localAppearance, setLocalAppearance] = useState<AppearanceMode>('system')
   const [localGitPath, setLocalGitPath] = useState<string>('')
@@ -344,6 +346,39 @@ export default function SettingsScreen(): React.ReactElement {
             <p style={{ margin: 0, fontSize: 12, color: '#71717a' }}>
               {STR.SETTINGS_DEFAULT_FOLDER_HINT}
             </p>
+          </div>
+
+          {/* Walkthrough */}
+          <div data-testid="settings-onboarding-card" style={CARD}>
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                marginBottom: 10,
+                color: '#f4f4f5',
+              }}
+            >
+              {STR.SETTINGS_ONBOARDING_LABEL}
+            </div>
+            <p style={{ marginTop: 0, marginBottom: 12, fontSize: 12, color: '#71717a' }}>
+              {STR.SETTINGS_ONBOARDING_HINT}
+            </p>
+            <button
+              data-testid="settings-start-onboarding"
+              onClick={startOnboarding}
+              style={{
+                padding: '7px 14px',
+                background: '#3f3f46',
+                border: 'none',
+                borderRadius: 4,
+                color: '#e4e4e7',
+                cursor: 'pointer',
+                fontSize: 12,
+                fontWeight: 600,
+              }}
+            >
+              {STR.SETTINGS_ONBOARDING_START}
+            </button>
           </div>
 
           {/* Save */}

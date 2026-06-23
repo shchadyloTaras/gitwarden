@@ -76,6 +76,7 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - [x] Phase 16 — History
 - [x] Phase 17 — Safety Center
 - [x] Phase 18 — Settings, Polish & Hardening
+- [x] Phase 19 — Onboarding Walkthrough
 
 ## Progress Log
 
@@ -244,3 +245,11 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - Tests: `npm run lint` passed; `npx tsc --noEmit -p tsconfig.node.json` passed; `npx tsc --noEmit -p tsconfig.web.json` passed; `npm test` passed (162/162); `npm run e2e` passed (36/36, escalated because Electron GUI launch is sandbox-restricted).
 - Exit criteria: ✅ met — every screen has loading/empty/error coverage from prior UI phases plus Phase 18 settings states; irreversible untracked delete warns distinctly from tracked discard; Appendix D security checklist reviewed; strings centralized for new UI and safety messages; full local lint/unit/e2e gates green.
 - Notes / follow-ups: CI matrix is not configured in this repo, so mac/linux/win matrix execution was not run locally. `GitLocator` still performs the initial version probe in the git layer; normal repository operations remain behind `GitRunner`.
+
+### 2026-06-23 — Phase 19: Onboarding Walkthrough
+
+- Built: Interactive first-run walkthrough with data-driven coach marks, target highlighting, next/back/skip/finish controls, keyboard support, cross-screen navigation, persisted completed/skipped state, and Settings replay.
+- Files: added `src/renderer/components/OnboardingTour.tsx`, `src/renderer/store/onboardingStore.ts`, `tests/e2e/onboarding.spec.ts`; updated `AppSettings` types/schemas/tests, `settingsStore`, `App.tsx`, `SettingsScreen`, `GlobalHeader`, `Sidebar`, `strings.ts`, and this log.
+- Tests: `npm run lint` passed; `npx tsc --noEmit -p tsconfig.node.json` passed; `npx tsc --noEmit -p tsconfig.web.json` passed; `npm test` passed (162/162); focused onboarding e2e passed (2/2); full `npm run e2e` passed (38/38, escalated because Electron GUI launch is sandbox-restricted).
+- Exit criteria: ✅ met — new users get a step-by-step tour, users can skip, completed/skipped state persists, and the walkthrough can be replayed from Settings.
+- Notes / follow-ups: Auto-open is suppressed under browser automation (`navigator.webdriver`) so existing Playwright flows are not blocked; manual Settings replay remains covered in e2e.
