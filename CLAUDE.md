@@ -72,7 +72,7 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - [x] Phase 12 — Diff Viewer
 - [x] Phase 13 — Commit Flow
 - [x] Phase 14 — Remote Operations
-- [ ] Phase 15 — Branches
+- [x] Phase 15 — Branches
 - [ ] Phase 16 — History
 - [ ] Phase 17 — Safety Center
 - [ ] Phase 18 — Settings, Polish & Hardening
@@ -212,3 +212,11 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - Tests: Vitest 162/162 passed (no new unit tests — logic is thin IPC glue over git operations); Playwright 23/23 passed (21 pre-existing + 2 new: screen renders/shows placeholder, identity-mismatch blocker → set-local-identity → commit creates correct author verified via `git log`).
 - Exit criteria: ✅ met — Playwright on fixture repo: IDENTITY_UNSET blocks commit (commit button disabled); "set local identity" action sets local git config from active profile; identity reload removes blocker; commit button enables; successful commit creates real commit; `git log` confirms author name=Alice Dev, email=alice@example.com matching the active profile.
 - Notes / follow-ups: `GIT_CONFIG_GLOBAL` forwarding in `GitRunner` is needed so the Playwright test can set an empty global config (via Electron's `env` option) to guarantee IDENTITY_UNSET fires reliably. Requires git ≥ 2.32 for `GIT_CONFIG_GLOBAL` support (test machines on macOS 2025 have git ≥ 2.39). `safetyCheckService.checkCommit` is imported directly in the renderer (pure module; Vite bundles it). The commit store holds its own status + identity state; StatusScreen and CommitScreen share no state on purpose.
+
+### 2026-06-23 — Phase 15: Branches
+
+- Built: `GitService.getBranches` (`git for-each-ref` over refs/heads + refs/remotes, returns `GitBranch[]`); `GitService.switchBranch/createBranch/deleteBranch` (`git switch`, `git switch -c`, `git branch -D`); `GitBranchOpPayload` + `GitCreateBranchPayload` Zod schemas; 4 new IPC channels (`git:getBranches`, `git:switchBranch`, `git:createBranch`, `git:deleteBranch`); `useBranchStore` (Zustand: load, doSwitch, doCreate, doDelete, deleteConfirm inline flow; updates `appStore.currentBranch` after every switch/create); full `BranchesScreen` (repo picker, current-branch pill, create-branch input+button, local branch list with * indicator / Switch / Delete-with-inline-confirm, remote branch read-only list).
+- Files: updated `src/main/services/GitService.ts` (4 new methods), `src/main/ipc/ipc-schemas.ts` (GitBranchOpPayload, GitCreateBranchPayload), `src/main/ipc/ipc-handlers.ts` (4 new handlers), `preload/index.ts`, `src/renderer/types/window.d.ts`; added `src/renderer/store/branchStore.ts`, replaced `src/renderer/screens/BranchesScreen.tsx`; added `tests/e2e/branches.spec.ts`; updated `CLAUDE.md`.
+- Tests: Vitest 162/162 passed (no new unit tests — logic is thin IPC glue); Playwright 28/28 passed (25 pre-existing + 3 new: switch branch updates header, create branch creates-and-switches, delete branch with inline confirm removes from list).
+- Exit criteria: ✅ met — Playwright: switches to feature-a, header shows feature-a; creates feature-b from main, header shows feature-b; deletes feature-a via inline confirm, branch removed from list; `tsc --noEmit` clean.
+- Notes / follow-ups: `getBranches` uses two `for-each-ref` calls (local + remote) so `%(HEAD)` correctly marks only the locally checked-out branch. `deleteBranch` uses `-D` (force) since the user already confirmed in the UI. Delete button scoped to `data-testid="branches-local-item-{name}"` rows to avoid strict-mode failures when multiple non-current branches exist.

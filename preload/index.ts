@@ -6,6 +6,7 @@ import type {
   GitStatus,
   EffectiveGitIdentity,
   GitRemote,
+  GitBranch,
 } from '../src/core/types.js'
 
 export type IpcResult<T> = { ok: true; data: T } | { ok: false; error: string }
@@ -78,6 +79,14 @@ export const api = {
       invoke('git:pull', { repoPath, remote, branch }),
     push: (repoPath: string, remote: string, branch: string): Promise<IpcResult<void>> =>
       invoke('git:push', { repoPath, remote, branch }),
+    getBranches: (repoPath: string): Promise<IpcResult<GitBranch[]>> =>
+      invoke('git:getBranches', { repoPath }),
+    switchBranch: (repoPath: string, branch: string): Promise<IpcResult<void>> =>
+      invoke('git:switchBranch', { repoPath, branch }),
+    createBranch: (repoPath: string, name: string): Promise<IpcResult<void>> =>
+      invoke('git:createBranch', { repoPath, name }),
+    deleteBranch: (repoPath: string, branch: string): Promise<IpcResult<void>> =>
+      invoke('git:deleteBranch', { repoPath, branch }),
   },
 }
 

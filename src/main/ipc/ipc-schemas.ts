@@ -52,3 +52,13 @@ export const GitRemoteBranchOpPayload = z.object({
   remote: z.string().min(1),
   branch: z.string().min(1),
 })
+
+export const GitBranchOpPayload = z.object({
+  repoPath: z.string(),
+  branch: z.string().min(1),
+})
+
+export const GitCreateBranchPayload = z.object({
+  repoPath: z.string(),
+  name: z.string().min(1),
+})

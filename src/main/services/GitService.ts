@@ -1,5 +1,11 @@
 import path from 'node:path'
-import type { GitStatus, EffectiveGitIdentity, GitConfigScope, GitRemote } from '../../core/types.js'
+import type {
+  GitStatus,
+  EffectiveGitIdentity,
+  GitConfigScope,
+  GitRemote,
+  GitBranch,
+} from '../../core/types.js'
 import { parsePorcelainV2 } from '../../core/parsers/PorcelainParser.js'
 import type { GitRunner } from '../git/GitRunner.js'
 
@@ -156,6 +162,48 @@ export class GitService {
       readOnly: false,
       timeoutMs: 60_000,
     })
+  }
+
+  async getBranches(repoPath: string): Promise<GitBranch[]> {
+    const localRes = await this.runner.run({
+      args: ['for-each-ref', '--format=%(refname:short)\t%(HEAD)', 'refs/heads'],
+      cwd: repoPath,
+      readOnly: true,
+    })
+    const localBranches: GitBranch[] = localRes.stdout
+      .toString('utf8')
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => {
+        const [name, head] = line.split('\t')
+        return { name, isCurrent: head === '*', isRemote: false }
+      })
+
+    const remoteRes = await this.runner.run({
+      args: ['for-each-ref', '--format=%(refname:short)', 'refs/remotes'],
+      cwd: repoPath,
+      readOnly: true,
+    })
+    const remoteBranches: GitBranch[] = remoteRes.stdout
+      .toString('utf8')
+      .split('\n')
+      .filter(Boolean)
+      .filter((name) => !name.endsWith('/HEAD'))
+      .map((name) => ({ name, isCurrent: false, isRemote: true }))
+
+    return [...localBranches, ...remoteBranches]
+  }
+
+  async switchBranch(repoPath: string, branch: string): Promise<void> {
+    await this.runner.run({ args: ['switch', branch], cwd: repoPath, readOnly: false })
+  }
+
+  async createBranch(repoPath: string, name: string): Promise<void> {
+    await this.runner.run({ args: ['switch', '-c', name], cwd: repoPath, readOnly: false })
+  }
+
+  async deleteBranch(repoPath: string, name: string): Promise<void> {
+    await this.runner.run({ args: ['branch', '-D', name], cwd: repoPath, readOnly: false })
   }
 
   async getDiff(repoPath: string, filePath: string, staged: boolean): Promise<string> {

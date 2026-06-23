@@ -20,6 +20,8 @@ import {
   GitSetIdentityPayload,
   GitRemoteOpPayload,
   GitRemoteBranchOpPayload,
+  GitBranchOpPayload,
+  GitCreateBranchPayload,
 } from './ipc-schemas.js'
 
 export interface Services {
@@ -217,6 +219,34 @@ export function registerIpcHandlers(services: Services): void {
     wrap(async () => {
       const { repoPath, remote, branch } = GitRemoteBranchOpPayload.parse(raw)
       return services.git.push(repoPath, remote, branch)
+    })
+  )
+
+  ipcMain.handle('git:getBranches', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath } = GitRepoPathPayload.parse(raw)
+      return services.git.getBranches(repoPath)
+    })
+  )
+
+  ipcMain.handle('git:switchBranch', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath, branch } = GitBranchOpPayload.parse(raw)
+      return services.git.switchBranch(repoPath, branch)
+    })
+  )
+
+  ipcMain.handle('git:createBranch', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath, name } = GitCreateBranchPayload.parse(raw)
+      return services.git.createBranch(repoPath, name)
+    })
+  )
+
+  ipcMain.handle('git:deleteBranch', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath, branch } = GitBranchOpPayload.parse(raw)
+      return services.git.deleteBranch(repoPath, branch)
     })
   )
 }
