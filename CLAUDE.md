@@ -61,7 +61,7 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - [x] Phase 1 — Repo & Toolchain Scaffold
 - [x] Phase 2 — Core Types & Domain Models
 - [x] Phase 3 — Git Execution Core (GitRunner)
-- [ ] Phase 4 — Porcelain Parser & Status
+- [x] Phase 4 — Porcelain Parser & Status
 - [ ] Phase 5 — Safety Engine
 - [ ] Phase 6 — Storage Layer
 - [ ] Phase 7 — IPC Bridge & Preload
@@ -124,3 +124,11 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - Tests: Vitest 39/39 passed (11 ErrorMapper + 6 PathValidator + 8 GitRunner integration, including abort test).
 - Exit criteria: ✅ met — integration test runs real git in a temp repo; `PathValidator` + `ErrorMapper` tests pass; aborting a long-running invocation (fake slow script) kills the process.
 - Notes / follow-ups: Abort test is `skipIf(win32)` (uses shell script). `GitRunner` rejects with `GitError extends Error` for proper error typing. `PathValidator` placed in `src/main/git/` (uses `fs`; not pure).
+
+### 2026-06-23 — Phase 4: Porcelain Parser & Status
+
+- Built: `parsePorcelainV2` (pure NUL-delimited porcelain v2 parser: branch headers, ordinary/rename/unmerged/untracked entries, XY→ChangeKind map); `GitService.getStatus` wiring the parser on top of `GitRunner`.
+- Files: added `src/core/parsers/PorcelainParser.ts`, `src/main/services/GitService.ts`, `tests/unit/porcelain-parser.test.ts`, `tests/integration/git-service.test.ts`.
+- Tests: Vitest 60/60 passed (13 new unit parser tests + 8 new integration getStatus tests).
+- Exit criteria: ✅ met — unit tests cover staged-and-modified (MM), rename with origPath, untracked, conflict, path with spaces and unicode; integration getStatus test passes on a temp repo with mixed changes.
+- Notes / follow-ups: Conflict integration test uses explicit `checkout -b trunk` to avoid dependency on git's default branch name. With `-z`, git emits raw unicode paths without quoting, so `?` entries work for unicode filenames correctly.
