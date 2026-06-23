@@ -1,9 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import {
-  safetyCheckService,
-  SAFETY_MESSAGES,
-  type SafetyCode,
-} from '../../src/core/safety/SafetyCheckService.js'
+import { safetyCheckService, type SafetyCode } from '../../src/core/safety/SafetyCheckService.js'
+import { SAFETY_MESSAGES } from '../../src/core/safety/safetyMessages.js'
 import type {
   Profile,
   RepositoryRecord,

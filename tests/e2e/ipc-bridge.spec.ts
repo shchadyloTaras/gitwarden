@@ -10,7 +10,7 @@ test.describe('IPC bridge & security', () => {
 
     try {
       const win = await app.firstWindow()
-      await win.waitForLoadState('domcontentloaded')
+      await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
       const hasApi = await win.evaluate(() => typeof (window as Window & typeof globalThis).api)
       const hasRequire = await win.evaluate(
@@ -35,7 +35,7 @@ test.describe('IPC bridge & security', () => {
 
     try {
       const win = await app.firstWindow()
-      await win.waitForLoadState('domcontentloaded')
+      await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
       const result = await win.evaluate(async () => {
         return (window as Window & typeof globalThis).api.profiles.list()
@@ -54,7 +54,7 @@ test.describe('IPC bridge & security', () => {
 
     try {
       const win = await app.firstWindow()
-      await win.waitForLoadState('domcontentloaded')
+      await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
       // Send garbage — should be rejected by Zod on the main side and come back as ok:false
       const result = await win.evaluate(async () => {

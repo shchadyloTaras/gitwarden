@@ -50,12 +50,17 @@ describe('SettingsService', () => {
     const filePath = path.join(tmpDir, 'settings.json')
     const storeA = new JsonStore(filePath, AppSettingsSchema, DEFAULTS)
     const serviceA = new SettingsService(storeA)
-    await serviceA.update({ appearance: 'dark', activeProfileId: 'p42' })
+    await serviceA.update({
+      appearance: 'dark',
+      activeProfileId: 'p42',
+      defaultProjectsFolder: '/tmp/projects',
+    })
 
     const storeB = new JsonStore(filePath, AppSettingsSchema, DEFAULTS)
     const serviceB = new SettingsService(storeB)
     const s = await serviceB.get()
     expect(s.appearance).toBe('dark')
     expect(s.activeProfileId).toBe('p42')
+    expect(s.defaultProjectsFolder).toBe('/tmp/projects')
   })
 })

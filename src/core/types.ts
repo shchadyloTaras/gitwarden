@@ -102,6 +102,7 @@ export interface AppSettings {
   lastOpenedRepositoryId?: string
   appearance: AppearanceMode
   customGitPath?: string
+  defaultProjectsFolder?: string
 }
 
 export type GitErrorCode =

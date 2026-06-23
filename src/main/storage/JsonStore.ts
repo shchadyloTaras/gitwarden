@@ -22,7 +22,7 @@ export class JsonStore<T> {
 
   async write(data: T): Promise<void> {
     const dir = dirname(this.filePath)
-    const tmp = `${this.filePath}.tmp`
+    const tmp = `${this.filePath}.${process.pid}.${crypto.randomUUID()}.tmp`
     await mkdir(dir, { recursive: true })
     await writeFile(tmp, JSON.stringify(data, null, 2), 'utf8')
     await rename(tmp, this.filePath)

@@ -74,10 +74,10 @@ test.describe('Remote Operations', () => {
   test.beforeEach(async () => {
     app = await launchApp()
     win = await app.firstWindow()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
     await cleanupAll(win)
     await win.reload()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
   })
 
   test.afterEach(async () => {
@@ -119,7 +119,7 @@ test.describe('Remote Operations', () => {
     )
 
     await win.reload()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
     await win.getByTestId('nav-remote').click()
     await expect(win.getByTestId('screen-remote')).toBeVisible()
@@ -134,9 +134,7 @@ test.describe('Remote Operations', () => {
 
     // REMOTE_HOST_MISMATCH blocker must be visible
     await expect(win.getByTestId('remote-push-blocker')).toBeVisible()
-    await expect(win.getByTestId('remote-push-blocker')).toContainText(
-      'remote host does not match'
-    )
+    await expect(win.getByTestId('remote-push-blocker')).toContainText('remote host does not match')
 
     // Confirm Push button must be disabled
     await expect(win.getByTestId('remote-push-confirm-btn')).toBeDisabled()
@@ -177,7 +175,7 @@ test.describe('Remote Operations', () => {
     )
 
     await win.reload()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
     await win.getByTestId('nav-remote').click()
     await expect(win.getByTestId('screen-remote')).toBeVisible()

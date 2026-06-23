@@ -71,7 +71,11 @@ test.afterAll(() => {
   fs.rmSync(fixtureIdentity, { recursive: true, force: true })
   fs.rmSync(fixtureRemote, { recursive: true, force: true })
   fs.rmSync(bareRepo, { recursive: true, force: true })
-  try { fs.rmSync(EMPTY_GIT_CONFIG, { force: true }) } catch { /* ignore */ }
+  try {
+    fs.rmSync(EMPTY_GIT_CONFIG, { force: true })
+  } catch {
+    /* ignore */
+  }
 })
 
 test.describe('Safety Center', () => {
@@ -81,10 +85,10 @@ test.describe('Safety Center', () => {
   test.beforeEach(async () => {
     app = await launchApp()
     win = await app.firstWindow()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
     await cleanupAll(win)
     await win.reload()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
   })
 
   test.afterEach(async () => {
@@ -126,7 +130,7 @@ test.describe('Safety Center', () => {
     )
 
     await win.reload()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
     // --- Check Safety Center ---
     await win.getByTestId('nav-safety-center').click()
@@ -186,7 +190,7 @@ test.describe('Safety Center', () => {
     )
 
     await win.reload()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
     // --- Check Safety Center ---
     await win.getByTestId('nav-safety-center').click()

@@ -29,6 +29,15 @@ export class GitLocator {
     )
   }
 
+  static async inspect(gitPath: string): Promise<{ version: string }> {
+    await access(gitPath, constants.X_OK)
+    const version = await GitLocator.runVersionCheck(gitPath)
+    if (!version.startsWith('git version')) {
+      throw new Error('Unexpected output; not a git binary.')
+    }
+    return { version }
+  }
+
   private static async findInSystemPath(): Promise<string | null> {
     const pathEnv = process.env.PATH ?? ''
     const names = process.platform === 'win32' ? ['git.exe', 'git'] : ['git']
@@ -42,21 +51,28 @@ export class GitLocator {
     return null
   }
 
-  private static verify(gitPath: string): Promise<boolean> {
-    return access(gitPath, constants.X_OK)
-      .then(() => GitLocator.runVersionCheck(gitPath))
-      .catch(() => false)
+  private static async verify(gitPath: string): Promise<boolean> {
+    try {
+      await GitLocator.inspect(gitPath)
+      return true
+    } catch {
+      return false
+    }
   }
 
-  private static runVersionCheck(gitPath: string): Promise<boolean> {
+  private static runVersionCheck(gitPath: string): Promise<string> {
     return new Promise((resolve) => {
+      let stdout = ''
       const child = spawn(gitPath, ['--version'], {
         env: process.env,
         shell: false,
-        stdio: 'ignore',
+        stdio: ['ignore', 'pipe', 'ignore'],
       })
-      child.on('close', (code) => resolve(code === 0))
-      child.on('error', () => resolve(false))
+      child.stdout.on('data', (chunk: Buffer) => {
+        stdout += chunk.toString()
+      })
+      child.on('close', (code) => resolve(code === 0 ? stdout.trim() : ''))
+      child.on('error', () => resolve(''))
     })
   }
 }

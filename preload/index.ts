@@ -59,19 +59,15 @@ export const api = {
       invoke('git:stageFile', { repoPath, filePath }),
     unstageFile: (repoPath: string, filePath: string): Promise<IpcResult<void>> =>
       invoke('git:unstageFile', { repoPath, filePath }),
-    stageAll: (repoPath: string): Promise<IpcResult<void>> =>
-      invoke('git:stageAll', { repoPath }),
+    stageAll: (repoPath: string): Promise<IpcResult<void>> => invoke('git:stageAll', { repoPath }),
     unstageAll: (repoPath: string): Promise<IpcResult<void>> =>
       invoke('git:unstageAll', { repoPath }),
     getDiff: (repoPath: string, filePath: string, staged: boolean): Promise<IpcResult<string>> =>
       invoke('git:getDiff', { repoPath, filePath, staged }),
     commit: (repoPath: string, message: string): Promise<IpcResult<{ hash: string }>> =>
       invoke('git:commit', { repoPath, message }),
-    setLocalIdentity: (
-      repoPath: string,
-      name: string,
-      email: string
-    ): Promise<IpcResult<void>> => invoke('git:setLocalIdentity', { repoPath, name, email }),
+    setLocalIdentity: (repoPath: string, name: string, email: string): Promise<IpcResult<void>> =>
+      invoke('git:setLocalIdentity', { repoPath, name, email }),
     getRemotes: (repoPath: string): Promise<IpcResult<GitRemote[]>> =>
       invoke('git:getRemotes', { repoPath }),
     fetch: (repoPath: string, remote: string): Promise<IpcResult<void>> =>
@@ -92,8 +88,13 @@ export const api = {
       repoPath: string,
       limit: number,
       skip: number
-    ): Promise<IpcResult<GitCommit[]>> =>
-      invoke('git:getCommitHistory', { repoPath, limit, skip }),
+    ): Promise<IpcResult<GitCommit[]>> => invoke('git:getCommitHistory', { repoPath, limit, skip }),
+    discardFile: (repoPath: string, filePath: string): Promise<IpcResult<void>> =>
+      invoke('git:discardFile', { repoPath, filePath }),
+    cleanFile: (repoPath: string, filePath: string): Promise<IpcResult<void>> =>
+      invoke('git:cleanFile', { repoPath, filePath }),
+    validateGitPath: (gitPath: string): Promise<IpcResult<{ version: string }>> =>
+      invoke('git:validateGitPath', { gitPath }),
   },
 }
 

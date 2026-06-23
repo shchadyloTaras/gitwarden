@@ -29,7 +29,12 @@ async function cleanupProfiles(win: Page): Promise<void> {
 
 async function fillAndSubmitProfile(
   win: Page,
-  data: { displayName: string; gitAuthorName: string; gitAuthorEmail: string; githubUsername: string }
+  data: {
+    displayName: string
+    gitAuthorName: string
+    gitAuthorEmail: string
+    githubUsername: string
+  }
 ): Promise<void> {
   await win.getByTestId('profiles-new-btn').click()
   await win.getByTestId('profile-form-displayName').fill(data.displayName)
@@ -46,11 +51,11 @@ test.describe('Profile management', () => {
   test.beforeEach(async () => {
     app = await launchApp()
     win = await app.firstWindow()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
     await cleanupProfiles(win)
     // Reload so the profilesStore re-fetches the now-empty list
     await win.reload()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
     // Navigate to the Profiles screen
     await win.getByTestId('nav-profiles').click()
     await expect(win.getByTestId('screen-profiles')).toBeVisible()
@@ -151,7 +156,7 @@ test.describe('Profile management', () => {
     // Relaunch
     const app2 = await launchApp()
     const win2 = await app2.firstWindow()
-    await win2.waitForLoadState('domcontentloaded')
+    await win2.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
     try {
       // Active profile must still be shown in the header after relaunch

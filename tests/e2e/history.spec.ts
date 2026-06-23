@@ -65,10 +65,10 @@ test.describe('History', () => {
   test.beforeEach(async () => {
     app = await launchApp()
     win = await app.firstWindow()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
     await cleanupAll(win)
     await win.reload()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
   })
 
   test.afterEach(async () => {
@@ -86,7 +86,7 @@ test.describe('History', () => {
     }, fixtureRepo)
 
     await win.reload()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
   }
 
   test('history screen renders commits for a fixture repo', async () => {
@@ -135,7 +135,7 @@ test.describe('History', () => {
       }, bigRepo)
 
       await win.reload()
-      await win.waitForLoadState('domcontentloaded')
+      await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
       await win.getByTestId('nav-history').click()
       await expect(win.getByTestId('screen-history')).toBeVisible()

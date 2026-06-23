@@ -32,7 +32,15 @@ export const useCommitStore = create<CommitState>((set, get) => ({
   committedHash: null,
 
   async load(repoPath, repository) {
-    set({ loading: true, error: null, repoPath, repository, status: null, identity: null, committedHash: null })
+    set({
+      loading: true,
+      error: null,
+      repoPath,
+      repository,
+      status: null,
+      identity: null,
+      committedHash: null,
+    })
     try {
       const [statusRes, identityRes] = await Promise.all([
         window.api.git.getStatus(repoPath),

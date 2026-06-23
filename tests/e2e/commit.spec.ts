@@ -72,10 +72,10 @@ test.describe('Commit Flow', () => {
   test.beforeEach(async () => {
     app = await launchApp()
     win = await app.firstWindow()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
     await cleanupAll(win)
     await win.reload()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
   })
 
   test.afterEach(async () => {
@@ -127,7 +127,7 @@ test.describe('Commit Flow', () => {
     )
 
     await win.reload()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
     // Navigate to Commit screen
     await win.getByTestId('nav-commit').click()

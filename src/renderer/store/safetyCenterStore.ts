@@ -92,11 +92,13 @@ export const useSafetyCenterStore = create<SafetyCenterState>((set) => ({
         currentBranch,
         identityCheck,
         pushCheck,
-        error:
-          !identityRes.ok ? identityRes.error
-          : !remotesRes.ok ? remotesRes.error
-          : !statusRes.ok ? statusRes.error
-          : null,
+        error: !identityRes.ok
+          ? identityRes.error
+          : !remotesRes.ok
+            ? remotesRes.error
+            : !statusRes.ok
+              ? statusRes.error
+              : null,
       })
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) })

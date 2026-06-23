@@ -2,12 +2,11 @@ import React, { useEffect, useState } from 'react'
 import type { FileChange } from '../../core/types'
 import { useStatusStore } from '../store/statusStore'
 import { useRepositoriesStore } from '../store/repositoriesStore'
+import { STR } from '../strings'
 
 function isStagedChange(f: FileChange): boolean {
   return (
-    f.indexStatus !== 'unmodified' &&
-    f.indexStatus !== 'untracked' &&
-    f.indexStatus !== 'ignored'
+    f.indexStatus !== 'unmodified' && f.indexStatus !== 'untracked' && f.indexStatus !== 'ignored'
   )
 }
 
@@ -65,6 +64,13 @@ function StatusBadge({ kind }: { kind: string }): React.ReactElement {
   )
 }
 
+interface ExtraAction {
+  label: string
+  testId: string
+  onClick(path: string): void
+  danger?: boolean
+}
+
 function FileRow({
   file,
   kindKey,
@@ -74,6 +80,10 @@ function FileRow({
   onAction,
   onSelect,
   selected,
+  extraAction,
+  confirmKey,
+  onConfirmAccept,
+  onConfirmCancel,
 }: {
   file: FileChange
   kindKey: string
@@ -83,57 +93,163 @@ function FileRow({
   onAction(path: string): void
   onSelect(): void
   selected: boolean
+  extraAction?: ExtraAction
+  confirmKey?: string | null
+  onConfirmAccept?(): void
+  onConfirmCancel?(): void
 }): React.ReactElement {
   const displayPath = file.originalPath ? `${file.path} ← ${file.originalPath}` : file.path
+  const isConfirming = confirmKey === file.path
+  const isIrreversible = extraAction?.danger === true
+
   return (
-    <div
-      data-testid={rowTestId}
-      onClick={onSelect}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        padding: '5px 12px',
-        borderBottom: '1px solid #1c1c1f',
-        fontSize: 12,
-        cursor: 'pointer',
-        background: selected ? '#27272a' : 'transparent',
-      }}
-    >
-      <StatusBadge kind={kindKey} />
-      <span
+    <div style={{ borderBottom: '1px solid #1c1c1f' }}>
+      <div
+        data-testid={rowTestId}
+        onClick={onSelect}
         style={{
-          flex: 1,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          fontFamily: 'monospace',
-          color: selected ? '#ffffff' : '#e4e4e7',
-        }}
-        title={displayPath}
-      >
-        {displayPath}
-      </span>
-      <button
-        data-testid={actionTestId}
-        onClick={(e) => {
-          e.stopPropagation()
-          onAction(file.path)
-        }}
-        style={{
-          flexShrink: 0,
-          padding: '2px 8px',
-          background: '#3f3f46',
-          border: 'none',
-          borderRadius: 3,
-          color: '#e4e4e7',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '5px 12px',
+          fontSize: 12,
           cursor: 'pointer',
-          fontSize: 11,
-          fontWeight: 600,
+          background: selected ? '#27272a' : 'transparent',
         }}
       >
-        {actionLabel}
-      </button>
+        <StatusBadge kind={kindKey} />
+        <span
+          style={{
+            flex: 1,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            fontFamily: 'monospace',
+            color: selected ? '#ffffff' : '#e4e4e7',
+          }}
+          title={displayPath}
+        >
+          {displayPath}
+        </span>
+        <button
+          data-testid={actionTestId}
+          onClick={(e) => {
+            e.stopPropagation()
+            onAction(file.path)
+          }}
+          style={{
+            flexShrink: 0,
+            padding: '2px 8px',
+            background: '#3f3f46',
+            border: 'none',
+            borderRadius: 3,
+            color: '#e4e4e7',
+            cursor: 'pointer',
+            fontSize: 11,
+            fontWeight: 600,
+          }}
+        >
+          {actionLabel}
+        </button>
+        {extraAction && !isConfirming && (
+          <button
+            data-testid={extraAction.testId}
+            onClick={(e) => {
+              e.stopPropagation()
+              extraAction.onClick(file.path)
+            }}
+            style={{
+              flexShrink: 0,
+              padding: '2px 8px',
+              background: 'none',
+              border: `1px solid ${extraAction.danger ? '#dc2626' : '#3f3f46'}`,
+              borderRadius: 3,
+              color: extraAction.danger ? '#f87171' : '#a1a1aa',
+              cursor: 'pointer',
+              fontSize: 11,
+            }}
+          >
+            {extraAction.label}
+          </button>
+        )}
+        {extraAction && isConfirming && (
+          <>
+            <span style={{ fontSize: 11, color: isIrreversible ? '#fbbf24' : '#f87171' }}>
+              {isIrreversible
+                ? STR.DELETE_UNTRACKED_CONFIRM_PROMPT
+                : STR.DISCARD_TRACKED_CONFIRM_PROMPT}
+            </span>
+            <button
+              data-testid={`${extraAction.testId}-confirm`}
+              onClick={(e) => {
+                e.stopPropagation()
+                onConfirmAccept?.()
+              }}
+              style={{
+                flexShrink: 0,
+                padding: '2px 8px',
+                background: isIrreversible ? '#7f1d1d' : '#450a0a',
+                border: `1px solid ${isIrreversible ? '#dc2626' : '#991b1b'}`,
+                borderRadius: 3,
+                color: '#fca5a5',
+                cursor: 'pointer',
+                fontSize: 11,
+                fontWeight: 600,
+              }}
+            >
+              {isIrreversible ? STR.DELETE_UNTRACKED_CONFIRM_BTN : STR.DISCARD_TRACKED_CONFIRM_BTN}
+            </button>
+            <button
+              data-testid={`${extraAction.testId}-cancel`}
+              onClick={(e) => {
+                e.stopPropagation()
+                onConfirmCancel?.()
+              }}
+              style={{
+                flexShrink: 0,
+                padding: '2px 8px',
+                background: 'none',
+                border: '1px solid #3f3f46',
+                borderRadius: 3,
+                color: '#a1a1aa',
+                cursor: 'pointer',
+                fontSize: 11,
+              }}
+            >
+              {isIrreversible ? STR.DELETE_UNTRACKED_CANCEL_BTN : STR.DISCARD_TRACKED_CANCEL_BTN}
+            </button>
+          </>
+        )}
+      </div>
+      {/* Irreversible-action warning banner shown when confirm is active */}
+      {isConfirming && isIrreversible && (
+        <div
+          data-testid="clean-irreversible-warning"
+          style={{
+            padding: '6px 12px',
+            background: '#422006',
+            borderTop: '1px solid #78350f',
+            fontSize: 11,
+            color: '#fcd34d',
+          }}
+        >
+          {STR.DELETE_UNTRACKED_BODY}
+        </div>
+      )}
+      {isConfirming && !isIrreversible && (
+        <div
+          data-testid="discard-warning"
+          style={{
+            padding: '6px 12px',
+            background: '#1c1c1f',
+            borderTop: '1px solid #27272a',
+            fontSize: 11,
+            color: '#a1a1aa',
+          }}
+        >
+          {STR.DISCARD_TRACKED_BODY}
+        </div>
+      )}
     </div>
   )
 }
@@ -365,6 +481,9 @@ export default function StatusScreen(): React.ReactElement {
   const [diffMode, setDiffMode] = useState<'staged' | 'unstaged'>('unstaged')
   const [diff, setDiff] = useState<string | null>(null)
   const [diffLoading, setDiffLoading] = useState(false)
+  // Inline confirm state: path being confirmed, and whether it's a clean (irreversible) op
+  const [confirmDiscardPath, setConfirmDiscardPath] = useState<string | null>(null)
+  const [confirmCleanPath, setConfirmCleanPath] = useState<string | null>(null)
 
   const selectedRepo = repos.find((r) => r.id === selectedRepoId) ?? null
 
@@ -402,6 +521,26 @@ export default function StatusScreen(): React.ReactElement {
     } catch (err) {
       setOpError(err instanceof Error ? err.message : String(err))
     }
+  }
+
+  async function doDiscardFile(filePath: string): Promise<void> {
+    if (!selectedRepo) return
+    setConfirmDiscardPath(null)
+    await act(async () => {
+      const res = await window.api.git.discardFile(selectedRepo.localPath, filePath)
+      if (!res.ok) throw new Error(res.error)
+      await loadStatus(selectedRepo.localPath)
+    })
+  }
+
+  async function doCleanFile(filePath: string): Promise<void> {
+    if (!selectedRepo) return
+    setConfirmCleanPath(null)
+    await act(async () => {
+      const res = await window.api.git.cleanFile(selectedRepo.localPath, filePath)
+      if (!res.ok) throw new Error(res.error)
+      await loadStatus(selectedRepo.localPath)
+    })
   }
 
   function selectFile(file: FileChange, defaultMode: 'staged' | 'unstaged'): void {
@@ -592,6 +731,17 @@ export default function StatusScreen(): React.ReactElement {
                           onAction={(p) => act(() => stageFile(p))}
                           onSelect={() => selectFile(f, 'unstaged')}
                           selected={selectedFile?.path === f.path && diffMode === 'unstaged'}
+                          extraAction={{
+                            label: STR.DISCARD_TRACKED_LABEL,
+                            testId: 'discard-btn',
+                            onClick: (p) => {
+                              setConfirmCleanPath(null)
+                              setConfirmDiscardPath(p)
+                            },
+                          }}
+                          confirmKey={confirmDiscardPath}
+                          onConfirmAccept={() => void doDiscardFile(f.path)}
+                          onConfirmCancel={() => setConfirmDiscardPath(null)}
                         />
                       ))}
                     </div>
@@ -622,6 +772,18 @@ export default function StatusScreen(): React.ReactElement {
                           onAction={(p) => act(() => stageFile(p))}
                           onSelect={() => selectFile(f, 'unstaged')}
                           selected={selectedFile?.path === f.path}
+                          extraAction={{
+                            label: STR.DELETE_UNTRACKED_LABEL,
+                            testId: 'clean-btn',
+                            onClick: (p) => {
+                              setConfirmDiscardPath(null)
+                              setConfirmCleanPath(p)
+                            },
+                            danger: true,
+                          }}
+                          confirmKey={confirmCleanPath}
+                          onConfirmAccept={() => void doCleanFile(f.path)}
+                          onConfirmCancel={() => setConfirmCleanPath(null)}
                         />
                       ))}
                     </div>

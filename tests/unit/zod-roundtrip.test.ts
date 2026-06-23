@@ -92,6 +92,7 @@ describe('AppSettings round-trip', () => {
     lastOpenedRepositoryId: 'r-1',
     appearance: 'dark' as const,
     customGitPath: '/usr/local/bin/git',
+    defaultProjectsFolder: '/home/alice/projects',
   }
 
   it('parses full settings', () => {

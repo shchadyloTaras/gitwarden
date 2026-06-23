@@ -62,10 +62,10 @@ test.describe('Repository management', () => {
   test.beforeEach(async () => {
     app = await launchApp()
     win = await app.firstWindow()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
     await cleanupAll(win)
     await win.reload()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
     await win.getByTestId('nav-repositories').click()
     await expect(win.getByTestId('screen-repositories')).toBeVisible()
   })
@@ -101,14 +101,15 @@ test.describe('Repository management', () => {
     })
 
     // Set Personal as active profile
-    await win.evaluate(async (id: string) =>
-      (window as Window & typeof globalThis).api.settings.update({ activeProfileId: id }),
+    await win.evaluate(
+      async (id: string) =>
+        (window as Window & typeof globalThis).api.settings.update({ activeProfileId: id }),
       personalId
     )
 
     // Reload so stores pick up new profiles + active profile
     await win.reload()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
     await win.getByTestId('nav-repositories').click()
     await expect(win.getByTestId('screen-repositories')).toBeVisible()
 
@@ -169,14 +170,16 @@ test.describe('Repository management', () => {
 
     // No active profile set; reload to sync
     await win.reload()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
     await win.getByTestId('nav-repositories').click()
 
     // Add repo and assign Personal
     await win.getByTestId('repos-add-btn').click()
     await win.getByTestId('repo-path-input').fill(fixtureRepo)
     await win.getByTestId('repo-validate-btn').click()
-    await expect(win.getByTestId('repos-list')).toContainText(path.basename(fixtureRepo), { timeout: 10000 })
+    await expect(win.getByTestId('repos-list')).toContainText(path.basename(fixtureRepo), {
+      timeout: 10000,
+    })
 
     await win.getByTestId('repo-form-profile').selectOption({ value: personalId })
     await win.getByTestId('repo-save-btn').click()

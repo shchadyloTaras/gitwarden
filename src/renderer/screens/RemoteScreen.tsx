@@ -9,7 +9,6 @@ export default function RemoteScreen(): React.ReactElement {
   const { repos, load: loadRepos } = useRepositoriesStore()
   const { profiles, activeProfileId } = useProfilesStore()
   const {
-    repoPath,
     repository,
     remotes,
     currentBranch,
@@ -34,13 +33,13 @@ export default function RemoteScreen(): React.ReactElement {
   const activeProfile = profiles.find((p) => p.id === activeProfileId)
 
   useEffect(() => {
-    loadRepos()
-  }, [])
+    void loadRepos()
+  }, [loadRepos])
 
   useEffect(() => {
     const repo = repos.find((r) => r.id === selectedRepoId)
-    if (repo) load(repo.localPath, repo)
-  }, [selectedRepoId])
+    if (repo) void load(repo.localPath, repo)
+  }, [load, repos, selectedRepoId])
 
   // Compute push safety for the selected remote
   const pushSafetyResult = useMemo(() => {
@@ -207,7 +206,9 @@ export default function RemoteScreen(): React.ReactElement {
                       <button
                         data-testid="remote-op-fetch"
                         onClick={() => doFetch(remote.name)}
-                        disabled={fetchLoading === remote.name || pullLoading !== null || pushLoading}
+                        disabled={
+                          fetchLoading === remote.name || pullLoading !== null || pushLoading
+                        }
                         style={{
                           background: '#252525',
                           color: '#ccc',

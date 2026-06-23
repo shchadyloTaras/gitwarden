@@ -14,6 +14,8 @@ import {
 } from '../src/core/schemas.js'
 import { registerIpcHandlers } from '../src/main/ipc/ipc-handlers.js'
 
+app.setName('GitWarden')
+
 function createWindow(): void {
   const win = new BrowserWindow({
     width: 1200,
@@ -51,7 +53,13 @@ app.whenReady().then(async () => {
     appearance: 'system',
   })
 
-  const gitPath = await GitLocator.locate()
+  const initialSettings = await settingsStore.read()
+  let gitPath: string
+  try {
+    gitPath = await GitLocator.locate(initialSettings.customGitPath)
+  } catch {
+    gitPath = await GitLocator.locate()
+  }
   const gitRunner = new GitRunner(gitPath)
 
   registerIpcHandlers({

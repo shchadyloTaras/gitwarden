@@ -1,0 +1,74 @@
+/* GitWarden design tokens — dark-first, light override via [data-theme="light"] */
+
+:root {
+  --gw-bg: #09090b;
+  --gw-surface: #18181b;
+  --gw-surface2: #27272a;
+  --gw-surface3: #3f3f46;
+  --gw-text: #f4f4f5;
+  --gw-text-muted: #a1a1aa;
+  --gw-text-faint: #71717a;
+  --gw-text-dim: #52525b;
+  --gw-border: #27272a;
+  --gw-border-subtle: #3f3f46;
+  --gw-accent: #6366f1;
+  --gw-success: #4ade80;
+  --gw-danger: #f87171;
+  --gw-warning: #fbbf24;
+}
+
+:root[data-theme='light'] {
+  --gw-bg: #ffffff;
+  --gw-surface: #f4f4f5;
+  --gw-surface2: #e4e4e7;
+  --gw-surface3: #d4d4d8;
+  --gw-text: #09090b;
+  --gw-text-muted: #52525b;
+  --gw-text-faint: #71717a;
+  --gw-text-dim: #a1a1aa;
+  --gw-border: #e4e4e7;
+  --gw-border-subtle: #d4d4d8;
+  --gw-accent: #4f46e5;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Minimal scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--gw-surface);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--gw-surface3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gw-text-faint);
+}
+
+/* Focus ring for keyboard navigation */
+:focus-visible {
+  outline: 2px solid var(--gw-accent);
+  outline-offset: 2px;
+}
+
+/* Remove default focus ring where we provide custom styling */
+button:focus:not(:focus-visible),
+select:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+textarea:focus:not(:focus-visible) {
+  outline: none;
+}

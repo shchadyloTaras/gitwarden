@@ -510,9 +510,7 @@ function Field({
 }): React.ReactElement {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <label
-        style={{ fontSize: 11, fontWeight: 600, color: '#71717a', letterSpacing: '0.04em' }}
-      >
+      <label style={{ fontSize: 11, fontWeight: 600, color: '#71717a', letterSpacing: '0.04em' }}>
         {label.toUpperCase()}
       </label>
       {children}

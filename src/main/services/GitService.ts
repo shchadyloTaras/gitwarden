@@ -9,6 +9,7 @@ import type {
 } from '../../core/types.js'
 import { parsePorcelainV2 } from '../../core/parsers/PorcelainParser.js'
 import type { GitRunner } from '../git/GitRunner.js'
+import { GitLocator } from '../git/GitLocator.js'
 
 function parseRemoteHost(url: string): string | undefined {
   // SSH style: git@github.com:user/repo.git or git@github.com-work:user/repo.git
@@ -236,6 +237,26 @@ export class GitService {
       })
     }
     return commits
+  }
+
+  async discardFile(repoPath: string, filePath: string): Promise<void> {
+    await this.runner.run({
+      args: ['restore', '--', filePath],
+      cwd: repoPath,
+      readOnly: false,
+    })
+  }
+
+  async cleanFile(repoPath: string, filePath: string): Promise<void> {
+    await this.runner.run({
+      args: ['clean', '-fd', '--', filePath],
+      cwd: repoPath,
+      readOnly: false,
+    })
+  }
+
+  async validateGitPath(gitPath: string): Promise<{ version: string }> {
+    return GitLocator.inspect(gitPath)
   }
 
   async getDiff(repoPath: string, filePath: string, staged: boolean): Promise<string> {

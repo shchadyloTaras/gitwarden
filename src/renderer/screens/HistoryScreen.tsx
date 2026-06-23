@@ -68,10 +68,7 @@ export default function HistoryScreen(): React.ReactElement {
 
       {/* Body */}
       {!repoPath ? (
-        <div
-          data-testid="history-empty"
-          style={{ padding: 24, color: '#71717a', fontSize: 13 }}
-        >
+        <div data-testid="history-empty" style={{ padding: 24, color: '#71717a', fontSize: 13 }}>
           Select a repository to view its commit history.
         </div>
       ) : loading ? (

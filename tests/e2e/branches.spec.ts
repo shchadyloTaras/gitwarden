@@ -74,10 +74,10 @@ test.describe('Branches', () => {
 
     app = await launchApp()
     win = await app.firstWindow()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
     await cleanupAll(win)
     await win.reload()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
   })
 
   test.afterEach(async () => {
@@ -95,7 +95,7 @@ test.describe('Branches', () => {
     }, fixtureRepo)
 
     await win.reload()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
   }
 
   test('switch to another branch updates the global header', async () => {

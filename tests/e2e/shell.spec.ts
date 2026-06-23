@@ -13,7 +13,7 @@ test.describe('App shell & navigation', () => {
     const app = await launchApp()
     try {
       const win = await app.firstWindow()
-      await win.waitForLoadState('domcontentloaded')
+      await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
       await expect(win.getByTestId('header-repo')).toHaveText('gitwarden')
       await expect(win.getByTestId('header-branch')).toHaveText('main')
@@ -27,7 +27,7 @@ test.describe('App shell & navigation', () => {
     const app = await launchApp()
     try {
       const win = await app.firstWindow()
-      await win.waitForLoadState('domcontentloaded')
+      await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
       const screens: Array<{ nav: string; testId: string }> = [
         { nav: 'nav-repositories', testId: 'screen-repositories' },
@@ -54,7 +54,7 @@ test.describe('App shell & navigation', () => {
     const app = await launchApp()
     try {
       const win = await app.firstWindow()
-      await win.waitForLoadState('domcontentloaded')
+      await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
       await expect(win.getByTestId('inspector-panel')).toBeVisible()
       await expect(win.getByTestId('inspector-panel')).toContainText('CONTEXT')
@@ -67,7 +67,7 @@ test.describe('App shell & navigation', () => {
     const app = await launchApp()
     try {
       const win = await app.firstWindow()
-      await win.waitForLoadState('domcontentloaded')
+      await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
       // initially visible
       await expect(win.getByTestId('inspector-panel')).toBeVisible()

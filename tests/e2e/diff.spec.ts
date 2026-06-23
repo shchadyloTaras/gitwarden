@@ -68,10 +68,10 @@ test.describe('Diff Viewer', () => {
   test.beforeEach(async () => {
     app = await launchApp()
     win = await app.firstWindow()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
     await cleanupAll(win)
     await win.reload()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
   })
 
   test.afterEach(async () => {
@@ -89,7 +89,7 @@ test.describe('Diff Viewer', () => {
     }, fixtureU)
 
     await win.reload()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
     await win.getByTestId('nav-status').click()
     await expect(win.getByTestId('screen-status')).toBeVisible()
@@ -110,7 +110,7 @@ test.describe('Diff Viewer', () => {
     }, fixtureU)
 
     await win.reload()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
     await win.getByTestId('nav-status').click()
     await expect(win.getByTestId('screen-status')).toBeVisible()
@@ -146,7 +146,7 @@ test.describe('Diff Viewer', () => {
     }, fixtureS)
 
     await win.reload()
-    await win.waitForLoadState('domcontentloaded')
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
     await win.getByTestId('nav-status').click()
     await expect(win.getByTestId('screen-status')).toBeVisible()

@@ -10,7 +10,6 @@ export default function CommitScreen(): React.ReactElement {
   const { repos, load: loadRepos } = useRepositoriesStore()
   const { profiles, activeProfileId } = useProfilesStore()
   const {
-    repoPath,
     repository,
     message,
     status,
@@ -31,13 +30,13 @@ export default function CommitScreen(): React.ReactElement {
   const activeProfile = profiles.find((p) => p.id === activeProfileId)
 
   useEffect(() => {
-    loadRepos()
-  }, [])
+    void loadRepos()
+  }, [loadRepos])
 
   useEffect(() => {
     const repo = repos.find((r) => r.id === selectedRepoId)
-    if (repo) load(repo.localPath, repo)
-  }, [selectedRepoId])
+    if (repo) void load(repo.localPath, repo)
+  }, [load, repos, selectedRepoId])
 
   const safetyResult = useMemo(() => {
     if (!status || !identity || !repository) return null
@@ -86,9 +85,7 @@ export default function CommitScreen(): React.ReactElement {
 
       {/* Repository picker */}
       <div style={{ marginBottom: '16px' }}>
-        <label
-          style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '4px' }}
-        >
+        <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '4px' }}>
           Repository
         </label>
         <select
@@ -266,11 +263,7 @@ export default function CommitScreen(): React.ReactElement {
 
           {/* Commit error */}
           {error && (
-            <div
-              style={{ color: '#f87171', fontSize: '13px', marginBottom: '12px' }}
-            >
-              {error}
-            </div>
+            <div style={{ color: '#f87171', fontSize: '13px', marginBottom: '12px' }}>{error}</div>
           )}
 
           {/* Success */}

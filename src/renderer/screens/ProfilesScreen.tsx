@@ -37,8 +37,14 @@ function formFromProfile(p: Profile): FormData {
 }
 
 export default function ProfilesScreen(): React.ReactElement {
-  const { profiles, activeProfileId, createProfile, updateProfile, deleteProfile, setActiveProfile } =
-    useProfilesStore()
+  const {
+    profiles,
+    activeProfileId,
+    createProfile,
+    updateProfile,
+    deleteProfile,
+    setActiveProfile,
+  } = useProfilesStore()
 
   const [mode, setMode] = useState<FormMode>('idle')
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -86,7 +92,12 @@ export default function ProfilesScreen(): React.ReactElement {
     e.preventDefault()
     setError(null)
 
-    if (!form.displayName.trim() || !form.gitAuthorName.trim() || !form.gitAuthorEmail.trim() || !form.githubUsername.trim()) {
+    if (
+      !form.displayName.trim() ||
+      !form.gitAuthorName.trim() ||
+      !form.gitAuthorEmail.trim() ||
+      !form.githubUsername.trim()
+    ) {
       setError('Display name, Git name, Git email, and GitHub username are required.')
       return
     }
@@ -146,10 +157,7 @@ export default function ProfilesScreen(): React.ReactElement {
   const isActive = selectedId === activeProfileId
 
   return (
-    <div
-      data-testid="screen-profiles"
-      style={{ display: 'flex', height: '100%', gap: 0 }}
-    >
+    <div data-testid="screen-profiles" style={{ display: 'flex', height: '100%', gap: 0 }}>
       {/* Left: profile list */}
       <div
         style={{
@@ -207,7 +215,14 @@ export default function ProfilesScreen(): React.ReactElement {
                   flexShrink: 0,
                 }}
               />
-              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span
+                style={{
+                  flex: 1,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 {p.displayName}
               </span>
               {p.id === activeProfileId && (
@@ -258,7 +273,9 @@ export default function ProfilesScreen(): React.ReactElement {
         {(mode === 'create' || mode === 'edit') && (
           <form
             data-testid="profiles-form"
-            onSubmit={(e) => { void handleSubmit(e) }}
+            onSubmit={(e) => {
+              void handleSubmit(e)
+            }}
             style={{ maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 16 }}
           >
             <h2
@@ -319,7 +336,15 @@ export default function ProfilesScreen(): React.ReactElement {
                   <input type="radio" checked readOnly />
                   SSH
                 </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#52525b', cursor: 'not-allowed' }}>
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    color: '#52525b',
+                    cursor: 'not-allowed',
+                  }}
+                >
                   <input type="radio" disabled />
                   Token (not available in MVP)
                 </label>
@@ -345,7 +370,12 @@ export default function ProfilesScreen(): React.ReactElement {
                   data-testid="profile-form-newHost"
                   value={form.newHost}
                   onChange={(e) => setField('newHost', e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addHost() } }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      addHost()
+                    }
+                  }}
                   placeholder="e.g. github-personal"
                   style={{ ...inputStyle, flex: 1 }}
                 />
@@ -411,7 +441,9 @@ export default function ProfilesScreen(): React.ReactElement {
                 <button
                   type="button"
                   data-testid="profile-set-active-btn"
-                  onClick={() => { void handleSetActive() }}
+                  onClick={() => {
+                    void handleSetActive()
+                  }}
                   disabled={isActive || saving}
                   style={{
                     padding: '6px 14px',
@@ -469,7 +501,9 @@ export default function ProfilesScreen(): React.ReactElement {
 
               {mode === 'edit' && confirmDelete && (
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 12, color: '#a1a1aa' }}>Delete "{selectedProfile?.displayName}"?</span>
+                  <span style={{ fontSize: 12, color: '#a1a1aa' }}>
+                    Delete &quot;{selectedProfile?.displayName}&quot;?
+                  </span>
                   <button
                     type="button"
                     onClick={() => setConfirmDelete(false)}
@@ -488,7 +522,9 @@ export default function ProfilesScreen(): React.ReactElement {
                   <button
                     type="button"
                     data-testid="profile-delete-confirm-btn"
-                    onClick={() => { void handleDelete() }}
+                    onClick={() => {
+                      void handleDelete()
+                    }}
                     disabled={saving}
                     style={{
                       padding: '4px 10px',
@@ -524,7 +560,13 @@ const inputStyle: React.CSSProperties = {
   boxSizing: 'border-box',
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }): React.ReactElement {
+function Field({
+  label,
+  children,
+}: {
+  label: string
+  children: React.ReactNode
+}): React.ReactElement {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <label style={{ fontSize: 11, fontWeight: 600, color: '#71717a', letterSpacing: '0.04em' }}>

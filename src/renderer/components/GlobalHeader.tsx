@@ -87,10 +87,7 @@ export default function GlobalHeader(): React.ReactElement {
       <div style={{ width: 1, height: 20, background: '#3f3f46' }} />
 
       {activeProfile && (
-        <div
-          data-testid="header-profile"
-          style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-        >
+        <div data-testid="header-profile" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <div
             style={{
               width: 10,

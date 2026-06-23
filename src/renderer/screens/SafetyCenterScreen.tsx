@@ -100,22 +100,19 @@ export default function SafetyCenterScreen(): React.ReactElement {
   const activeProfile_ = profiles.find((p) => p.id === activeProfileId) ?? null
 
   useEffect(() => {
-    loadRepos()
-  }, [])
+    void loadRepos()
+  }, [loadRepos])
 
   useEffect(() => {
     const repo = repos.find((r) => r.id === selectedRepoId)
-    if (repo) load(repo.localPath, repo, activeProfile_, profiles)
-  }, [selectedRepoId])
+    if (repo) void load(repo.localPath, repo, activeProfile_, profiles)
+  }, [activeProfile_, load, profiles, repos, selectedRepoId])
 
   // Deduplicate issues from both checks, preserving order (identity first, then push-only)
   const allIssues = useMemo(() => {
     const seen = new Set<string>()
     const combined: SafetyIssue[] = []
-    for (const issue of [
-      ...(identityCheck?.issues ?? []),
-      ...(pushCheck?.issues ?? []),
-    ]) {
+    for (const issue of [...(identityCheck?.issues ?? []), ...(pushCheck?.issues ?? [])]) {
       if (!seen.has(issue.code)) {
         seen.add(issue.code)
         combined.push(issue)
@@ -174,7 +171,9 @@ export default function SafetyCenterScreen(): React.ReactElement {
       )}
 
       {!loading && !repository && !selectedRepoId && (
-        <div style={{ color: '#666', fontSize: '13px' }}>Select a repository to run the identity audit.</div>
+        <div style={{ color: '#666', fontSize: '13px' }}>
+          Select a repository to run the identity audit.
+        </div>
       )}
 
       {!loading && repository && (
@@ -197,11 +196,7 @@ export default function SafetyCenterScreen(): React.ReactElement {
                 data-testid="safety-assigned-profile-name"
                 style={{
                   ...VALUE,
-                  color: assignedProfile
-                    ? profileMismatch
-                      ? '#f87171'
-                      : '#e0e0e0'
-                    : '#555',
+                  color: assignedProfile ? (profileMismatch ? '#f87171' : '#e0e0e0') : '#555',
                 }}
               >
                 {assignedProfile ? assignedProfile.displayName : '—'}
@@ -242,7 +237,12 @@ export default function SafetyCenterScreen(): React.ReactElement {
             {identity?.emailSource && identity.emailSource !== 'local' && (
               <div
                 data-testid="safety-identity-scope-warning"
-                style={{ padding: '7px 12px', background: '#2d2a1b', fontSize: '12px', color: '#fbbf24' }}
+                style={{
+                  padding: '7px 12px',
+                  background: '#2d2a1b',
+                  fontSize: '12px',
+                  color: '#fbbf24',
+                }}
               >
                 Your Git identity is inherited from global config, not set for this repository.
               </div>

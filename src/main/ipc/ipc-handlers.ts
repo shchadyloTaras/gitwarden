@@ -23,6 +23,7 @@ import {
   GitBranchOpPayload,
   GitCreateBranchPayload,
   GitHistoryPayload,
+  GitValidatePathPayload,
 } from './ipc-schemas.js'
 
 export interface Services {
@@ -255,6 +256,27 @@ export function registerIpcHandlers(services: Services): void {
     wrap(async () => {
       const { repoPath, limit, skip } = GitHistoryPayload.parse(raw)
       return services.git.getCommitHistory(repoPath, limit, skip)
+    })
+  )
+
+  ipcMain.handle('git:discardFile', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath, filePath } = GitFilePathPayload.parse(raw)
+      return services.git.discardFile(repoPath, filePath)
+    })
+  )
+
+  ipcMain.handle('git:cleanFile', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath, filePath } = GitFilePathPayload.parse(raw)
+      return services.git.cleanFile(repoPath, filePath)
+    })
+  )
+
+  ipcMain.handle('git:validateGitPath', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { gitPath } = GitValidatePathPayload.parse(raw)
+      return services.git.validateGitPath(gitPath)
     })
   )
 }
