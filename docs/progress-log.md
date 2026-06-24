@@ -32,7 +32,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 
 - [x] Phase 21 — OAuth Foundations & Types
 - [x] Phase 22 — Secret Storage Activation
-- [ ] Phase 23 — GitHub Device Flow Auth Service
+- [x] Phase 23 — GitHub Device Flow Auth Service
 - [ ] Phase 24 — GitHub API Client & Account Identity
 - [ ] Phase 25 — IPC Bridge for GitHub Auth
 - [ ] Phase 26 — "Connect GitHub" UI (safe stop point)
@@ -242,3 +242,17 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: `npm test` passed (Vitest 187/187); `npm run lint` passed; `npx tsc --noEmit -p tsconfig.node.json` passed; `npx tsc --noEmit -p tsconfig.web.json` passed.
 - Exit criteria: ✅ met — injected fake encryptor covers set→get round-trip, simulated relaunch persistence, delete, corrupt ciphertext returning `undefined` without throwing, and logger spy/assertions proving raw tokens do not appear in log lines.
 - Notes / follow-ups: `TokenStore` stores only base64 ciphertext in `tokens.json`; raw tokens remain outside persisted domain models and the renderer bridge. Phase 25 will wire this store into GitHub auth IPC.
+
+### 2026-06-25 — Phase 23: GitHub Device Flow Auth Service
+
+- Built: The cancellable GitHub OAuth **Device Authorization Flow** state machine in the main process — logic only, no UI, no real network. All network I/O goes through an injected `HttpClient` so the full poll matrix is unit-tested with a fake client.
+  - `src/main/services/HttpClient.ts` (new): injectable `HttpClient` port (`postForm`/`get`) + `HttpResponse` type — the shared network seam reused by Phases 24/25. Interface only; the real implementation is created in the Phase 25 IPC glue.
+  - `src/main/services/GitHubAuthService.ts` (new): `GitHubAuthService implements IGitHubAuthService`.
+    - `requestDeviceCode(scopes)` → POST `https://github.com/login/device/code` with `{ client_id, scope }` (space-joined) + `Accept: application/json`; validates the response with `GitHubDeviceCodeResponseSchema`; retains `device_code` + `interval` **in main** and returns only the renderer-safe `GitHubDeviceCode` (userCode/verificationUri/expiresInSec/intervalSec) — the raw `device_code` is never in the returned payload (Appendix B).
+    - `pollForToken(signal)` → POST `https://github.com/login/oauth/access_token` with `{ client_id, device_code, grant_type=urn:ietf:params:oauth:grant-type:device_code }`; keeps polling on `authorization_pending`, raises the interval on `slow_down` (uses GitHub's new `interval`, else +5s per RFC 8628), rejects with a typed `GitHubAuthError` on `access_denied`/`expired_token`/unknown errors and on HTTP-client throw (`network`), and resolves `{ accessToken, scopes }` (scopes parsed from the space/comma-separated grant) on success.
+    - Cancellation: `throwIfAborted` guard at the top of each poll + an injectable `Sleeper` seam defaulting to `abortableDelay`, which rejects promptly with an `AbortError` the instant the `AbortSignal` fires (no waiting out the interval). `shell.openExternal` is deliberately **absent** — that belongs in the Phase 25 IPC glue.
+  - `src/core/config/github.ts`: the real public OAuth App **Client ID** (`Ov23liMJ2oRxygjRi84h`) was pasted in (Appendix D one-time human prerequisite, previously a placeholder) — folded into this commit since it's what makes the flow run against real GitHub. It's public (no client secret exists), safe to commit.
+- Files: added `src/main/services/HttpClient.ts`, `src/main/services/GitHubAuthService.ts`, `tests/unit/github-auth-service.test.ts`; updated `src/core/config/github.ts` (real Client ID), `docs/progress-log.md`.
+- Tests: `npm test` → Vitest **204 passed** (was 187; +17 new in `github-auth-service.test.ts`). `npm run lint` clean (ESLint + Prettier). `npx tsc --noEmit` clean on both `tsconfig.node.json` and `tsconfig.web.json`.
+- Exit criteria: ✅ met — the fake-`HttpClient` matrix covers `authorization_pending → success`, `slow_down` raising the interval (both the GitHub-supplied value and the +5s fallback), `expired_token`, `access_denied`, a network error, an already-aborted poll (rejects immediately, never polls), and an abort mid-wait (rejects promptly, stops after exactly one poll); plus device-code request shape (body/headers), retained-`device_code` propagation, the no-`device_code`-in-payload guarantee, and isolated `abortableDelay` cancellation tests. No UI.
+- Notes / follow-ups: A `network` error and an `AbortError` leave the in-flight `device_code` intact so the caller can restart/retry; protocol-terminal outcomes (success/denied/expired/unknown) clear it. The `HttpClient` port has no concrete implementation yet — Phase 25 supplies a real one (and `shell.openExternal`) when wiring IPC. Per the plan, a human must still run `npm run dev` once after Phase 26 to authorize a real account end-to-end; CI only ever exercises the fake.

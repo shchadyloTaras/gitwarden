@@ -10,7 +10,7 @@
  * (docs/plans/github-oauth-plan.md Appendix D). Placeholder until then — tests
  * use mocks/fakes and never need a real id.
  */
-export const GITHUB_CLIENT_ID = 'REPLACE_WITH_GITHUB_OAUTH_CLIENT_ID'
+export const GITHUB_CLIENT_ID = 'Ov23liMJ2oRxygjRi84h'
 
 /**
  * Scopes requested for identity verification. `repo` is intentionally absent —
