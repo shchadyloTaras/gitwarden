@@ -7,9 +7,23 @@ import type {
   GitRemote,
   GitBranch,
   GitCommit,
+  GitHubDeviceCode,
+  LinkedGitHubAccount,
+  GitHubAccount,
+  GitHubAuthStatus,
+  GitHubAuthErrorCode,
 } from '../../core/types.js'
 
 type IpcResult<T> = { ok: true; data: T } | { ok: false; error: string }
+
+/** Auth progress pushed from main over `github:authEvent`. Mirrors GitHubAuthEventPayload. */
+interface GitHubAuthEvent {
+  profileId: string
+  status: GitHubAuthStatus
+  errorCode?: GitHubAuthErrorCode
+  account?: LinkedGitHubAccount
+  identity?: GitHubAccount
+}
 
 interface ElectronAPI {
   dialog: {
@@ -59,6 +73,13 @@ interface ElectronAPI {
     discardFile(repoPath: string, filePath: string): Promise<IpcResult<void>>
     cleanFile(repoPath: string, filePath: string): Promise<IpcResult<void>>
     validateGitPath(gitPath: string): Promise<IpcResult<{ version: string }>>
+  }
+  github: {
+    startDeviceAuth(profileId: string): Promise<IpcResult<GitHubDeviceCode>>
+    cancelDeviceAuth(profileId: string): Promise<IpcResult<null>>
+    disconnect(profileId: string): Promise<IpcResult<null>>
+    getLinkedAccount(profileId: string): Promise<IpcResult<LinkedGitHubAccount | null>>
+    onAuthEvent(callback: (event: GitHubAuthEvent) => void): () => void
   }
 }
 

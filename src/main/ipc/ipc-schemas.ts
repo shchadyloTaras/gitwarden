@@ -5,6 +5,7 @@ import {
   AppSettingsSchema,
   GitHubAuthStatusSchema,
   GitHubAuthErrorCodeSchema,
+  GitHubAccountSchema,
   LinkedGitHubAccountSchema,
 } from '../../core/schemas.js'
 
@@ -87,9 +88,17 @@ export const GitHubDisconnectPayload = GitHubProfilePayload
 export const GitHubGetLinkedAccountPayload = GitHubProfilePayload
 
 // Auth progress pushed main → renderer over the github:authEvent channel.
+// `account` is the persisted link record; `identity` carries the richer name/
+// email/avatar the renderer needs to auto-fill the profile and render the badge
+// (Phase 26). The access token is the only piece that NEVER crosses this channel —
+// it stays in main (TokenStore), so this event is the sole path identity can reach
+// the renderer. Both `account` and `identity` are present only on `authorized`.
 export const GitHubAuthEventPayload = z.object({
   profileId: z.string().min(1),
   status: GitHubAuthStatusSchema,
   errorCode: GitHubAuthErrorCodeSchema.optional(),
   account: LinkedGitHubAccountSchema.optional(),
+  identity: GitHubAccountSchema.optional(),
 })
+
+export type GitHubAuthEventPayloadType = z.infer<typeof GitHubAuthEventPayload>

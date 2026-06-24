@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
+import type { IpcRendererEvent } from 'electron'
 import type {
   Profile,
   RepositoryRecord,
@@ -8,9 +9,25 @@ import type {
   GitRemote,
   GitBranch,
   GitCommit,
+  GitHubDeviceCode,
+  LinkedGitHubAccount,
+  GitHubAccount,
+  GitHubAuthStatus,
+  GitHubAuthErrorCode,
 } from '../src/core/types.js'
 
 export type IpcResult<T> = { ok: true; data: T } | { ok: false; error: string }
+
+/** Auth progress pushed from main over `github:authEvent`. Mirrors GitHubAuthEventPayload. */
+export interface GitHubAuthEvent {
+  profileId: string
+  status: GitHubAuthStatus
+  errorCode?: GitHubAuthErrorCode
+  account?: LinkedGitHubAccount
+  identity?: GitHubAccount
+}
+
+const GITHUB_AUTH_EVENT_CHANNEL = 'github:authEvent'
 
 function invoke<T>(channel: string, payload?: unknown): Promise<IpcResult<T>> {
   return ipcRenderer.invoke(channel, payload) as Promise<IpcResult<T>>
@@ -95,6 +112,22 @@ export const api = {
       invoke('git:cleanFile', { repoPath, filePath }),
     validateGitPath: (gitPath: string): Promise<IpcResult<{ version: string }>> =>
       invoke('git:validateGitPath', { gitPath }),
+  },
+  github: {
+    startDeviceAuth: (profileId: string): Promise<IpcResult<GitHubDeviceCode>> =>
+      invoke('github:startDeviceAuth', { profileId }),
+    cancelDeviceAuth: (profileId: string): Promise<IpcResult<null>> =>
+      invoke('github:cancelDeviceAuth', { profileId }),
+    disconnect: (profileId: string): Promise<IpcResult<null>> =>
+      invoke('github:disconnect', { profileId }),
+    getLinkedAccount: (profileId: string): Promise<IpcResult<LinkedGitHubAccount | null>> =>
+      invoke('github:getLinkedAccount', { profileId }),
+    /** Subscribe to auth progress events; returns an unsubscribe function. */
+    onAuthEvent: (callback: (event: GitHubAuthEvent) => void): (() => void) => {
+      const listener = (_e: IpcRendererEvent, payload: GitHubAuthEvent): void => callback(payload)
+      ipcRenderer.on(GITHUB_AUTH_EVENT_CHANNEL, listener)
+      return () => ipcRenderer.removeListener(GITHUB_AUTH_EVENT_CHANNEL, listener)
+    },
   },
 }
 

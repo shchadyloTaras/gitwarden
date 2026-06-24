@@ -3,6 +3,7 @@ import type { IProfileService } from '../services/ProfileService.js'
 import type { IRepositoryService } from '../services/RepositoryService.js'
 import type { ISettingsService } from '../services/SettingsService.js'
 import type { GitService } from '../services/GitService.js'
+import type { IGitHubAuthCoordinator } from './GitHubAuthCoordinator.js'
 import {
   ProfileGetPayload,
   ProfileCreatePayload,
@@ -24,6 +25,10 @@ import {
   GitCreateBranchPayload,
   GitHistoryPayload,
   GitValidatePathPayload,
+  GitHubStartDeviceAuthPayload,
+  GitHubCancelDeviceAuthPayload,
+  GitHubDisconnectPayload,
+  GitHubGetLinkedAccountPayload,
 } from './ipc-schemas.js'
 
 export interface Services {
@@ -31,6 +36,7 @@ export interface Services {
   repositories: IRepositoryService
   settings: ISettingsService
   git: GitService
+  github: IGitHubAuthCoordinator
 }
 
 export type IpcResult<T> = { ok: true; data: T } | { ok: false; error: string }
@@ -277,6 +283,39 @@ export function registerIpcHandlers(services: Services): void {
     wrap(async () => {
       const { gitPath } = GitValidatePathPayload.parse(raw)
       return services.git.validateGitPath(gitPath)
+    })
+  )
+
+  // GitHub OAuth (Device Flow). startDeviceAuth returns the device code and begins
+  // polling in main; progress is pushed back over the github:authEvent channel using
+  // the initiating webContents (event.sender), so no IPC call blocks on the flow.
+  ipcMain.handle('github:startDeviceAuth', (event, raw: unknown) =>
+    wrap(async () => {
+      const { profileId } = GitHubStartDeviceAuthPayload.parse(raw)
+      return services.github.startDeviceAuth(profileId, event.sender)
+    })
+  )
+
+  ipcMain.handle('github:cancelDeviceAuth', (event, raw: unknown) =>
+    wrap(async () => {
+      const { profileId } = GitHubCancelDeviceAuthPayload.parse(raw)
+      services.github.cancelDeviceAuth(profileId, event.sender)
+      return null
+    })
+  )
+
+  ipcMain.handle('github:disconnect', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { profileId } = GitHubDisconnectPayload.parse(raw)
+      await services.github.disconnect(profileId)
+      return null
+    })
+  )
+
+  ipcMain.handle('github:getLinkedAccount', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { profileId } = GitHubGetLinkedAccountPayload.parse(raw)
+      return (await services.github.getLinkedAccount(profileId)) ?? null
     })
   )
 }

@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, shell } from 'electron'
 import path from 'node:path'
 import { GitLocator } from '../src/main/git/GitLocator.js'
 import { GitRunner } from '../src/main/git/GitRunner.js'
@@ -13,6 +13,62 @@ import {
   AppSettingsSchema,
 } from '../src/core/schemas.js'
 import { registerIpcHandlers } from '../src/main/ipc/ipc-handlers.js'
+import { SecretStore } from '../src/main/storage/SecretStore.js'
+import {
+  TokenStore,
+  TokenStoreDataSchema,
+  TOKEN_STORE_DEFAULTS,
+} from '../src/main/storage/TokenStore.js'
+import { FetchHttpClient } from '../src/main/services/FetchHttpClient.js'
+import { GitHubAuthService } from '../src/main/services/GitHubAuthService.js'
+import { GitHubApiService } from '../src/main/services/GitHubApiService.js'
+import {
+  GitHubAuthCoordinator,
+  type GitHubAuthCoordinatorDeps,
+} from '../src/main/ipc/GitHubAuthCoordinator.js'
+import { GITHUB_OAUTH_SCOPES } from '../src/core/config/github.js'
+import { createGitHubAuthTestServices } from '../src/main/testing/githubAuthFakes.js'
+
+/**
+ * Builds the GitHub-auth service trio + browser-open seam. Under the e2e flag the
+ * services are fakes and the browser is never opened — no real GitHub call in CI
+ * (docs/plans/github-oauth-plan.md §6 Phase 25). Production uses the real device-flow
+ * service, REST client, and encrypted TokenStore.
+ */
+function buildGitHubAuthDeps(
+  profiles: ProfileService,
+  userDataPath: string
+): Pick<
+  GitHubAuthCoordinatorDeps,
+  'auth' | 'api' | 'tokens' | 'profiles' | 'openExternal' | 'scopes'
+> {
+  if (process.env['GITWARDEN_E2E_FAKE_GITHUB'] === '1') {
+    const fakes = createGitHubAuthTestServices()
+    return {
+      ...fakes,
+      profiles,
+      openExternal: () => {},
+      scopes: GITHUB_OAUTH_SCOPES,
+    }
+  }
+
+  const http = new FetchHttpClient()
+  const tokensStore = new JsonStore(
+    path.join(userDataPath, 'tokens.json'),
+    TokenStoreDataSchema,
+    TOKEN_STORE_DEFAULTS
+  )
+  return {
+    auth: new GitHubAuthService(http),
+    api: new GitHubApiService(http),
+    tokens: new TokenStore(tokensStore, new SecretStore()),
+    profiles,
+    openExternal: (url: string) => {
+      void shell.openExternal(url)
+    },
+    scopes: GITHUB_OAUTH_SCOPES,
+  }
+}
 
 app.setName('GitWarden')
 
@@ -74,11 +130,15 @@ app.whenReady().then(async () => {
   }
   const gitRunner = new GitRunner(gitPath)
 
+  const profiles = new ProfileService(profilesStore)
+  const github = new GitHubAuthCoordinator(buildGitHubAuthDeps(profiles, userDataPath))
+
   registerIpcHandlers({
-    profiles: new ProfileService(profilesStore),
+    profiles,
     repositories: new RepositoryService(reposStore),
     settings: new SettingsService(settingsStore),
     git: new GitService(gitRunner),
+    github,
   })
 
   createWindow()
