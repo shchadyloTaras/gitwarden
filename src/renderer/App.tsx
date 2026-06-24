@@ -75,8 +75,11 @@ function MainContent(): React.ReactElement {
 export default function App(): React.ReactElement {
   const load = useProfilesStore((s) => s.load)
   const loadRepos = useRepositoriesStore((s) => s.load)
+  const repos = useRepositoriesStore((s) => s.repos)
   const loadSettings = useSettingsStore((s) => s.load)
   const appearance = useSettingsStore((s) => s.appearance)
+  const activeRepo = useAppStore((s) => s.activeRepo)
+  const setActiveRepo = useAppStore((s) => s.setActiveRepo)
   const onboardingCompletedAt = useSettingsStore((s) => s.onboardingCompletedAt)
   const onboardingSkippedAt = useSettingsStore((s) => s.onboardingSkippedAt)
   const markOnboardingCompleted = useSettingsStore((s) => s.markOnboardingCompleted)
@@ -92,6 +95,15 @@ export default function App(): React.ReactElement {
   useEffect(() => {
     void Promise.all([load(), loadRepos(), loadSettings()]).then(() => setStoresReady(true))
   }, [load, loadRepos, loadSettings])
+
+  // Auto-select active repo: pick first available when none is active or active was removed
+  useEffect(() => {
+    if (repos.length === 0) {
+      if (activeRepo) setActiveRepo(null)
+    } else if (!activeRepo || !repos.find((r) => r.id === activeRepo.id)) {
+      setActiveRepo(repos[0])
+    }
+  }, [repos, activeRepo, setActiveRepo])
 
   useEffect(() => {
     if (autoOnboardingChecked || !storesReady || navigator.webdriver) return

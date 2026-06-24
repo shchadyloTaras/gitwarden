@@ -104,8 +104,6 @@ test.describe('Branches', () => {
     await win.getByTestId('nav-branches').click()
     await expect(win.getByTestId('screen-branches')).toBeVisible()
 
-    // Select repo
-    await win.getByTestId('branches-repo-select').selectOption({ label: 'branches-fixture' })
     await expect(win.getByTestId('branches-current-branch')).toBeVisible({ timeout: 10000 })
     await expect(win.getByTestId('branches-current-branch')).toContainText('main')
 
@@ -114,7 +112,9 @@ test.describe('Branches', () => {
     await switchBtns.first().click()
 
     // Header must now show feature-a
-    await expect(win.getByTestId('header-branch')).toHaveText('feature-a', { timeout: 10000 })
+    await expect(win.getByTestId('header-branch-select')).toHaveValue('feature-a', {
+      timeout: 10000,
+    })
     await expect(win.getByTestId('branches-current-branch')).toContainText('feature-a')
   })
 
@@ -124,7 +124,6 @@ test.describe('Branches', () => {
     await win.getByTestId('nav-branches').click()
     await expect(win.getByTestId('screen-branches')).toBeVisible()
 
-    await win.getByTestId('branches-repo-select').selectOption({ label: 'branches-fixture' })
     await expect(win.getByTestId('branches-current-branch')).toBeVisible({ timeout: 10000 })
 
     // Create feature-b
@@ -132,7 +131,9 @@ test.describe('Branches', () => {
     await win.getByTestId('branches-create-btn').click()
 
     // Header shows feature-b
-    await expect(win.getByTestId('header-branch')).toHaveText('feature-b', { timeout: 10000 })
+    await expect(win.getByTestId('header-branch-select')).toHaveValue('feature-b', {
+      timeout: 10000,
+    })
     await expect(win.getByTestId('branches-current-branch')).toContainText('feature-b')
 
     // feature-b appears in local list
@@ -145,7 +146,6 @@ test.describe('Branches', () => {
     await win.getByTestId('nav-branches').click()
     await expect(win.getByTestId('screen-branches')).toBeVisible()
 
-    await win.getByTestId('branches-repo-select').selectOption({ label: 'branches-fixture' })
     // Wait for branches to load
     await expect(win.getByTestId('branches-local-list')).toContainText('feature-a', {
       timeout: 10000,

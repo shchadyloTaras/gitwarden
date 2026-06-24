@@ -1,7 +1,6 @@
-import React, { useState } from 'react'
-import { useRepositoriesStore } from '../store/repositoriesStore'
+import React, { useEffect, useState } from 'react'
 import { useBranchStore } from '../store/branchStore'
-import type { RepositoryRecord } from '../../core/types'
+import { useAppStore } from '../store/appStore'
 
 const ROW: React.CSSProperties = {
   display: 'flex',
@@ -34,10 +33,8 @@ const BTN_PRIMARY: React.CSSProperties = {
 }
 
 export default function BranchesScreen(): React.ReactElement {
-  const repositories = useRepositoriesStore((s) => s.repos)
+  const activeRepo = useAppStore((s) => s.activeRepo)
   const {
-    repoPath,
-    repository,
     branches,
     loading,
     error,
@@ -52,10 +49,9 @@ export default function BranchesScreen(): React.ReactElement {
 
   const [newBranchName, setNewBranchName] = useState('')
 
-  function handleRepoChange(e: React.ChangeEvent<HTMLSelectElement>): void {
-    const repo = repositories.find((r: RepositoryRecord) => r.id === e.target.value)
-    if (repo) void load(repo.localPath, repo)
-  }
+  useEffect(() => {
+    if (activeRepo) void load(activeRepo.localPath, activeRepo)
+  }, [activeRepo, load])
 
   async function handleSwitch(branch: string): Promise<void> {
     await doSwitch(branch)
@@ -95,27 +91,6 @@ export default function BranchesScreen(): React.ReactElement {
       >
         <span style={{ fontWeight: 600, fontSize: 14 }}>Branches</span>
 
-        <select
-          data-testid="branches-repo-select"
-          value={repository?.id ?? ''}
-          onChange={handleRepoChange}
-          style={{
-            background: '#27272a',
-            color: '#e4e4e7',
-            border: '1px solid #3f3f46',
-            borderRadius: 4,
-            padding: '4px 8px',
-            fontSize: 13,
-          }}
-        >
-          <option value="">— select repository —</option>
-          {repositories.map((r: RepositoryRecord) => (
-            <option key={r.id} value={r.id}>
-              {r.name}
-            </option>
-          ))}
-        </select>
-
         {currentBranch && (
           <span
             data-testid="branches-current-branch"
@@ -134,9 +109,9 @@ export default function BranchesScreen(): React.ReactElement {
       </div>
 
       {/* Body */}
-      {!repoPath ? (
+      {!activeRepo ? (
         <div style={{ padding: 24, color: '#71717a', fontSize: 13 }}>
-          Select a repository to see its branches.
+          Add a repository to get started.
         </div>
       ) : loading ? (
         <div style={{ padding: 24, color: '#71717a', fontSize: 13 }}>Loading…</div>

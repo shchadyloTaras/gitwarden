@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { useRepositoriesStore } from '../store/repositoriesStore'
+import React, { useEffect, useMemo } from 'react'
 import { useProfilesStore } from '../store/profilesStore'
 import { useSafetyCenterStore } from '../store/safetyCenterStore'
+import { useAppStore } from '../store/appStore'
 import type { SafetyIssue } from '../../core/types'
 
 function ScopeLabel({ scope }: { scope: string | undefined }): React.ReactElement {
@@ -79,7 +79,7 @@ const LABEL: React.CSSProperties = { color: '#888', flexShrink: 0, marginRight: 
 const VALUE: React.CSSProperties = { color: '#e0e0e0', textAlign: 'right', wordBreak: 'break-all' }
 
 export default function SafetyCenterScreen(): React.ReactElement {
-  const { repos, load: loadRepos } = useRepositoriesStore()
+  const activeRepo = useAppStore((s) => s.activeRepo)
   const { profiles, activeProfileId } = useProfilesStore()
   const {
     repository,
@@ -95,18 +95,11 @@ export default function SafetyCenterScreen(): React.ReactElement {
     load,
   } = useSafetyCenterStore()
 
-  const [selectedRepoId, setSelectedRepoId] = useState<string>('')
-
   const activeProfile_ = profiles.find((p) => p.id === activeProfileId) ?? null
 
   useEffect(() => {
-    void loadRepos()
-  }, [loadRepos])
-
-  useEffect(() => {
-    const repo = repos.find((r) => r.id === selectedRepoId)
-    if (repo) void load(repo.localPath, repo, activeProfile_, profiles)
-  }, [activeProfile_, load, profiles, repos, selectedRepoId])
+    if (activeRepo) void load(activeRepo.localPath, activeRepo, activeProfile_, profiles)
+  }, [activeRepo, activeProfile_, load, profiles])
 
   // Deduplicate issues from both checks, preserving order (identity first, then push-only)
   const allIssues = useMemo(() => {
@@ -134,34 +127,6 @@ export default function SafetyCenterScreen(): React.ReactElement {
     >
       <h2 style={{ margin: '0 0 20px', fontSize: '18px', fontWeight: 600 }}>Safety Center</h2>
 
-      {/* Repository picker */}
-      <div style={{ marginBottom: '20px' }}>
-        <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '4px' }}>
-          Repository
-        </label>
-        <select
-          data-testid="safety-repo-select"
-          value={selectedRepoId}
-          onChange={(e) => setSelectedRepoId(e.target.value)}
-          style={{
-            width: '100%',
-            padding: '6px 8px',
-            background: '#1e1e1e',
-            border: '1px solid #333',
-            borderRadius: '4px',
-            color: '#e0e0e0',
-            fontSize: '13px',
-          }}
-        >
-          <option value="">— Select a repository —</option>
-          {repos.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
       {loading && (
         <div style={{ color: '#888', fontSize: '13px', marginBottom: '16px' }}>Loading…</div>
       )}
@@ -170,9 +135,9 @@ export default function SafetyCenterScreen(): React.ReactElement {
         <div style={{ color: '#f87171', fontSize: '13px', marginBottom: '16px' }}>{error}</div>
       )}
 
-      {!loading && !repository && !selectedRepoId && (
+      {!loading && !repository && !activeRepo && (
         <div style={{ color: '#666', fontSize: '13px' }}>
-          Select a repository to run the identity audit.
+          Add a repository to run the identity audit.
         </div>
       )}
 

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { RepositoryRecord } from '../../core/types'
 
 export type NavScreen =
   | 'repositories'
@@ -13,43 +14,29 @@ export type NavScreen =
 
 export type SafetyBadge = 'safe' | 'warning' | 'blocked'
 
-export interface SeedRepo {
-  id: string
-  name: string
-  path: string
-  profileId: string
-}
-
 interface AppState {
   activeScreen: NavScreen
-  activeRepo: SeedRepo | null
+  activeRepo: RepositoryRecord | null
   currentBranch: string | null
   safetyBadge: SafetyBadge
   inspectorOpen: boolean
 
   navigate: (screen: NavScreen) => void
-  setActiveRepo: (repo: SeedRepo | null) => void
+  setActiveRepo: (repo: RepositoryRecord | null) => void
   setCurrentBranch: (branch: string | null) => void
   setSafetyBadge: (badge: SafetyBadge) => void
   toggleInspector: () => void
 }
 
-const SEED_REPO: SeedRepo = {
-  id: 'seed-repo-1',
-  name: 'gitwarden',
-  path: '/Users/taras/projects/gitwarden',
-  profileId: '',
-}
-
 export const useAppStore = create<AppState>((set) => ({
   activeScreen: 'repositories',
-  activeRepo: SEED_REPO,
-  currentBranch: 'main',
+  activeRepo: null,
+  currentBranch: null,
   safetyBadge: 'safe',
   inspectorOpen: true,
 
   navigate: (screen) => set({ activeScreen: screen }),
-  setActiveRepo: (repo) => set({ activeRepo: repo }),
+  setActiveRepo: (repo) => set({ activeRepo: repo, currentBranch: null }),
   setCurrentBranch: (branch) => set({ currentBranch: branch }),
   setSafetyBadge: (badge) => set({ safetyBadge: badge }),
   toggleInspector: () => set((s) => ({ inspectorOpen: !s.inspectorOpen })),

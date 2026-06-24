@@ -94,7 +94,7 @@ test.describe('Diff Viewer', () => {
     await win.getByTestId('nav-status').click()
     await expect(win.getByTestId('screen-status')).toBeVisible()
 
-    await win.getByTestId('status-repo-select').selectOption({ label: 'fixture-u' })
+    // fixture-u is auto-selected as active repo
 
     // Diff empty state should show before selecting any file
     await expect(win.getByTestId('diff-empty')).toBeVisible({ timeout: 10000 })
@@ -115,7 +115,7 @@ test.describe('Diff Viewer', () => {
     await win.getByTestId('nav-status').click()
     await expect(win.getByTestId('screen-status')).toBeVisible()
 
-    await win.getByTestId('status-repo-select').selectOption({ label: 'fixture-u' })
+    // fixture-u is auto-selected as active repo
 
     // hello.txt appears in unstaged list
     await expect(win.getByTestId('unstaged-list')).toContainText('hello.txt', { timeout: 10000 })
@@ -151,7 +151,7 @@ test.describe('Diff Viewer', () => {
     await win.getByTestId('nav-status').click()
     await expect(win.getByTestId('screen-status')).toBeVisible()
 
-    await win.getByTestId('status-repo-select').selectOption({ label: 'fixture-s' })
+    // fixture-s is auto-selected as active repo
 
     // world.txt appears in staged list
     await expect(win.getByTestId('staged-list')).toContainText('world.txt', { timeout: 10000 })

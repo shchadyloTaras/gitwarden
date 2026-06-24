@@ -124,7 +124,7 @@ test.describe('Remote Operations', () => {
     await win.getByTestId('nav-remote').click()
     await expect(win.getByTestId('screen-remote')).toBeVisible()
 
-    await win.getByTestId('remote-repo-select').selectOption({ label: 'work-repo' })
+    // work-repo is auto-selected as active repo
     await expect(win.getByTestId('remote-current-branch')).toBeVisible({ timeout: 10000 })
     await expect(win.getByTestId('remote-current-branch')).toContainText('main')
 
@@ -180,7 +180,7 @@ test.describe('Remote Operations', () => {
     await win.getByTestId('nav-remote').click()
     await expect(win.getByTestId('screen-remote')).toBeVisible()
 
-    await win.getByTestId('remote-repo-select').selectOption({ label: 'work-repo' })
+    // work-repo is auto-selected as active repo
     await expect(win.getByTestId('remote-current-branch')).toBeVisible({ timeout: 10000 })
 
     // Open push sheet

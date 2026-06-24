@@ -1,7 +1,6 @@
-import React from 'react'
-import { useRepositoriesStore } from '../store/repositoriesStore'
+import React, { useEffect } from 'react'
 import { useHistoryStore } from '../store/historyStore'
-import type { RepositoryRecord } from '../../core/types'
+import { useAppStore } from '../store/appStore'
 
 const ROW: React.CSSProperties = {
   display: 'grid',
@@ -14,14 +13,12 @@ const ROW: React.CSSProperties = {
 }
 
 export default function HistoryScreen(): React.ReactElement {
-  const repositories = useRepositoriesStore((s) => s.repos)
-  const { repoPath, repository, commits, loading, loadingMore, error, hasMore, load, loadMore } =
-    useHistoryStore()
+  const activeRepo = useAppStore((s) => s.activeRepo)
+  const { commits, loading, loadingMore, error, hasMore, load, loadMore } = useHistoryStore()
 
-  function handleRepoChange(e: React.ChangeEvent<HTMLSelectElement>): void {
-    const repo = repositories.find((r: RepositoryRecord) => r.id === e.target.value)
-    if (repo) void load(repo.localPath, repo)
-  }
+  useEffect(() => {
+    if (activeRepo) void load(activeRepo.localPath, activeRepo)
+  }, [activeRepo, load])
 
   return (
     <div
@@ -41,35 +38,15 @@ export default function HistoryScreen(): React.ReactElement {
         }}
       >
         <span style={{ fontWeight: 600, fontSize: 14 }}>History</span>
-        <select
-          data-testid="history-repo-select"
-          value={repository?.id ?? ''}
-          onChange={handleRepoChange}
-          style={{
-            background: '#27272a',
-            color: '#e4e4e7',
-            border: '1px solid #3f3f46',
-            borderRadius: 4,
-            padding: '4px 8px',
-            fontSize: 13,
-          }}
-        >
-          <option value="">— select repository —</option>
-          {repositories.map((r: RepositoryRecord) => (
-            <option key={r.id} value={r.id}>
-              {r.name}
-            </option>
-          ))}
-        </select>
-        {repoPath && !loading && (
+        {activeRepo && !loading && (
           <span style={{ fontSize: 12, color: '#71717a' }}>{commits.length} commits loaded</span>
         )}
       </div>
 
       {/* Body */}
-      {!repoPath ? (
+      {!activeRepo ? (
         <div data-testid="history-empty" style={{ padding: 24, color: '#71717a', fontSize: 13 }}>
-          Select a repository to view its commit history.
+          Add a repository to get started.
         </div>
       ) : loading ? (
         <div style={{ padding: 24, color: '#71717a', fontSize: 13 }}>Loading…</div>

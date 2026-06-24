@@ -132,10 +132,9 @@ test.describe('Safety Center', () => {
     await win.reload()
     await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
-    // --- Check Safety Center ---
+    // --- Check Safety Center (identity-fixture auto-selected) ---
     await win.getByTestId('nav-safety-center').click()
     await expect(win.getByTestId('screen-safety-center')).toBeVisible()
-    await win.getByTestId('safety-repo-select').selectOption({ label: 'identity-fixture' })
 
     // Wait for audit to load
     await expect(win.getByTestId('safety-can-commit')).toBeVisible({ timeout: 10000 })
@@ -144,10 +143,9 @@ test.describe('Safety Center', () => {
     await expect(win.getByTestId('safety-can-commit')).toContainText('No')
     await expect(win.getByTestId('safety-issue-IDENTITY_UNSET')).toBeVisible()
 
-    // --- Verify CommitScreen agrees ---
+    // --- Verify CommitScreen agrees (same repo still active) ---
     await win.getByTestId('nav-commit').click()
     await expect(win.getByTestId('screen-commit')).toBeVisible()
-    await win.getByTestId('commit-repo-select').selectOption({ label: 'identity-fixture' })
     await expect(win.getByTestId('commit-staged-summary')).toBeVisible({ timeout: 10000 })
     await win.getByTestId('commit-message').fill('test commit')
     // Commit button must be disabled — matching the Safety Center "No"
@@ -192,10 +190,9 @@ test.describe('Safety Center', () => {
     await win.reload()
     await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
-    // --- Check Safety Center ---
+    // --- Check Safety Center (remote-fixture auto-selected) ---
     await win.getByTestId('nav-safety-center').click()
     await expect(win.getByTestId('screen-safety-center')).toBeVisible()
-    await win.getByTestId('safety-repo-select').selectOption({ label: 'remote-fixture' })
 
     await expect(win.getByTestId('safety-can-push')).toBeVisible({ timeout: 10000 })
 
@@ -205,10 +202,9 @@ test.describe('Safety Center', () => {
     await expect(win.getByTestId('safety-can-push')).toContainText('No')
     await expect(win.getByTestId('safety-issue-REMOTE_HOST_MISMATCH')).toBeVisible()
 
-    // --- Verify RemoteScreen agrees ---
+    // --- Verify RemoteScreen agrees (same repo still active) ---
     await win.getByTestId('nav-remote').click()
     await expect(win.getByTestId('screen-remote')).toBeVisible()
-    await win.getByTestId('remote-repo-select').selectOption({ label: 'remote-fixture' })
     await expect(win.getByTestId('remote-current-branch')).toBeVisible({ timeout: 10000 })
 
     await win.getByTestId('remote-op-push').click()

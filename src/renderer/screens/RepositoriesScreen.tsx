@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import type { RepositoryRecord } from '../../core/types'
 import { useRepositoriesStore } from '../store/repositoriesStore'
 import { useProfilesStore } from '../store/profilesStore'
+import { useAppStore } from '../store/appStore'
 
 type Mode = 'idle' | 'add' | 'edit'
 
@@ -22,6 +23,7 @@ function editFormFromRepo(r: RepositoryRecord): EditForm {
 export default function RepositoriesScreen(): React.ReactElement {
   const { repos, addRepository, updateRepo, removeRepo } = useRepositoriesStore()
   const { profiles, activeProfileId } = useProfilesStore()
+  const setActiveRepo = useAppStore((s) => s.setActiveRepo)
 
   const [mode, setMode] = useState<Mode>('idle')
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -39,6 +41,7 @@ export default function RepositoriesScreen(): React.ReactElement {
     setMode('edit')
     setError(null)
     setConfirmRemove(false)
+    setActiveRepo(r)
   }
 
   function startAdd() {

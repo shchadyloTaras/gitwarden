@@ -97,8 +97,7 @@ test.describe('Status & Staging UI', () => {
     await win.getByTestId('nav-status').click()
     await expect(win.getByTestId('screen-status')).toBeVisible()
 
-    // Select fixture-a from the repo dropdown
-    await win.getByTestId('status-repo-select').selectOption({ label: 'fixture-a' })
+    // fixture-a is auto-selected as active repo
 
     // hello.txt should appear in unstaged section (modified, not staged)
     await expect(win.getByTestId('unstaged-list')).toContainText('hello.txt', { timeout: 10000 })
@@ -146,8 +145,7 @@ test.describe('Status & Staging UI', () => {
     await win.getByTestId('nav-status').click()
     await expect(win.getByTestId('screen-status')).toBeVisible()
 
-    // Select fixture-b
-    await win.getByTestId('status-repo-select').selectOption({ label: 'fixture-b' })
+    // fixture-b is auto-selected as active repo
 
     // world.txt is MM: appears in BOTH staged and unstaged sections
     await expect(win.getByTestId('staged-list')).toContainText('world.txt', { timeout: 10000 })

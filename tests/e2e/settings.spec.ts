@@ -172,8 +172,8 @@ test('StatusScreen — untracked file Delete shows irreversible warning, tracked
     await win.click('[data-testid="nav-status"]')
     await win.waitForSelector('[data-testid="screen-status"]')
 
-    // Select the repo
-    await win.selectOption('[data-testid="status-repo-select"]', { label: 'fixture' })
+    // Select the fixture repo from the global header (other repos may exist from prior tests)
+    await win.getByTestId('header-repo-select').selectOption({ label: 'fixture' })
     await win.waitForSelector('[data-testid="unstaged-section"]', { timeout: 10000 })
 
     // Click Discard on the tracked file

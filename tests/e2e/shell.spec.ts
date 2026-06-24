@@ -9,14 +9,13 @@ async function launchApp() {
 }
 
 test.describe('App shell & navigation', () => {
-  test('global header shows repo, branch, and safety badge', async () => {
+  test('global header shows repo selector and safety badge', async () => {
     const app = await launchApp()
     try {
       const win = await app.firstWindow()
       await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
-      await expect(win.getByTestId('header-repo')).toHaveText('gitwarden')
-      await expect(win.getByTestId('header-branch')).toHaveText('main')
+      await expect(win.getByTestId('header-repo-select')).toBeVisible()
       await expect(win.getByTestId('header-safety-badge')).toHaveText('Safe')
     } finally {
       await app.close()

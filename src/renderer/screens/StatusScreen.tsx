@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import type { FileChange } from '../../core/types'
 import { useStatusStore } from '../store/statusStore'
-import { useRepositoriesStore } from '../store/repositoriesStore'
+import { useAppStore } from '../store/appStore'
 import { STR } from '../strings'
 
 function isStagedChange(f: FileChange): boolean {
@@ -471,11 +471,10 @@ function DiffPanel({
 }
 
 export default function StatusScreen(): React.ReactElement {
-  const { repos } = useRepositoriesStore()
+  const activeRepo = useAppStore((s) => s.activeRepo)
   const { status, loading, error, loadStatus, stageFile, unstageFile, stageAll, unstageAll } =
     useStatusStore()
 
-  const [selectedRepoId, setSelectedRepoId] = useState<string>('')
   const [opError, setOpError] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<FileChange | null>(null)
   const [diffMode, setDiffMode] = useState<'staged' | 'unstaged'>('unstaged')
@@ -485,19 +484,17 @@ export default function StatusScreen(): React.ReactElement {
   const [confirmDiscardPath, setConfirmDiscardPath] = useState<string | null>(null)
   const [confirmCleanPath, setConfirmCleanPath] = useState<string | null>(null)
 
-  const selectedRepo = repos.find((r) => r.id === selectedRepoId) ?? null
-
   useEffect(() => {
     setSelectedFile(null)
     setDiff(null)
-    if (selectedRepo) {
-      void loadStatus(selectedRepo.localPath)
+    if (activeRepo) {
+      void loadStatus(activeRepo.localPath)
     }
-  }, [selectedRepo, loadStatus])
+  }, [activeRepo, loadStatus])
 
   // Load diff whenever selected file or mode changes
   useEffect(() => {
-    if (!selectedRepo || !selectedFile) {
+    if (!activeRepo || !selectedFile) {
       setDiff(null)
       return
     }
@@ -507,12 +504,12 @@ export default function StatusScreen(): React.ReactElement {
     }
     setDiffLoading(true)
     void window.api.git
-      .getDiff(selectedRepo.localPath, selectedFile.path, diffMode === 'staged')
+      .getDiff(activeRepo.localPath, selectedFile.path, diffMode === 'staged')
       .then((res) => {
         setDiff(res.ok ? res.data : null)
         setDiffLoading(false)
       })
-  }, [selectedRepo, selectedFile, diffMode])
+  }, [activeRepo, selectedFile, diffMode])
 
   async function act(fn: () => Promise<void>): Promise<void> {
     setOpError(null)
@@ -524,22 +521,22 @@ export default function StatusScreen(): React.ReactElement {
   }
 
   async function doDiscardFile(filePath: string): Promise<void> {
-    if (!selectedRepo) return
+    if (!activeRepo) return
     setConfirmDiscardPath(null)
     await act(async () => {
-      const res = await window.api.git.discardFile(selectedRepo.localPath, filePath)
+      const res = await window.api.git.discardFile(activeRepo.localPath, filePath)
       if (!res.ok) throw new Error(res.error)
-      await loadStatus(selectedRepo.localPath)
+      await loadStatus(activeRepo.localPath)
     })
   }
 
   async function doCleanFile(filePath: string): Promise<void> {
-    if (!selectedRepo) return
+    if (!activeRepo) return
     setConfirmCleanPath(null)
     await act(async () => {
-      const res = await window.api.git.cleanFile(selectedRepo.localPath, filePath)
+      const res = await window.api.git.cleanFile(activeRepo.localPath, filePath)
       if (!res.ok) throw new Error(res.error)
-      await loadStatus(selectedRepo.localPath)
+      await loadStatus(activeRepo.localPath)
     })
   }
 
@@ -580,36 +577,10 @@ export default function StatusScreen(): React.ReactElement {
           flexShrink: 0,
         }}
       >
-        <select
-          data-testid="status-repo-select"
-          value={selectedRepoId}
-          onChange={(e) => {
-            setSelectedRepoId(e.target.value)
-            setOpError(null)
-          }}
-          style={{
-            padding: '4px 8px',
-            background: '#27272a',
-            border: '1px solid #3f3f46',
-            borderRadius: 4,
-            color: '#e4e4e7',
-            fontSize: 12,
-            cursor: 'pointer',
-            minWidth: 160,
-          }}
-        >
-          <option value="">Select a repository…</option>
-          {repos.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.name}
-            </option>
-          ))}
-        </select>
-
-        {selectedRepo && (
+        {activeRepo && (
           <button
             data-testid="status-refresh"
-            onClick={() => act(() => loadStatus(selectedRepo.localPath))}
+            onClick={() => act(() => loadStatus(activeRepo.localPath))}
             disabled={loading}
             style={{
               padding: '4px 10px',
@@ -628,7 +599,7 @@ export default function StatusScreen(): React.ReactElement {
 
       {/* Body */}
       <div style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
-        {!selectedRepo && (
+        {!activeRepo && (
           <div
             style={{
               flex: 1,
@@ -639,11 +610,11 @@ export default function StatusScreen(): React.ReactElement {
               fontSize: 13,
             }}
           >
-            Select a repository to view its status.
+            Add a repository to get started.
           </div>
         )}
 
-        {selectedRepo && (
+        {activeRepo && (
           <>
             {/* Left: file list */}
             <div

@@ -95,8 +95,7 @@ test.describe('History', () => {
     await win.getByTestId('nav-history').click()
     await expect(win.getByTestId('screen-history')).toBeVisible()
 
-    // Select the repo
-    await win.getByTestId('history-repo-select').selectOption({ label: 'history-fixture' })
+    // history-fixture is auto-selected as active repo
 
     // All 6 commits should appear
     await expect(win.getByTestId('history-commit-list')).toBeVisible({ timeout: 10_000 })
@@ -140,7 +139,7 @@ test.describe('History', () => {
       await win.getByTestId('nav-history').click()
       await expect(win.getByTestId('screen-history')).toBeVisible()
 
-      await win.getByTestId('history-repo-select').selectOption({ label: 'history-big' })
+      // history-big is auto-selected as active repo
       await expect(win.getByTestId('history-commit-list')).toBeVisible({ timeout: 10_000 })
 
       // First page: exactly 50 rows

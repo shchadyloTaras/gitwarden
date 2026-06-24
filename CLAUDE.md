@@ -76,6 +76,7 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - [x] Phase 16 — History
 - [x] Phase 17 — Safety Center
 - [x] Phase 18 — Settings, Polish & Hardening
+- [x] Phase 20 — Global Repo Context
 
 ## Progress Log
 
@@ -244,3 +245,11 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - Tests: `npm run lint` passed; `npx tsc --noEmit -p tsconfig.node.json` passed; `npx tsc --noEmit -p tsconfig.web.json` passed; `npm test` passed (162/162); `npm run e2e` passed (36/36, escalated because Electron GUI launch is sandbox-restricted).
 - Exit criteria: ✅ met — every screen has loading/empty/error coverage from prior UI phases plus Phase 18 settings states; irreversible untracked delete warns distinctly from tracked discard; Appendix D security checklist reviewed; strings centralized for new UI and safety messages; full local lint/unit/e2e gates green.
 - Notes / follow-ups: CI matrix is not configured in this repo, so mac/linux/win matrix execution was not run locally. `GitLocator` still performs the initial version probe in the git layer; normal repository operations remain behind `GitRunner`.
+
+### 2026-06-24 — Phase 20: Global Repo Context
+
+- Built: `appStore.activeRepo` upgraded from hardcoded `SeedRepo` to real `RepositoryRecord | null`; auto-select effect in `App.tsx` picks first available repo (handles first-load, repo deletion, and all-repos-removed edge cases); `GlobalHeader` replaced static repo/branch display with interactive `<select data-testid="header-repo-select">` + `<select data-testid="header-branch-select">` — repo select driven by `repositoriesStore`, branch select driven by `branchStore` (loaded on `activeRepo` change); all 6 GIT screens (Status, Commit, Remote, Branches, History, Safety Center) removed per-screen repo pickers and now read `appStore.activeRepo`; `RepositoriesScreen` sets active repo on click; Playwright tests updated (removed all `*-repo-select.selectOption` calls replaced by auto-selection; `header-branch` assertions updated to `header-branch-select.toHaveValue`).
+- Files: updated `src/renderer/store/appStore.ts` (removed SeedRepo, uses RepositoryRecord), `src/renderer/App.tsx` (auto-select effect), `src/renderer/components/GlobalHeader.tsx` (repo+branch pickers), `src/renderer/screens/RepositoriesScreen.tsx` (setActiveRepo on click), `src/renderer/screens/StatusScreen.tsx`, `src/renderer/screens/CommitScreen.tsx`, `src/renderer/screens/RemoteScreen.tsx`, `src/renderer/screens/BranchesScreen.tsx`, `src/renderer/screens/HistoryScreen.tsx`, `src/renderer/screens/SafetyCenterScreen.tsx`; updated 7 e2e test files; updated `CLAUDE.md`.
+- Tests: `npm run lint` passed; `npx tsc --noEmit` clean on both tsconfig variants; `npm test` 162/162; `npm run e2e` 38/38.
+- Exit criteria: ✅ met — selecting a repo in the header propagates to all GIT screens; switching branches via header updates `currentBranch` in appStore; first repo auto-selects on app start and after repo removal; all existing tests pass.
+- Notes / follow-ups: Branch picker in header only appears once branches load (after `branchStore.load` completes). `settings.spec.ts` discard test explicitly selects repo via `header-repo-select` since that test shares storage with prior tests and may have multiple repos.

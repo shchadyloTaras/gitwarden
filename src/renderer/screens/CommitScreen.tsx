@@ -1,13 +1,13 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { useRepositoriesStore } from '../store/repositoriesStore'
+import React, { useEffect, useMemo } from 'react'
 import { useProfilesStore } from '../store/profilesStore'
 import { useCommitStore } from '../store/commitStore'
+import { useAppStore } from '../store/appStore'
 import { safetyCheckService } from '../../core/safety/SafetyCheckService'
 
 const IDENTITY_CODES = new Set(['IDENTITY_UNSET', 'EMAIL_MISMATCH', 'EMAIL_FROM_GLOBAL_ONLY'])
 
 export default function CommitScreen(): React.ReactElement {
-  const { repos, load: loadRepos } = useRepositoriesStore()
+  const activeRepo = useAppStore((s) => s.activeRepo)
   const { profiles, activeProfileId } = useProfilesStore()
   const {
     repository,
@@ -25,18 +25,11 @@ export default function CommitScreen(): React.ReactElement {
     doCommit,
   } = useCommitStore()
 
-  const [selectedRepoId, setSelectedRepoId] = useState<string>('')
-
   const activeProfile = profiles.find((p) => p.id === activeProfileId)
 
   useEffect(() => {
-    void loadRepos()
-  }, [loadRepos])
-
-  useEffect(() => {
-    const repo = repos.find((r) => r.id === selectedRepoId)
-    if (repo) void load(repo.localPath, repo)
-  }, [load, repos, selectedRepoId])
+    if (activeRepo) void load(activeRepo.localPath, activeRepo)
+  }, [load, activeRepo])
 
   const safetyResult = useMemo(() => {
     if (!status || !identity || !repository) return null
@@ -83,40 +76,12 @@ export default function CommitScreen(): React.ReactElement {
     >
       <h2 style={{ margin: '0 0 20px', fontSize: '18px', fontWeight: 600 }}>Commit</h2>
 
-      {/* Repository picker */}
-      <div style={{ marginBottom: '16px' }}>
-        <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '4px' }}>
-          Repository
-        </label>
-        <select
-          data-testid="commit-repo-select"
-          value={selectedRepoId}
-          onChange={(e) => setSelectedRepoId(e.target.value)}
-          style={{
-            width: '100%',
-            padding: '6px 8px',
-            background: '#1e1e1e',
-            border: '1px solid #333',
-            borderRadius: '4px',
-            color: '#e0e0e0',
-            fontSize: '13px',
-          }}
-        >
-          <option value="">— Select a repository —</option>
-          {repos.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
       {loading && (
         <div style={{ color: '#888', fontSize: '13px', marginBottom: '16px' }}>Loading…</div>
       )}
 
-      {!loading && !repository && !selectedRepoId && (
-        <div style={{ color: '#666', fontSize: '13px' }}>Select a repository to continue.</div>
+      {!loading && !repository && !activeRepo && (
+        <div style={{ color: '#666', fontSize: '13px' }}>Add a repository to get started.</div>
       )}
 
       {!loading && repository && (

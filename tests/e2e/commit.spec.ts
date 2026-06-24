@@ -82,11 +82,10 @@ test.describe('Commit Flow', () => {
     await app.close()
   })
 
-  test('commit screen renders and shows placeholder when no repo is selected', async () => {
+  test('commit screen renders with no repo selected', async () => {
     await win.getByTestId('nav-commit').click()
     await expect(win.getByTestId('screen-commit')).toBeVisible()
-    await expect(win.getByTestId('commit-repo-select')).toBeVisible()
-    // Commit button is absent until a repo is selected
+    // Commit button is absent when no repo is active
     await expect(win.getByTestId('commit-btn')).not.toBeVisible()
   })
 
@@ -133,10 +132,7 @@ test.describe('Commit Flow', () => {
     await win.getByTestId('nav-commit').click()
     await expect(win.getByTestId('screen-commit')).toBeVisible()
 
-    // Select the fixture repo
-    await win.getByTestId('commit-repo-select').selectOption({ label: 'commit-fixture' })
-
-    // Wait for status + identity to load
+    // Wait for status + identity to load (auto-selected from header)
     await expect(win.getByTestId('commit-staged-summary')).toBeVisible({ timeout: 10000 })
 
     // The staged file should appear

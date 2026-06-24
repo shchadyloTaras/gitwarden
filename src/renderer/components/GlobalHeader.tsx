@@ -1,6 +1,8 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useAppStore, SafetyBadge } from '../store/appStore'
 import { useProfilesStore, profileColor } from '../store/profilesStore'
+import { useRepositoriesStore } from '../store/repositoriesStore'
+import { useBranchStore } from '../store/branchStore'
 
 const BADGE_STYLE: Record<SafetyBadge, React.CSSProperties> = {
   safe: { background: '#16a34a', color: '#fff' },
@@ -14,11 +16,34 @@ const BADGE_LABEL: Record<SafetyBadge, string> = {
   blocked: 'Blocked',
 }
 
+const SELECT_STYLE: React.CSSProperties = {
+  background: 'transparent',
+  border: 'none',
+  color: '#e4e4e7',
+  fontSize: 13,
+  cursor: 'pointer',
+  outline: 'none',
+  padding: '2px 4px',
+  borderRadius: 4,
+  maxWidth: 180,
+}
+
 export default function GlobalHeader(): React.ReactElement {
-  const { activeRepo, currentBranch, safetyBadge, toggleInspector } = useAppStore()
+  const { activeRepo, currentBranch, safetyBadge, toggleInspector, setActiveRepo } = useAppStore()
+  const repos = useRepositoriesStore((s) => s.repos)
   const profiles = useProfilesStore((s) => s.profiles)
   const activeProfileId = useProfilesStore((s) => s.activeProfileId)
   const activeProfile = profiles.find((p) => p.id === activeProfileId) ?? null
+  const { branches, load: loadBranches, doSwitch } = useBranchStore()
+
+  // Load branches whenever the active repo changes
+  useEffect(() => {
+    if (activeRepo) {
+      void loadBranches(activeRepo.localPath, activeRepo)
+    }
+  }, [activeRepo, loadBranches])
+
+  const localBranches = branches.filter((b) => !b.isRemote)
 
   return (
     <header
@@ -42,14 +67,54 @@ export default function GlobalHeader(): React.ReactElement {
 
       <div style={{ width: 1, height: 20, background: '#3f3f46' }} />
 
-      <span
-        data-testid="header-repo"
-        style={{ fontSize: 13, color: activeRepo ? '#e4e4e7' : '#71717a' }}
+      {/* Repo picker */}
+      <select
+        data-testid="header-repo-select"
+        value={activeRepo?.id ?? ''}
+        onChange={(e) => {
+          const repo = repos.find((r) => r.id === e.target.value) ?? null
+          setActiveRepo(repo)
+        }}
+        style={activeRepo ? SELECT_STYLE : { ...SELECT_STYLE, color: '#71717a' }}
       >
-        {activeRepo ? activeRepo.name : 'No repository'}
-      </span>
+        {repos.length === 0 && <option value="">No repositories</option>}
+        {repos.map((r) => (
+          <option key={r.id} value={r.id}>
+            {r.name}
+          </option>
+        ))}
+      </select>
 
-      {currentBranch && (
+      {/* Branch picker */}
+      {localBranches.length > 0 && (
+        <>
+          <span style={{ color: '#52525b', fontSize: 12 }}>on</span>
+          <select
+            data-testid="header-branch-select"
+            value={currentBranch ?? ''}
+            onChange={(e) => {
+              void doSwitch(e.target.value)
+            }}
+            style={{
+              ...SELECT_STYLE,
+              fontSize: 12,
+              fontFamily: 'monospace',
+              background: '#27272a',
+              padding: '2px 6px',
+              maxWidth: 140,
+            }}
+          >
+            {localBranches.map((b) => (
+              <option key={b.name} value={b.name}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        </>
+      )}
+
+      {/* Fallback: show branch text when branches not loaded yet */}
+      {localBranches.length === 0 && currentBranch && (
         <>
           <span style={{ color: '#52525b', fontSize: 12 }}>on</span>
           <span
