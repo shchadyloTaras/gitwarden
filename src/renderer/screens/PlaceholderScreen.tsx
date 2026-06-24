@@ -16,10 +16,12 @@ export function PlaceholderScreen({ title, description }: Props): React.ReactEle
         justifyContent: 'center',
         height: '100%',
         gap: 8,
-        color: '#71717a',
+        color: 'var(--gw-text-faint, #71717a)',
       }}
     >
-      <div style={{ fontSize: 18, fontWeight: 600, color: '#a1a1aa' }}>{title}</div>
+      <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--gw-text-muted, #a1a1aa)' }}>
+        {title}
+      </div>
       <div style={{ fontSize: 13 }}>{description}</div>
     </div>
   )

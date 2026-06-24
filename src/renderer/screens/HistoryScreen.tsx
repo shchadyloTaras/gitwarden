@@ -8,7 +8,7 @@ const ROW: React.CSSProperties = {
   alignItems: 'baseline',
   gap: 12,
   padding: '7px 16px',
-  borderBottom: '1px solid #27272a',
+  borderBottom: '1px solid var(--gw-border, #27272a)',
   fontSize: 13,
 }
 
@@ -23,7 +23,12 @@ export default function HistoryScreen(): React.ReactElement {
   return (
     <div
       data-testid="screen-history"
-      style={{ display: 'flex', flexDirection: 'column', height: '100%', color: '#e4e4e7' }}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        color: 'var(--gw-text, #f4f4f5)',
+      }}
     >
       {/* Header */}
       <div
@@ -32,24 +37,31 @@ export default function HistoryScreen(): React.ReactElement {
           alignItems: 'center',
           gap: 12,
           padding: '12px 16px',
-          borderBottom: '1px solid #27272a',
-          background: '#18181b',
+          borderBottom: '1px solid var(--gw-border, #27272a)',
+          background: 'var(--gw-surface, #18181b)',
           flexShrink: 0,
         }}
       >
         <span style={{ fontWeight: 600, fontSize: 14 }}>History</span>
         {activeRepo && !loading && (
-          <span style={{ fontSize: 12, color: '#71717a' }}>{commits.length} commits loaded</span>
+          <span style={{ fontSize: 12, color: 'var(--gw-text-faint, #71717a)' }}>
+            {commits.length} commits loaded
+          </span>
         )}
       </div>
 
       {/* Body */}
       {!activeRepo ? (
-        <div data-testid="history-empty" style={{ padding: 24, color: '#71717a', fontSize: 13 }}>
+        <div
+          data-testid="history-empty"
+          style={{ padding: 24, color: 'var(--gw-text-faint, #71717a)', fontSize: 13 }}
+        >
           Add a repository to get started.
         </div>
       ) : loading ? (
-        <div style={{ padding: 24, color: '#71717a', fontSize: 13 }}>Loading…</div>
+        <div style={{ padding: 24, color: 'var(--gw-text-faint, #71717a)', fontSize: 13 }}>
+          Loading…
+        </div>
       ) : (
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
           {error && (
@@ -58,11 +70,11 @@ export default function HistoryScreen(): React.ReactElement {
               style={{
                 margin: '12px 16px',
                 padding: '8px 12px',
-                background: '#450a0a',
-                border: '1px solid #dc2626',
+                background: 'var(--gw-danger-bg, #450a0a)',
+                border: '1px solid var(--gw-danger-solid, #dc2626)',
                 borderRadius: 4,
                 fontSize: 13,
-                color: '#fca5a5',
+                color: 'var(--gw-danger, #f87171)',
               }}
             >
               {error}
@@ -70,7 +82,7 @@ export default function HistoryScreen(): React.ReactElement {
           )}
 
           {commits.length === 0 && !error && (
-            <div style={{ padding: 24, color: '#71717a', fontSize: 13 }}>
+            <div style={{ padding: 24, color: 'var(--gw-text-faint, #71717a)', fontSize: 13 }}>
               No commits found in this repository.
             </div>
           )}
@@ -81,9 +93,9 @@ export default function HistoryScreen(): React.ReactElement {
               style={{
                 ...ROW,
                 fontSize: 11,
-                color: '#52525b',
-                borderBottom: '1px solid #3f3f46',
-                background: '#18181b',
+                color: 'var(--gw-text-dim, #52525b)',
+                borderBottom: '1px solid var(--gw-surface3, #3f3f46)',
+                background: 'var(--gw-surface, #18181b)',
                 position: 'sticky',
                 top: 0,
               }}
@@ -100,7 +112,12 @@ export default function HistoryScreen(): React.ReactElement {
             {commits.map((c) => (
               <div key={c.fullHash} data-testid="history-commit-row" style={ROW}>
                 <span
-                  style={{ fontFamily: 'monospace', fontSize: 12, color: '#6366f1', flexShrink: 0 }}
+                  style={{
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                    color: 'var(--gw-accent, #6366f1)',
+                    flexShrink: 0,
+                  }}
                 >
                   {c.shortHash}
                 </span>
@@ -109,7 +126,7 @@ export default function HistoryScreen(): React.ReactElement {
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
-                    color: '#e4e4e7',
+                    color: 'var(--gw-text, #f4f4f5)',
                   }}
                   title={c.message}
                 >
@@ -120,14 +137,20 @@ export default function HistoryScreen(): React.ReactElement {
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
-                    color: '#a1a1aa',
+                    color: 'var(--gw-text-muted, #a1a1aa)',
                     fontSize: 12,
                   }}
                   title={c.authorEmail}
                 >
                   {c.authorName}
                 </span>
-                <span style={{ color: '#71717a', fontSize: 12, whiteSpace: 'nowrap' }}>
+                <span
+                  style={{
+                    color: 'var(--gw-text-faint, #71717a)',
+                    fontSize: 12,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
                   {new Date(c.date).toLocaleDateString()}
                 </span>
               </div>
@@ -145,9 +168,11 @@ export default function HistoryScreen(): React.ReactElement {
                   fontSize: 13,
                   padding: '6px 16px',
                   borderRadius: 4,
-                  border: '1px solid #3f3f46',
+                  border: '1px solid var(--gw-surface3, #3f3f46)',
                   background: 'none',
-                  color: loadingMore ? '#52525b' : '#a1a1aa',
+                  color: loadingMore
+                    ? 'var(--gw-text-dim, #52525b)'
+                    : 'var(--gw-text-muted, #a1a1aa)',
                   cursor: loadingMore ? 'default' : 'pointer',
                 }}
               >

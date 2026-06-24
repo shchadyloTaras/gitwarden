@@ -251,7 +251,7 @@ export default function OnboardingTour({
           style={{
             position: 'absolute',
             inset: 0,
-            background: 'rgba(3, 7, 18, 0.72)',
+            background: 'var(--gw-overlay)',
           }}
         />
       )}
@@ -265,9 +265,9 @@ export default function OnboardingTour({
             left: targetRect.left - SPOTLIGHT_PAD,
             width: targetRect.width + SPOTLIGHT_PAD * 2,
             height: targetRect.height + SPOTLIGHT_PAD * 2,
-            border: '2px solid #818cf8',
+            border: '2px solid var(--gw-accent-text, #a5b4fc)',
             borderRadius: 8,
-            boxShadow: '0 0 0 9999px rgba(3, 7, 18, 0.7), 0 0 0 4px rgba(99, 102, 241, 0.25)',
+            boxShadow: '0 0 0 9999px var(--gw-overlay), 0 0 0 4px var(--gw-accent-ring)',
             pointerEvents: 'none',
           }}
         />
@@ -284,7 +284,7 @@ export default function OnboardingTour({
           background: 'var(--gw-surface, #18181b)',
           border: '1px solid var(--gw-border-subtle, #3f3f46)',
           borderRadius: 8,
-          boxShadow: '0 22px 70px rgba(0, 0, 0, 0.38)',
+          boxShadow: '0 22px 70px var(--gw-shadow)',
           color: 'var(--gw-text, #f4f4f5)',
           padding: 18,
           ...tooltipStyle,
@@ -371,7 +371,7 @@ export default function OnboardingTour({
               background: 'var(--gw-accent, #6366f1)',
               border: 'none',
               borderRadius: 4,
-              color: '#fff',
+              color: 'var(--gw-on-solid, #fff)',
               cursor: 'pointer',
               fontSize: 12,
               fontWeight: 700,

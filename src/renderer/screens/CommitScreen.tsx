@@ -77,25 +77,37 @@ export default function CommitScreen(): React.ReactElement {
       <h2 style={{ margin: '0 0 20px', fontSize: '18px', fontWeight: 600 }}>Commit</h2>
 
       {loading && (
-        <div style={{ color: '#888', fontSize: '13px', marginBottom: '16px' }}>Loading…</div>
+        <div
+          style={{ color: 'var(--gw-text-faint, #71717a)', fontSize: '13px', marginBottom: '16px' }}
+        >
+          Loading…
+        </div>
       )}
 
       {!loading && !repository && !activeRepo && (
-        <div style={{ color: '#666', fontSize: '13px' }}>Add a repository to get started.</div>
+        <div style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: '13px' }}>
+          Add a repository to get started.
+        </div>
       )}
 
       {!loading && repository && (
         <>
           {/* Staged changes summary */}
           <div style={{ marginBottom: '16px' }}>
-            <div style={{ fontSize: '12px', color: '#888', marginBottom: '6px' }}>
+            <div
+              style={{
+                fontSize: '12px',
+                color: 'var(--gw-text-faint, #71717a)',
+                marginBottom: '6px',
+              }}
+            >
               Staged Changes ({stagedFiles.length})
             </div>
             <div
               data-testid="commit-staged-summary"
               style={{
-                background: '#1a1a1a',
-                border: '1px solid #2a2a2a',
+                background: 'var(--gw-surface, #18181b)',
+                border: '1px solid var(--gw-border, #27272a)',
                 borderRadius: '4px',
                 padding: stagedFiles.length ? '8px' : '10px 12px',
                 fontSize: '13px',
@@ -104,10 +116,13 @@ export default function CommitScreen(): React.ReactElement {
               }}
             >
               {stagedFiles.length === 0 ? (
-                <span style={{ color: '#555' }}>No staged changes</span>
+                <span style={{ color: 'var(--gw-text-dim, #52525b)' }}>No staged changes</span>
               ) : (
                 stagedFiles.map((f) => (
-                  <div key={f.path} style={{ color: '#4ade80', padding: '2px 0' }}>
+                  <div
+                    key={f.path}
+                    style={{ color: 'var(--gw-success, #4ade80)', padding: '2px 0' }}
+                  >
                     + {f.path}
                   </div>
                 ))
@@ -118,7 +133,12 @@ export default function CommitScreen(): React.ReactElement {
           {/* Commit message */}
           <div style={{ marginBottom: '16px' }}>
             <label
-              style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '4px' }}
+              style={{
+                display: 'block',
+                fontSize: '12px',
+                color: 'var(--gw-text-faint, #71717a)',
+                marginBottom: '4px',
+              }}
             >
               Commit Message
             </label>
@@ -131,10 +151,10 @@ export default function CommitScreen(): React.ReactElement {
               style={{
                 width: '100%',
                 padding: '8px',
-                background: '#1e1e1e',
-                border: '1px solid #333',
+                background: 'var(--gw-input-bg, #09090b)',
+                border: '1px solid var(--gw-border-subtle, #3f3f46)',
                 borderRadius: '4px',
-                color: '#e0e0e0',
+                color: 'var(--gw-text, #f4f4f5)',
                 fontSize: '13px',
                 resize: 'vertical',
                 fontFamily: 'inherit',
@@ -149,7 +169,7 @@ export default function CommitScreen(): React.ReactElement {
               data-testid="commit-safety-issues"
               style={{
                 marginBottom: '16px',
-                border: '1px solid #2a2a2a',
+                border: '1px solid var(--gw-border, #27272a)',
                 borderRadius: '4px',
                 overflow: 'hidden',
               }}
@@ -160,10 +180,10 @@ export default function CommitScreen(): React.ReactElement {
                   data-testid="commit-blocker"
                   style={{
                     padding: '8px 12px',
-                    background: '#2d1b1b',
-                    borderBottom: '1px solid #3d2020',
+                    background: 'var(--gw-danger-bg, #450a0a)',
+                    borderBottom: '1px solid var(--gw-danger-border, #991b1b)',
                     fontSize: '13px',
-                    color: '#f87171',
+                    color: 'var(--gw-danger, #f87171)',
                     display: 'flex',
                     alignItems: 'flex-start',
                     gap: '8px',
@@ -179,10 +199,10 @@ export default function CommitScreen(): React.ReactElement {
                   data-testid="commit-warning"
                   style={{
                     padding: '8px 12px',
-                    background: '#2d2a1b',
-                    borderBottom: '1px solid #3d3520',
+                    background: 'var(--gw-warning-bg, #422006)',
+                    borderBottom: '1px solid var(--gw-warning-border, #78350f)',
                     fontSize: '13px',
-                    color: '#fbbf24',
+                    color: 'var(--gw-warning, #fbbf24)',
                     display: 'flex',
                     alignItems: 'flex-start',
                     gap: '8px',
@@ -196,8 +216,11 @@ export default function CommitScreen(): React.ReactElement {
                 <div
                   style={{
                     padding: '10px 12px',
-                    background: '#1a1a2e',
-                    borderTop: blockers.length + warnings.length > 0 ? '1px solid #2a2a3a' : 'none',
+                    background: 'var(--gw-accent-soft, #1e1b4b)',
+                    borderTop:
+                      blockers.length + warnings.length > 0
+                        ? '1px solid var(--gw-accent-soft, #1e1b4b)'
+                        : 'none',
                   }}
                 >
                   <button
@@ -205,8 +228,8 @@ export default function CommitScreen(): React.ReactElement {
                     onClick={handleSetIdentity}
                     disabled={identityLoading}
                     style={{
-                      background: '#3b82f6',
-                      color: '#fff',
+                      background: 'var(--gw-primary, #2563eb)',
+                      color: 'var(--gw-on-solid, #fff)',
                       border: 'none',
                       borderRadius: '4px',
                       padding: '6px 12px',
@@ -218,7 +241,13 @@ export default function CommitScreen(): React.ReactElement {
                       ? 'Setting…'
                       : `Set local identity to "${activeProfile!.displayName}" (${activeProfile!.gitAuthorName} <${activeProfile!.gitAuthorEmail}>)`}
                   </button>
-                  <div style={{ marginTop: '4px', fontSize: '11px', color: '#666' }}>
+                  <div
+                    style={{
+                      marginTop: '4px',
+                      fontSize: '11px',
+                      color: 'var(--gw-text-dim, #52525b)',
+                    }}
+                  >
                     This changes local repository Git config only, not global Git config.
                   </div>
                 </div>
@@ -228,7 +257,11 @@ export default function CommitScreen(): React.ReactElement {
 
           {/* Commit error */}
           {error && (
-            <div style={{ color: '#f87171', fontSize: '13px', marginBottom: '12px' }}>{error}</div>
+            <div
+              style={{ color: 'var(--gw-danger, #f87171)', fontSize: '13px', marginBottom: '12px' }}
+            >
+              {error}
+            </div>
           )}
 
           {/* Success */}
@@ -237,11 +270,11 @@ export default function CommitScreen(): React.ReactElement {
               data-testid="commit-success"
               style={{
                 padding: '10px 14px',
-                background: '#1a2d1b',
-                border: '1px solid #2d4a2d',
+                background: 'var(--gw-success-bg, #052e16)',
+                border: '1px solid var(--gw-success-border, #2d4a2d)',
                 borderRadius: '4px',
                 fontSize: '13px',
-                color: '#4ade80',
+                color: 'var(--gw-success, #4ade80)',
                 marginBottom: '16px',
               }}
             >
@@ -266,8 +299,12 @@ export default function CommitScreen(): React.ReactElement {
                 onClick={handleCommit}
                 disabled={!safetyResult?.canCommit || commitLoading}
                 style={{
-                  background: safetyResult?.canCommit ? '#3b82f6' : '#333',
-                  color: safetyResult?.canCommit ? '#fff' : '#555',
+                  background: safetyResult?.canCommit
+                    ? 'var(--gw-primary, #2563eb)'
+                    : 'var(--gw-primary-disabled-bg, #333333)',
+                  color: safetyResult?.canCommit
+                    ? 'var(--gw-on-solid, #fff)'
+                    : 'var(--gw-primary-disabled-text, #555555)',
                   border: 'none',
                   borderRadius: '4px',
                   padding: '8px 20px',

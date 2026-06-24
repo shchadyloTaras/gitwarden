@@ -4,6 +4,7 @@ import { useRepositoriesStore } from '../store/repositoriesStore'
 import { useProfilesStore } from '../store/profilesStore'
 import { useAppStore } from '../store/appStore'
 import Dropdown from '../components/Dropdown'
+import { STR } from '../strings'
 
 type Mode = 'idle' | 'add' | 'edit'
 
@@ -32,6 +33,7 @@ export default function RepositoriesScreen(): React.ReactElement {
   const [editForm, setEditForm] = useState<EditForm>({ name: '', assignedProfileId: '', notes: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [confirmRemove, setConfirmRemove] = useState(false)
 
   const selectedRepo = repos.find((r) => r.id === selectedId) ?? null
@@ -41,6 +43,7 @@ export default function RepositoriesScreen(): React.ReactElement {
     setEditForm(editFormFromRepo(r))
     setMode('edit')
     setError(null)
+    setSuccessMessage(null)
     setConfirmRemove(false)
     setActiveRepo(r)
   }
@@ -50,6 +53,7 @@ export default function RepositoriesScreen(): React.ReactElement {
     setAddPath('')
     setMode('add')
     setError(null)
+    setSuccessMessage(null)
   }
 
   async function handleBrowse() {
@@ -59,6 +63,7 @@ export default function RepositoriesScreen(): React.ReactElement {
 
   async function handleValidateAndAdd() {
     setError(null)
+    setSuccessMessage(null)
     const trimmed = addPath.trim()
     if (!trimmed) {
       setError('Enter or browse to a repository path.')
@@ -79,12 +84,14 @@ export default function RepositoriesScreen(): React.ReactElement {
     if (!selectedId) return
     setSaving(true)
     setError(null)
+    setSuccessMessage(null)
     try {
       await updateRepo(selectedId, {
         name: editForm.name.trim() || selectedRepo?.name,
         assignedProfileId: editForm.assignedProfileId || undefined,
         notes: editForm.notes.trim() || undefined,
       })
+      setSuccessMessage(STR.REPOSITORY_SAVED)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
@@ -95,6 +102,7 @@ export default function RepositoriesScreen(): React.ReactElement {
   async function handleRemove() {
     if (!selectedId) return
     setSaving(true)
+    setSuccessMessage(null)
     try {
       await removeRepo(selectedId)
       setSelectedId(null)
@@ -122,7 +130,7 @@ export default function RepositoriesScreen(): React.ReactElement {
         style={{
           width: 220,
           flexShrink: 0,
-          borderRight: '1px solid #27272a',
+          borderRight: '1px solid var(--gw-border, #27272a)',
           display: 'flex',
           flexDirection: 'column',
         }}
@@ -133,7 +141,7 @@ export default function RepositoriesScreen(): React.ReactElement {
             fontSize: 11,
             fontWeight: 700,
             letterSpacing: '0.06em',
-            color: '#52525b',
+            color: 'var(--gw-text-dim, #52525b)',
           }}
         >
           REPOSITORIES
@@ -141,7 +149,14 @@ export default function RepositoriesScreen(): React.ReactElement {
 
         <div data-testid="repos-list" style={{ flex: 1, overflowY: 'auto' }}>
           {repos.length === 0 && (
-            <div style={{ padding: 12, fontSize: 12, color: '#52525b', fontStyle: 'italic' }}>
+            <div
+              style={{
+                padding: 12,
+                fontSize: 12,
+                color: 'var(--gw-text-dim, #52525b)',
+                fontStyle: 'italic',
+              }}
+            >
               No repositories yet
             </div>
           )}
@@ -159,10 +174,10 @@ export default function RepositoriesScreen(): React.ReactElement {
                   flexDirection: 'column',
                   width: '100%',
                   padding: '8px 12px',
-                  background: selectedId === r.id ? '#27272a' : 'transparent',
+                  background: selectedId === r.id ? 'var(--gw-surface2, #27272a)' : 'transparent',
                   border: 'none',
-                  borderBottom: '1px solid #1c1c1f',
-                  color: '#e4e4e7',
+                  borderBottom: '1px solid var(--gw-border, #27272a)',
+                  color: 'var(--gw-text, #f4f4f5)',
                   cursor: 'pointer',
                   textAlign: 'left',
                   gap: 2,
@@ -173,7 +188,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                     <span
                       data-testid="repo-item-mismatch"
                       title="Profile mismatch"
-                      style={{ color: '#f97316', fontSize: 10 }}
+                      style={{ color: 'var(--gw-warning, #fbbf24)', fontSize: 10 }}
                     >
                       ⚠
                     </span>
@@ -192,7 +207,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                 <div
                   style={{
                     fontSize: 10,
-                    color: '#52525b',
+                    color: 'var(--gw-text-dim, #52525b)',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
@@ -205,17 +220,17 @@ export default function RepositoriesScreen(): React.ReactElement {
           })}
         </div>
 
-        <div style={{ padding: '8px 12px', borderTop: '1px solid #27272a' }}>
+        <div style={{ padding: '8px 12px', borderTop: '1px solid var(--gw-border, #27272a)' }}>
           <button
             data-testid="repos-add-btn"
             onClick={startAdd}
             style={{
               width: '100%',
               padding: '6px 0',
-              background: '#3f3f46',
+              background: 'var(--gw-surface3, #3f3f46)',
               border: 'none',
               borderRadius: 4,
-              color: '#e4e4e7',
+              color: 'var(--gw-text, #f4f4f5)',
               cursor: 'pointer',
               fontSize: 12,
               fontWeight: 600,
@@ -235,7 +250,7 @@ export default function RepositoriesScreen(): React.ReactElement {
               height: '100%',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#52525b',
+              color: 'var(--gw-text-dim, #52525b)',
               fontSize: 13,
             }}
           >
@@ -245,7 +260,9 @@ export default function RepositoriesScreen(): React.ReactElement {
 
         {mode === 'add' && (
           <div style={{ maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#f4f4f5' }}>
+            <h2
+              style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--gw-text, #f4f4f5)' }}
+            >
               Add Repository
             </h2>
 
@@ -266,10 +283,10 @@ export default function RepositoriesScreen(): React.ReactElement {
                   }}
                   style={{
                     padding: '6px 10px',
-                    background: '#3f3f46',
+                    background: 'var(--gw-surface3, #3f3f46)',
                     border: 'none',
                     borderRadius: 4,
-                    color: '#e4e4e7',
+                    color: 'var(--gw-text, #f4f4f5)',
                     cursor: 'pointer',
                     fontSize: 12,
                   }}
@@ -280,7 +297,10 @@ export default function RepositoriesScreen(): React.ReactElement {
             </Field>
 
             {error && (
-              <div data-testid="repo-error" style={{ fontSize: 12, color: '#f87171' }}>
+              <div
+                data-testid="repo-error"
+                style={{ fontSize: 12, color: 'var(--gw-danger, #f87171)' }}
+              >
                 {error}
               </div>
             )}
@@ -294,10 +314,10 @@ export default function RepositoriesScreen(): React.ReactElement {
                 disabled={saving}
                 style={{
                   padding: '6px 18px',
-                  background: '#2563eb',
+                  background: 'var(--gw-primary, #2563eb)',
                   border: 'none',
                   borderRadius: 4,
-                  color: '#fff',
+                  color: 'var(--gw-on-solid, #fff)',
                   cursor: saving ? 'wait' : 'pointer',
                   fontSize: 12,
                   fontWeight: 600,
@@ -311,9 +331,9 @@ export default function RepositoriesScreen(): React.ReactElement {
                 style={{
                   padding: '6px 14px',
                   background: 'none',
-                  border: '1px solid #3f3f46',
+                  border: '1px solid var(--gw-surface3, #3f3f46)',
                   borderRadius: 4,
-                  color: '#a1a1aa',
+                  color: 'var(--gw-text-muted, #a1a1aa)',
                   cursor: 'pointer',
                   fontSize: 12,
                 }}
@@ -331,11 +351,11 @@ export default function RepositoriesScreen(): React.ReactElement {
                 data-testid="repo-mismatch-warning"
                 style={{
                   padding: '10px 14px',
-                  background: '#431407',
-                  border: '1px solid #9a3412',
+                  background: 'var(--gw-warning-bg, #422006)',
+                  border: '1px solid var(--gw-warning-border, #78350f)',
                   borderRadius: 6,
                   fontSize: 12,
-                  color: '#fdba74',
+                  color: 'var(--gw-warning, #fbbf24)',
                   lineHeight: 1.5,
                 }}
               >
@@ -346,7 +366,9 @@ export default function RepositoriesScreen(): React.ReactElement {
               </div>
             )}
 
-            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#f4f4f5' }}>
+            <h2
+              style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--gw-text, #f4f4f5)' }}
+            >
               Repository
             </h2>
 
@@ -354,7 +376,7 @@ export default function RepositoriesScreen(): React.ReactElement {
               <div
                 style={{
                   ...inputStyle,
-                  color: '#71717a',
+                  color: 'var(--gw-text-faint, #71717a)',
                   fontFamily: 'monospace',
                   userSelect: 'text',
                 }}
@@ -367,7 +389,10 @@ export default function RepositoriesScreen(): React.ReactElement {
               <input
                 data-testid="repo-form-name"
                 value={editForm.name}
-                onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                onChange={(e) => {
+                  setSuccessMessage(null)
+                  setEditForm((f) => ({ ...f, name: e.target.value }))
+                }}
                 style={inputStyle}
               />
             </Field>
@@ -378,7 +403,10 @@ export default function RepositoriesScreen(): React.ReactElement {
                 ariaLabel="Assigned profile"
                 block
                 value={editForm.assignedProfileId}
-                onChange={(id) => setEditForm((f) => ({ ...f, assignedProfileId: id }))}
+                onChange={(id) => {
+                  setSuccessMessage(null)
+                  setEditForm((f) => ({ ...f, assignedProfileId: id }))
+                }}
                 options={[
                   { value: '', label: '— Unassigned —' },
                   ...profiles.map((p) => ({ value: p.id, label: p.displayName })),
@@ -391,15 +419,32 @@ export default function RepositoriesScreen(): React.ReactElement {
               <textarea
                 data-testid="repo-form-notes"
                 value={editForm.notes}
-                onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))}
+                onChange={(e) => {
+                  setSuccessMessage(null)
+                  setEditForm((f) => ({ ...f, notes: e.target.value }))
+                }}
                 rows={3}
                 style={{ ...inputStyle, resize: 'vertical' }}
               />
             </Field>
 
             {error && (
-              <div data-testid="repo-error" style={{ fontSize: 12, color: '#f87171' }}>
+              <div
+                data-testid="repo-error"
+                style={{ fontSize: 12, color: 'var(--gw-danger, #f87171)' }}
+              >
                 {error}
+              </div>
+            )}
+
+            {successMessage && (
+              <div
+                data-testid="repo-saved-msg"
+                role="status"
+                aria-live="polite"
+                style={{ fontSize: 12, color: 'var(--gw-success, #4ade80)' }}
+              >
+                {successMessage}
               </div>
             )}
 
@@ -412,10 +457,10 @@ export default function RepositoriesScreen(): React.ReactElement {
                 disabled={saving}
                 style={{
                   padding: '6px 18px',
-                  background: '#2563eb',
+                  background: 'var(--gw-primary, #2563eb)',
                   border: 'none',
                   borderRadius: 4,
-                  color: '#fff',
+                  color: 'var(--gw-on-solid, #fff)',
                   cursor: saving ? 'wait' : 'pointer',
                   fontSize: 12,
                   fontWeight: 600,
@@ -433,9 +478,9 @@ export default function RepositoriesScreen(): React.ReactElement {
                     marginLeft: 'auto',
                     padding: '6px 14px',
                     background: 'none',
-                    border: '1px solid #3f3f46',
+                    border: '1px solid var(--gw-surface3, #3f3f46)',
                     borderRadius: 4,
-                    color: '#f87171',
+                    color: 'var(--gw-danger, #f87171)',
                     cursor: 'pointer',
                     fontSize: 12,
                   }}
@@ -446,7 +491,7 @@ export default function RepositoriesScreen(): React.ReactElement {
 
               {confirmRemove && (
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 12, color: '#a1a1aa' }}>
+                  <span style={{ fontSize: 12, color: 'var(--gw-text-muted, #a1a1aa)' }}>
                     Remove &ldquo;{selectedRepo.name}&rdquo;?
                   </span>
                   <button
@@ -455,9 +500,9 @@ export default function RepositoriesScreen(): React.ReactElement {
                     style={{
                       padding: '4px 10px',
                       background: 'none',
-                      border: '1px solid #3f3f46',
+                      border: '1px solid var(--gw-surface3, #3f3f46)',
                       borderRadius: 4,
-                      color: '#a1a1aa',
+                      color: 'var(--gw-text-muted, #a1a1aa)',
                       cursor: 'pointer',
                       fontSize: 12,
                     }}
@@ -472,10 +517,10 @@ export default function RepositoriesScreen(): React.ReactElement {
                     disabled={saving}
                     style={{
                       padding: '4px 10px',
-                      background: '#dc2626',
+                      background: 'var(--gw-danger-solid, #dc2626)',
                       border: 'none',
                       borderRadius: 4,
-                      color: '#fff',
+                      color: 'var(--gw-on-solid, #fff)',
                       cursor: saving ? 'wait' : 'pointer',
                       fontSize: 12,
                       fontWeight: 600,
@@ -496,10 +541,10 @@ export default function RepositoriesScreen(): React.ReactElement {
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '6px 10px',
-  background: '#18181b',
-  border: '1px solid #3f3f46',
+  background: 'var(--gw-input-bg, #09090b)',
+  border: '1px solid var(--gw-border-subtle, #3f3f46)',
   borderRadius: 4,
-  color: '#e4e4e7',
+  color: 'var(--gw-text, #f4f4f5)',
   fontSize: 13,
   boxSizing: 'border-box',
 }
@@ -513,7 +558,14 @@ function Field({
 }): React.ReactElement {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <label style={{ fontSize: 11, fontWeight: 600, color: '#71717a', letterSpacing: '0.04em' }}>
+      <label
+        style={{
+          fontSize: 11,
+          fontWeight: 600,
+          color: 'var(--gw-text-faint, #71717a)',
+          letterSpacing: '0.04em',
+        }}
+      >
         {label.toUpperCase()}
       </label>
       {children}

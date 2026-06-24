@@ -16,11 +16,11 @@ export default function Inspector(): React.ReactElement {
       style={{
         width: 220,
         flexShrink: 0,
-        background: '#18181b',
-        borderLeft: '1px solid #27272a',
+        background: 'var(--gw-surface, #18181b)',
+        borderLeft: '1px solid var(--gw-border, #27272a)',
         padding: '12px',
         fontSize: 12,
-        color: '#a1a1aa',
+        color: 'var(--gw-text-muted, #a1a1aa)',
         overflowY: 'auto',
       }}
     >
@@ -29,7 +29,7 @@ export default function Inspector(): React.ReactElement {
           fontWeight: 600,
           fontSize: 11,
           letterSpacing: '0.06em',
-          color: '#52525b',
+          color: 'var(--gw-text-dim, #52525b)',
           marginBottom: 10,
         }}
       >
@@ -47,7 +47,7 @@ export default function Inspector(): React.ReactElement {
                 background: profileColor(activeProfile.id),
               }}
             />
-            <span style={{ color: '#e4e4e7' }}>{activeProfile.displayName}</span>
+            <span style={{ color: 'var(--gw-text, #f4f4f5)' }}>{activeProfile.displayName}</span>
           </div>
         ) : (
           <Empty>None</Empty>
@@ -62,7 +62,7 @@ export default function Inspector(): React.ReactElement {
 
       <Section label="Repository">
         {activeRepo ? (
-          <span style={{ color: '#e4e4e7', fontFamily: 'monospace', fontSize: 11 }}>
+          <span style={{ color: 'var(--gw-text, #f4f4f5)', fontFamily: 'monospace', fontSize: 11 }}>
             {activeRepo.name}
           </span>
         ) : (
@@ -72,7 +72,9 @@ export default function Inspector(): React.ReactElement {
 
       <Section label="Branch">
         {currentBranch ? (
-          <span style={{ color: '#e4e4e7', fontFamily: 'monospace' }}>{currentBranch}</span>
+          <span style={{ color: 'var(--gw-text, #f4f4f5)', fontFamily: 'monospace' }}>
+            {currentBranch}
+          </span>
         ) : (
           <Empty>—</Empty>
         )}
@@ -83,10 +85,10 @@ export default function Inspector(): React.ReactElement {
           style={{
             color:
               safetyBadge === 'safe'
-                ? '#4ade80'
+                ? 'var(--gw-success, #4ade80)'
                 : safetyBadge === 'warning'
-                  ? '#facc15'
-                  : '#f87171',
+                  ? 'var(--gw-warning, #fbbf24)'
+                  : 'var(--gw-danger, #f87171)',
             fontWeight: 600,
             textTransform: 'capitalize',
           }}
@@ -111,7 +113,7 @@ function Section({
         style={{
           fontSize: 10,
           fontWeight: 700,
-          color: '#52525b',
+          color: 'var(--gw-text-dim, #52525b)',
           letterSpacing: '0.06em',
           marginBottom: 4,
         }}
@@ -126,12 +128,22 @@ function Section({
 function Row({ label, value }: { label: string; value: string }): React.ReactElement {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 4 }}>
-      <span style={{ color: '#52525b' }}>{label}</span>
-      <span style={{ color: '#a1a1aa', textAlign: 'right', wordBreak: 'break-all' }}>{value}</span>
+      <span style={{ color: 'var(--gw-text-dim, #52525b)' }}>{label}</span>
+      <span
+        style={{
+          color: 'var(--gw-text-muted, #a1a1aa)',
+          textAlign: 'right',
+          wordBreak: 'break-all',
+        }}
+      >
+        {value}
+      </span>
     </div>
   )
 }
 
 function Empty({ children }: { children: React.ReactNode }): React.ReactElement {
-  return <span style={{ color: '#52525b', fontStyle: 'italic' }}>{children}</span>
+  return (
+    <span style={{ color: 'var(--gw-text-dim, #52525b)', fontStyle: 'italic' }}>{children}</span>
+  )
 }

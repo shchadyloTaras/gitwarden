@@ -5,8 +5,8 @@ import { useAppStore } from '../store/appStore'
 import type { SafetyIssue } from '../../core/types'
 
 function ScopeLabel({ scope }: { scope: string | undefined }): React.ReactElement {
-  if (!scope) return <span style={{ color: '#555' }}>—</span>
-  const color = scope === 'local' ? '#4ade80' : '#fbbf24'
+  if (!scope) return <span style={{ color: 'var(--gw-text-dim, #52525b)' }}>—</span>
+  const color = scope === 'local' ? 'var(--gw-success, #4ade80)' : 'var(--gw-warning, #fbbf24)'
   return <span style={{ color, fontSize: '11px', marginLeft: '6px' }}>({scope})</span>
 }
 
@@ -16,7 +16,7 @@ function Verdict({ ok, testId }: { ok: boolean; testId: string }): React.ReactEl
       data-testid={testId}
       style={{
         fontWeight: 600,
-        color: ok ? '#4ade80' : '#f87171',
+        color: ok ? 'var(--gw-success, #4ade80)' : 'var(--gw-danger, #f87171)',
         fontSize: '13px',
       }}
     >
@@ -32,13 +32,13 @@ function IssueRow({ issue }: { issue: SafetyIssue }): React.ReactElement {
       data-testid={`safety-issue-${issue.code}`}
       style={{
         padding: '8px 12px',
-        background: isBlocker ? '#2d1b1b' : '#2d2a1b',
-        borderBottom: '1px solid #2a2a2a',
+        background: isBlocker ? 'var(--gw-danger-bg, #450a0a)' : 'var(--gw-warning-bg, #422006)',
+        borderBottom: '1px solid var(--gw-border, #27272a)',
         display: 'flex',
         alignItems: 'flex-start',
         gap: '8px',
         fontSize: '13px',
-        color: isBlocker ? '#f87171' : '#fbbf24',
+        color: isBlocker ? 'var(--gw-danger, #f87171)' : 'var(--gw-warning, #fbbf24)',
       }}
     >
       <span style={{ flexShrink: 0 }}>{isBlocker ? '⛔' : '⚠'}</span>
@@ -48,8 +48,8 @@ function IssueRow({ issue }: { issue: SafetyIssue }): React.ReactElement {
 }
 
 const CARD: React.CSSProperties = {
-  background: '#1a1a1a',
-  border: '1px solid #2a2a2a',
+  background: 'var(--gw-surface, #18181b)',
+  border: '1px solid var(--gw-border, #27272a)',
   borderRadius: '6px',
   marginBottom: '16px',
   overflow: 'hidden',
@@ -57,11 +57,11 @@ const CARD: React.CSSProperties = {
 
 const CARD_HEADER: React.CSSProperties = {
   padding: '8px 12px',
-  background: '#111',
-  borderBottom: '1px solid #2a2a2a',
+  background: 'var(--gw-bg, #09090b)',
+  borderBottom: '1px solid var(--gw-border, #27272a)',
   fontSize: '11px',
   fontWeight: 600,
-  color: '#888',
+  color: 'var(--gw-text-faint, #71717a)',
   textTransform: 'uppercase',
   letterSpacing: '0.08em',
 }
@@ -71,12 +71,20 @@ const CARD_ROW: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  borderBottom: '1px solid #1e1e1e',
+  borderBottom: '1px solid var(--gw-surface, #18181b)',
   fontSize: '13px',
 }
 
-const LABEL: React.CSSProperties = { color: '#888', flexShrink: 0, marginRight: '8px' }
-const VALUE: React.CSSProperties = { color: '#e0e0e0', textAlign: 'right', wordBreak: 'break-all' }
+const LABEL: React.CSSProperties = {
+  color: 'var(--gw-text-faint, #71717a)',
+  flexShrink: 0,
+  marginRight: '8px',
+}
+const VALUE: React.CSSProperties = {
+  color: 'var(--gw-text, #f4f4f5)',
+  textAlign: 'right',
+  wordBreak: 'break-all',
+}
 
 export default function SafetyCenterScreen(): React.ReactElement {
   const activeRepo = useAppStore((s) => s.activeRepo)
@@ -128,15 +136,21 @@ export default function SafetyCenterScreen(): React.ReactElement {
       <h2 style={{ margin: '0 0 20px', fontSize: '18px', fontWeight: 600 }}>Safety Center</h2>
 
       {loading && (
-        <div style={{ color: '#888', fontSize: '13px', marginBottom: '16px' }}>Loading…</div>
+        <div
+          style={{ color: 'var(--gw-text-faint, #71717a)', fontSize: '13px', marginBottom: '16px' }}
+        >
+          Loading…
+        </div>
       )}
 
       {error && (
-        <div style={{ color: '#f87171', fontSize: '13px', marginBottom: '16px' }}>{error}</div>
+        <div style={{ color: 'var(--gw-danger, #f87171)', fontSize: '13px', marginBottom: '16px' }}>
+          {error}
+        </div>
       )}
 
       {!loading && !repository && !activeRepo && (
-        <div style={{ color: '#666', fontSize: '13px' }}>
+        <div style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: '13px' }}>
           Add a repository to run the identity audit.
         </div>
       )}
@@ -150,7 +164,10 @@ export default function SafetyCenterScreen(): React.ReactElement {
               <span style={LABEL}>Active profile</span>
               <span
                 data-testid="safety-active-profile-name"
-                style={{ ...VALUE, color: activeProfile ? '#e0e0e0' : '#555' }}
+                style={{
+                  ...VALUE,
+                  color: activeProfile ? 'var(--gw-text, #f4f4f5)' : 'var(--gw-text-dim, #52525b)',
+                }}
               >
                 {activeProfile ? activeProfile.displayName : '—'}
               </span>
@@ -161,7 +178,11 @@ export default function SafetyCenterScreen(): React.ReactElement {
                 data-testid="safety-assigned-profile-name"
                 style={{
                   ...VALUE,
-                  color: assignedProfile ? (profileMismatch ? '#f87171' : '#e0e0e0') : '#555',
+                  color: assignedProfile
+                    ? profileMismatch
+                      ? 'var(--gw-danger, #f87171)'
+                      : 'var(--gw-text, #f4f4f5)'
+                    : 'var(--gw-text-dim, #52525b)',
                 }}
               >
                 {assignedProfile ? assignedProfile.displayName : '—'}
@@ -171,9 +192,9 @@ export default function SafetyCenterScreen(): React.ReactElement {
               <div
                 style={{
                   padding: '7px 12px',
-                  background: '#2d1b1b',
+                  background: 'var(--gw-danger-bg, #450a0a)',
                   fontSize: '12px',
-                  color: '#f87171',
+                  color: 'var(--gw-danger, #f87171)',
                 }}
               >
                 This repository is assigned to <strong>{assignedProfile!.displayName}</strong>, but
@@ -188,14 +209,18 @@ export default function SafetyCenterScreen(): React.ReactElement {
             <div style={CARD_ROW}>
               <span style={LABEL}>user.name</span>
               <span data-testid="safety-identity-name" style={VALUE}>
-                {identity?.userName ?? <span style={{ color: '#f87171' }}>not set</span>}
+                {identity?.userName ?? (
+                  <span style={{ color: 'var(--gw-danger, #f87171)' }}>not set</span>
+                )}
                 <ScopeLabel scope={identity?.nameSource} />
               </span>
             </div>
             <div style={CARD_ROW}>
               <span style={LABEL}>user.email</span>
               <span data-testid="safety-identity-email" style={VALUE}>
-                {identity?.userEmail ?? <span style={{ color: '#f87171' }}>not set</span>}
+                {identity?.userEmail ?? (
+                  <span style={{ color: 'var(--gw-danger, #f87171)' }}>not set</span>
+                )}
                 <ScopeLabel scope={identity?.emailSource} />
               </span>
             </div>
@@ -204,9 +229,9 @@ export default function SafetyCenterScreen(): React.ReactElement {
                 data-testid="safety-identity-scope-warning"
                 style={{
                   padding: '7px 12px',
-                  background: '#2d2a1b',
+                  background: 'var(--gw-warning-bg, #422006)',
                   fontSize: '12px',
-                  color: '#fbbf24',
+                  color: 'var(--gw-warning, #fbbf24)',
                 }}
               >
                 Your Git identity is inherited from global config, not set for this repository.
@@ -230,7 +255,7 @@ export default function SafetyCenterScreen(): React.ReactElement {
               </span>
             </div>
             {remotes.length === 0 ? (
-              <div style={{ ...CARD_ROW, color: '#555', fontSize: '13px' }}>
+              <div style={{ ...CARD_ROW, color: 'var(--gw-text-dim, #52525b)', fontSize: '13px' }}>
                 No remotes configured
               </div>
             ) : (
@@ -238,10 +263,13 @@ export default function SafetyCenterScreen(): React.ReactElement {
                 <div key={r.name} style={CARD_ROW}>
                   <span style={LABEL}>{r.name}</span>
                   <span style={{ ...VALUE, fontSize: '12px' }}>
-                    <span data-testid={`safety-remote-host-${r.name}`} style={{ color: '#a78bfa' }}>
+                    <span
+                      data-testid={`safety-remote-host-${r.name}`}
+                      style={{ color: 'var(--gw-purple, #a78bfa)' }}
+                    >
                       {r.host ?? 'local'}
                     </span>
-                    <span style={{ color: '#555', marginLeft: '6px' }}>
+                    <span style={{ color: 'var(--gw-text-dim, #52525b)', marginLeft: '6px' }}>
                       {r.url.length > 50 ? r.url.slice(0, 50) + '…' : r.url}
                     </span>
                   </span>
@@ -277,11 +305,11 @@ export default function SafetyCenterScreen(): React.ReactElement {
             <div
               style={{
                 padding: '12px 16px',
-                background: '#1a2d1b',
-                border: '1px solid #2d4a2d',
+                background: 'var(--gw-success-bg, #052e16)',
+                border: '1px solid var(--gw-success-border, #2d4a2d)',
                 borderRadius: '6px',
                 fontSize: '13px',
-                color: '#4ade80',
+                color: 'var(--gw-success, #4ade80)',
               }}
             >
               ✓ No identity issues detected. This repository is safe to commit and push.

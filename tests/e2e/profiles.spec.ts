@@ -104,6 +104,7 @@ test.describe('Profile management', () => {
     await win.getByTestId('profile-form-displayName').fill('Work Updated')
     await win.getByTestId('profile-form-submit').click()
 
+    await expect(win.getByTestId('profile-saved-msg')).toContainText('Profile saved.')
     await expect(win.getByTestId('profiles-list')).toContainText('Work Updated')
     // Verify only one profile item exists (not both "Work" and "Work Updated")
     await expect(win.getByTestId('profile-item')).toHaveCount(1)

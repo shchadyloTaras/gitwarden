@@ -5,8 +5,8 @@ import type { AppearanceMode } from '../../core/types'
 import { STR } from '../strings'
 
 const CARD: React.CSSProperties = {
-  background: '#18181b',
-  border: '1px solid #27272a',
+  background: 'var(--gw-surface, #18181b)',
+  border: '1px solid var(--gw-border, #27272a)',
   borderRadius: 8,
   padding: '20px 24px',
   marginBottom: 20,
@@ -17,15 +17,15 @@ const LABEL: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 600,
   letterSpacing: '0.05em',
-  color: '#a1a1aa',
+  color: 'var(--gw-text-muted, #a1a1aa)',
   marginBottom: 10,
 }
 
 const INPUT: React.CSSProperties = {
-  background: '#09090b',
-  border: '1px solid #3f3f46',
+  background: 'var(--gw-input-bg, #09090b)',
+  border: '1px solid var(--gw-border-subtle, #3f3f46)',
   borderRadius: 4,
-  color: '#e4e4e7',
+  color: 'var(--gw-text, #f4f4f5)',
   fontSize: 13,
   padding: '6px 10px',
   flex: 1,
@@ -57,9 +57,14 @@ function AppearancePicker({
             borderRadius: 4,
             fontSize: 13,
             cursor: 'pointer',
-            border: value === m.id ? '2px solid #6366f1' : '1px solid #3f3f46',
-            background: value === m.id ? '#1e1b4b' : '#27272a',
-            color: value === m.id ? '#a5b4fc' : '#a1a1aa',
+            border:
+              value === m.id
+                ? '2px solid var(--gw-accent, #6366f1)'
+                : '1px solid var(--gw-surface3, #3f3f46)',
+            background:
+              value === m.id ? 'var(--gw-accent-soft, #1e1b4b)' : 'var(--gw-surface2, #27272a)',
+            color:
+              value === m.id ? 'var(--gw-accent-text, #a5b4fc)' : 'var(--gw-text-muted, #a1a1aa)',
             fontWeight: value === m.id ? 600 : 400,
           }}
         >
@@ -160,12 +165,15 @@ export default function SettingsScreen(): React.ReactElement {
   return (
     <div
       data-testid="screen-settings"
-      style={{ padding: '24px 32px', maxWidth: 680, color: '#e4e4e7' }}
+      style={{ padding: '24px 32px', maxWidth: 680, color: 'var(--gw-text, #f4f4f5)' }}
     >
       <h2 style={{ margin: '0 0 24px', fontSize: 18, fontWeight: 600 }}>{STR.SETTINGS_TITLE}</h2>
 
       {loading && (
-        <div data-testid="settings-loading" style={{ color: '#71717a', fontSize: 13 }}>
+        <div
+          data-testid="settings-loading"
+          style={{ color: 'var(--gw-text-faint, #71717a)', fontSize: 13 }}
+        >
           {STR.LOADING}
         </div>
       )}
@@ -179,13 +187,20 @@ export default function SettingsScreen(): React.ReactElement {
                 fontSize: 13,
                 fontWeight: 600,
                 marginBottom: 14,
-                color: '#f4f4f5',
+                color: 'var(--gw-text, #f4f4f5)',
               }}
             >
               {STR.SETTINGS_APPEARANCE_LABEL}
             </div>
             <AppearancePicker value={localAppearance} onChange={handleAppearanceChange} />
-            <p style={{ marginTop: 10, marginBottom: 0, fontSize: 12, color: '#71717a' }}>
+            <p
+              style={{
+                marginTop: 10,
+                marginBottom: 0,
+                fontSize: 12,
+                color: 'var(--gw-text-faint, #71717a)',
+              }}
+            >
               {STR.SETTINGS_APPEARANCE_HINT}
             </p>
           </div>
@@ -197,7 +212,7 @@ export default function SettingsScreen(): React.ReactElement {
                 fontSize: 13,
                 fontWeight: 600,
                 marginBottom: 14,
-                color: '#f4f4f5',
+                color: 'var(--gw-text, #f4f4f5)',
               }}
             >
               {STR.SETTINGS_GIT_PATH_LABEL}
@@ -221,9 +236,9 @@ export default function SettingsScreen(): React.ReactElement {
                 style={{
                   padding: '6px 12px',
                   background: 'none',
-                  border: '1px solid #3f3f46',
+                  border: '1px solid var(--gw-surface3, #3f3f46)',
                   borderRadius: 4,
-                  color: '#a1a1aa',
+                  color: 'var(--gw-text-muted, #a1a1aa)',
                   fontSize: 12,
                   cursor: localGitPath.trim() ? 'pointer' : 'not-allowed',
                   flexShrink: 0,
@@ -245,9 +260,9 @@ export default function SettingsScreen(): React.ReactElement {
                   style={{
                     padding: '6px 10px',
                     background: 'none',
-                    border: '1px solid #3f3f46',
+                    border: '1px solid var(--gw-surface3, #3f3f46)',
                     borderRadius: 4,
-                    color: '#71717a',
+                    color: 'var(--gw-text-faint, #71717a)',
                     fontSize: 12,
                     cursor: 'pointer',
                     flexShrink: 0,
@@ -264,7 +279,9 @@ export default function SettingsScreen(): React.ReactElement {
                 data-testid={validateStatus.ok ? 'settings-git-valid' : 'settings-git-invalid'}
                 style={{
                   fontSize: 12,
-                  color: validateStatus.ok ? '#4ade80' : '#f87171',
+                  color: validateStatus.ok
+                    ? 'var(--gw-success, #4ade80)'
+                    : 'var(--gw-danger, #f87171)',
                   marginBottom: 6,
                 }}
               >
@@ -274,7 +291,7 @@ export default function SettingsScreen(): React.ReactElement {
               </div>
             )}
 
-            <p style={{ margin: 0, fontSize: 12, color: '#71717a' }}>
+            <p style={{ margin: 0, fontSize: 12, color: 'var(--gw-text-faint, #71717a)' }}>
               {STR.SETTINGS_GIT_PATH_HINT}
             </p>
           </div>
@@ -286,7 +303,7 @@ export default function SettingsScreen(): React.ReactElement {
                 fontSize: 13,
                 fontWeight: 600,
                 marginBottom: 14,
-                color: '#f4f4f5',
+                color: 'var(--gw-text, #f4f4f5)',
               }}
             >
               {STR.SETTINGS_DEFAULT_FOLDER_LABEL}
@@ -309,9 +326,9 @@ export default function SettingsScreen(): React.ReactElement {
                 style={{
                   padding: '6px 12px',
                   background: 'none',
-                  border: '1px solid #3f3f46',
+                  border: '1px solid var(--gw-surface3, #3f3f46)',
                   borderRadius: 4,
-                  color: '#a1a1aa',
+                  color: 'var(--gw-text-muted, #a1a1aa)',
                   fontSize: 12,
                   cursor: 'pointer',
                   flexShrink: 0,
@@ -330,9 +347,9 @@ export default function SettingsScreen(): React.ReactElement {
                   style={{
                     padding: '6px 10px',
                     background: 'none',
-                    border: '1px solid #3f3f46',
+                    border: '1px solid var(--gw-surface3, #3f3f46)',
                     borderRadius: 4,
-                    color: '#71717a',
+                    color: 'var(--gw-text-faint, #71717a)',
                     fontSize: 12,
                     cursor: 'pointer',
                     flexShrink: 0,
@@ -343,7 +360,7 @@ export default function SettingsScreen(): React.ReactElement {
               )}
             </div>
 
-            <p style={{ margin: 0, fontSize: 12, color: '#71717a' }}>
+            <p style={{ margin: 0, fontSize: 12, color: 'var(--gw-text-faint, #71717a)' }}>
               {STR.SETTINGS_DEFAULT_FOLDER_HINT}
             </p>
           </div>
@@ -355,12 +372,19 @@ export default function SettingsScreen(): React.ReactElement {
                 fontSize: 13,
                 fontWeight: 600,
                 marginBottom: 10,
-                color: '#f4f4f5',
+                color: 'var(--gw-text, #f4f4f5)',
               }}
             >
               {STR.SETTINGS_ONBOARDING_LABEL}
             </div>
-            <p style={{ marginTop: 0, marginBottom: 12, fontSize: 12, color: '#71717a' }}>
+            <p
+              style={{
+                marginTop: 0,
+                marginBottom: 12,
+                fontSize: 12,
+                color: 'var(--gw-text-faint, #71717a)',
+              }}
+            >
               {STR.SETTINGS_ONBOARDING_HINT}
             </p>
             <button
@@ -368,10 +392,10 @@ export default function SettingsScreen(): React.ReactElement {
               onClick={startOnboarding}
               style={{
                 padding: '7px 14px',
-                background: '#3f3f46',
+                background: 'var(--gw-surface3, #3f3f46)',
                 border: 'none',
                 borderRadius: 4,
-                color: '#e4e4e7',
+                color: 'var(--gw-text, #f4f4f5)',
                 cursor: 'pointer',
                 fontSize: 12,
                 fontWeight: 600,
@@ -393,8 +417,8 @@ export default function SettingsScreen(): React.ReactElement {
                 onClick={() => void handleSave()}
                 style={{
                   padding: '8px 20px',
-                  background: dirty ? '#6366f1' : '#27272a',
-                  color: dirty ? '#fff' : '#52525b',
+                  background: dirty ? 'var(--gw-accent, #6366f1)' : 'var(--gw-surface2, #27272a)',
+                  color: dirty ? 'var(--gw-on-solid, #fff)' : 'var(--gw-text-dim, #52525b)',
                   border: 'none',
                   borderRadius: 4,
                   fontSize: 13,
@@ -407,13 +431,19 @@ export default function SettingsScreen(): React.ReactElement {
             </span>
 
             {saved && (
-              <span data-testid="settings-saved-msg" style={{ fontSize: 13, color: '#4ade80' }}>
+              <span
+                data-testid="settings-saved-msg"
+                style={{ fontSize: 13, color: 'var(--gw-success, #4ade80)' }}
+              >
                 {STR.SETTINGS_SAVED}
               </span>
             )}
 
             {saveError && (
-              <span data-testid="settings-save-error" style={{ fontSize: 13, color: '#f87171' }}>
+              <span
+                data-testid="settings-save-error"
+                style={{ fontSize: 13, color: 'var(--gw-danger, #f87171)' }}
+              >
                 {saveError}
               </span>
             )}

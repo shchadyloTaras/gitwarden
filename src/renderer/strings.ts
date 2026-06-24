@@ -25,6 +25,13 @@ export const STR = {
   LOADING: 'Loading…',
   NO_REPO_SELECTED: 'Select a repository to continue.',
 
+  // ── Profiles screen ───────────────────────────────────────────────────────
+  PROFILE_CREATED: 'Profile created.',
+  PROFILE_SAVED: 'Profile saved.',
+
+  // ── Repositories screen ───────────────────────────────────────────────────
+  REPOSITORY_SAVED: 'Repository saved.',
+
   // ── Settings screen ────────────────────────────────────────────────────────
   SETTINGS_TITLE: 'Settings',
   SETTINGS_APPEARANCE_LABEL: 'Appearance',

@@ -63,6 +63,7 @@ export default function ProfilesScreen(): React.ReactElement {
   const [form, setForm] = useState<FormData>(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [connecting, setConnecting] = useState(false)
   const [confirmDisconnect, setConfirmDisconnect] = useState(false)
@@ -75,6 +76,7 @@ export default function ProfilesScreen(): React.ReactElement {
     setForm(formFromProfile(p))
     setMode('edit')
     setError(null)
+    setSuccessMessage(null)
     setConfirmDelete(false)
     setConfirmDisconnect(false)
   }
@@ -84,21 +86,25 @@ export default function ProfilesScreen(): React.ReactElement {
     setForm(EMPTY_FORM)
     setMode('create')
     setError(null)
+    setSuccessMessage(null)
     setConfirmDelete(false)
     setConfirmDisconnect(false)
   }
 
   function setField(key: keyof FormData, value: string) {
+    setSuccessMessage(null)
     setForm((f) => ({ ...f, [key]: value }))
   }
 
   function addHost() {
     const host = form.newHost.trim()
     if (!host || form.expectedRemoteHosts.includes(host)) return
+    setSuccessMessage(null)
     setForm((f) => ({ ...f, expectedRemoteHosts: [...f.expectedRemoteHosts, host], newHost: '' }))
   }
 
   function removeHost(host: string) {
+    setSuccessMessage(null)
     setForm((f) => ({
       ...f,
       expectedRemoteHosts: f.expectedRemoteHosts.filter((h) => h !== host),
@@ -108,6 +114,7 @@ export default function ProfilesScreen(): React.ReactElement {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    setSuccessMessage(null)
 
     if (
       !form.displayName.trim() ||
@@ -131,6 +138,7 @@ export default function ProfilesScreen(): React.ReactElement {
 
     setSaving(true)
     try {
+      const wasCreate = mode === 'create'
       if (mode === 'create') {
         const created = await createProfile(input)
         setSelectedId(created.id)
@@ -139,6 +147,7 @@ export default function ProfilesScreen(): React.ReactElement {
         await updateProfile(selectedId, input)
       }
       setError(null)
+      setSuccessMessage(wasCreate ? STR.PROFILE_CREATED : STR.PROFILE_SAVED)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
@@ -149,6 +158,7 @@ export default function ProfilesScreen(): React.ReactElement {
   async function handleDelete() {
     if (!selectedId) return
     setSaving(true)
+    setSuccessMessage(null)
     try {
       await deleteProfile(selectedId)
       setSelectedId(null)
@@ -164,6 +174,7 @@ export default function ProfilesScreen(): React.ReactElement {
 
   async function handleSetActive() {
     if (!selectedId) return
+    setSuccessMessage(null)
     try {
       await setActiveProfile(selectedId)
     } catch (err) {
@@ -176,6 +187,7 @@ export default function ProfilesScreen(): React.ReactElement {
   // store, so the linked badge appears.
   async function handleAuthorized(identity: GitHubAccount) {
     if (!selectedId) return
+    setSuccessMessage(null)
     const resolvedName = identity.name?.trim() || identity.login
     const patch: Partial<Omit<Profile, 'id'>> = {
       gitAuthorName: resolvedName,
@@ -202,6 +214,7 @@ export default function ProfilesScreen(): React.ReactElement {
   async function handleDisconnect() {
     if (!selectedId) return
     setSaving(true)
+    setSuccessMessage(null)
     try {
       const res = await window.api.github.disconnect(selectedId)
       if (!res.ok) throw new Error(res.error)
@@ -226,7 +239,7 @@ export default function ProfilesScreen(): React.ReactElement {
         style={{
           width: 220,
           flexShrink: 0,
-          borderRight: '1px solid #27272a',
+          borderRight: '1px solid var(--gw-border, #27272a)',
           display: 'flex',
           flexDirection: 'column',
         }}
@@ -237,7 +250,7 @@ export default function ProfilesScreen(): React.ReactElement {
             fontSize: 11,
             fontWeight: 700,
             letterSpacing: '0.06em',
-            color: '#52525b',
+            color: 'var(--gw-text-dim, #52525b)',
           }}
         >
           PROFILES
@@ -245,7 +258,14 @@ export default function ProfilesScreen(): React.ReactElement {
 
         <div data-testid="profiles-list" style={{ flex: 1, overflowY: 'auto' }}>
           {profiles.length === 0 && (
-            <div style={{ padding: '12px', fontSize: 12, color: '#52525b', fontStyle: 'italic' }}>
+            <div
+              style={{
+                padding: '12px',
+                fontSize: 12,
+                color: 'var(--gw-text-dim, #52525b)',
+                fontStyle: 'italic',
+              }}
+            >
               No profiles yet
             </div>
           )}
@@ -260,10 +280,10 @@ export default function ProfilesScreen(): React.ReactElement {
                 gap: 8,
                 width: '100%',
                 padding: '8px 12px',
-                background: selectedId === p.id ? '#27272a' : 'transparent',
+                background: selectedId === p.id ? 'var(--gw-surface2, #27272a)' : 'transparent',
                 border: 'none',
-                borderBottom: '1px solid #1c1c1f',
-                color: '#e4e4e7',
+                borderBottom: '1px solid var(--gw-border, #27272a)',
+                color: 'var(--gw-text, #f4f4f5)',
                 cursor: 'pointer',
                 textAlign: 'left',
                 fontSize: 13,
@@ -289,23 +309,27 @@ export default function ProfilesScreen(): React.ReactElement {
                 {p.displayName}
               </span>
               {p.id === activeProfileId && (
-                <span style={{ fontSize: 10, color: '#4ade80', fontWeight: 600 }}>Active</span>
+                <span
+                  style={{ fontSize: 10, color: 'var(--gw-success, #4ade80)', fontWeight: 600 }}
+                >
+                  Active
+                </span>
               )}
             </button>
           ))}
         </div>
 
-        <div style={{ padding: '8px 12px', borderTop: '1px solid #27272a' }}>
+        <div style={{ padding: '8px 12px', borderTop: '1px solid var(--gw-border, #27272a)' }}>
           <button
             data-testid="profiles-new-btn"
             onClick={startCreate}
             style={{
               width: '100%',
               padding: '6px 0',
-              background: '#3f3f46',
+              background: 'var(--gw-surface3, #3f3f46)',
               border: 'none',
               borderRadius: 4,
-              color: '#e4e4e7',
+              color: 'var(--gw-text, #f4f4f5)',
               cursor: 'pointer',
               fontSize: 12,
               fontWeight: 600,
@@ -325,7 +349,7 @@ export default function ProfilesScreen(): React.ReactElement {
               height: '100%',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#52525b',
+              color: 'var(--gw-text-dim, #52525b)',
               fontSize: 13,
             }}
           >
@@ -346,7 +370,7 @@ export default function ProfilesScreen(): React.ReactElement {
                 margin: 0,
                 fontSize: 16,
                 fontWeight: 700,
-                color: '#f4f4f5',
+                color: 'var(--gw-text, #f4f4f5)',
               }}
             >
               {mode === 'create' ? 'New Profile' : 'Edit Profile'}
@@ -405,7 +429,11 @@ export default function ProfilesScreen(): React.ReactElement {
                     alt=""
                     width={28}
                     height={28}
-                    style={{ borderRadius: '50%', flexShrink: 0, background: '#27272a' }}
+                    style={{
+                      borderRadius: '50%',
+                      flexShrink: 0,
+                      background: 'var(--gw-surface2, #27272a)',
+                    }}
                     onError={(e) => {
                       e.currentTarget.style.visibility = 'hidden'
                     }}
@@ -463,7 +491,7 @@ export default function ProfilesScreen(): React.ReactElement {
                           ...ghSecondaryBtn,
                           background: 'var(--gw-danger, #dc2626)',
                           border: 'none',
-                          color: '#fff',
+                          color: 'var(--gw-on-solid, #fff)',
                           fontWeight: 600,
                         }}
                       >
@@ -509,7 +537,7 @@ export default function ProfilesScreen(): React.ReactElement {
                     display: 'flex',
                     alignItems: 'center',
                     gap: 6,
-                    color: '#52525b',
+                    color: 'var(--gw-text-dim, #52525b)',
                     cursor: 'not-allowed',
                   }}
                 >
@@ -527,7 +555,7 @@ export default function ProfilesScreen(): React.ReactElement {
                 placeholder="e.g. github-personal"
                 style={inputStyle}
               />
-              <div style={{ fontSize: 11, color: '#52525b', marginTop: 4 }}>
+              <div style={{ fontSize: 11, color: 'var(--gw-text-dim, #52525b)', marginTop: 4 }}>
                 Matches the Host entry in ~/.ssh/config
               </div>
             </Field>
@@ -552,10 +580,10 @@ export default function ProfilesScreen(): React.ReactElement {
                   onClick={addHost}
                   style={{
                     padding: '6px 10px',
-                    background: '#3f3f46',
+                    background: 'var(--gw-surface3, #3f3f46)',
                     border: 'none',
                     borderRadius: 4,
-                    color: '#e4e4e7',
+                    color: 'var(--gw-text, #f4f4f5)',
                     cursor: 'pointer',
                     fontSize: 12,
                   }}
@@ -571,12 +599,12 @@ export default function ProfilesScreen(): React.ReactElement {
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     padding: '4px 8px',
-                    background: '#27272a',
+                    background: 'var(--gw-surface2, #27272a)',
                     borderRadius: 4,
                     marginTop: 4,
                     fontSize: 12,
                     fontFamily: 'monospace',
-                    color: '#a1a1aa',
+                    color: 'var(--gw-text-muted, #a1a1aa)',
                   }}
                 >
                   {h}
@@ -586,7 +614,7 @@ export default function ProfilesScreen(): React.ReactElement {
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: '#71717a',
+                      color: 'var(--gw-text-faint, #71717a)',
                       cursor: 'pointer',
                       fontSize: 14,
                       lineHeight: 1,
@@ -600,7 +628,20 @@ export default function ProfilesScreen(): React.ReactElement {
             </Field>
 
             {error && (
-              <div style={{ fontSize: 12, color: '#f87171', padding: '6px 0' }}>{error}</div>
+              <div style={{ fontSize: 12, color: 'var(--gw-danger, #f87171)', padding: '6px 0' }}>
+                {error}
+              </div>
+            )}
+
+            {successMessage && (
+              <div
+                data-testid="profile-saved-msg"
+                role="status"
+                aria-live="polite"
+                style={{ fontSize: 12, color: 'var(--gw-success, #4ade80)', padding: '6px 0' }}
+              >
+                {successMessage}
+              </div>
             )}
 
             {/* Action buttons */}
@@ -615,10 +656,12 @@ export default function ProfilesScreen(): React.ReactElement {
                   disabled={isActive || saving}
                   style={{
                     padding: '6px 14px',
-                    background: isActive ? '#166534' : '#3f3f46',
+                    background: isActive
+                      ? 'var(--gw-success-bg, #052e16)'
+                      : 'var(--gw-surface3, #3f3f46)',
                     border: 'none',
                     borderRadius: 4,
-                    color: isActive ? '#4ade80' : '#e4e4e7',
+                    color: isActive ? 'var(--gw-success, #4ade80)' : 'var(--gw-text, #f4f4f5)',
                     cursor: isActive ? 'default' : 'pointer',
                     fontSize: 12,
                     fontWeight: 600,
@@ -634,10 +677,10 @@ export default function ProfilesScreen(): React.ReactElement {
                 disabled={saving}
                 style={{
                   padding: '6px 18px',
-                  background: '#2563eb',
+                  background: 'var(--gw-primary, #2563eb)',
                   border: 'none',
                   borderRadius: 4,
-                  color: '#fff',
+                  color: 'var(--gw-on-solid, #fff)',
                   cursor: saving ? 'wait' : 'pointer',
                   fontSize: 12,
                   fontWeight: 600,
@@ -656,9 +699,9 @@ export default function ProfilesScreen(): React.ReactElement {
                     marginLeft: 'auto',
                     padding: '6px 14px',
                     background: 'none',
-                    border: '1px solid #3f3f46',
+                    border: '1px solid var(--gw-surface3, #3f3f46)',
                     borderRadius: 4,
-                    color: '#f87171',
+                    color: 'var(--gw-danger, #f87171)',
                     cursor: 'pointer',
                     fontSize: 12,
                   }}
@@ -669,7 +712,7 @@ export default function ProfilesScreen(): React.ReactElement {
 
               {mode === 'edit' && confirmDelete && (
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 12, color: '#a1a1aa' }}>
+                  <span style={{ fontSize: 12, color: 'var(--gw-text-muted, #a1a1aa)' }}>
                     Delete &quot;{selectedProfile?.displayName}&quot;?
                   </span>
                   <button
@@ -678,9 +721,9 @@ export default function ProfilesScreen(): React.ReactElement {
                     style={{
                       padding: '4px 10px',
                       background: 'none',
-                      border: '1px solid #3f3f46',
+                      border: '1px solid var(--gw-surface3, #3f3f46)',
                       borderRadius: 4,
-                      color: '#a1a1aa',
+                      color: 'var(--gw-text-muted, #a1a1aa)',
                       cursor: 'pointer',
                       fontSize: 12,
                     }}
@@ -696,10 +739,10 @@ export default function ProfilesScreen(): React.ReactElement {
                     disabled={saving}
                     style={{
                       padding: '4px 10px',
-                      background: '#dc2626',
+                      background: 'var(--gw-danger-solid, #dc2626)',
                       border: 'none',
                       borderRadius: 4,
-                      color: '#fff',
+                      color: 'var(--gw-on-solid, #fff)',
                       cursor: saving ? 'wait' : 'pointer',
                       fontSize: 12,
                       fontWeight: 600,
@@ -728,10 +771,10 @@ export default function ProfilesScreen(): React.ReactElement {
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '6px 10px',
-  background: '#18181b',
-  border: '1px solid #3f3f46',
+  background: 'var(--gw-input-bg, #09090b)',
+  border: '1px solid var(--gw-border-subtle, #3f3f46)',
   borderRadius: 4,
-  color: '#e4e4e7',
+  color: 'var(--gw-text, #f4f4f5)',
   fontSize: 13,
   boxSizing: 'border-box',
 }
@@ -765,7 +808,14 @@ function Field({
 }): React.ReactElement {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <label style={{ fontSize: 11, fontWeight: 600, color: '#71717a', letterSpacing: '0.04em' }}>
+      <label
+        style={{
+          fontSize: 11,
+          fontWeight: 600,
+          color: 'var(--gw-text-faint, #71717a)',
+          letterSpacing: '0.04em',
+        }}
+      >
         {label.toUpperCase()}
       </label>
       {children}

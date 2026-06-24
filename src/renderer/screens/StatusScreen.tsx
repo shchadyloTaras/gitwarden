@@ -23,13 +23,13 @@ function isUntracked(f: FileChange): boolean {
 }
 
 const KIND_COLOR: Record<string, string> = {
-  added: '#4ade80',
-  modified: '#60a5fa',
-  deleted: '#f87171',
-  renamed: '#a78bfa',
-  copied: '#34d399',
-  conflicted: '#fbbf24',
-  untracked: '#94a3b8',
+  added: 'var(--gw-success, #4ade80)',
+  modified: 'var(--gw-info, #60a5fa)',
+  deleted: 'var(--gw-danger, #f87171)',
+  renamed: 'var(--gw-purple, #a78bfa)',
+  copied: 'var(--gw-teal, #34d399)',
+  conflicted: 'var(--gw-warning, #fbbf24)',
+  untracked: 'var(--gw-code-muted, #94a3b8)',
 }
 
 const KIND_ABBREV: Record<string, string> = {
@@ -51,8 +51,8 @@ function StatusBadge({ kind }: { kind: string }): React.ReactElement {
         fontSize: 10,
         fontWeight: 700,
         fontFamily: 'monospace',
-        color: KIND_COLOR[kind] ?? '#a1a1aa',
-        background: '#1c1c1f',
+        color: KIND_COLOR[kind] ?? 'var(--gw-text-muted, #a1a1aa)',
+        background: 'var(--gw-surface2, #27272a)',
         padding: '1px 5px',
         borderRadius: 3,
         letterSpacing: '0.04em',
@@ -103,7 +103,7 @@ function FileRow({
   const isIrreversible = extraAction?.danger === true
 
   return (
-    <div style={{ borderBottom: '1px solid #1c1c1f' }}>
+    <div style={{ borderBottom: '1px solid var(--gw-border, #27272a)' }}>
       <div
         data-testid={rowTestId}
         onClick={onSelect}
@@ -114,7 +114,7 @@ function FileRow({
           padding: '5px 12px',
           fontSize: 12,
           cursor: 'pointer',
-          background: selected ? '#27272a' : 'transparent',
+          background: selected ? 'var(--gw-surface2, #27272a)' : 'transparent',
         }}
       >
         <StatusBadge kind={kindKey} />
@@ -125,7 +125,7 @@ function FileRow({
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
             fontFamily: 'monospace',
-            color: selected ? '#ffffff' : '#e4e4e7',
+            color: 'var(--gw-text, #f4f4f5)',
           }}
           title={displayPath}
         >
@@ -140,10 +140,10 @@ function FileRow({
           style={{
             flexShrink: 0,
             padding: '2px 8px',
-            background: '#3f3f46',
+            background: 'var(--gw-surface3, #3f3f46)',
             border: 'none',
             borderRadius: 3,
-            color: '#e4e4e7',
+            color: 'var(--gw-text, #f4f4f5)',
             cursor: 'pointer',
             fontSize: 11,
             fontWeight: 600,
@@ -162,9 +162,11 @@ function FileRow({
               flexShrink: 0,
               padding: '2px 8px',
               background: 'none',
-              border: `1px solid ${extraAction.danger ? '#dc2626' : '#3f3f46'}`,
+              border: `1px solid ${extraAction.danger ? 'var(--gw-danger-solid, #dc2626)' : 'var(--gw-surface3, #3f3f46)'}`,
               borderRadius: 3,
-              color: extraAction.danger ? '#f87171' : '#a1a1aa',
+              color: extraAction.danger
+                ? 'var(--gw-danger, #f87171)'
+                : 'var(--gw-text-muted, #a1a1aa)',
               cursor: 'pointer',
               fontSize: 11,
             }}
@@ -174,7 +176,12 @@ function FileRow({
         )}
         {extraAction && isConfirming && (
           <>
-            <span style={{ fontSize: 11, color: isIrreversible ? '#fbbf24' : '#f87171' }}>
+            <span
+              style={{
+                fontSize: 11,
+                color: isIrreversible ? 'var(--gw-warning, #fbbf24)' : 'var(--gw-danger, #f87171)',
+              }}
+            >
               {isIrreversible
                 ? STR.DELETE_UNTRACKED_CONFIRM_PROMPT
                 : STR.DISCARD_TRACKED_CONFIRM_PROMPT}
@@ -188,10 +195,12 @@ function FileRow({
               style={{
                 flexShrink: 0,
                 padding: '2px 8px',
-                background: isIrreversible ? '#7f1d1d' : '#450a0a',
-                border: `1px solid ${isIrreversible ? '#dc2626' : '#991b1b'}`,
+                background: isIrreversible
+                  ? 'var(--gw-danger-bg, #450a0a)'
+                  : 'var(--gw-danger-bg, #450a0a)',
+                border: `1px solid ${isIrreversible ? 'var(--gw-danger-solid, #dc2626)' : 'var(--gw-danger-border, #991b1b)'}`,
                 borderRadius: 3,
-                color: '#fca5a5',
+                color: 'var(--gw-danger, #f87171)',
                 cursor: 'pointer',
                 fontSize: 11,
                 fontWeight: 600,
@@ -209,9 +218,9 @@ function FileRow({
                 flexShrink: 0,
                 padding: '2px 8px',
                 background: 'none',
-                border: '1px solid #3f3f46',
+                border: '1px solid var(--gw-surface3, #3f3f46)',
                 borderRadius: 3,
-                color: '#a1a1aa',
+                color: 'var(--gw-text-muted, #a1a1aa)',
                 cursor: 'pointer',
                 fontSize: 11,
               }}
@@ -227,10 +236,10 @@ function FileRow({
           data-testid="clean-irreversible-warning"
           style={{
             padding: '6px 12px',
-            background: '#422006',
-            borderTop: '1px solid #78350f',
+            background: 'var(--gw-warning-bg, #422006)',
+            borderTop: '1px solid var(--gw-warning-border, #78350f)',
             fontSize: 11,
-            color: '#fcd34d',
+            color: 'var(--gw-warning, #fbbf24)',
           }}
         >
           {STR.DELETE_UNTRACKED_BODY}
@@ -241,10 +250,10 @@ function FileRow({
           data-testid="discard-warning"
           style={{
             padding: '6px 12px',
-            background: '#1c1c1f',
-            borderTop: '1px solid #27272a',
+            background: 'var(--gw-surface2, #27272a)',
+            borderTop: '1px solid var(--gw-border, #27272a)',
             fontSize: 11,
-            color: '#a1a1aa',
+            color: 'var(--gw-text-muted, #a1a1aa)',
           }}
         >
           {STR.DISCARD_TRACKED_BODY}
@@ -273,15 +282,22 @@ function SectionHeader({
         display: 'flex',
         alignItems: 'center',
         padding: '8px 12px',
-        background: '#18181b',
-        borderBottom: '1px solid #27272a',
+        background: 'var(--gw-surface, #18181b)',
+        borderBottom: '1px solid var(--gw-border, #27272a)',
         gap: 6,
       }}
     >
-      <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', color: '#71717a' }}>
+      <span
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: '0.06em',
+          color: 'var(--gw-text-faint, #71717a)',
+        }}
+      >
         {title}
       </span>
-      <span style={{ fontSize: 11, color: '#52525b' }}>({count})</span>
+      <span style={{ fontSize: 11, color: 'var(--gw-text-dim, #52525b)' }}>({count})</span>
       <div style={{ flex: 1 }} />
       {count > 0 && (
         <button
@@ -290,9 +306,9 @@ function SectionHeader({
           style={{
             padding: '2px 8px',
             background: 'none',
-            border: '1px solid #3f3f46',
+            border: '1px solid var(--gw-surface3, #3f3f46)',
             borderRadius: 3,
-            color: '#a1a1aa',
+            color: 'var(--gw-text-muted, #a1a1aa)',
             cursor: 'pointer',
             fontSize: 11,
           }}
@@ -305,24 +321,24 @@ function SectionHeader({
 }
 
 function DiffLine({ line }: { line: string }): React.ReactElement {
-  let color = '#a1a1aa'
+  let color = 'var(--gw-text-muted, #a1a1aa)'
   let bg = 'transparent'
   if (line.startsWith('+') && !line.startsWith('+++')) {
-    color = '#4ade80'
-    bg = '#052e16'
+    color = 'var(--gw-success, #4ade80)'
+    bg = 'var(--gw-success-bg, #052e16)'
   } else if (line.startsWith('-') && !line.startsWith('---')) {
-    color = '#f87171'
-    bg = '#450a0a'
+    color = 'var(--gw-danger, #f87171)'
+    bg = 'var(--gw-danger-bg, #450a0a)'
   } else if (line.startsWith('@')) {
-    color = '#818cf8'
-    bg = '#1e1b4b'
+    color = 'var(--gw-accent-text, #a5b4fc)'
+    bg = 'var(--gw-accent-soft, #1e1b4b)'
   } else if (
     line.startsWith('diff ') ||
     line.startsWith('index ') ||
     line.startsWith('+++') ||
     line.startsWith('---')
   ) {
-    color = '#71717a'
+    color = 'var(--gw-text-faint, #71717a)'
   }
   return (
     <div
@@ -367,7 +383,7 @@ function DiffPanel({
           height: '100%',
           alignItems: 'center',
           justifyContent: 'center',
-          color: '#52525b',
+          color: 'var(--gw-text-dim, #52525b)',
           fontSize: 13,
         }}
       >
@@ -387,8 +403,8 @@ function DiffPanel({
           alignItems: 'center',
           gap: 6,
           padding: '6px 12px',
-          borderBottom: '1px solid #27272a',
-          background: '#18181b',
+          borderBottom: '1px solid var(--gw-border, #27272a)',
+          background: 'var(--gw-surface, #18181b)',
           flexShrink: 0,
         }}
       >
@@ -396,7 +412,7 @@ function DiffPanel({
           style={{
             fontFamily: 'monospace',
             fontSize: 11,
-            color: '#a1a1aa',
+            color: 'var(--gw-text-muted, #a1a1aa)',
             flex: 1,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -413,10 +429,10 @@ function DiffPanel({
               disabled={!canViewStaged}
               style={{
                 padding: '2px 8px',
-                background: diffMode === 'staged' ? '#3f3f46' : 'none',
-                border: '1px solid #3f3f46',
+                background: diffMode === 'staged' ? 'var(--gw-surface3, #3f3f46)' : 'none',
+                border: '1px solid var(--gw-surface3, #3f3f46)',
                 borderRadius: 3,
-                color: canViewStaged ? '#e4e4e7' : '#52525b',
+                color: canViewStaged ? 'var(--gw-text, #f4f4f5)' : 'var(--gw-text-dim, #52525b)',
                 cursor: canViewStaged ? 'pointer' : 'default',
                 fontSize: 11,
                 fontWeight: diffMode === 'staged' ? 700 : 400,
@@ -430,10 +446,10 @@ function DiffPanel({
               disabled={!canViewUnstaged}
               style={{
                 padding: '2px 8px',
-                background: diffMode === 'unstaged' ? '#3f3f46' : 'none',
-                border: '1px solid #3f3f46',
+                background: diffMode === 'unstaged' ? 'var(--gw-surface3, #3f3f46)' : 'none',
+                border: '1px solid var(--gw-surface3, #3f3f46)',
                 borderRadius: 3,
-                color: canViewUnstaged ? '#e4e4e7' : '#52525b',
+                color: canViewUnstaged ? 'var(--gw-text, #f4f4f5)' : 'var(--gw-text-dim, #52525b)',
                 cursor: canViewUnstaged ? 'pointer' : 'default',
                 fontSize: 11,
                 fontWeight: diffMode === 'unstaged' ? 700 : 400,
@@ -448,15 +464,19 @@ function DiffPanel({
       {/* Diff content */}
       <div style={{ flex: 1, overflow: 'auto' }}>
         {loading && (
-          <div style={{ padding: 16, color: '#71717a', fontSize: 12 }}>Loading diff…</div>
+          <div style={{ padding: 16, color: 'var(--gw-text-faint, #71717a)', fontSize: 12 }}>
+            Loading diff…
+          </div>
         )}
         {!loading && isUntracked && (
-          <div style={{ padding: 16, color: '#52525b', fontSize: 12 }}>
+          <div style={{ padding: 16, color: 'var(--gw-text-dim, #52525b)', fontSize: 12 }}>
             Untracked file — no diff available.
           </div>
         )}
         {!loading && !isUntracked && diff !== null && diff.length === 0 && (
-          <div style={{ padding: 16, color: '#52525b', fontSize: 12 }}>No diff in this view.</div>
+          <div style={{ padding: 16, color: 'var(--gw-text-dim, #52525b)', fontSize: 12 }}>
+            No diff in this view.
+          </div>
         )}
         {!loading && !isUntracked && diff && diff.length > 0 && (
           <div data-testid="diff-panel" style={{ paddingBottom: 16 }}>
@@ -572,8 +592,8 @@ export default function StatusScreen(): React.ReactElement {
           alignItems: 'center',
           gap: 8,
           padding: '8px 12px',
-          borderBottom: '1px solid #27272a',
-          background: '#18181b',
+          borderBottom: '1px solid var(--gw-border, #27272a)',
+          background: 'var(--gw-surface, #18181b)',
           flexShrink: 0,
         }}
       >
@@ -585,9 +605,9 @@ export default function StatusScreen(): React.ReactElement {
             style={{
               padding: '4px 10px',
               background: 'none',
-              border: '1px solid #3f3f46',
+              border: '1px solid var(--gw-surface3, #3f3f46)',
               borderRadius: 4,
-              color: '#a1a1aa',
+              color: 'var(--gw-text-muted, #a1a1aa)',
               cursor: loading ? 'wait' : 'pointer',
               fontSize: 11,
             }}
@@ -606,7 +626,7 @@ export default function StatusScreen(): React.ReactElement {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#52525b',
+              color: 'var(--gw-text-dim, #52525b)',
               fontSize: 13,
             }}
           >
@@ -621,7 +641,7 @@ export default function StatusScreen(): React.ReactElement {
               style={{
                 width: 300,
                 flexShrink: 0,
-                borderRight: '1px solid #27272a',
+                borderRight: '1px solid var(--gw-border, #27272a)',
                 overflow: 'auto',
                 display: 'flex',
                 flexDirection: 'column',
@@ -630,7 +650,7 @@ export default function StatusScreen(): React.ReactElement {
               {loading && !status && (
                 <div
                   data-testid="status-loading"
-                  style={{ padding: 24, color: '#71717a', fontSize: 13 }}
+                  style={{ padding: 24, color: 'var(--gw-text-faint, #71717a)', fontSize: 13 }}
                 >
                   Loading…
                 </div>
@@ -639,7 +659,7 @@ export default function StatusScreen(): React.ReactElement {
               {(error || opError) && (
                 <div
                   data-testid="status-error"
-                  style={{ padding: '10px 12px', fontSize: 12, color: '#f87171' }}
+                  style={{ padding: '10px 12px', fontSize: 12, color: 'var(--gw-danger, #f87171)' }}
                 >
                   {error ?? opError}
                 </div>
@@ -657,7 +677,13 @@ export default function StatusScreen(): React.ReactElement {
                     />
                     <div data-testid="staged-list">
                       {staged.length === 0 && (
-                        <div style={{ padding: '8px 12px', fontSize: 12, color: '#52525b' }}>
+                        <div
+                          style={{
+                            padding: '8px 12px',
+                            fontSize: 12,
+                            color: 'var(--gw-text-dim, #52525b)',
+                          }}
+                        >
                           No staged changes
                         </div>
                       )}
@@ -687,7 +713,13 @@ export default function StatusScreen(): React.ReactElement {
                     />
                     <div data-testid="unstaged-list">
                       {unstaged.length === 0 && (
-                        <div style={{ padding: '8px 12px', fontSize: 12, color: '#52525b' }}>
+                        <div
+                          style={{
+                            padding: '8px 12px',
+                            fontSize: 12,
+                            color: 'var(--gw-text-dim, #52525b)',
+                          }}
+                        >
                           No unstaged changes
                         </div>
                       )}
@@ -728,7 +760,13 @@ export default function StatusScreen(): React.ReactElement {
                     />
                     <div data-testid="untracked-list">
                       {untracked.length === 0 && (
-                        <div style={{ padding: '8px 12px', fontSize: 12, color: '#52525b' }}>
+                        <div
+                          style={{
+                            padding: '8px 12px',
+                            fontSize: 12,
+                            color: 'var(--gw-text-dim, #52525b)',
+                          }}
+                        >
                           No untracked files
                         </div>
                       )}

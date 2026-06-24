@@ -7,29 +7,29 @@ const ROW: React.CSSProperties = {
   alignItems: 'center',
   gap: 8,
   padding: '6px 12px',
-  borderBottom: '1px solid #27272a',
+  borderBottom: '1px solid var(--gw-border, #27272a)',
 }
 
 const BTN: React.CSSProperties = {
   fontSize: 11,
   padding: '2px 8px',
   borderRadius: 4,
-  border: '1px solid #3f3f46',
+  border: '1px solid var(--gw-surface3, #3f3f46)',
   background: 'none',
-  color: '#a1a1aa',
+  color: 'var(--gw-text-muted, #a1a1aa)',
   cursor: 'pointer',
 }
 
 const BTN_DANGER: React.CSSProperties = {
   ...BTN,
-  borderColor: '#dc2626',
-  color: '#dc2626',
+  borderColor: 'var(--gw-danger-solid, #dc2626)',
+  color: 'var(--gw-danger-solid, #dc2626)',
 }
 
 const BTN_PRIMARY: React.CSSProperties = {
   ...BTN,
-  borderColor: '#6366f1',
-  color: '#6366f1',
+  borderColor: 'var(--gw-accent, #6366f1)',
+  color: 'var(--gw-accent, #6366f1)',
 }
 
 export default function BranchesScreen(): React.ReactElement {
@@ -75,7 +75,12 @@ export default function BranchesScreen(): React.ReactElement {
   return (
     <div
       data-testid="screen-branches"
-      style={{ display: 'flex', flexDirection: 'column', height: '100%', color: '#e4e4e7' }}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        color: 'var(--gw-text, #f4f4f5)',
+      }}
     >
       {/* Header bar */}
       <div
@@ -84,8 +89,8 @@ export default function BranchesScreen(): React.ReactElement {
           alignItems: 'center',
           gap: 12,
           padding: '12px 16px',
-          borderBottom: '1px solid #27272a',
-          background: '#18181b',
+          borderBottom: '1px solid var(--gw-border, #27272a)',
+          background: 'var(--gw-surface, #18181b)',
           flexShrink: 0,
         }}
       >
@@ -97,10 +102,10 @@ export default function BranchesScreen(): React.ReactElement {
             style={{
               fontSize: 12,
               fontFamily: 'monospace',
-              background: '#3f3f46',
+              background: 'var(--gw-surface3, #3f3f46)',
               padding: '2px 8px',
               borderRadius: 4,
-              color: '#a1a1aa',
+              color: 'var(--gw-text-muted, #a1a1aa)',
             }}
           >
             current: {currentBranch}
@@ -110,11 +115,13 @@ export default function BranchesScreen(): React.ReactElement {
 
       {/* Body */}
       {!activeRepo ? (
-        <div style={{ padding: 24, color: '#71717a', fontSize: 13 }}>
+        <div style={{ padding: 24, color: 'var(--gw-text-faint, #71717a)', fontSize: 13 }}>
           Add a repository to get started.
         </div>
       ) : loading ? (
-        <div style={{ padding: 24, color: '#71717a', fontSize: 13 }}>Loading…</div>
+        <div style={{ padding: 24, color: 'var(--gw-text-faint, #71717a)', fontSize: 13 }}>
+          Loading…
+        </div>
       ) : (
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {error && (
@@ -123,11 +130,11 @@ export default function BranchesScreen(): React.ReactElement {
               style={{
                 margin: '12px 16px',
                 padding: '8px 12px',
-                background: '#450a0a',
-                border: '1px solid #dc2626',
+                background: 'var(--gw-danger-bg, #450a0a)',
+                border: '1px solid var(--gw-danger-solid, #dc2626)',
                 borderRadius: 4,
                 fontSize: 13,
-                color: '#fca5a5',
+                color: 'var(--gw-danger, #f87171)',
               }}
             >
               {error}
@@ -140,11 +147,11 @@ export default function BranchesScreen(): React.ReactElement {
               style={{
                 margin: '12px 16px',
                 padding: '8px 12px',
-                background: '#052e16',
-                border: '1px solid #16a34a',
+                background: 'var(--gw-success-bg, #052e16)',
+                border: '1px solid var(--gw-success-solid, #16a34a)',
                 borderRadius: 4,
                 fontSize: 13,
-                color: '#86efac',
+                color: 'var(--gw-success, #4ade80)',
               }}
             >
               {successMessage}
@@ -155,13 +162,20 @@ export default function BranchesScreen(): React.ReactElement {
           <div
             style={{
               padding: '12px 16px',
-              borderBottom: '1px solid #27272a',
+              borderBottom: '1px solid var(--gw-border, #27272a)',
               display: 'flex',
               alignItems: 'center',
               gap: 8,
             }}
           >
-            <span style={{ fontSize: 12, color: '#71717a', width: 100, flexShrink: 0 }}>
+            <span
+              style={{
+                fontSize: 12,
+                color: 'var(--gw-text-faint, #71717a)',
+                width: 100,
+                flexShrink: 0,
+              }}
+            >
               New branch
             </span>
             <input
@@ -174,9 +188,9 @@ export default function BranchesScreen(): React.ReactElement {
               placeholder="branch-name"
               style={{
                 flex: 1,
-                background: '#27272a',
-                color: '#e4e4e7',
-                border: '1px solid #3f3f46',
+                background: 'var(--gw-input-bg, #09090b)',
+                color: 'var(--gw-text, #f4f4f5)',
+                border: '1px solid var(--gw-border-subtle, #3f3f46)',
                 borderRadius: 4,
                 padding: '4px 8px',
                 fontSize: 13,
@@ -197,12 +211,22 @@ export default function BranchesScreen(): React.ReactElement {
           </div>
 
           {/* Local branches */}
-          <div style={{ padding: '8px 16px 4px', fontSize: 11, color: '#71717a' }}>
+          <div
+            style={{
+              padding: '8px 16px 4px',
+              fontSize: 11,
+              color: 'var(--gw-text-faint, #71717a)',
+            }}
+          >
             LOCAL BRANCHES
           </div>
           <div data-testid="branches-local-list">
             {localBranches.length === 0 && (
-              <div style={{ padding: '4px 16px', fontSize: 13, color: '#52525b' }}>None</div>
+              <div
+                style={{ padding: '4px 16px', fontSize: 13, color: 'var(--gw-text-dim, #52525b)' }}
+              >
+                None
+              </div>
             )}
             {localBranches.map((b) => (
               <div key={b.name} data-testid={`branches-local-item-${b.name}`} style={ROW}>
@@ -211,7 +235,7 @@ export default function BranchesScreen(): React.ReactElement {
                     flex: 1,
                     fontSize: 13,
                     fontFamily: 'monospace',
-                    color: b.isCurrent ? '#6366f1' : '#e4e4e7',
+                    color: b.isCurrent ? 'var(--gw-accent, #6366f1)' : 'var(--gw-text, #f4f4f5)',
                     fontWeight: b.isCurrent ? 600 : 400,
                   }}
                 >
@@ -241,7 +265,9 @@ export default function BranchesScreen(): React.ReactElement {
 
                 {!b.isCurrent && deleteConfirmBranch === b.name && (
                   <>
-                    <span style={{ fontSize: 12, color: '#f87171' }}>Delete?</span>
+                    <span style={{ fontSize: 12, color: 'var(--gw-danger, #f87171)' }}>
+                      Delete?
+                    </span>
                     <button
                       data-testid="branches-delete-confirm-btn"
                       onClick={() => void handleDelete(b.name)}
@@ -265,7 +291,13 @@ export default function BranchesScreen(): React.ReactElement {
           {/* Remote branches */}
           {remoteBranches.length > 0 && (
             <>
-              <div style={{ padding: '12px 16px 4px', fontSize: 11, color: '#71717a' }}>
+              <div
+                style={{
+                  padding: '12px 16px 4px',
+                  fontSize: 11,
+                  color: 'var(--gw-text-faint, #71717a)',
+                }}
+              >
                 REMOTE BRANCHES
               </div>
               <div data-testid="branches-remote-list">
@@ -273,7 +305,7 @@ export default function BranchesScreen(): React.ReactElement {
                   <div
                     key={b.name}
                     data-testid="branches-remote-item"
-                    style={{ ...ROW, color: '#71717a' }}
+                    style={{ ...ROW, color: 'var(--gw-text-faint, #71717a)' }}
                   >
                     <span style={{ flex: 1, fontSize: 13, fontFamily: 'monospace' }}>{b.name}</span>
                   </div>

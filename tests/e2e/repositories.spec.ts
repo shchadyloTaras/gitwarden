@@ -127,6 +127,8 @@ test.describe('Repository management', () => {
     await win.getByTestId(`repo-form-profile-option-${workId}`).click()
     await win.getByTestId('repo-save-btn').click()
 
+    await expect(win.getByTestId('repo-saved-msg')).toContainText('Repository saved.')
+
     // Mismatch warning must appear: active=Personal, assigned=Work
     await expect(win.getByTestId('repo-mismatch-warning')).toBeVisible({ timeout: 5000 })
     await expect(win.getByTestId('repo-mismatch-warning')).toContainText('Work')

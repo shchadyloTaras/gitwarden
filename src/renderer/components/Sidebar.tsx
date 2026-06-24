@@ -37,8 +37,8 @@ export default function Sidebar(): React.ReactElement {
       style={{
         width: 180,
         flexShrink: 0,
-        background: '#18181b',
-        borderRight: '1px solid #27272a',
+        background: 'var(--gw-surface, #18181b)',
+        borderRight: '1px solid var(--gw-border, #27272a)',
         display: 'flex',
         flexDirection: 'column',
         padding: '8px 0',
@@ -58,7 +58,7 @@ export default function Sidebar(): React.ReactElement {
                   fontSize: 10,
                   fontWeight: 700,
                   letterSpacing: '0.08em',
-                  color: '#52525b',
+                  color: 'var(--gw-text-dim, #52525b)',
                 }}
               >
                 {GROUP_LABELS[item.group!]}
@@ -72,12 +72,15 @@ export default function Sidebar(): React.ReactElement {
                 alignItems: 'center',
                 gap: 8,
                 padding: '6px 12px',
-                background: activeScreen === item.screen ? '#27272a' : 'none',
+                background: activeScreen === item.screen ? 'var(--gw-surface2, #27272a)' : 'none',
                 border: 'none',
                 borderRadius: 6,
                 margin: '1px 6px',
                 cursor: 'pointer',
-                color: activeScreen === item.screen ? '#f4f4f5' : '#a1a1aa',
+                color:
+                  activeScreen === item.screen
+                    ? 'var(--gw-text, #f4f4f5)'
+                    : 'var(--gw-text-muted, #a1a1aa)',
                 fontSize: 13,
                 textAlign: 'left',
                 fontFamily: 'inherit',

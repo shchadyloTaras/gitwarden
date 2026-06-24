@@ -1,34 +1,97 @@
-/* GitWarden design tokens — dark-first, light override via [data-theme="light"] */
+/* GitWarden design tokens — dark-first, full light override via [data-theme="light"] */
 
 :root {
+  color-scheme: dark;
   --gw-bg: #09090b;
   --gw-surface: #18181b;
   --gw-surface2: #27272a;
   --gw-surface3: #3f3f46;
+  --gw-input-bg: #09090b;
   --gw-text: #f4f4f5;
   --gw-text-muted: #a1a1aa;
   --gw-text-faint: #71717a;
   --gw-text-dim: #52525b;
+  --gw-on-solid: #ffffff;
   --gw-border: #27272a;
   --gw-border-subtle: #3f3f46;
+  --gw-border-strong: #52525b;
   --gw-accent: #6366f1;
+  --gw-accent-text: #a5b4fc;
+  --gw-accent-soft: #1e1b4b;
+  --gw-accent-ring: rgba(99, 102, 241, 0.35);
+  --gw-primary: #3b82f6;
+  --gw-primary-hover: #60a5fa;
+  --gw-primary-disabled-bg: #333333;
+  --gw-primary-disabled-text: #555555;
+  --gw-info: #60a5fa;
+  --gw-purple: #a78bfa;
+  --gw-teal: #34d399;
   --gw-success: #4ade80;
+  --gw-success-solid: #16a34a;
+  --gw-success-bg: #052e16;
+  --gw-success-border: #2d4a2d;
   --gw-danger: #f87171;
+  --gw-danger-solid: #dc2626;
+  --gw-danger-bg: #450a0a;
+  --gw-danger-border: #991b1b;
   --gw-warning: #fbbf24;
+  --gw-warning-solid: #ca8a04;
+  --gw-warning-bg: #422006;
+  --gw-warning-border: #78350f;
+  --gw-code-muted: #94a3b8;
+  --gw-overlay: rgba(3, 7, 18, 0.72);
+  --gw-shadow: rgba(0, 0, 0, 0.38);
+  --gw-shadow-strong: rgba(0, 0, 0, 0.55);
+  --gw-hover-bg: rgba(255, 255, 255, 0.06);
+  --gw-button-hover-filter: brightness(1.22);
+  --gw-button-active-filter: brightness(0.88);
 }
 
 :root[data-theme='light'] {
-  --gw-bg: #ffffff;
-  --gw-surface: #f4f4f5;
-  --gw-surface2: #e4e4e7;
-  --gw-surface3: #d4d4d8;
-  --gw-text: #09090b;
-  --gw-text-muted: #52525b;
-  --gw-text-faint: #71717a;
-  --gw-text-dim: #a1a1aa;
-  --gw-border: #e4e4e7;
-  --gw-border-subtle: #d4d4d8;
-  --gw-accent: #4f46e5;
+  color-scheme: light;
+  --gw-bg: #f8fafc;
+  --gw-surface: #ffffff;
+  --gw-surface2: #f1f5f9;
+  --gw-surface3: #e2e8f0;
+  --gw-input-bg: #ffffff;
+  --gw-text: #0f172a;
+  --gw-text-muted: #334155;
+  --gw-text-faint: #475569;
+  --gw-text-dim: #64748b;
+  --gw-on-solid: #ffffff;
+  --gw-border: #e2e8f0;
+  --gw-border-subtle: #cbd5e1;
+  --gw-border-strong: #94a3b8;
+  --gw-accent: #4338ca;
+  --gw-accent-text: #3730a3;
+  --gw-accent-soft: #eef2ff;
+  --gw-accent-ring: rgba(67, 56, 202, 0.24);
+  --gw-primary: #2563eb;
+  --gw-primary-hover: #1d4ed8;
+  --gw-primary-disabled-bg: #e2e8f0;
+  --gw-primary-disabled-text: #64748b;
+  --gw-info: #1d4ed8;
+  --gw-purple: #7c3aed;
+  --gw-teal: #0f766e;
+  --gw-success: #166534;
+  --gw-success-solid: #15803d;
+  --gw-success-bg: #f0fdf4;
+  --gw-success-border: #86efac;
+  --gw-danger: #b91c1c;
+  --gw-danger-solid: #dc2626;
+  --gw-danger-bg: #fef2f2;
+  --gw-danger-border: #fca5a5;
+  --gw-warning: #92400e;
+  --gw-warning-solid: #92400e;
+  --gw-warning-bg: #fffbeb;
+  --gw-warning-border: #f59e0b;
+  --gw-code-muted: #475569;
+  --gw-overlay: rgba(15, 23, 42, 0.42);
+  --gw-shadow: rgba(15, 23, 42, 0.14);
+  --gw-shadow-strong: rgba(15, 23, 42, 0.2);
+  --gw-hover-bg: rgba(15, 23, 42, 0.05);
+  --gw-button-hover-filter: brightness(0.97);
+  --gw-button-active-filter: brightness(0.92);
 }
 
 *,
@@ -40,7 +103,30 @@
 body {
   margin: 0;
   padding: 0;
+  background: var(--gw-bg);
+  color: var(--gw-text);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+:where(
+  body,
+  div,
+  main,
+  header,
+  nav,
+  aside,
+  section,
+  button,
+  input,
+  textarea,
+  select,
+  [role='listbox']
+) {
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease,
+    box-shadow 0.16s ease;
 }
 
 /* Minimal scrollbar */
@@ -79,20 +165,23 @@ textarea:focus:not(:focus-visible) {
    anywhere, so no !important needed) plus a lift shadow. */
 button {
   transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease,
     filter 0.12s ease,
     transform 0.07s ease,
     opacity 0.12s ease,
     box-shadow 0.12s ease;
 }
 button:hover:not(:disabled) {
-  filter: brightness(1.32);
+  filter: var(--gw-button-hover-filter);
   box-shadow:
     0 0 0 2px var(--gw-accent),
-    0 2px 10px rgba(0, 0, 0, 0.5);
+    0 2px 10px var(--gw-shadow-strong);
 }
 button:active:not(:disabled) {
   transform: translateY(1px);
-  filter: brightness(0.82);
+  filter: var(--gw-button-active-filter);
   box-shadow: 0 0 0 2px var(--gw-accent);
 }
 button:disabled {
@@ -106,6 +195,20 @@ textarea:focus {
   border-color: var(--gw-accent) !important;
 }
 
+input:not([type='radio']):not([type='checkbox']),
+textarea,
+select {
+  background-color: var(--gw-input-bg);
+  color: var(--gw-text);
+  border-color: var(--gw-border-subtle);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--gw-text-dim);
+  opacity: 1;
+}
+
 /* ── Custom dropdown (replaces native <select> so the option list matches the
    dark theme — the native macOS popup cannot be styled via CSS) ───────────── */
 button.gw-dd-trigger {
@@ -115,7 +218,7 @@ button.gw-dd-trigger {
 button.gw-dd-trigger:hover:not(:disabled) {
   filter: brightness(1.12);
   box-shadow: none;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--gw-hover-bg);
 }
 button.gw-dd-trigger:active:not(:disabled) {
   transform: none;
@@ -135,11 +238,11 @@ button.gw-dd-trigger:active:not(:disabled) {
 .gw-dd-check {
   width: 12px;
   flex-shrink: 0;
-  color: #818cf8;
+  color: var(--gw-accent-text);
 }
 .gw-dd-option--selected {
-  background: rgba(99, 102, 241, 0.2);
-  color: #fff;
+  background: var(--gw-accent-soft);
+  color: var(--gw-text);
 }
 .gw-dd-option:hover,
 .gw-dd-option--active {
@@ -147,7 +250,7 @@ button.gw-dd-trigger:active:not(:disabled) {
 }
 .gw-dd-option--selected:hover,
 .gw-dd-option--selected.gw-dd-option--active {
-  background: rgba(99, 102, 241, 0.32);
+  background: var(--gw-accent-soft);
 }
 .gw-dd-option--disabled {
   color: var(--gw-text-dim, #52525b);

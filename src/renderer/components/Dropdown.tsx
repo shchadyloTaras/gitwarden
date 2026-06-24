@@ -145,7 +145,7 @@ export default function Dropdown({
           gap: 6,
           width: block ? '100%' : undefined,
           cursor: disabled ? 'not-allowed' : 'pointer',
-          color: selected ? '#e4e4e7' : '#71717a',
+          color: selected ? 'var(--gw-text, #f4f4f5)' : 'var(--gw-text-faint, #71717a)',
           ...triggerStyle,
         }}
       >
@@ -200,13 +200,21 @@ export default function Dropdown({
               background: 'var(--gw-surface, #18181b)',
               border: '1px solid var(--gw-border-subtle, #3f3f46)',
               borderRadius: 6,
-              boxShadow: '0 12px 32px rgba(0, 0, 0, 0.55)',
+              boxShadow: '0 12px 32px var(--gw-shadow-strong)',
               padding: 4,
               zIndex: 2000,
             }}
           >
             {options.length === 0 && (
-              <div style={{ padding: '6px 10px', color: '#71717a', fontSize: 13 }}>No options</div>
+              <div
+                style={{
+                  padding: '6px 10px',
+                  color: 'var(--gw-text-faint, #71717a)',
+                  fontSize: 13,
+                }}
+              >
+                No options
+              </div>
             )}
             {options.map((o, i) => {
               const isSel = o.value === value

@@ -133,22 +133,34 @@ export default function RemoteScreen(): React.ReactElement {
       <h2 style={{ margin: '0 0 20px', fontSize: '18px', fontWeight: 600 }}>Remote</h2>
 
       {loading && (
-        <div style={{ color: '#888', fontSize: '13px', marginBottom: '16px' }}>Loading…</div>
+        <div
+          style={{ color: 'var(--gw-text-faint, #71717a)', fontSize: '13px', marginBottom: '16px' }}
+        >
+          Loading…
+        </div>
       )}
 
       {!loading && !repository && !activeRepo && (
-        <div style={{ color: '#666', fontSize: '13px' }}>Add a repository to get started.</div>
+        <div style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: '13px' }}>
+          Add a repository to get started.
+        </div>
       )}
 
       {!loading && repository && (
         <>
           {/* Current branch */}
           {currentBranch && (
-            <div style={{ marginBottom: '16px', fontSize: '13px', color: '#aaa' }}>
+            <div
+              style={{
+                marginBottom: '16px',
+                fontSize: '13px',
+                color: 'var(--gw-text-muted, #a1a1aa)',
+              }}
+            >
               Branch:{' '}
               <span
                 data-testid="remote-current-branch"
-                style={{ color: '#60a5fa', fontFamily: 'monospace' }}
+                style={{ color: 'var(--gw-info, #60a5fa)', fontFamily: 'monospace' }}
               >
                 {currentBranch}
               </span>
@@ -157,20 +169,32 @@ export default function RemoteScreen(): React.ReactElement {
 
           {/* Remotes list */}
           {remotes.length === 0 ? (
-            <div style={{ color: '#666', fontSize: '13px', marginBottom: '16px' }}>
+            <div
+              style={{
+                color: 'var(--gw-text-dim, #52525b)',
+                fontSize: '13px',
+                marginBottom: '16px',
+              }}
+            >
               No remotes configured for this repository.
             </div>
           ) : (
             <div style={{ marginBottom: '16px' }}>
-              <div style={{ fontSize: '12px', color: '#888', marginBottom: '8px' }}>
+              <div
+                style={{
+                  fontSize: '12px',
+                  color: 'var(--gw-text-faint, #71717a)',
+                  marginBottom: '8px',
+                }}
+              >
                 Remotes ({remotes.length})
               </div>
               {remotes.map((remote) => (
                 <div
                   key={remote.name}
                   style={{
-                    background: '#1a1a1a',
-                    border: '1px solid #2a2a2a',
+                    background: 'var(--gw-surface, #18181b)',
+                    border: '1px solid var(--gw-border, #27272a)',
                     borderRadius: '4px',
                     padding: '12px',
                     marginBottom: '8px',
@@ -190,7 +214,7 @@ export default function RemoteScreen(): React.ReactElement {
                         style={{
                           fontFamily: 'monospace',
                           fontSize: '13px',
-                          color: '#e0e0e0',
+                          color: 'var(--gw-text, #f4f4f5)',
                           fontWeight: 600,
                         }}
                       >
@@ -201,7 +225,7 @@ export default function RemoteScreen(): React.ReactElement {
                           marginLeft: '10px',
                           fontFamily: 'monospace',
                           fontSize: '12px',
-                          color: '#666',
+                          color: 'var(--gw-text-dim, #52525b)',
                         }}
                       >
                         {remote.url}
@@ -211,8 +235,8 @@ export default function RemoteScreen(): React.ReactElement {
                           style={{
                             marginLeft: '8px',
                             fontSize: '11px',
-                            color: '#888',
-                            background: '#252525',
+                            color: 'var(--gw-text-faint, #71717a)',
+                            background: 'var(--gw-surface2, #27272a)',
                             padding: '1px 6px',
                             borderRadius: '3px',
                           }}
@@ -230,9 +254,9 @@ export default function RemoteScreen(): React.ReactElement {
                           fetchLoading === remote.name || pullLoading !== null || pushLoading
                         }
                         style={{
-                          background: '#252525',
-                          color: '#ccc',
-                          border: '1px solid #333',
+                          background: 'var(--gw-surface2, #27272a)',
+                          color: 'var(--gw-text-muted, #a1a1aa)',
+                          border: '1px solid var(--gw-surface3, #3f3f46)',
                           borderRadius: '4px',
                           padding: '5px 10px',
                           fontSize: '12px',
@@ -250,9 +274,9 @@ export default function RemoteScreen(): React.ReactElement {
                             pullLoading === remote.name || fetchLoading !== null || pushLoading
                           }
                           style={{
-                            background: '#252525',
-                            color: '#ccc',
-                            border: '1px solid #333',
+                            background: 'var(--gw-surface2, #27272a)',
+                            color: 'var(--gw-text-muted, #a1a1aa)',
+                            border: '1px solid var(--gw-surface3, #3f3f46)',
                             borderRadius: '4px',
                             padding: '5px 10px',
                             fontSize: '12px',
@@ -269,8 +293,8 @@ export default function RemoteScreen(): React.ReactElement {
                           onClick={() => handleOpenPushSheet(remote)}
                           disabled={fetchLoading !== null || pullLoading !== null || pushLoading}
                           style={{
-                            background: '#3b82f6',
-                            color: '#fff',
+                            background: 'var(--gw-primary, #2563eb)',
+                            color: 'var(--gw-on-solid, #fff)',
                             border: 'none',
                             borderRadius: '4px',
                             padding: '5px 10px',
@@ -294,11 +318,11 @@ export default function RemoteScreen(): React.ReactElement {
               data-testid="remote-success"
               style={{
                 padding: '10px 14px',
-                background: '#1a2d1b',
-                border: '1px solid #2d4a2d',
+                background: 'var(--gw-success-bg, #052e16)',
+                border: '1px solid var(--gw-success-border, #2d4a2d)',
                 borderRadius: '4px',
                 fontSize: '13px',
-                color: '#4ade80',
+                color: 'var(--gw-success, #4ade80)',
                 marginBottom: '12px',
               }}
             >
@@ -310,7 +334,7 @@ export default function RemoteScreen(): React.ReactElement {
           {error && (
             <div
               data-testid="remote-error"
-              style={{ color: '#f87171', fontSize: '13px', marginBottom: '12px' }}
+              style={{ color: 'var(--gw-danger, #f87171)', fontSize: '13px', marginBottom: '12px' }}
             >
               {error}
             </div>
@@ -324,7 +348,7 @@ export default function RemoteScreen(): React.ReactElement {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.65)',
+            background: 'var(--gw-overlay)',
             zIndex: 200,
             display: 'flex',
             alignItems: 'center',
@@ -334,8 +358,8 @@ export default function RemoteScreen(): React.ReactElement {
           <div
             data-testid="remote-push-sheet"
             style={{
-              background: '#1a1a1a',
-              border: '1px solid #333',
+              background: 'var(--gw-surface, #18181b)',
+              border: '1px solid var(--gw-surface3, #3f3f46)',
               borderRadius: '8px',
               padding: '24px',
               width: '500px',
@@ -351,8 +375,8 @@ export default function RemoteScreen(): React.ReactElement {
             {/* Details table */}
             <div
               style={{
-                background: '#111',
-                border: '1px solid #2a2a2a',
+                background: 'var(--gw-bg, #09090b)',
+                border: '1px solid var(--gw-border, #27272a)',
                 borderRadius: '4px',
                 padding: '12px',
                 marginBottom: '16px',
@@ -380,7 +404,13 @@ export default function RemoteScreen(): React.ReactElement {
               />
               {githubContext && (
                 <div style={{ display: 'flex', gap: '8px' }} data-testid="remote-push-github-line">
-                  <span style={{ color: '#666', minWidth: '110px', flexShrink: 0 }}>
+                  <span
+                    style={{
+                      color: 'var(--gw-text-dim, #52525b)',
+                      minWidth: '110px',
+                      flexShrink: 0,
+                    }}
+                  >
                     {STR.PUSH_GH_LABEL}
                   </span>
                   <span style={{ color: githubLineColor(githubContext, pushStatusPending) }}>
@@ -394,7 +424,7 @@ export default function RemoteScreen(): React.ReactElement {
             {pushSafetyResult && pushSafetyResult.issues.length > 0 && (
               <div
                 style={{
-                  border: '1px solid #2a2a2a',
+                  border: '1px solid var(--gw-border, #27272a)',
                   borderRadius: '4px',
                   overflow: 'hidden',
                   marginBottom: '16px',
@@ -406,10 +436,10 @@ export default function RemoteScreen(): React.ReactElement {
                     data-testid="remote-push-blocker"
                     style={{
                       padding: '8px 12px',
-                      background: '#2d1b1b',
-                      borderBottom: '1px solid #3d2020',
+                      background: 'var(--gw-danger-bg, #450a0a)',
+                      borderBottom: '1px solid var(--gw-danger-border, #991b1b)',
                       fontSize: '13px',
-                      color: '#f87171',
+                      color: 'var(--gw-danger, #f87171)',
                       display: 'flex',
                       alignItems: 'flex-start',
                       gap: '8px',
@@ -425,10 +455,10 @@ export default function RemoteScreen(): React.ReactElement {
                     data-testid="remote-push-warning"
                     style={{
                       padding: '8px 12px',
-                      background: '#2d2a1b',
-                      borderBottom: '1px solid #3d3520',
+                      background: 'var(--gw-warning-bg, #422006)',
+                      borderBottom: '1px solid var(--gw-warning-border, #78350f)',
                       fontSize: '13px',
-                      color: '#fbbf24',
+                      color: 'var(--gw-warning, #fbbf24)',
                       display: 'flex',
                       alignItems: 'flex-start',
                       gap: '8px',
@@ -445,11 +475,11 @@ export default function RemoteScreen(): React.ReactElement {
               <div
                 style={{
                   padding: '8px 12px',
-                  background: '#1a2d1b',
-                  border: '1px solid #2d4a2d',
+                  background: 'var(--gw-success-bg, #052e16)',
+                  border: '1px solid var(--gw-success-border, #2d4a2d)',
                   borderRadius: '4px',
                   fontSize: '13px',
-                  color: '#4ade80',
+                  color: 'var(--gw-success, #4ade80)',
                   marginBottom: '16px',
                 }}
               >
@@ -464,8 +494,8 @@ export default function RemoteScreen(): React.ReactElement {
                 onClick={handleClosePushSheet}
                 style={{
                   background: 'transparent',
-                  color: '#aaa',
-                  border: '1px solid #444',
+                  color: 'var(--gw-text-muted, #a1a1aa)',
+                  border: '1px solid var(--gw-border-strong, #52525b)',
                   borderRadius: '4px',
                   padding: '7px 16px',
                   fontSize: '13px',
@@ -479,8 +509,14 @@ export default function RemoteScreen(): React.ReactElement {
                 onClick={handleConfirmPush}
                 disabled={!pushSafetyResult?.canPush || pushLoading || pushStatusPending}
                 style={{
-                  background: pushSafetyResult?.canPush && !pushStatusPending ? '#3b82f6' : '#333',
-                  color: pushSafetyResult?.canPush && !pushStatusPending ? '#fff' : '#555',
+                  background:
+                    pushSafetyResult?.canPush && !pushStatusPending
+                      ? 'var(--gw-primary, #2563eb)'
+                      : 'var(--gw-surface3, #3f3f46)',
+                  color:
+                    pushSafetyResult?.canPush && !pushStatusPending
+                      ? 'var(--gw-on-solid, #fff)'
+                      : 'var(--gw-text-dim, #52525b)',
                   border: 'none',
                   borderRadius: '4px',
                   padding: '7px 16px',
@@ -515,14 +551,14 @@ function githubLineText(github: GitHubPushContext, pending: boolean): string {
 }
 
 function githubLineColor(github: GitHubPushContext, pending: boolean): string {
-  if (pending) return '#888'
+  if (pending) return 'var(--gw-text-faint, #71717a)'
   const ok =
     github.hasToken &&
     !github.tokenInvalid &&
     (github.assignedLogin === undefined ||
       github.effectiveLogin === undefined ||
       github.assignedLogin === github.effectiveLogin)
-  return ok ? '#4ade80' : '#f87171'
+  return ok ? 'var(--gw-success, #4ade80)' : 'var(--gw-danger, #f87171)'
 }
 
 function Row({
@@ -536,10 +572,12 @@ function Row({
 }): React.ReactElement {
   return (
     <div style={{ display: 'flex', gap: '8px' }}>
-      <span style={{ color: '#666', minWidth: '110px', flexShrink: 0 }}>{label}</span>
+      <span style={{ color: 'var(--gw-text-dim, #52525b)', minWidth: '110px', flexShrink: 0 }}>
+        {label}
+      </span>
       <span
         style={{
-          color: '#ccc',
+          color: 'var(--gw-text-muted, #a1a1aa)',
           fontFamily: mono ? 'monospace' : 'inherit',
           wordBreak: 'break-all',
         }}
