@@ -31,7 +31,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 ### GitHub OAuth feature (plan: `docs/plans/github-oauth-plan.md`, prompts: `docs/prompts/github-oauth-prompts.md`)
 
 - [x] Phase 21 — OAuth Foundations & Types
-- [ ] Phase 22 — Secret Storage Activation
+- [x] Phase 22 — Secret Storage Activation
 - [ ] Phase 23 — GitHub Device Flow Auth Service
 - [ ] Phase 24 — GitHub API Client & Account Identity
 - [ ] Phase 25 — IPC Bridge for GitHub Auth
@@ -234,3 +234,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: `npm test` → Vitest **180 passed** (was 162; +18 new GitHub-schema round-trip/enum/API-response tests in `zod-roundtrip.test.ts`). `npm run lint` clean (ESLint + Prettier). `npx tsc --noEmit` clean on both `tsconfig.node.json` and `tsconfig.web.json`. Core purity grep: no `fs`/`child_process`/`electron`/DOM imports under `src/core/`.
 - Exit criteria: ✅ met — core stays pure; both tsconfigs clean; round-trip parse/serialize passes for `Profile` WITH and WITHOUT `linkedGitHub` plus all new schemas.
 - Notes / follow-ups: `GITHUB_CLIENT_ID` is a placeholder — a maintainer must paste the real Client ID after registering the OAuth App (Appendix D); not needed for any test. Raw API response schemas strip unknown keys (Zod default) so extra GitHub fields won't break parsing; `GitHubAccessTokenResponseSchema` is a success∪error union the Phase 23 poller will discriminate on. This commit also folds in the prior uncommitted doc reorganization (plan/prompts moved under `docs/plans`/`docs/prompts`, `docs/progress-log.md` + OAuth plan/prompts added, `CLAUDE.md`/`AGENTS.md` trimmed) that was already the live baseline at session start.
+
+### 2026-06-24 — Phase 22: Secret Storage Activation
+
+- Built: `TokenStore` over `SecretStore` with encrypted per-profile token persistence, graceful missing/corrupt read handling, and a small redacting `Logger` for main-process logs.
+- Files: added `src/main/storage/TokenStore.ts`, `src/main/services/Logger.ts`, `tests/unit/token-store.test.ts`, `tests/unit/logger.test.ts`; updated `src/main/storage/SecretStore.ts`, `docs/progress-log.md`.
+- Tests: `npm test` passed (Vitest 187/187); `npm run lint` passed; `npx tsc --noEmit -p tsconfig.node.json` passed; `npx tsc --noEmit -p tsconfig.web.json` passed.
+- Exit criteria: ✅ met — injected fake encryptor covers set→get round-trip, simulated relaunch persistence, delete, corrupt ciphertext returning `undefined` without throwing, and logger spy/assertions proving raw tokens do not appear in log lines.
+- Notes / follow-ups: `TokenStore` stores only base64 ciphertext in `tokens.json`; raw tokens remain outside persisted domain models and the renderer bridge. Phase 25 will wire this store into GitHub auth IPC.
