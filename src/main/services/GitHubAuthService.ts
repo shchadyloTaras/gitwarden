@@ -16,10 +16,14 @@ import {
   GitHubAccessTokenResponseSchema,
   GitHubDeviceCodeResponseSchema,
 } from '../../core/schemas.js'
-import type { GitHubAuthErrorCode, GitHubDeviceCode } from '../../core/types.js'
+import type { GitHubDeviceCode } from '../../core/types.js'
 import { GITHUB_CLIENT_ID } from '../../core/config/github.js'
+import { GitHubAuthError } from './GitHubAuthError.js'
 import { createLogger, type Logger } from './Logger.js'
 import type { HttpClient, HttpResponse } from './HttpClient.js'
+
+// Re-exported so existing importers (and the Phase 23 test) keep their import path.
+export { GitHubAuthError } from './GitHubAuthError.js'
 
 export const GITHUB_DEVICE_CODE_URL = 'https://github.com/login/device/code'
 export const GITHUB_ACCESS_TOKEN_URL = 'https://github.com/login/oauth/access_token'
@@ -39,17 +43,6 @@ export interface DeviceTokenResult {
 export interface IGitHubAuthService {
   requestDeviceCode(scopes: string[]): Promise<GitHubDeviceCode>
   pollForToken(signal: AbortSignal): Promise<DeviceTokenResult>
-}
-
-/** Typed terminal error from the device flow; `code` mirrors GitHubAuthErrorCode. */
-export class GitHubAuthError extends Error {
-  constructor(
-    readonly code: GitHubAuthErrorCode,
-    message: string
-  ) {
-    super(message)
-    this.name = 'GitHubAuthError'
-  }
 }
 
 /** Injectable wait seam — defaults to a real timer; honors the AbortSignal. */

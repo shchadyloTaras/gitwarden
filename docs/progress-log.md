@@ -33,7 +33,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] Phase 21 — OAuth Foundations & Types
 - [x] Phase 22 — Secret Storage Activation
 - [x] Phase 23 — GitHub Device Flow Auth Service
-- [ ] Phase 24 — GitHub API Client & Account Identity
+- [x] Phase 24 — GitHub API Client & Account Identity
 - [ ] Phase 25 — IPC Bridge for GitHub Auth
 - [ ] Phase 26 — "Connect GitHub" UI (safe stop point)
 - [ ] Phase 27 — Token-based Push (HTTPS) + Safety Engine (optional)
@@ -256,3 +256,17 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: `npm test` → Vitest **204 passed** (was 187; +17 new in `github-auth-service.test.ts`). `npm run lint` clean (ESLint + Prettier). `npx tsc --noEmit` clean on both `tsconfig.node.json` and `tsconfig.web.json`.
 - Exit criteria: ✅ met — the fake-`HttpClient` matrix covers `authorization_pending → success`, `slow_down` raising the interval (both the GitHub-supplied value and the +5s fallback), `expired_token`, `access_denied`, a network error, an already-aborted poll (rejects immediately, never polls), and an abort mid-wait (rejects promptly, stops after exactly one poll); plus device-code request shape (body/headers), retained-`device_code` propagation, the no-`device_code`-in-payload guarantee, and isolated `abortableDelay` cancellation tests. No UI.
 - Notes / follow-ups: A `network` error and an `AbortError` leave the in-flight `device_code` intact so the caller can restart/retry; protocol-terminal outcomes (success/denied/expired/unknown) clear it. The `HttpClient` port has no concrete implementation yet — Phase 25 supplies a real one (and `shell.openExternal`) when wiring IPC. Per the plan, a human must still run `npm run dev` once after Phase 26 to authorize a real account end-to-end; CI only ever exercises the fake.
+
+### 2026-06-25 — Phase 24: GitHub API Client & Account Identity
+
+- Built: The read-only GitHub REST identity client in the main process — turns an access token into a verified `GitHubAccount`. Logic only, no UI, no real network: all I/O goes through the injected `HttpClient` (the same seam as Phase 23), so the whole matrix is unit-tested with a fake client.
+  - `src/main/services/GitHubApiService.ts` (new): `GitHubApiService implements IGitHubApiService`.
+    - `getAuthenticatedUser(token)` → GET `https://api.github.com/user` with `Accept: application/json` + `Authorization: Bearer <token>`; validates with `GitHubUserResponseSchema`; maps `id`/`login`/`name`/`avatar_url`(→`avatarUrl`)/`email` to the camelCase `GitHubAccount`, dropping fields GitHub returns as `null`/absent so the optionals stay optional.
+    - `getPrimaryVerifiedEmail(token)` → GET `https://api.github.com/user/emails`; validates with `GitHubEmailsResponseSchema` and returns the entry where `primary && verified` (else `undefined`).
+    - A private authenticated `request()` helper centralizes the Bearer header and maps HTTP **401 → typed `GitHubAuthError('tokenInvalid')`** (the re-auth trigger that later surfaces as `GITHUB_TOKEN_INVALID`, plan §5); other non-2xx → `network`, an `HttpClient` throw → `network`, a malformed body → `unknown`. Tokens are passed in and never logged.
+  - `src/main/services/GitHubAuthError.ts` (new): extracted the shared `GitHubAuthError` (carrying a `GitHubAuthErrorCode`) into its own module so the API client and the device-flow service both reference one typed error without depending on each other.
+  - `src/main/services/GitHubAuthService.ts` (refactor, behavior-preserving): removed the inline `GitHubAuthError` class and now imports + re-exports it from `GitHubAuthError.ts` — existing importers and the Phase 23 test keep the same import path and `instanceof` identity.
+- Files: added `src/main/services/GitHubApiService.ts`, `src/main/services/GitHubAuthError.ts`, `tests/unit/github-api-service.test.ts`; updated `src/main/services/GitHubAuthService.ts` (error extracted/re-exported), `docs/progress-log.md`.
+- Tests: `npm test` → Vitest **216 passed** (was 204; +12 new in `github-api-service.test.ts`). `npm run lint` clean (ESLint + Prettier). `npx tsc --noEmit` clean on both `tsconfig.node.json` and `tsconfig.web.json`.
+- Exit criteria: ✅ met — `getAuthenticatedUser` maps `login`/`id`/`name`/`avatar_url` (verified by mocked HTTP) and omits null/absent optionals; the primary-verified email is selected over non-primary/unverified entries (and over a verified-but-not-primary one), with `undefined` when none qualifies; a 401 yields the typed `tokenInvalid` error on both endpoints. Extra coverage: Bearer-header/Accept assertions, non-401 → `network`, client-throw → `network`, malformed body → `unknown`, empty email list → `undefined`.
+- Notes / follow-ups: `getAuthenticatedUser` also maps the `/user` `email` (public profile email, may be null) — Phase 25 glue should prefer `getPrimaryVerifiedEmail()` for the persisted identity. The `HttpClient` still has no concrete implementation; Phase 25 supplies the real `fetch`-based client and injects both `GitHubAuthService` + `GitHubApiService` into the IPC handlers.
