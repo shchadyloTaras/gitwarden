@@ -1,6 +1,17 @@
 import React, { useState } from 'react'
-import type { Profile } from '../../core/types'
+import type { GitHubAccount, Profile } from '../../core/types'
 import { useProfilesStore, profileColor } from '../store/profilesStore'
+import { GITHUB_CLIENT_ID } from '../../core/config/github'
+import ConnectGitHubModal from '../components/ConnectGitHubModal'
+import { STR } from '../strings'
+
+/** GitHub's avatar CDN keyed by numeric account id — no avatar URL needs persisting. */
+function avatarUrlFor(accountId: number): string {
+  return `https://avatars.githubusercontent.com/u/${accountId}?s=48&v=4`
+}
+
+/** GitHub's per-app authorizations page, so the user can fully revoke access there. */
+const GITHUB_REVOKE_URL = `https://github.com/settings/connections/applications/${GITHUB_CLIENT_ID}`
 
 type FormMode = 'idle' | 'create' | 'edit'
 
@@ -44,6 +55,7 @@ export default function ProfilesScreen(): React.ReactElement {
     updateProfile,
     deleteProfile,
     setActiveProfile,
+    load,
   } = useProfilesStore()
 
   const [mode, setMode] = useState<FormMode>('idle')
@@ -52,8 +64,11 @@ export default function ProfilesScreen(): React.ReactElement {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [connecting, setConnecting] = useState(false)
+  const [confirmDisconnect, setConfirmDisconnect] = useState(false)
 
   const selectedProfile = profiles.find((p) => p.id === selectedId) ?? null
+  const linkedGitHub = selectedProfile?.linkedGitHub ?? null
 
   function selectProfile(p: Profile) {
     setSelectedId(p.id)
@@ -61,6 +76,7 @@ export default function ProfilesScreen(): React.ReactElement {
     setMode('edit')
     setError(null)
     setConfirmDelete(false)
+    setConfirmDisconnect(false)
   }
 
   function startCreate() {
@@ -69,6 +85,7 @@ export default function ProfilesScreen(): React.ReactElement {
     setMode('create')
     setError(null)
     setConfirmDelete(false)
+    setConfirmDisconnect(false)
   }
 
   function setField(key: keyof FormData, value: string) {
@@ -151,6 +168,52 @@ export default function ProfilesScreen(): React.ReactElement {
       await setActiveProfile(selectedId)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
+    }
+  }
+
+  // On a successful GitHub link, auto-fill identity (displayName only if still empty)
+  // and persist it — which also pulls the linkedGitHub record main just wrote into the
+  // store, so the linked badge appears.
+  async function handleAuthorized(identity: GitHubAccount) {
+    if (!selectedId) return
+    const resolvedName = identity.name?.trim() || identity.login
+    const patch: Partial<Omit<Profile, 'id'>> = {
+      gitAuthorName: resolvedName,
+      githubUsername: identity.login,
+    }
+    if (identity.email) patch.gitAuthorEmail = identity.email
+    if (!form.displayName.trim()) patch.displayName = resolvedName
+
+    try {
+      await updateProfile(selectedId, patch)
+      setForm((f) => ({
+        ...f,
+        gitAuthorName: patch.gitAuthorName ?? f.gitAuthorName,
+        githubUsername: patch.githubUsername ?? f.githubUsername,
+        gitAuthorEmail: patch.gitAuthorEmail ?? f.gitAuthorEmail,
+        displayName: patch.displayName ?? f.displayName,
+      }))
+      setError(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error')
+    }
+  }
+
+  async function handleDisconnect() {
+    if (!selectedId) return
+    setSaving(true)
+    try {
+      const res = await window.api.github.disconnect(selectedId)
+      if (!res.ok) throw new Error(res.error)
+      // Refresh so the cleared linkedGitHub is reflected in the badge.
+      await load()
+      setConfirmDisconnect(false)
+      // We cannot revoke via API (no client secret) — open GitHub so the user can.
+      void window.api.shell.openExternal(GITHUB_REVOKE_URL)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -328,6 +391,111 @@ export default function ProfilesScreen(): React.ReactElement {
                 placeholder="e.g. janedoe"
                 style={inputStyle}
               />
+            </Field>
+
+            <Field label={STR.GITHUB_SECTION_LABEL}>
+              {mode === 'create' ? (
+                <div style={{ fontSize: 12, color: 'var(--gw-text-dim, #52525b)' }}>
+                  {STR.GITHUB_CONNECT_SAVE_FIRST}
+                </div>
+              ) : linkedGitHub ? (
+                <div data-testid="github-linked-badge" style={linkedBadgeStyle}>
+                  <img
+                    src={avatarUrlFor(linkedGitHub.accountId)}
+                    alt=""
+                    width={28}
+                    height={28}
+                    style={{ borderRadius: '50%', flexShrink: 0, background: '#27272a' }}
+                    onError={(e) => {
+                      e.currentTarget.style.visibility = 'hidden'
+                    }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      data-testid="github-linked-login"
+                      style={{ fontSize: 13, fontWeight: 600, color: 'var(--gw-text, #f4f4f5)' }}
+                    >
+                      {STR.GITHUB_LINKED_AS(linkedGitHub.login)}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--gw-text-faint, #71717a)' }}>
+                      {STR.GITHUB_LINKED_CONNECTED_AT(linkedGitHub.connectedAt)}
+                    </div>
+                  </div>
+                  {!confirmDisconnect ? (
+                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                      <button
+                        type="button"
+                        data-testid="github-reconnect-btn"
+                        onClick={() => setConnecting(true)}
+                        style={ghSecondaryBtn}
+                      >
+                        {STR.GITHUB_RECONNECT_BTN}
+                      </button>
+                      <button
+                        type="button"
+                        data-testid="github-disconnect-btn"
+                        onClick={() => setConfirmDisconnect(true)}
+                        style={{ ...ghSecondaryBtn, color: 'var(--gw-danger, #f87171)' }}
+                      >
+                        {STR.GITHUB_DISCONNECT_BTN}
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                      <span style={{ fontSize: 11, color: 'var(--gw-text-muted, #a1a1aa)' }}>
+                        {STR.GITHUB_DISCONNECT_CONFIRM_PROMPT}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDisconnect(false)}
+                        style={ghSecondaryBtn}
+                      >
+                        {STR.GITHUB_DISCONNECT_CANCEL_BTN}
+                      </button>
+                      <button
+                        type="button"
+                        data-testid="github-disconnect-confirm-btn"
+                        onClick={() => {
+                          void handleDisconnect()
+                        }}
+                        disabled={saving}
+                        style={{
+                          ...ghSecondaryBtn,
+                          background: 'var(--gw-danger, #dc2626)',
+                          border: 'none',
+                          color: '#fff',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {STR.GITHUB_DISCONNECT_CONFIRM_BTN}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <button
+                    type="button"
+                    data-testid="github-connect-btn"
+                    onClick={() => setConnecting(true)}
+                    style={{
+                      padding: '6px 14px',
+                      background: 'var(--gw-surface3, #3f3f46)',
+                      border: 'none',
+                      borderRadius: 4,
+                      color: 'var(--gw-text, #e4e4e7)',
+                      cursor: 'pointer',
+                      fontSize: 12,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {STR.GITHUB_CONNECT_BTN}
+                  </button>
+                  <div style={{ fontSize: 11, color: 'var(--gw-text-dim, #52525b)', marginTop: 6 }}>
+                    {STR.GITHUB_CONNECT_HINT}
+                  </div>
+                </div>
+              )}
             </Field>
 
             <Field label="Authentication">
@@ -545,6 +713,14 @@ export default function ProfilesScreen(): React.ReactElement {
           </form>
         )}
       </div>
+
+      {connecting && selectedId && (
+        <ConnectGitHubModal
+          profileId={selectedId}
+          onAuthorized={handleAuthorized}
+          onClose={() => setConnecting(false)}
+        />
+      )}
     </div>
   )
 }
@@ -558,6 +734,26 @@ const inputStyle: React.CSSProperties = {
   color: '#e4e4e7',
   fontSize: 13,
   boxSizing: 'border-box',
+}
+
+const linkedBadgeStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  padding: '8px 10px',
+  background: 'var(--gw-surface2, #27272a)',
+  border: '1px solid var(--gw-border-subtle, #3f3f46)',
+  borderRadius: 6,
+}
+
+const ghSecondaryBtn: React.CSSProperties = {
+  padding: '4px 10px',
+  background: 'none',
+  border: '1px solid var(--gw-border-subtle, #3f3f46)',
+  borderRadius: 4,
+  color: 'var(--gw-text-muted, #a1a1aa)',
+  cursor: 'pointer',
+  fontSize: 11,
 }
 
 function Field({

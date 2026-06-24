@@ -112,6 +112,39 @@ export const STR = {
   DELETE_UNTRACKED_BODY:
     'This file is untracked. Deleting it removes it from disk permanently — it cannot be recovered from Git.',
 
+  // ── Connect GitHub (OAuth Device Flow) ─────────────────────────────────────
+  GITHUB_SECTION_LABEL: 'GitHub Account',
+  GITHUB_CONNECT_BTN: 'Connect GitHub',
+  GITHUB_CONNECT_HINT:
+    'Link this profile to a GitHub account to auto-fill its identity and verify pushes.',
+  GITHUB_CONNECT_SAVE_FIRST: 'Save the profile before connecting a GitHub account.',
+  GITHUB_MODAL_TITLE: 'Connect GitHub',
+  GITHUB_MODAL_STARTING: 'Requesting a device code…',
+  GITHUB_MODAL_ENTER_CODE: 'Enter this code at github.com/login/device:',
+  GITHUB_MODAL_WAITING: 'Waiting for you to authorize on GitHub…',
+  GITHUB_MODAL_OPEN_BTN: 'Open GitHub',
+  GITHUB_MODAL_CANCEL_BTN: 'Cancel',
+  GITHUB_MODAL_CLOSE_BTN: 'Close',
+  GITHUB_MODAL_SUCCESS_TITLE: 'Connected',
+  GITHUB_MODAL_SUCCESS: (login: string) => `Authorized as @${login}.`,
+  GITHUB_MODAL_DENIED: 'Authorization was denied on GitHub.',
+  GITHUB_MODAL_EXPIRED: 'The device code expired. Start again to get a new one.',
+  GITHUB_MODAL_REAUTH:
+    'The stored GitHub token is no longer valid. Reconnect to re-authorize this profile.',
+  GITHUB_MODAL_ERROR: 'Something went wrong while connecting. Please try again.',
+  GITHUB_MODAL_RETRY_BTN: 'Try Again',
+  GITHUB_LINKED_BADGE_LABEL: 'Linked GitHub',
+  GITHUB_LINKED_AS: (login: string) => `@${login}`,
+  GITHUB_LINKED_CONNECTED_AT: (iso: string) => `Connected ${new Date(iso).toLocaleDateString()}`,
+  GITHUB_RECONNECT_BTN: 'Reconnect',
+  GITHUB_DISCONNECT_BTN: 'Disconnect',
+  GITHUB_DISCONNECT_CONFIRM_PROMPT: 'Disconnect this GitHub account?',
+  GITHUB_DISCONNECT_CONFIRM_BTN: 'Disconnect',
+  GITHUB_DISCONNECT_CANCEL_BTN: 'Cancel',
+  GITHUB_DISCONNECT_HINT:
+    'This removes the local token and opens GitHub so you can fully revoke access there.',
+  GITHUB_REAUTH_NOTICE: 'GitHub token invalid — reconnect required.',
+
   // ── Inspector ──────────────────────────────────────────────────────────────
   INSPECTOR_TITLE: 'Inspector',
   INSPECTOR_NO_PROFILE: 'No profile selected',

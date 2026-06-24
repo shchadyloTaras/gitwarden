@@ -29,6 +29,9 @@ interface ElectronAPI {
   dialog: {
     openDirectory(): Promise<IpcResult<string | null>>
   }
+  shell: {
+    openExternal(url: string): Promise<IpcResult<null>>
+  }
   profiles: {
     list(): Promise<IpcResult<Profile[]>>
     get(id: string): Promise<IpcResult<Profile | undefined>>

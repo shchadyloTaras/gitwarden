@@ -37,6 +37,9 @@ export const api = {
   dialog: {
     openDirectory: (): Promise<IpcResult<string | null>> => invoke('dialog:openDirectory'),
   },
+  shell: {
+    openExternal: (url: string): Promise<IpcResult<null>> => invoke('shell:openExternal', { url }),
+  },
   profiles: {
     list: (): Promise<IpcResult<Profile[]>> => invoke('profiles:list'),
     get: (id: string): Promise<IpcResult<Profile | undefined>> => invoke('profiles:get', { id }),

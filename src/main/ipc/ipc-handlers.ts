@@ -29,6 +29,7 @@ import {
   GitHubCancelDeviceAuthPayload,
   GitHubDisconnectPayload,
   GitHubGetLinkedAccountPayload,
+  ShellOpenExternalPayload,
 } from './ipc-schemas.js'
 
 export interface Services {
@@ -37,6 +38,8 @@ export interface Services {
   settings: ISettingsService
   git: GitService
   github: IGitHubAuthCoordinator
+  /** Browser-open seam — real `shell.openExternal` in production, no-op under e2e. */
+  openExternal: (url: string) => void | Promise<void>
 }
 
 export type IpcResult<T> = { ok: true; data: T } | { ok: false; error: string }
@@ -120,6 +123,15 @@ export function registerIpcHandlers(services: Services): void {
     wrap(async () => {
       const patch = SettingsUpdatePayload.parse(raw)
       return services.settings.update(patch)
+    })
+  )
+
+  // Shell — open an external (http/https) URL in the user's default browser.
+  ipcMain.handle('shell:openExternal', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { url } = ShellOpenExternalPayload.parse(raw)
+      await services.openExternal(url)
+      return null
     })
   )
 

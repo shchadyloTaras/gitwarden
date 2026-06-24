@@ -30,6 +30,15 @@ export const RepositoryDeletePayload = z.object({ id: z.string() })
 // Settings request payloads
 export const SettingsUpdatePayload = AppSettingsSchema.partial()
 
+// Shell — open an external URL in the user's browser. Restricted to http(s) so the
+// renderer can never coax the main process into opening file:// or other schemes.
+export const ShellOpenExternalPayload = z.object({
+  url: z
+    .string()
+    .url()
+    .refine((u) => /^https?:\/\//i.test(u), { message: 'Only http(s) URLs may be opened.' }),
+})
+
 // Git request payloads
 export const GitRepoPathPayload = z.object({ repoPath: z.string() })
 export const GitFilePathPayload = z.object({ repoPath: z.string(), filePath: z.string() })

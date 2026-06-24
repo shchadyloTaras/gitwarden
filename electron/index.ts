@@ -29,27 +29,28 @@ import {
 import { GITHUB_OAUTH_SCOPES } from '../src/core/config/github.js'
 import { createGitHubAuthTestServices } from '../src/main/testing/githubAuthFakes.js'
 
+/** True when launched by the Playwright e2e harness — fakes + no real browser. */
+const IS_E2E_FAKE_GITHUB = process.env['GITWARDEN_E2E_FAKE_GITHUB'] === '1'
+
+/** The single browser-open seam, shared by the shell channel and the auth coordinator. */
+const openExternal = IS_E2E_FAKE_GITHUB
+  ? (_url: string): void => {}
+  : (url: string): void => {
+      void shell.openExternal(url)
+    }
+
 /**
- * Builds the GitHub-auth service trio + browser-open seam. Under the e2e flag the
- * services are fakes and the browser is never opened — no real GitHub call in CI
- * (docs/plans/github-oauth-plan.md §6 Phase 25). Production uses the real device-flow
- * service, REST client, and encrypted TokenStore.
+ * Builds the GitHub-auth service trio. Under the e2e flag the services are fakes and no
+ * real GitHub call happens in CI (docs/plans/github-oauth-plan.md §6 Phase 25).
+ * Production uses the real device-flow service, REST client, and encrypted TokenStore.
  */
 function buildGitHubAuthDeps(
   profiles: ProfileService,
   userDataPath: string
-): Pick<
-  GitHubAuthCoordinatorDeps,
-  'auth' | 'api' | 'tokens' | 'profiles' | 'openExternal' | 'scopes'
-> {
-  if (process.env['GITWARDEN_E2E_FAKE_GITHUB'] === '1') {
+): GitHubAuthCoordinatorDeps {
+  if (IS_E2E_FAKE_GITHUB) {
     const fakes = createGitHubAuthTestServices()
-    return {
-      ...fakes,
-      profiles,
-      openExternal: () => {},
-      scopes: GITHUB_OAUTH_SCOPES,
-    }
+    return { ...fakes, profiles, openExternal, scopes: GITHUB_OAUTH_SCOPES }
   }
 
   const http = new FetchHttpClient()
@@ -63,9 +64,7 @@ function buildGitHubAuthDeps(
     api: new GitHubApiService(http),
     tokens: new TokenStore(tokensStore, new SecretStore()),
     profiles,
-    openExternal: (url: string) => {
-      void shell.openExternal(url)
-    },
+    openExternal,
     scopes: GITHUB_OAUTH_SCOPES,
   }
 }
@@ -139,6 +138,7 @@ app.whenReady().then(async () => {
     settings: new SettingsService(settingsStore),
     git: new GitService(gitRunner),
     github,
+    openExternal,
   })
 
   createWindow()
