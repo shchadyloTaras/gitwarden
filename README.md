@@ -12,9 +12,12 @@ Juggling multiple GitHub identities locally is error-prone: the right email but 
 
 Early development — built in phases. See:
 
-- **Plan:** [`docs/gitwarden-plan.md`](docs/gitwarden-plan.md)
-- **Phase prompts:** [`docs/phase-prompts.md`](docs/phase-prompts.md)
-- **Contributor/agent guides:** [`CLAUDE.md`](CLAUDE.md), [`AGENT.md`](AGENT.md)
+- **Plan:** [`docs/plans/gitwarden-plan.md`](docs/plans/gitwarden-plan.md)
+- **Phase prompts:** [`docs/prompts/phase-prompts.md`](docs/prompts/phase-prompts.md)
+- **GitHub OAuth plan:** [`docs/plans/github-oauth-plan.md`](docs/plans/github-oauth-plan.md)
+- **GitHub OAuth prompts:** [`docs/prompts/github-oauth-prompts.md`](docs/prompts/github-oauth-prompts.md)
+- **Contributor/agent guides:** [`CLAUDE.md`](CLAUDE.md), [`AGENTS.md`](AGENTS.md)
+- **Status & progress log:** [`docs/progress-log.md`](docs/progress-log.md)
 
 ## Stack
 

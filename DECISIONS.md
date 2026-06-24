@@ -1,7 +1,7 @@
 # DECISIONS.md — GitWarden
 
 Phase 0 foundational decisions. Each item is a binding decision with a one-line rationale.
-Source: `docs/gitwarden-plan.md` §7.
+Source: `docs/plans/gitwarden-plan.md` §7.
 
 ## 1. Locating & trusting the `git` binary (§7.1)
 
@@ -28,12 +28,29 @@ Source: `docs/gitwarden-plan.md` §7.
 - **Windows agent:** Windows OpenSSH uses a **named-pipe** agent (not `SSH_AUTH_SOCK`); the requirement is that `ssh` is on `PATH` so git can find it. Documented as a setup precondition.
   - _Rationale:_ the named-pipe agent needs no socket env var, but git-over-ssh on Windows only works if `ssh.exe` is resolvable — so we document that instead of forwarding a socket that doesn't exist there.
 
-## 3. Token auth deferred (§7.3)
+## 3. Token auth deferred (§7.3) — ⚠️ SUPERSEDED by §3a (GitHub OAuth plan, Phase 21+)
+
+> **Status: superseded.** The MVP shipped (Phases 0–20) with token auth deferred, exactly as recorded below. The GitHub OAuth feature (`docs/plans/github-oauth-plan.md`) reverses this; the new decision is in §3a. The original text is kept for history.
 
 - **Token auth is model-only in MVP.** `AuthenticationMethod` includes `token`, but the profile UI offers **SSH only**; `token` exists in the type system but has no UI and no push path.
   - _Rationale:_ keeps the type model complete and future-proof without shipping a half-built credential path.
 - **`SecretStore` ships but is not wired into push.** The Electron `safeStorage`-backed store exists, but MVP push never reads a token from it.
   - _Rationale:_ avoids a deceptive path that passes safety checks yet silently does nothing — no partially-built auth in production.
+
+## 3a. GitHub OAuth via Device Flow — token auth now in scope (reverses §3)
+
+Source: `docs/plans/github-oauth-plan.md` §1, §1.1, Appendix B–D. Reverses the §3 deferral.
+
+- **OAuth sign-in is in scope.** GitWarden adds **"Connect GitHub"** via the OAuth **Device Authorization Flow** (the mechanism `gh` CLI uses for desktop sign-in). One click links a profile to a real GitHub account, auto-fills its identity, and lets the Safety Engine verify the _account_ behind a push — not just the remote host string.
+  - _Rationale:_ wrong-account prevention is GitWarden's reason to exist; a token bound to a concrete `@login` is a far stronger guarantee than host matching.
+- **Device Flow, not Authorization Code.** Device Flow needs only a **public `client_id`** — **no client secret, no redirect/custom-protocol handler**. A desktop binary cannot keep a secret, so any flow requiring a client secret is rejected.
+  - _Rationale:_ nothing secret is embedded in the shipped binary; the `client_id` is public and fine to commit (`src/core/config/github.ts`).
+- **Additive to SSH, not a replacement.** A profile may be SSH-only, OAuth-linked, or both. Existing SSH profiles and codes (`REMOTE_HOST_MISMATCH`, …) are untouched.
+  - _Rationale:_ OAuth strengthens the push gate without breaking the SSH path that already works.
+- **`SecretStore` is now activated** (Phase 22) as a `TokenStore` keyed by `profileId`. Tokens live **only** there (Electron `safeStorage`), never in a model, never in the renderer — see SECURITY.md §8–9.
+  - _Rationale:_ reverses "ships but unwired" — the encrypted store now backs a real, audited credential path.
+- **Revocation is best-effort by design.** Device Flow has no client secret, so GitWarden **cannot** call GitHub's token-revoke endpoint. **Disconnect** deletes the local token and opens GitHub's app-connections page so the user can revoke there (Appendix C).
+  - _Rationale:_ honest limitation surfaced to the user rather than a silent half-revoke.
 
 ## 4. Concurrency & cancellation (§7.5)
 

@@ -2,7 +2,7 @@
 
 Copy-paste prompts to drive development one phase at a time. Each prompt is self-contained, points at the plan, and **ends with a progress block** that appends an entry to `CLAUDE.md`.
 
-**How to use:** run prompts in order (0 → 18). Don't start a phase until the previous phase's entry in the `CLAUDE.md` Progress Log shows Exit criteria ✅. References: full plan in `docs/gitwarden-plan.md`, rules in `CLAUDE.md` and `AGENT.md`.
+**How to use:** run prompts in order (0 → 18). Don't start a phase until the previous phase's entry in `docs/progress-log.md` shows Exit criteria ✅. References: full plan in `docs/plans/gitwarden-plan.md`, rules in `CLAUDE.md` / `AGENTS.md`.
 
 ---
 
@@ -12,14 +12,14 @@ Every prompt below ends with this block. It is the mechanism that records progre
 
 ```
 When the phase's Exit criteria are met:
-1. Append an entry to the "## Progress Log" section of CLAUDE.md (newest last, do not rewrite past entries):
+1. Append an entry to the "## Progress Log" section of docs/progress-log.md (newest last, do not rewrite past entries):
    ### <today's date> — Phase N: <name>
    - Built: <what was implemented>
    - Files: <files added/changed>
    - Tests: <exact vitest/playwright result, e.g. "12 passed">
    - Exit criteria: ✅ met  (or ⚠️ partial — explain what's left)
    - Notes / follow-ups: <anything worth knowing for next phase>
-2. Tick this phase's box in the "## Phase Checklist" in CLAUDE.md.
+2. Tick this phase's box in the "## Phase Checklist" in docs/progress-log.md.
 3. Commit ALL changes for this phase (only if exit criteria are met / tests are green):
    git add -A
    git commit -m "Phase N: <name>" -m "<one-line summary of what was built>" -m "Co-Authored-By: Claude <noreply@anthropic.com>"
@@ -32,7 +32,7 @@ When the phase's Exit criteria are met:
 ## Phase 0 — Foundations & Decisions
 
 ```
-Work on Phase 0 of GitWarden (see docs/gitwarden-plan.md §7). No app code yet — produce two docs at the repo root: DECISIONS.md and SECURITY.md.
+Work on Phase 0 of GitWarden (see docs/plans/gitwarden-plan.md §7). No app code yet — produce two docs at the repo root: DECISIONS.md and SECURITY.md.
 
 In DECISIONS.md record, with a one-line rationale each:
 - git binary location strategy across macOS/Linux/Windows + the first-run "git not found" UX (plan §7.1).

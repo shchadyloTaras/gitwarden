@@ -1,5 +1,12 @@
 import { z } from 'zod'
-import { ProfileSchema, RepositoryRecordSchema, AppSettingsSchema } from '../../core/schemas.js'
+import {
+  ProfileSchema,
+  RepositoryRecordSchema,
+  AppSettingsSchema,
+  GitHubAuthStatusSchema,
+  GitHubAuthErrorCodeSchema,
+  LinkedGitHubAccountSchema,
+} from '../../core/schemas.js'
 
 // Profile request payloads
 export const ProfileGetPayload = z.object({ id: z.string() })
@@ -69,4 +76,20 @@ export const GitHistoryPayload = z.object({
   repoPath: z.string(),
   limit: z.number().int().positive(),
   skip: z.number().int().min(0),
+})
+
+// GitHub OAuth request payloads (Device Flow). All keyed by profileId.
+// Channels wired in Phase 25; schemas defined here in Phase 21.
+export const GitHubProfilePayload = z.object({ profileId: z.string().min(1) })
+export const GitHubStartDeviceAuthPayload = GitHubProfilePayload
+export const GitHubCancelDeviceAuthPayload = GitHubProfilePayload
+export const GitHubDisconnectPayload = GitHubProfilePayload
+export const GitHubGetLinkedAccountPayload = GitHubProfilePayload
+
+// Auth progress pushed main → renderer over the github:authEvent channel.
+export const GitHubAuthEventPayload = z.object({
+  profileId: z.string().min(1),
+  status: GitHubAuthStatusSchema,
+  errorCode: GitHubAuthErrorCodeSchema.optional(),
+  account: LinkedGitHubAccountSchema.optional(),
 })

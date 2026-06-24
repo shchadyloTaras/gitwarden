@@ -11,7 +11,59 @@ export interface Profile {
   expectedRemoteHosts: string[]
   defaultProjectsFolder?: string
   notes?: string
+  /** Set once the profile is linked to a GitHub account via OAuth Device Flow. The token is NEVER stored here — it lives only in TokenStore, keyed by profile id. */
+  linkedGitHub?: LinkedGitHubAccount
 }
+
+// --- GitHub OAuth (Device Authorization Flow) ---
+// See docs/plans/github-oauth-plan.md §2. Tokens are never part of any model;
+// only LinkedGitHubAccount is persisted, and only user_code/verification_uri
+// ever cross to the renderer (the device_code stays in the main process).
+
+/**
+ * What the device-flow start step returns to the renderer. The `device_code`
+ * itself stays in main and is NEVER sent to the renderer.
+ */
+export interface GitHubDeviceCode {
+  userCode: string // e.g. "WDJB-MJHT" — shown to the user
+  verificationUri: string // e.g. "https://github.com/login/device"
+  expiresInSec: number // typically 900
+  intervalSec: number // minimum poll interval, e.g. 5
+}
+
+/** Resolved identity fetched from the GitHub API after authorization. */
+export interface GitHubAccount {
+  id: number
+  login: string // the @username
+  name?: string
+  email?: string // primary verified email (may be absent)
+  avatarUrl?: string
+}
+
+/** Persisted on the Profile. The token is NOT here. */
+export interface LinkedGitHubAccount {
+  login: string
+  accountId: number
+  scopes: string[] // granted scopes, e.g. ["read:user","user:email"]
+  connectedAt: string // ISO
+}
+
+/** Auth progress, surfaced to the UI via an IPC event channel. */
+export type GitHubAuthStatus =
+  | 'idle'
+  | 'awaitingUser' // device code shown; polling
+  | 'authorized' // token obtained
+  | 'denied' // user rejected
+  | 'expired' // user_code expired
+  | 'error'
+
+export type GitHubAuthErrorCode =
+  | 'slowDown'
+  | 'expiredToken'
+  | 'accessDenied'
+  | 'tokenInvalid' // 401 from the API later (revoked/expired)
+  | 'network'
+  | 'unknown'
 
 export interface RepositoryRecord {
   id: string

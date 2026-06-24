@@ -1,6 +1,6 @@
 # SECURITY.md — GitWarden
 
-Threat model and enforceable security rules. Source: `docs/gitwarden-plan.md` §7.4.
+Threat model and enforceable security rules. Source: `docs/plans/gitwarden-plan.md` §7.4.
 These rules are **non-negotiable** and apply everywhere; review every PR against them.
 
 ## Threat model
@@ -49,3 +49,38 @@ contents are untrusted input**, even on the user's own machine.
    accepted and documented here. Mitigation: all **destructive and remote actions stay
    behind explicit confirmation**, and irreversible actions (e.g. `git clean`) get a
    distinct, stronger warning. A future phase may add hook detection/disabling.
+
+## GitHub OAuth token handling (Device Flow)
+
+Added with the GitHub OAuth feature (`docs/plans/github-oauth-plan.md`, Appendix B).
+These rules are **non-negotiable** like the rules above.
+
+8. **No client secret; the Client ID is public.**
+   GitWarden uses the OAuth **Device Authorization Flow**, which has **no client secret**.
+   The public `GITHUB_CLIENT_ID` (`src/core/config/github.ts`) is fine to embed and commit.
+   No secret is ever generated, stored, or shipped — a desktop binary cannot keep one.
+
+9. **Token at rest — `TokenStore` only.**
+   An access token lives **only** in `TokenStore` (Electron `safeStorage`, encrypted),
+   keyed by `profileId`. It is **never** written in plaintext, **never** a field on any
+   domain model (`Profile`, `LinkedGitHubAccount`, …), and **never** persisted to JSON.
+   The persisted link carries only `login`, `accountId`, granted `scopes`, and `connectedAt`.
+
+10. **No secret in the renderer.**
+    The token **never** crosses the preload bridge to the renderer. The renderer only ever
+    receives `LinkedGitHubAccount` (identity + scopes), `GitHubDeviceCode`
+    (`user_code`/`verification_uri` only), and `GitHubAuthStatus` events. The raw
+    `device_code` **stays in the main process** and is never sent to the renderer.
+
+11. **Logger redacts access tokens and device codes.**
+    Access tokens and `device_code` values must never appear in any log line, error
+    message, or telemetry. Treat both as secrets under rule 6.
+
+12. **Scope minimization.**
+    Request only `read:user` and `user:email` for identity. The broader `repo` scope is
+    requested **only** if HTTPS push (Phase 27) is enabled, via an explicit re-auth — never
+    by default. HTTPS/cert validation is never disabled for any GitHub call.
+
+> **Token in transit** (supplying the token to `git` via a `GIT_ASKPASS` helper — never in
+> `argv`, the remote URL, or `.git/config`) is governed by Phase 27 and documented when that
+> phase ships. Until then, GitWarden pushes over SSH and no token reaches `git`.
