@@ -29,8 +29,10 @@ import {
   GitHubCancelDeviceAuthPayload,
   GitHubDisconnectPayload,
   GitHubGetLinkedAccountPayload,
+  GitHubGetPushContextPayload,
   ShellOpenExternalPayload,
 } from './ipc-schemas.js'
+import type { PushAuth } from '../services/GitService.js'
 
 export interface Services {
   profiles: IProfileService
@@ -238,7 +240,8 @@ export function registerIpcHandlers(services: Services): void {
   ipcMain.handle('git:push', (_e, raw: unknown) =>
     wrap(async () => {
       const { repoPath, remote, branch } = GitRemoteBranchOpPayload.parse(raw)
-      return services.git.push(repoPath, remote, branch)
+      const auth = await resolvePushAuth(services, repoPath, remote)
+      return services.git.push(repoPath, remote, branch, auth)
     })
   )
 
@@ -330,4 +333,32 @@ export function registerIpcHandlers(services: Services): void {
       return (await services.github.getLinkedAccount(profileId)) ?? null
     })
   )
+
+  ipcMain.handle('github:getPushContext', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { profileId } = GitHubGetPushContextPayload.parse(raw)
+      return services.github.getPushContext(profileId)
+    })
+  )
+}
+
+/**
+ * Resolve HTTPS-token push credentials from the repo's assigned profile, if any. Returns
+ * undefined for unassigned repos, non-GitHub/SSH remotes, or profiles without a stored
+ * token — in which case the push proceeds exactly as before (SSH / ambient credentials).
+ */
+async function resolvePushAuth(
+  services: Services,
+  repoPath: string,
+  remoteName: string
+): Promise<PushAuth | undefined> {
+  const repos = await services.repositories.list()
+  const repo = repos.find((r) => r.localPath === repoPath)
+  if (!repo?.assignedProfileId) return undefined
+
+  const remotes = await services.git.getRemotes(repoPath)
+  const url = remotes.find((r) => r.name === remoteName)?.url
+  if (!url) return undefined
+
+  return services.github.resolveHttpsAuth(repo.assignedProfileId, url)
 }

@@ -25,6 +25,13 @@ interface GitHubAuthEvent {
   identity?: GitHubAccount
 }
 
+/** Token-side facts for the push safety check — never includes the token itself. */
+interface GitHubPushStatus {
+  hasToken: boolean
+  tokenInvalid: boolean
+  effectiveLogin?: string
+}
+
 interface ElectronAPI {
   dialog: {
     openDirectory(): Promise<IpcResult<string | null>>
@@ -82,6 +89,7 @@ interface ElectronAPI {
     cancelDeviceAuth(profileId: string): Promise<IpcResult<null>>
     disconnect(profileId: string): Promise<IpcResult<null>>
     getLinkedAccount(profileId: string): Promise<IpcResult<LinkedGitHubAccount | null>>
+    getPushContext(profileId: string): Promise<IpcResult<GitHubPushStatus>>
     onAuthEvent(callback: (event: GitHubAuthEvent) => void): () => void
   }
 }

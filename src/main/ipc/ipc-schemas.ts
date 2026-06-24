@@ -95,6 +95,7 @@ export const GitHubStartDeviceAuthPayload = GitHubProfilePayload
 export const GitHubCancelDeviceAuthPayload = GitHubProfilePayload
 export const GitHubDisconnectPayload = GitHubProfilePayload
 export const GitHubGetLinkedAccountPayload = GitHubProfilePayload
+export const GitHubGetPushContextPayload = GitHubProfilePayload
 
 // Auth progress pushed main → renderer over the github:authEvent channel.
 // `account` is the persisted link record; `identity` carries the richer name/

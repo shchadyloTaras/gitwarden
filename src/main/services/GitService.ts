@@ -10,6 +10,13 @@ import type {
 import { parsePorcelainV2 } from '../../core/parsers/PorcelainParser.js'
 import type { GitRunner } from '../git/GitRunner.js'
 import { GitLocator } from '../git/GitLocator.js'
+import { buildAskpassEnv, ensureAskpassHelper } from '../git/askpass.js'
+
+/** HTTPS-token credentials for a single push. The token never enters argv or config. */
+export interface PushAuth {
+  username: string
+  token: string
+}
 
 function parseRemoteHost(url: string): string | undefined {
   // SSH style: git@github.com:user/repo.git or git@github.com-work:user/repo.git
@@ -157,12 +164,18 @@ export class GitService {
     })
   }
 
-  async push(repoPath: string, remote: string, branch: string): Promise<void> {
+  async push(repoPath: string, remote: string, branch: string, auth?: PushAuth): Promise<void> {
+    // When token auth is supplied, route the credential through GIT_ASKPASS env only —
+    // the args stay token-free, and nothing is written to the URL or .git/config.
+    const extraEnv = auth
+      ? buildAskpassEnv(ensureAskpassHelper(), auth.username, auth.token)
+      : undefined
     await this.runner.run({
       args: ['push', remote, branch],
       cwd: repoPath,
       readOnly: false,
       timeoutMs: 60_000,
+      extraEnv,
     })
   }
 

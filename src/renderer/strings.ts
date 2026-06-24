@@ -145,6 +145,15 @@ export const STR = {
     'This removes the local token and opens GitHub so you can fully revoke access there.',
   GITHUB_REAUTH_NOTICE: 'GitHub token invalid — reconnect required.',
 
+  // ── Remote push — HTTPS-token line ─────────────────────────────────────────
+  PUSH_GH_LABEL: 'GitHub push',
+  PUSH_GH_VERIFYING: 'Verifying GitHub token…',
+  PUSH_GH_AS: (login: string, matches: boolean): string =>
+    `Pushing as @${login} via HTTPS token — ${matches ? 'matches' : 'does NOT match'} assigned profile ${matches ? '✓' : '✗'}`,
+  PUSH_GH_NO_TOKEN: 'No HTTPS token stored for the assigned profile.',
+  PUSH_GH_TOKEN_INVALID: 'Stored GitHub token was rejected — reconnect required.',
+  PUSH_GH_NOT_CONNECTED: 'Assigned profile has no linked GitHub account.',
+
   // ── Inspector ──────────────────────────────────────────────────────────────
   INSPECTOR_TITLE: 'Inspector',
   INSPECTOR_NO_PROFILE: 'No profile selected',

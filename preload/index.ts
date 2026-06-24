@@ -27,6 +27,13 @@ export interface GitHubAuthEvent {
   identity?: GitHubAccount
 }
 
+/** Token-side facts for the push safety check — never includes the token itself. */
+export interface GitHubPushStatus {
+  hasToken: boolean
+  tokenInvalid: boolean
+  effectiveLogin?: string
+}
+
 const GITHUB_AUTH_EVENT_CHANNEL = 'github:authEvent'
 
 function invoke<T>(channel: string, payload?: unknown): Promise<IpcResult<T>> {
@@ -125,6 +132,8 @@ export const api = {
       invoke('github:disconnect', { profileId }),
     getLinkedAccount: (profileId: string): Promise<IpcResult<LinkedGitHubAccount | null>> =>
       invoke('github:getLinkedAccount', { profileId }),
+    getPushContext: (profileId: string): Promise<IpcResult<GitHubPushStatus>> =>
+      invoke('github:getPushContext', { profileId }),
     /** Subscribe to auth progress events; returns an unsubscribe function. */
     onAuthEvent: (callback: (event: GitHubAuthEvent) => void): (() => void) => {
       const listener = (_e: IpcRendererEvent, payload: GitHubAuthEvent): void => callback(payload)

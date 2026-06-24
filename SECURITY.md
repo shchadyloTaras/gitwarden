@@ -81,6 +81,27 @@ These rules are **non-negotiable** like the rules above.
     requested **only** if HTTPS push (Phase 27) is enabled, via an explicit re-auth — never
     by default. HTTPS/cert validation is never disabled for any GitHub call.
 
-> **Token in transit** (supplying the token to `git` via a `GIT_ASKPASS` helper — never in
-> `argv`, the remote URL, or `.git/config`) is governed by Phase 27 and documented when that
-> phase ships. Until then, GitWarden pushes over SSH and no token reaches `git`.
+13. **Token in transit — `GIT_ASKPASS` only (Phase 27).**
+    For an HTTPS-token push, the token reaches `git` through **exactly one** channel: a
+    bundled `GIT_ASKPASS` helper (`src/main/git/askpass.ts`) that echoes the credential
+    from a **per-invocation environment variable** (`GITWARDEN_ASKPASS_PASSWORD`), set by
+    `GitRunner` only for that single `push`. The token **never** appears in `argv`, **never**
+    in the remote URL on disk, and **never** in `.git/config`. The helper script itself
+    contains no secret — only the env-var read. `GIT_TERMINAL_PROMPT=0` prevents any
+    interactive fallback. SSH and ambient-credential pushes attach no credential env at all.
+
+14. **Account verification before push.**
+    Before an HTTPS-token push, the stored token is verified against `GET /user` so the
+    Safety Engine can block `GITHUB_ACCOUNT_MISMATCH` (token authenticates as a different
+    account than the repo's assigned profile), `GITHUB_TOKEN_MISSING`, and
+    `GITHUB_TOKEN_INVALID` (a 401 → re-auth). The verification uses the token in main only;
+    the renderer receives just the resolved `@login`, never the token.
+
+15. **Revoke on disconnect is best-effort (no client secret).**
+    Device-Flow apps have no client secret, so GitWarden **cannot** call GitHub's
+    token-revocation endpoint. **Disconnect** deletes the local token (`TokenStore.delete`)
+    and clears `linkedGitHub`, then opens
+    `https://github.com/settings/connections/applications/{client_id}` so the user can
+    revoke access on GitHub. A token thus stays valid on GitHub until the user revokes it;
+    a revoked/expired token surfaces later as `GITHUB_TOKEN_INVALID` (401) and triggers the
+    re-auth prompt.

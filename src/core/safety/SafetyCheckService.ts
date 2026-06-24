@@ -23,6 +23,12 @@ export type SafetyCode =
   | 'HAS_CONFLICTS'
   | 'NO_REMOTE'
   | 'REMOTE_HOST_MISMATCH'
+  // GitHub HTTPS-token push (Phase 27). These engage ONLY when the push target is an
+  // HTTPS GitHub remote — SSH-only pushes never see them.
+  | 'GITHUB_ACCOUNT_MISMATCH'
+  | 'GITHUB_TOKEN_MISSING'
+  | 'GITHUB_TOKEN_INVALID'
+  | 'GITHUB_NOT_CONNECTED'
 
 function makeIssue(code: SafetyCode): SafetyIssue {
   return { code, message: SAFETY_MESSAGES[code], severity: SAFETY_SEVERITY[code] }
@@ -69,6 +75,56 @@ function collectIdentityIssues(input: IdentityInput): SafetyIssue[] {
   return issues
 }
 
+// ── GitHub HTTPS-token push context (Phase 27) ───────────────────────────────
+
+/**
+ * Everything checkPush needs to reason about an HTTPS-token GitHub push, resolved in
+ * main (remote URL scheme, the assigned profile's link, the stored token's real
+ * account). When `httpsToGitHub` is false the GitHub checks are skipped entirely, so
+ * SSH-only pushes are never affected.
+ */
+export interface GitHubPushContext {
+  /** The selected remote is an HTTPS GitHub URL (token push is in play). */
+  httpsToGitHub: boolean
+  /** The @login the assigned profile is linked to, if any. */
+  assignedLogin?: string
+  /** A token is stored for the assigned profile. */
+  hasToken: boolean
+  /** A stored token was rejected (HTTP 401) and needs re-auth. */
+  tokenInvalid?: boolean
+  /** The @login the stored token actually authenticates as (verified in main). */
+  effectiveLogin?: string
+}
+
+function collectGitHubPushIssues(github: GitHubPushContext): SafetyIssue[] {
+  // SSH (or any non-HTTPS-GitHub) push: no GitHub-account checks apply.
+  if (!github.httpsToGitHub) return []
+
+  const issues: SafetyIssue[] = []
+  const linked = github.assignedLogin !== undefined
+
+  if (!github.hasToken) {
+    // Linked but no token → blocker; not linked at all → informational warning.
+    issues.push(makeIssue(linked ? 'GITHUB_TOKEN_MISSING' : 'GITHUB_NOT_CONNECTED'))
+    return issues
+  }
+
+  if (github.tokenInvalid) {
+    issues.push(makeIssue('GITHUB_TOKEN_INVALID'))
+    return issues
+  }
+
+  if (
+    github.assignedLogin !== undefined &&
+    github.effectiveLogin !== undefined &&
+    github.assignedLogin !== github.effectiveLogin
+  ) {
+    issues.push(makeIssue('GITHUB_ACCOUNT_MISMATCH'))
+  }
+
+  return issues
+}
+
 // ── Public API ───────────────────────────────────────────────────────────────
 
 export interface SafetyCheckService {
@@ -92,6 +148,7 @@ export interface SafetyCheckService {
     identity: EffectiveGitIdentity
     remotes: GitRemote[]
     currentBranch?: string
+    github?: GitHubPushContext
   }): SafetyCheckResult
 }
 
@@ -142,6 +199,7 @@ class SafetyCheckServiceImpl implements SafetyCheckService {
     identity: EffectiveGitIdentity
     remotes: GitRemote[]
     currentBranch?: string
+    github?: GitHubPushContext
   }): SafetyCheckResult {
     const issues = collectIdentityIssues(input)
 
@@ -153,6 +211,8 @@ class SafetyCheckServiceImpl implements SafetyCheckService {
       )
       if (!hasMatch) issues.push(makeIssue('REMOTE_HOST_MISMATCH'))
     }
+
+    if (input.github) issues.push(...collectGitHubPushIssues(input.github))
 
     return { canCommit: true, canPush: !hasBlocker(issues), issues }
   }

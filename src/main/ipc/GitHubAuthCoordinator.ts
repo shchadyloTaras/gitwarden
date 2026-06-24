@@ -20,10 +20,28 @@ import type { IProfileService } from '../services/ProfileService.js'
 import { GitHubAuthError } from '../services/GitHubAuthError.js'
 import { createLogger, type Logger } from '../services/Logger.js'
 import { GITHUB_OAUTH_SCOPES } from '../../core/config/github.js'
+import { isHttpsGitHubRemoteUrl } from '../../core/github/remoteUrl.js'
 import { GitHubAuthEventPayload } from './ipc-schemas.js'
 import type { GitHubAuthStatus, GitHubAuthErrorCode } from '../../core/types.js'
 
 export const GITHUB_AUTH_EVENT_CHANNEL = 'github:authEvent'
+
+/** HTTPS-token credentials resolved for a push. The token never reaches the renderer. */
+export interface PushAuth {
+  username: string
+  token: string
+}
+
+/**
+ * The token-side facts the renderer needs to assemble a `GitHubPushContext` for the
+ * Safety Engine. The token itself is never included — only whether one exists, whether
+ * it was rejected, and the @login it actually authenticates as.
+ */
+export interface GitHubPushStatus {
+  hasToken: boolean
+  tokenInvalid: boolean
+  effectiveLogin?: string
+}
 
 /** The minimal surface of an Electron WebContents we use to push progress events. */
 export interface AuthEventSender {
@@ -36,6 +54,10 @@ export interface IGitHubAuthCoordinator {
   cancelDeviceAuth(profileId: string, sender: AuthEventSender): void
   disconnect(profileId: string): Promise<void>
   getLinkedAccount(profileId: string): Promise<LinkedGitHubAccount | undefined>
+  /** Token-side facts for the push safety check (renderer-safe — no token). */
+  getPushContext(profileId: string): Promise<GitHubPushStatus>
+  /** Resolve HTTPS-token credentials for a push, or undefined if not applicable. */
+  resolveHttpsAuth(profileId: string, remoteUrl: string): Promise<PushAuth | undefined>
 }
 
 export interface GitHubAuthCoordinatorDeps {
@@ -119,6 +141,39 @@ export class GitHubAuthCoordinator implements IGitHubAuthCoordinator {
 
   async getLinkedAccount(profileId: string): Promise<LinkedGitHubAccount | undefined> {
     return (await this.profiles.get(profileId))?.linkedGitHub
+  }
+
+  /**
+   * Verify the stored token (if any) so the renderer can detect an account mismatch or
+   * a revoked token before pushing. A network failure that isn't a 401 leaves the token
+   * "present, not invalid" — we don't block a push on transient connectivity.
+   */
+  async getPushContext(profileId: string): Promise<GitHubPushStatus> {
+    const token = await this.tokens.get(profileId)
+    if (!token) return { hasToken: false, tokenInvalid: false }
+    try {
+      const account = await this.api.getAuthenticatedUser(token)
+      return { hasToken: true, tokenInvalid: false, effectiveLogin: account.login }
+    } catch (error) {
+      if (error instanceof GitHubAuthError && error.code === 'tokenInvalid') {
+        this.logger.warn('Stored GitHub token was rejected', { profileId })
+        return { hasToken: true, tokenInvalid: true }
+      }
+      this.logger.debug('Could not verify stored GitHub token', {
+        profileId,
+        error: errorMessage(error),
+      })
+      return { hasToken: true, tokenInvalid: false }
+    }
+  }
+
+  async resolveHttpsAuth(profileId: string, remoteUrl: string): Promise<PushAuth | undefined> {
+    if (!isHttpsGitHubRemoteUrl(remoteUrl)) return undefined
+    const profile = await this.profiles.get(profileId)
+    if (!profile?.linkedGitHub) return undefined
+    const token = await this.tokens.get(profileId)
+    if (!token) return undefined
+    return { username: profile.linkedGitHub.login, token }
   }
 
   /** Background poll → on success persist identity+token and emit `authorized`. */

@@ -13,6 +13,10 @@ export const SAFETY_SEVERITY: Record<SafetyCode, Severity> = {
   HAS_CONFLICTS: 'blocker',
   NO_REMOTE: 'warning',
   REMOTE_HOST_MISMATCH: 'blocker',
+  GITHUB_ACCOUNT_MISMATCH: 'blocker',
+  GITHUB_TOKEN_MISSING: 'blocker',
+  GITHUB_TOKEN_INVALID: 'blocker',
+  GITHUB_NOT_CONNECTED: 'warning',
 }
 
 export const SAFETY_MESSAGES: Record<SafetyCode, string> = {
@@ -29,4 +33,12 @@ export const SAFETY_MESSAGES: Record<SafetyCode, string> = {
   NO_REMOTE: 'This repository has no remote configured.',
   REMOTE_HOST_MISMATCH:
     'The remote host does not match this profile’s expected GitHub account — you may be using the wrong SSH key.',
+  GITHUB_ACCOUNT_MISMATCH:
+    'The stored GitHub token authenticates as a different account than this repository’s assigned profile — you may push as the wrong user.',
+  GITHUB_TOKEN_MISSING:
+    'This profile pushes over HTTPS but has no stored GitHub token. Connect GitHub to push.',
+  GITHUB_TOKEN_INVALID:
+    'The stored GitHub token was rejected (it may have been revoked or expired). Reconnect GitHub to continue.',
+  GITHUB_NOT_CONNECTED:
+    'This profile has no linked GitHub account. Connect GitHub to verify the push account.',
 }

@@ -3,7 +3,13 @@ import { useProfilesStore } from '../store/profilesStore'
 import { useRemoteStore } from '../store/remoteStore'
 import { useAppStore } from '../store/appStore'
 import { safetyCheckService } from '../../core/safety/SafetyCheckService'
+import type { GitHubPushContext } from '../../core/safety/SafetyCheckService'
+import { isHttpsGitHubRemoteUrl } from '../../core/github/remoteUrl'
 import type { GitRemote } from '../../core/types'
+import { STR } from '../strings'
+
+/** Renderer-side mirror of the main GitHubPushStatus (token-free). */
+type PushStatus = { hasToken: boolean; tokenInvalid: boolean; effectiveLogin?: string }
 
 export default function RemoteScreen(): React.ReactElement {
   const activeRepo = useAppStore((s) => s.activeRepo)
@@ -28,12 +34,31 @@ export default function RemoteScreen(): React.ReactElement {
 
   const [showPushSheet, setShowPushSheet] = useState(false)
   const [selectedRemote, setSelectedRemote] = useState<GitRemote | null>(null)
+  const [pushStatus, setPushStatus] = useState<PushStatus | null>(null)
+  const [pushStatusPending, setPushStatusPending] = useState(false)
 
   const activeProfile = profiles.find((p) => p.id === activeProfileId)
+
+  const assignedProfile = repository?.assignedProfileId
+    ? profiles.find((p) => p.id === repository.assignedProfileId)
+    : undefined
 
   useEffect(() => {
     if (activeRepo) void load(activeRepo.localPath, activeRepo)
   }, [load, activeRepo])
+
+  // The GitHub HTTPS-token push context for the selected remote — only engaged for an
+  // HTTPS GitHub remote, so SSH/file remotes are unaffected.
+  const githubContext = useMemo((): GitHubPushContext | undefined => {
+    if (!selectedRemote || !isHttpsGitHubRemoteUrl(selectedRemote.url)) return undefined
+    return {
+      httpsToGitHub: true,
+      assignedLogin: assignedProfile?.linkedGitHub?.login,
+      hasToken: pushStatus?.hasToken ?? false,
+      tokenInvalid: pushStatus?.tokenInvalid ?? false,
+      effectiveLogin: pushStatus?.effectiveLogin,
+    }
+  }, [selectedRemote, assignedProfile, pushStatus])
 
   // Compute push safety for the selected remote
   const pushSafetyResult = useMemo(() => {
@@ -44,26 +69,55 @@ export default function RemoteScreen(): React.ReactElement {
       identity,
       remotes: [selectedRemote],
       currentBranch: currentBranch ?? undefined,
+      // Withhold the context until the token is verified so we don't flash a stale verdict.
+      github: pushStatusPending ? undefined : githubContext,
     })
-  }, [repository, identity, activeProfile, selectedRemote, currentBranch])
-
-  const assignedProfile = repository?.assignedProfileId
-    ? profiles.find((p) => p.id === repository.assignedProfileId)
-    : undefined
+  }, [
+    repository,
+    identity,
+    activeProfile,
+    selectedRemote,
+    currentBranch,
+    githubContext,
+    pushStatusPending,
+  ])
 
   const handleOpenPushSheet = (remote: GitRemote) => {
     clearMessages()
     setSelectedRemote(remote)
     setShowPushSheet(true)
+    setPushStatus(null)
+
+    // Verify the assigned profile's token so we can catch an account mismatch / revoked
+    // token before pushing — but only for an HTTPS GitHub remote.
+    if (isHttpsGitHubRemoteUrl(remote.url) && assignedProfile?.id) {
+      setPushStatusPending(true)
+      void window.api.github
+        .getPushContext(assignedProfile.id)
+        .then((res) => {
+          if (res.ok) setPushStatus(res.data)
+        })
+        .finally(() => setPushStatusPending(false))
+    } else {
+      setPushStatusPending(false)
+    }
   }
 
   const handleClosePushSheet = () => {
     setShowPushSheet(false)
     setSelectedRemote(null)
+    setPushStatus(null)
+    setPushStatusPending(false)
   }
 
   const handleConfirmPush = async () => {
-    if (!selectedRemote || !currentBranch || pushSafetyResult?.canPush === false) return
+    if (
+      !selectedRemote ||
+      !currentBranch ||
+      pushStatusPending ||
+      pushSafetyResult?.canPush === false
+    )
+      return
     setShowPushSheet(false)
     await doRemotePush(selectedRemote.name, currentBranch)
   }
@@ -324,6 +378,16 @@ export default function RemoteScreen(): React.ReactElement {
                 label="Assigned profile"
                 value={assignedProfile ? assignedProfile.displayName : '(none)'}
               />
+              {githubContext && (
+                <div style={{ display: 'flex', gap: '8px' }} data-testid="remote-push-github-line">
+                  <span style={{ color: '#666', minWidth: '110px', flexShrink: 0 }}>
+                    {STR.PUSH_GH_LABEL}
+                  </span>
+                  <span style={{ color: githubLineColor(githubContext, pushStatusPending) }}>
+                    {githubLineText(githubContext, pushStatusPending)}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Safety issues */}
@@ -413,18 +477,19 @@ export default function RemoteScreen(): React.ReactElement {
               <button
                 data-testid="remote-push-confirm-btn"
                 onClick={handleConfirmPush}
-                disabled={!pushSafetyResult?.canPush || pushLoading}
+                disabled={!pushSafetyResult?.canPush || pushLoading || pushStatusPending}
                 style={{
-                  background: pushSafetyResult?.canPush ? '#3b82f6' : '#333',
-                  color: pushSafetyResult?.canPush ? '#fff' : '#555',
+                  background: pushSafetyResult?.canPush && !pushStatusPending ? '#3b82f6' : '#333',
+                  color: pushSafetyResult?.canPush && !pushStatusPending ? '#fff' : '#555',
                   border: 'none',
                   borderRadius: '4px',
                   padding: '7px 16px',
                   fontSize: '13px',
-                  cursor: pushSafetyResult?.canPush ? 'pointer' : 'not-allowed',
+                  cursor:
+                    pushSafetyResult?.canPush && !pushStatusPending ? 'pointer' : 'not-allowed',
                 }}
               >
-                Confirm Push
+                {pushStatusPending ? STR.PUSH_GH_VERIFYING : 'Confirm Push'}
               </button>
             </div>
           </div>
@@ -432,6 +497,32 @@ export default function RemoteScreen(): React.ReactElement {
       )}
     </div>
   )
+}
+
+/** The "Pushing as @login …" sheet line text for the resolved GitHub push context. */
+function githubLineText(github: GitHubPushContext, pending: boolean): string {
+  if (pending) return STR.PUSH_GH_VERIFYING
+  if (!github.hasToken) {
+    return github.assignedLogin ? STR.PUSH_GH_NO_TOKEN : STR.PUSH_GH_NOT_CONNECTED
+  }
+  if (github.tokenInvalid) return STR.PUSH_GH_TOKEN_INVALID
+  const login = github.effectiveLogin ?? github.assignedLogin ?? '?'
+  const matches =
+    github.assignedLogin !== undefined &&
+    github.effectiveLogin !== undefined &&
+    github.assignedLogin === github.effectiveLogin
+  return STR.PUSH_GH_AS(login, matches)
+}
+
+function githubLineColor(github: GitHubPushContext, pending: boolean): string {
+  if (pending) return '#888'
+  const ok =
+    github.hasToken &&
+    !github.tokenInvalid &&
+    (github.assignedLogin === undefined ||
+      github.effectiveLogin === undefined ||
+      github.assignedLogin === github.effectiveLogin)
+  return ok ? '#4ade80' : '#f87171'
 }
 
 function Row({

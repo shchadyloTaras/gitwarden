@@ -9,6 +9,12 @@ export interface GitInvocation {
   readOnly: boolean
   signal?: AbortSignal
   timeoutMs?: number
+  /**
+   * Extra environment for this single invocation only (e.g. the GIT_ASKPASS helper +
+   * credentials for an HTTPS-token push). Merged over the controlled base env; never
+   * persisted and never placed in argv.
+   */
+  extraEnv?: Record<string, string>
 }
 
 export interface GitResult {
@@ -37,7 +43,7 @@ export class GitRunner {
     return new Promise<GitResult>((resolve, reject) => {
       const child = spawn(this.gitPath, inv.args, {
         cwd: inv.cwd,
-        env: this.buildEnv(inv.readOnly),
+        env: { ...this.buildEnv(inv.readOnly), ...inv.extraEnv },
         shell: false,
       })
 
