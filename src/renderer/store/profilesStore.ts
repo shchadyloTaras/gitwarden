@@ -26,6 +26,7 @@ export const useProfilesStore = create<ProfilesState>((set) => ({
   loading: false,
 
   async load() {
+    if (!window.api) return
     set({ loading: true })
     try {
       const [profilesRes, settingsRes] = await Promise.all([
@@ -36,6 +37,8 @@ export const useProfilesStore = create<ProfilesState>((set) => ({
         profiles: profilesRes.ok ? profilesRes.data : [],
         activeProfileId: settingsRes.ok ? (settingsRes.data.activeProfileId ?? null) : null,
       })
+    } catch {
+      // IPC unavailable during HMR reload — next effect invocation will succeed
     } finally {
       set({ loading: false })
     }

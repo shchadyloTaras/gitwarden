@@ -112,7 +112,7 @@ test.describe('Branches', () => {
     await switchBtns.first().click()
 
     // Header must now show feature-a
-    await expect(win.getByTestId('header-branch-select')).toHaveValue('feature-a', {
+    await expect(win.getByTestId('header-branch-select')).toContainText('feature-a', {
       timeout: 10000,
     })
     await expect(win.getByTestId('branches-current-branch')).toContainText('feature-a')
@@ -131,7 +131,7 @@ test.describe('Branches', () => {
     await win.getByTestId('branches-create-btn').click()
 
     // Header shows feature-b
-    await expect(win.getByTestId('header-branch-select')).toHaveValue('feature-b', {
+    await expect(win.getByTestId('header-branch-select')).toContainText('feature-b', {
       timeout: 10000,
     })
     await expect(win.getByTestId('branches-current-branch')).toContainText('feature-b')

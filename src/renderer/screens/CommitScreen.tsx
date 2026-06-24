@@ -251,22 +251,33 @@ export default function CommitScreen(): React.ReactElement {
 
           {/* Commit button */}
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button
-              data-testid="commit-btn"
-              onClick={handleCommit}
-              disabled={!safetyResult?.canCommit || commitLoading}
-              style={{
-                background: safetyResult?.canCommit ? '#3b82f6' : '#333',
-                color: safetyResult?.canCommit ? '#fff' : '#555',
-                border: 'none',
-                borderRadius: '4px',
-                padding: '8px 20px',
-                fontSize: '13px',
-                cursor: safetyResult?.canCommit ? 'pointer' : 'not-allowed',
-              }}
+            <span
+              title={
+                safetyResult?.canCommit
+                  ? undefined
+                  : blockers.length > 0
+                    ? `Can't commit yet:\n• ${blockers.map((b) => b.message).join('\n• ')}`
+                    : 'Stage changes and enter a commit message to commit.'
+              }
+              style={{ display: 'inline-block' }}
             >
-              {commitLoading ? 'Committing…' : 'Commit Changes'}
-            </button>
+              <button
+                data-testid="commit-btn"
+                onClick={handleCommit}
+                disabled={!safetyResult?.canCommit || commitLoading}
+                style={{
+                  background: safetyResult?.canCommit ? '#3b82f6' : '#333',
+                  color: safetyResult?.canCommit ? '#fff' : '#555',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '8px 20px',
+                  fontSize: '13px',
+                  cursor: safetyResult?.canCommit ? 'pointer' : 'not-allowed',
+                }}
+              >
+                {commitLoading ? 'Committing…' : 'Commit Changes'}
+              </button>
+            </span>
           </div>
         </>
       )}

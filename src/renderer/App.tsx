@@ -93,7 +93,9 @@ export default function App(): React.ReactElement {
   const [autoOnboardingChecked, setAutoOnboardingChecked] = useState(false)
 
   useEffect(() => {
-    void Promise.all([load(), loadRepos(), loadSettings()]).then(() => setStoresReady(true))
+    Promise.all([load(), loadRepos(), loadSettings()])
+      .then(() => setStoresReady(true))
+      .catch((err: unknown) => console.error('[App] store init failed:', err))
   }, [load, loadRepos, loadSettings])
 
   // Auto-select active repo: pick first available when none is active or active was removed

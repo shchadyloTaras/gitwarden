@@ -31,19 +31,24 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   error: null,
 
   async load() {
+    if (!window.api) return
     set({ loading: true, error: null })
-    const result = await window.api.settings.get()
-    if (result.ok) {
-      set({
-        appearance: result.data.appearance ?? 'system',
-        customGitPath: result.data.customGitPath,
-        defaultProjectsFolder: result.data.defaultProjectsFolder,
-        onboardingCompletedAt: result.data.onboardingCompletedAt,
-        onboardingSkippedAt: result.data.onboardingSkippedAt,
-        loading: false,
-      })
-    } else {
-      set({ loading: false, error: result.error })
+    try {
+      const result = await window.api.settings.get()
+      if (result.ok) {
+        set({
+          appearance: result.data.appearance ?? 'system',
+          customGitPath: result.data.customGitPath,
+          defaultProjectsFolder: result.data.defaultProjectsFolder,
+          onboardingCompletedAt: result.data.onboardingCompletedAt,
+          onboardingSkippedAt: result.data.onboardingSkippedAt,
+          loading: false,
+        })
+      } else {
+        set({ loading: false, error: result.error })
+      }
+    } catch {
+      set({ loading: false })
     }
   },
 

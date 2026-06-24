@@ -34,6 +34,18 @@ function createWindow(): void {
   } else {
     win.loadFile(path.join(__dirname, '../renderer/index.html'))
   }
+
+  if (process.env['ELECTRON_RENDERER_URL']) {
+    win.webContents.on('before-input-event', (event, input) => {
+      const isDevToolsShortcut =
+        (input.key.toLowerCase() === 'i' && input.meta && input.alt) || input.key === 'F12'
+
+      if (isDevToolsShortcut) {
+        event.preventDefault()
+        win.webContents.toggleDevTools()
+      }
+    })
+  }
 }
 
 app.whenReady().then(async () => {

@@ -3,6 +3,7 @@ import { useAppStore, SafetyBadge } from '../store/appStore'
 import { useProfilesStore, profileColor } from '../store/profilesStore'
 import { useRepositoriesStore } from '../store/repositoriesStore'
 import { useBranchStore } from '../store/branchStore'
+import Dropdown from './Dropdown'
 
 const BADGE_STYLE: Record<SafetyBadge, React.CSSProperties> = {
   safe: { background: '#16a34a', color: '#fff' },
@@ -22,7 +23,6 @@ const SELECT_STYLE: React.CSSProperties = {
   color: '#e4e4e7',
   fontSize: 13,
   cursor: 'pointer',
-  outline: 'none',
   padding: '2px 4px',
   borderRadius: 4,
   maxWidth: 180,
@@ -68,48 +68,35 @@ export default function GlobalHeader(): React.ReactElement {
       <div style={{ width: 1, height: 20, background: '#3f3f46' }} />
 
       {/* Repo picker */}
-      <select
-        data-testid="header-repo-select"
+      <Dropdown
+        testId="header-repo-select"
+        ariaLabel="Active repository"
+        placeholder="No repositories"
         value={activeRepo?.id ?? ''}
-        onChange={(e) => {
-          const repo = repos.find((r) => r.id === e.target.value) ?? null
-          setActiveRepo(repo)
-        }}
-        style={activeRepo ? SELECT_STYLE : { ...SELECT_STYLE, color: '#71717a' }}
-      >
-        {repos.length === 0 && <option value="">No repositories</option>}
-        {repos.map((r) => (
-          <option key={r.id} value={r.id}>
-            {r.name}
-          </option>
-        ))}
-      </select>
+        options={repos.map((r) => ({ value: r.id, label: r.name }))}
+        onChange={(id) => setActiveRepo(repos.find((r) => r.id === id) ?? null)}
+        triggerStyle={SELECT_STYLE}
+      />
 
       {/* Branch picker */}
       {localBranches.length > 0 && (
         <>
           <span style={{ color: '#52525b', fontSize: 12 }}>on</span>
-          <select
-            data-testid="header-branch-select"
+          <Dropdown
+            testId="header-branch-select"
+            ariaLabel="Current branch"
+            monospace
             value={currentBranch ?? ''}
-            onChange={(e) => {
-              void doSwitch(e.target.value)
-            }}
-            style={{
+            options={localBranches.map((b) => ({ value: b.name, label: b.name }))}
+            onChange={(name) => void doSwitch(name)}
+            triggerStyle={{
               ...SELECT_STYLE,
               fontSize: 12,
-              fontFamily: 'monospace',
               background: '#27272a',
               padding: '2px 6px',
               maxWidth: 140,
             }}
-          >
-            {localBranches.map((b) => (
-              <option key={b.name} value={b.name}>
-                {b.name}
-              </option>
-            ))}
-          </select>
+          />
         </>
       )}
 

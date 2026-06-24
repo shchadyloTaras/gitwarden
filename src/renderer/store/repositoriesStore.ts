@@ -15,10 +15,13 @@ export const useRepositoriesStore = create<RepositoriesState>((set) => ({
   loading: false,
 
   async load() {
+    if (!window.api) return
     set({ loading: true })
     try {
       const res = await window.api.repositories.list()
       set({ repos: res.ok ? res.data : [] })
+    } catch {
+      // IPC unavailable during HMR reload — next effect invocation will succeed
     } finally {
       set({ loading: false })
     }

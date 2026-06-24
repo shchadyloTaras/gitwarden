@@ -383,23 +383,28 @@ export default function SettingsScreen(): React.ReactElement {
 
           {/* Save */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button
-              data-testid="settings-save"
-              disabled={!dirty}
-              onClick={() => void handleSave()}
-              style={{
-                padding: '8px 20px',
-                background: dirty ? '#6366f1' : '#27272a',
-                color: dirty ? '#fff' : '#52525b',
-                border: 'none',
-                borderRadius: 4,
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: dirty ? 'pointer' : 'not-allowed',
-              }}
+            <span
+              title={dirty ? undefined : 'No changes to save.'}
+              style={{ display: 'inline-block' }}
             >
-              {STR.SETTINGS_SAVE}
-            </button>
+              <button
+                data-testid="settings-save"
+                disabled={!dirty}
+                onClick={() => void handleSave()}
+                style={{
+                  padding: '8px 20px',
+                  background: dirty ? '#6366f1' : '#27272a',
+                  color: dirty ? '#fff' : '#52525b',
+                  border: 'none',
+                  borderRadius: 4,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: dirty ? 'pointer' : 'not-allowed',
+                }}
+              >
+                {STR.SETTINGS_SAVE}
+              </button>
+            </span>
 
             {saved && (
               <span data-testid="settings-saved-msg" style={{ fontSize: 13, color: '#4ade80' }}>

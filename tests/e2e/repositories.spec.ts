@@ -123,7 +123,8 @@ test.describe('Repository management', () => {
     await expect(win.getByTestId('repos-list')).toContainText(repoName, { timeout: 10000 })
 
     // Should now be in edit mode — assign Work profile
-    await win.getByTestId('repo-form-profile').selectOption({ value: workId })
+    await win.getByTestId('repo-form-profile').click()
+    await win.getByTestId(`repo-form-profile-option-${workId}`).click()
     await win.getByTestId('repo-save-btn').click()
 
     // Mismatch warning must appear: active=Personal, assigned=Work
@@ -181,7 +182,8 @@ test.describe('Repository management', () => {
       timeout: 10000,
     })
 
-    await win.getByTestId('repo-form-profile').selectOption({ value: personalId })
+    await win.getByTestId('repo-form-profile').click()
+    await win.getByTestId(`repo-form-profile-option-${personalId}`).click()
     await win.getByTestId('repo-save-btn').click()
 
     // No active profile → no mismatch warning

@@ -3,6 +3,7 @@ import type { RepositoryRecord } from '../../core/types'
 import { useRepositoriesStore } from '../store/repositoriesStore'
 import { useProfilesStore } from '../store/profilesStore'
 import { useAppStore } from '../store/appStore'
+import Dropdown from '../components/Dropdown'
 
 type Mode = 'idle' | 'add' | 'edit'
 
@@ -372,19 +373,18 @@ export default function RepositoriesScreen(): React.ReactElement {
             </Field>
 
             <Field label="Assigned Profile">
-              <select
-                data-testid="repo-form-profile"
+              <Dropdown
+                testId="repo-form-profile"
+                ariaLabel="Assigned profile"
+                block
                 value={editForm.assignedProfileId}
-                onChange={(e) => setEditForm((f) => ({ ...f, assignedProfileId: e.target.value }))}
-                style={{ ...inputStyle, cursor: 'pointer' }}
-              >
-                <option value="">— Unassigned —</option>
-                {profiles.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.displayName}
-                  </option>
-                ))}
-              </select>
+                onChange={(id) => setEditForm((f) => ({ ...f, assignedProfileId: id }))}
+                options={[
+                  { value: '', label: '— Unassigned —' },
+                  ...profiles.map((p) => ({ value: p.id, label: p.displayName })),
+                ]}
+                triggerStyle={inputStyle}
+              />
             </Field>
 
             <Field label="Notes">
