@@ -12,8 +12,17 @@ import {
   RepositoriesDataSchema,
   AppSettingsSchema,
 } from '../src/core/schemas.js'
+import { AiConnectionsDataSchema } from '../src/core/ai/schemas.js'
 import { registerIpcHandlers } from '../src/main/ipc/ipc-handlers.js'
 import { SecretStore } from '../src/main/storage/SecretStore.js'
+import { AiConnectionService } from '../src/main/services/AiConnectionService.js'
+import {
+  AiCredentialStore,
+  AiCredentialStoreDataSchema,
+  AI_CREDENTIAL_STORE_DEFAULTS,
+  type IAiCredentialStore,
+} from '../src/main/storage/AiCredentialStore.js'
+import { createAiTestCredentialStore } from '../src/main/testing/aiFakes.js'
 import {
   TokenStore,
   TokenStoreDataSchema,
@@ -31,6 +40,9 @@ import { createGitHubAuthTestServices } from '../src/main/testing/githubAuthFake
 
 /** True when launched by the Playwright e2e harness — fakes + no real browser. */
 const IS_E2E_FAKE_GITHUB = process.env['GITWARDEN_E2E_FAKE_GITHUB'] === '1'
+
+/** True for AI e2e — fake (in-memory) credential store so no safeStorage is needed. */
+const IS_E2E_FAKE_AI = process.env['GITWARDEN_E2E_FAKE_AI'] === '1'
 
 /** The single browser-open seam, shared by the shell channel and the auth coordinator. */
 const openExternal = IS_E2E_FAKE_GITHUB
@@ -132,12 +144,31 @@ app.whenReady().then(async () => {
   const profiles = new ProfileService(profilesStore)
   const github = new GitHubAuthCoordinator(buildGitHubAuthDeps(profiles, userDataPath))
 
+  const aiConnectionsStore = new JsonStore(
+    path.join(userDataPath, 'ai-connections.json'),
+    AiConnectionsDataSchema,
+    { connections: [] }
+  )
+  const aiConnections = new AiConnectionService(aiConnectionsStore)
+  const aiCredentials: IAiCredentialStore = IS_E2E_FAKE_AI
+    ? createAiTestCredentialStore()
+    : new AiCredentialStore(
+        new JsonStore(
+          path.join(userDataPath, 'ai-credentials.json'),
+          AiCredentialStoreDataSchema,
+          AI_CREDENTIAL_STORE_DEFAULTS
+        ),
+        new SecretStore()
+      )
+
   registerIpcHandlers({
     profiles,
     repositories: new RepositoryService(reposStore),
     settings: new SettingsService(settingsStore),
     git: new GitService(gitRunner),
     github,
+    aiConnections,
+    aiCredentials,
     openExternal,
   })
 

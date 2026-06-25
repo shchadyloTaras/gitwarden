@@ -87,6 +87,9 @@ export const AiConnectionSchema = z
 
 export const AiConnectionsDataSchema = z.object({
   connections: z.array(AiConnectionSchema),
+  // Which connection is the single active one in the MVP UI. Non-secret pointer;
+  // a dangling id (e.g. after a delete) is treated as "no active" by the service.
+  activeConnectionId: z.string().optional(),
 })
 
 export const AiCredentialMetadataSchema = z.object({

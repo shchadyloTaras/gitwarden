@@ -34,6 +34,8 @@ export const RepositoryRecordSchema = z.object({
   lastOpenedAt: z.string().optional(),
   isFavorite: z.boolean(),
   notes: z.string().optional(),
+  // Per-repo AI override (most specific in the precedence chain). Absent = inherit.
+  aiOverride: z.enum(['enabled', 'disabled']).optional(),
 })
 
 export const AppSettingsSchema = z.object({
@@ -44,6 +46,8 @@ export const AppSettingsSchema = z.object({
   defaultProjectsFolder: z.string().optional(),
   onboardingCompletedAt: z.string().optional(),
   onboardingSkippedAt: z.string().optional(),
+  // Global "Enable AI" consent (default-off; §4). Separate from saving a connection.
+  aiEnabled: z.boolean().optional(),
 })
 
 export type ProfileInput = z.input<typeof ProfileSchema>

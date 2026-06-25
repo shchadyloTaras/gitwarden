@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useSettingsStore } from '../store/settingsStore'
 import { useOnboardingStore } from '../store/onboardingStore'
+import AiConnectionSettings from '../components/AiConnectionSettings'
 import type { AppearanceMode } from '../../core/types'
 import { STR } from '../strings'
 
@@ -404,6 +405,9 @@ export default function SettingsScreen(): React.ReactElement {
               {STR.SETTINGS_ONBOARDING_START}
             </button>
           </div>
+
+          {/* AI Assistant — token-first single active connection (manages its own saves). */}
+          <AiConnectionSettings />
 
           {/* Save */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

@@ -13,8 +13,46 @@ import type {
   GitHubAuthStatus,
   GitHubAuthErrorCode,
 } from '../../core/types.js'
+import type {
+  AiConnection,
+  AiConnectionKind,
+  AiCredentialMetadata,
+  AiPrivacyMode,
+  AiProviderDetection,
+  AiRetentionState,
+} from '../../core/ai/types.js'
 
 type IpcResult<T> = { ok: true; data: T } | { ok: false; error: string }
+
+interface AiConnectionsView {
+  connections: AiConnection[]
+  activeConnectionId?: string
+}
+
+interface AiConnectionCreateInput {
+  name: string
+  kind: AiConnectionKind
+  baseUrl?: string
+  defaultModel?: string
+  privacyMode?: AiPrivacyMode
+  retention?: AiRetentionState
+  enabled?: boolean
+}
+
+type AiConnectionPatch = Partial<{
+  name: string
+  kind: AiConnectionKind
+  baseUrl: string
+  defaultModel: string
+  privacyMode: AiPrivacyMode
+  retention: AiRetentionState
+  enabled: boolean
+}>
+
+interface AiProviderDetectionResult {
+  detection: AiProviderDetection
+  maskedKeyLabel: string
+}
 
 /** Auth progress pushed from main over `github:authEvent`. Mirrors GitHubAuthEventPayload. */
 interface GitHubAuthEvent {
@@ -91,6 +129,21 @@ interface ElectronAPI {
     getLinkedAccount(profileId: string): Promise<IpcResult<LinkedGitHubAccount | null>>
     getPushContext(profileId: string): Promise<IpcResult<GitHubPushStatus>>
     onAuthEvent(callback: (event: GitHubAuthEvent) => void): () => void
+  }
+  ai: {
+    listConnections(): Promise<IpcResult<AiConnectionsView>>
+    createConnection(input: AiConnectionCreateInput): Promise<IpcResult<AiConnection>>
+    updateConnection(id: string, patch: AiConnectionPatch): Promise<IpcResult<AiConnection>>
+    deleteConnection(id: string): Promise<IpcResult<null>>
+    setActiveConnection(id: string | null): Promise<IpcResult<null>>
+    saveCredential(
+      connectionId: string,
+      label: string,
+      secrets: Record<string, string>
+    ): Promise<IpcResult<AiCredentialMetadata>>
+    deleteCredential(connectionId: string): Promise<IpcResult<null>>
+    getCredentialMetadata(connectionId: string): Promise<IpcResult<AiCredentialMetadata | null>>
+    detectProvider(apiKey: string): Promise<IpcResult<AiProviderDetectionResult>>
   }
 }
 

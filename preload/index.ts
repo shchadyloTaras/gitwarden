@@ -15,8 +15,50 @@ import type {
   GitHubAuthStatus,
   GitHubAuthErrorCode,
 } from '../src/core/types.js'
+import type {
+  AiConnection,
+  AiConnectionKind,
+  AiCredentialMetadata,
+  AiPrivacyMode,
+  AiProviderDetection,
+  AiRetentionState,
+} from '../src/core/ai/types.js'
 
 export type IpcResult<T> = { ok: true; data: T } | { ok: false; error: string }
+
+/** Renderer view of the single-active-connection state. */
+export interface AiConnectionsView {
+  connections: AiConnection[]
+  activeConnectionId?: string
+}
+
+/** Fields the renderer may set when creating a connection; the rest is derived in main. */
+export interface AiConnectionCreateInput {
+  name: string
+  kind: AiConnectionKind
+  baseUrl?: string
+  defaultModel?: string
+  privacyMode?: AiPrivacyMode
+  retention?: AiRetentionState
+  enabled?: boolean
+}
+
+/** Editable fields on an existing connection. */
+export type AiConnectionPatch = Partial<{
+  name: string
+  kind: AiConnectionKind
+  baseUrl: string
+  defaultModel: string
+  privacyMode: AiPrivacyMode
+  retention: AiRetentionState
+  enabled: boolean
+}>
+
+/** Detection result + a masked key label; the raw key never crosses back. */
+export interface AiProviderDetectionResult {
+  detection: AiProviderDetection
+  maskedKeyLabel: string
+}
 
 /** Auth progress pushed from main over `github:authEvent`. Mirrors GitHubAuthEventPayload. */
 export interface GitHubAuthEvent {
@@ -140,6 +182,31 @@ export const api = {
       ipcRenderer.on(GITHUB_AUTH_EVENT_CHANNEL, listener)
       return () => ipcRenderer.removeListener(GITHUB_AUTH_EVENT_CHANNEL, listener)
     },
+  },
+  ai: {
+    listConnections: (): Promise<IpcResult<AiConnectionsView>> => invoke('ai:listConnections'),
+    createConnection: (input: AiConnectionCreateInput): Promise<IpcResult<AiConnection>> =>
+      invoke('ai:createConnection', input),
+    updateConnection: (id: string, patch: AiConnectionPatch): Promise<IpcResult<AiConnection>> =>
+      invoke('ai:updateConnection', { id, patch }),
+    deleteConnection: (id: string): Promise<IpcResult<null>> =>
+      invoke('ai:deleteConnection', { id }),
+    setActiveConnection: (id: string | null): Promise<IpcResult<null>> =>
+      invoke('ai:setActiveConnection', { id }),
+    saveCredential: (
+      connectionId: string,
+      label: string,
+      secrets: Record<string, string>
+    ): Promise<IpcResult<AiCredentialMetadata>> =>
+      invoke('ai:saveCredential', { connectionId, label, secrets }),
+    deleteCredential: (connectionId: string): Promise<IpcResult<null>> =>
+      invoke('ai:deleteCredential', { connectionId }),
+    getCredentialMetadata: (
+      connectionId: string
+    ): Promise<IpcResult<AiCredentialMetadata | null>> =>
+      invoke('ai:getCredentialMetadata', { connectionId }),
+    detectProvider: (apiKey: string): Promise<IpcResult<AiProviderDetectionResult>> =>
+      invoke('ai:detectProvider', { apiKey }),
   },
 }
 

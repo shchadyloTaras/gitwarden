@@ -8,6 +8,12 @@ import {
   GitHubAccountSchema,
   LinkedGitHubAccountSchema,
 } from '../../core/schemas.js'
+import {
+  AiConnectionKindSchema,
+  AiPrivacyModeSchema,
+  AiRetentionStateSchema,
+} from '../../core/ai/schemas.js'
+import { isAllowedAiBaseUrl } from '../../core/ai/transport.js'
 
 // Profile request payloads
 export const ProfileGetPayload = z.object({ id: z.string() })
@@ -112,3 +118,68 @@ export const GitHubAuthEventPayload = z.object({
 })
 
 export type GitHubAuthEventPayloadType = z.infer<typeof GitHubAuthEventPayload>
+
+// ── AI Connections request payloads (Phase 29) ──────────────────────────────────
+// All Zod-validated at the boundary. A baseUrl, when present, must satisfy the
+// shared transport gate (https, or http to loopback) — the same rule the stored
+// AiConnectionSchema enforces, so a bad endpoint is rejected before it is saved.
+
+/** Shared optional-baseUrl refinement: reject non-https non-loopback endpoints. */
+function refineBaseUrl(baseUrl: string | undefined, ctx: z.RefinementCtx): void {
+  if (baseUrl !== undefined && !isAllowedAiBaseUrl(baseUrl)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['baseUrl'],
+      message: 'baseUrl must be https:// (or http:// to a loopback host)',
+    })
+  }
+}
+
+export const AiConnectionCreatePayload = z
+  .object({
+    name: z.string().min(1),
+    kind: AiConnectionKindSchema,
+    baseUrl: z.string().optional(),
+    defaultModel: z.string().optional(),
+    privacyMode: AiPrivacyModeSchema.optional(),
+    retention: AiRetentionStateSchema.optional(),
+    enabled: z.boolean().optional(),
+  })
+  .superRefine((v, ctx) => refineBaseUrl(v.baseUrl, ctx))
+
+export const AiConnectionPatchSchema = z
+  .object({
+    name: z.string().min(1).optional(),
+    kind: AiConnectionKindSchema.optional(),
+    baseUrl: z.string().optional(),
+    defaultModel: z.string().optional(),
+    privacyMode: AiPrivacyModeSchema.optional(),
+    retention: AiRetentionStateSchema.optional(),
+    enabled: z.boolean().optional(),
+  })
+  .superRefine((v, ctx) => refineBaseUrl(v.baseUrl, ctx))
+
+export const AiConnectionUpdatePayload = z.object({
+  id: z.string().min(1),
+  patch: AiConnectionPatchSchema,
+})
+
+export const AiConnectionIdPayload = z.object({ id: z.string().min(1) })
+
+/** Active connection may be a valid id, or null to clear the active pointer. */
+export const AiSetActiveConnectionPayload = z.object({
+  id: z.string().min(1).nullable(),
+})
+
+export const AiSaveCredentialPayload = z.object({
+  connectionId: z.string().min(1),
+  label: z.string().min(1),
+  // fieldName → raw secret; at least one non-empty field required.
+  secrets: z
+    .record(z.string().min(1))
+    .refine((s) => Object.keys(s).length > 0, { message: 'At least one secret field is required' }),
+})
+
+export const AiCredentialConnectionPayload = z.object({ connectionId: z.string().min(1) })
+
+export const AiDetectProviderPayload = z.object({ apiKey: z.string().min(1) })

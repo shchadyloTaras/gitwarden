@@ -4,6 +4,10 @@ import type { IRepositoryService } from '../services/RepositoryService.js'
 import type { ISettingsService } from '../services/SettingsService.js'
 import type { GitService } from '../services/GitService.js'
 import type { IGitHubAuthCoordinator } from './GitHubAuthCoordinator.js'
+import type { IAiConnectionService } from '../services/AiConnectionService.js'
+import type { IAiCredentialStore } from '../storage/AiCredentialStore.js'
+import { detectProvider } from '../../core/ai/detection.js'
+import { maskSecret } from '../../core/ai/credentials.js'
 import {
   ProfileGetPayload,
   ProfileCreatePayload,
@@ -31,6 +35,13 @@ import {
   GitHubGetLinkedAccountPayload,
   GitHubGetPushContextPayload,
   ShellOpenExternalPayload,
+  AiConnectionCreatePayload,
+  AiConnectionUpdatePayload,
+  AiConnectionIdPayload,
+  AiSetActiveConnectionPayload,
+  AiSaveCredentialPayload,
+  AiCredentialConnectionPayload,
+  AiDetectProviderPayload,
 } from './ipc-schemas.js'
 import type { PushAuth } from '../services/GitService.js'
 
@@ -40,6 +51,8 @@ export interface Services {
   settings: ISettingsService
   git: GitService
   github: IGitHubAuthCoordinator
+  aiConnections: IAiConnectionService
+  aiCredentials: IAiCredentialStore
   /** Browser-open seam — real `shell.openExternal` in production, no-op under e2e. */
   openExternal: (url: string) => void | Promise<void>
 }
@@ -338,6 +351,75 @@ export function registerIpcHandlers(services: Services): void {
     wrap(async () => {
       const { profileId } = GitHubGetPushContextPayload.parse(raw)
       return services.github.getPushContext(profileId)
+    })
+  )
+
+  // AI Connections (Phase 29). Connection records are non-secret; credentials go
+  // through the dedicated AiCredentialStore and only AiCredentialMetadata ever
+  // crosses back to the renderer — the raw secret never returns after save.
+  ipcMain.handle('ai:listConnections', () => wrap(() => services.aiConnections.list()))
+
+  ipcMain.handle('ai:createConnection', (_e, raw: unknown) =>
+    wrap(async () => {
+      const input = AiConnectionCreatePayload.parse(raw)
+      return services.aiConnections.create(input)
+    })
+  )
+
+  ipcMain.handle('ai:updateConnection', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { id, patch } = AiConnectionUpdatePayload.parse(raw)
+      return services.aiConnections.update(id, patch)
+    })
+  )
+
+  ipcMain.handle('ai:deleteConnection', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { id } = AiConnectionIdPayload.parse(raw)
+      await services.aiConnections.delete(id)
+      // Drop any orphaned credential for the removed connection.
+      await services.aiCredentials.delete(id)
+      return null
+    })
+  )
+
+  ipcMain.handle('ai:setActiveConnection', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { id } = AiSetActiveConnectionPayload.parse(raw)
+      await services.aiConnections.setActive(id)
+      return null
+    })
+  )
+
+  ipcMain.handle('ai:saveCredential', (_e, raw: unknown) =>
+    wrap(async () => {
+      const input = AiSaveCredentialPayload.parse(raw)
+      // Returns ONLY metadata (label, maskedPreview, secretFields, updatedAt).
+      return services.aiCredentials.save(input)
+    })
+  )
+
+  ipcMain.handle('ai:deleteCredential', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { connectionId } = AiCredentialConnectionPayload.parse(raw)
+      await services.aiCredentials.delete(connectionId)
+      return null
+    })
+  )
+
+  ipcMain.handle('ai:getCredentialMetadata', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { connectionId } = AiCredentialConnectionPayload.parse(raw)
+      return (await services.aiCredentials.getMetadata(connectionId)) ?? null
+    })
+  )
+
+  ipcMain.handle('ai:detectProvider', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { apiKey } = AiDetectProviderPayload.parse(raw)
+      // The raw key is detected in main and immediately discarded; only the
+      // detection result and a masked label cross back to the renderer.
+      return { detection: detectProvider(apiKey), maskedKeyLabel: maskSecret(apiKey.trim()) }
     })
   )
 }

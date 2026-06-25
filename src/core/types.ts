@@ -74,6 +74,13 @@ export interface RepositoryRecord {
   lastOpenedAt?: string // ISO
   isFavorite: boolean
   notes?: string
+  /**
+   * Per-repo AI override (most specific in the precedence chain, §3/§4):
+   * `enabled` force-on, `disabled` force-off, absent = inherit the global flag.
+   * Stored here; the override entry point lives in Settings → AI. Enforcement at
+   * context-assembly time lands in Phase 31.
+   */
+  aiOverride?: 'enabled' | 'disabled'
 }
 
 export type ChangeKind =
@@ -157,6 +164,12 @@ export interface AppSettings {
   defaultProjectsFolder?: string
   onboardingCompletedAt?: string
   onboardingSkippedAt?: string
+  /**
+   * Global "Enable AI" consent (§4). Default-off: absent/false means no repo
+   * content leaves the machine. Kept deliberately separate from saving a
+   * connection — the two are distinct, deliberate steps (§1).
+   */
+  aiEnabled?: boolean
 }
 
 export type GitErrorCode =
