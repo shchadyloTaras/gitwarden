@@ -216,6 +216,15 @@ export const STR = {
   AI_REPO_OVERRIDE_ON: 'Force on',
   AI_REPO_OVERRIDE_OFF: 'Force off',
   AI_REPO_OVERRIDE_NO_REPO: 'Select a repository to set a per-repo override.',
+  AI_PREVIEW_TITLE: 'AI Send Preview',
+  AI_PREVIEW_BUTTON: 'Show what will be sent',
+  AI_PREVIEW_LOADING: 'Preparing preview...',
+  AI_PREVIEW_HOST: (host: string) => `Destination: ${host}`,
+  AI_PREVIEW_PAYLOAD_LABEL: 'Post-redaction payload',
+  AI_PREVIEW_REDACTIONS: (count: number) => `${count} redaction${count === 1 ? '' : 's'} applied.`,
+  AI_PREVIEW_TRUNCATED: (omitted: number) =>
+    `Preview truncated after redaction (${omitted} chars omitted).`,
+  AI_PREVIEW_ERROR: 'Could not prepare the AI preview.',
 
   // ── Inspector ──────────────────────────────────────────────────────────────
   INSPECTOR_TITLE: 'Inspector',

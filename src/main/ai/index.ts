@@ -21,6 +21,7 @@ export {
   OpenRouterAdapter,
 } from './builtInAdapters.js'
 export { CustomHttpAdapter } from './CustomHttpAdapter.js'
+export { AiContextBuilder, sendPreparedContextForTest } from './AiContextBuilder.js'
 
 export function createAiAdapterRegistry(deps: {
   connections: IAiConnectionService

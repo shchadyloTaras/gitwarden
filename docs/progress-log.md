@@ -43,7 +43,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] Phase 28 — AI Foundations, Decisions & Connection Contracts
 - [x] Phase 29 — AI Connections Manager & Credential Store
 - [x] Phase 30 — Adapter Registry, Built-in Providers & Custom HTTP
-- [ ] Phase 31 — Context Builder, Redaction & Send Preview
+- [x] Phase 31 — Context Builder, Redaction & Send Preview
 - [ ] Phase 32 — Smart Commit Assistant
 - [ ] Phase 33 — Change Review Assistant
 - [ ] Phase 34 — Safety Copilot (recommended MVP stop point)
@@ -367,3 +367,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: `npm test` → Vitest **360 passed** (+16 new/updated Phase 30 adapter, guard, schema, and IPC tests). `npm run e2e` → Playwright **51 passed** (+1 AI fake-adapter test; build succeeded). `npx tsc --noEmit -p tsconfig.node.json` and `npx tsc --noEmit -p tsconfig.web.json` clean.
 - Exit criteria: ✅ met — unit tests use fake HTTP only; built-ins validate request shape, request structured JSON, and fail closed through Zod parsing; OpenAI-compatible/Ollama local loopback endpoints work over `http://` with host-derived `localOnly`, while non-loopback `http://` is rejected; Custom HTTP rejects non-HTTPS non-localhost URLs, unsupported placeholders, secret-leaking `{{apiKey}}` placements, malformed/unsafe response mappings, and filter/script/wildcard JSONPath; the spend guard refuses requests over the per-request cap. Playwright verifies `testConnection`/`listModels` through fake adapters.
 - Notes / follow-ups: Custom HTTP is implemented at the adapter/contract layer; a full Advanced UI for authoring mappings remains a future UX slice. Phase 31 should reuse the same registry and guard when context assembly begins sending real redacted diff payloads.
+
+### 2026-06-25 — Phase 31: Context Builder, Redaction & Send Preview
+
+- Built: the privacy backbone for AI sends. `AiContextBuilder` lives in main and assembles repo context only through existing injected services: repository/settings/profile services plus `GitService` methods for status, staged diffs, selected unstaged diffs, branch/status, remotes, effective identity, Safety Engine result, and recent commits. AI code still never calls `GitRunner` directly.
+- Files: added `src/core/ai/context.ts` (stable context serialization, full-context redaction, deterministic chunk/truncation, adapter-message helper), `src/main/ai/AiContextBuilder.ts`, `tests/unit/ai-context.test.ts`, `tests/unit/ai-context-builder.test.ts`, and `tests/e2e/ai-preview.spec.ts`; updated AI IPC/preload/window types, `src/renderer/store/aiStore.ts`, `src/renderer/screens/CommitScreen.tsx`, `src/renderer/strings.ts`, and service wiring in `electron/index.ts`.
+- Tests: `npm test` → Vitest **366 passed** (+6 Phase 31 unit tests). `npm run e2e` → Playwright **52 passed** (+1 AI preview test; build succeeded). `npx tsc --noEmit -p tsconfig.node.json` and `npx tsc --noEmit -p tsconfig.web.json` clean. `npm run lint` clean.
+- Exit criteria: ✅ met — the existing pure-core redaction matrix still passes; new context tests prove redaction runs on the full serialized context before chunking (including a token longer than the chunk size), and large payloads chunk/truncate deterministically after redaction. The builder enforces repo → global → connection precedence before any Git service call, so a repo opted out of AI blocks context assembly entirely. A recording fake-adapter test captures only post-redaction fixture payloads (GitHub token, API key, credential URL password removed); this proves the checked fixtures, not real-world completeness. Playwright verifies the Commit screen shows the post-redaction payload and destination host before any diff is sent onward.
+- Notes / follow-ups: Phase 32 should consume `AiContextBuilder`/`createAiContextMessages` rather than re-reading diffs. The preview is currently a compact Commit-screen surface for staged context; selected unstaged paths are supported by the builder/IPC for later review flows.

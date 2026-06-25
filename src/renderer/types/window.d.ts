@@ -26,6 +26,7 @@ import type {
   AiUsageEstimateRequest,
   CustomHttpMapping,
 } from '../../core/ai/types.js'
+import type { AiPreparedContext } from '../../core/ai/context.js'
 
 type IpcResult<T> = { ok: true; data: T } | { ok: false; error: string }
 
@@ -155,6 +156,12 @@ interface ElectronAPI {
     listModels(connectionId: string): Promise<IpcResult<AiModelInfo[]>>
     estimateUsage(request: AiUsageEstimateRequest): Promise<IpcResult<AiUsageEstimate>>
     cancel(requestId: string): Promise<IpcResult<null>>
+    previewContext(input: {
+      repositoryId: string
+      kind: AiUsageEstimateRequest['kind']
+      selectedUnstagedPaths?: string[]
+      commitMessage?: string
+    }): Promise<IpcResult<AiPreparedContext>>
   }
 }
 

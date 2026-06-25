@@ -7,6 +7,7 @@ import type { IGitHubAuthCoordinator } from './GitHubAuthCoordinator.js'
 import type { IAiConnectionService } from '../services/AiConnectionService.js'
 import type { IAiCredentialStore } from '../storage/AiCredentialStore.js'
 import type { AiAdapter } from '../ai/types.js'
+import type { AiContextBuilder } from '../ai/AiContextBuilder.js'
 import { detectProvider } from '../../core/ai/detection.js'
 import { maskSecret } from '../../core/ai/credentials.js'
 import {
@@ -52,6 +53,7 @@ import {
   AiListModelsPayload,
   AiEstimateUsagePayload,
   AiCancelPayload,
+  AiPreviewContextPayload,
 } from './ipc-schemas.js'
 import type { PushAuth } from '../services/GitService.js'
 
@@ -64,6 +66,7 @@ export interface Services {
   aiConnections: IAiConnectionService
   aiCredentials: IAiCredentialStore
   aiAdapters: AiAdapter
+  aiContextBuilder: AiContextBuilder
   /** Browser-open seam — real `shell.openExternal` in production, no-op under e2e. */
   openExternal: (url: string) => void | Promise<void>
 }
@@ -462,6 +465,13 @@ export function registerIpcHandlers(services: Services): void {
       const { requestId } = AiCancelPayload.parse(raw)
       await services.aiAdapters.cancel(requestId)
       return null
+    })
+  )
+
+  ipcMain.handle('ai:previewContext', (_e, raw: unknown) =>
+    wrap(async () => {
+      const input = AiPreviewContextPayload.parse(raw)
+      return services.aiContextBuilder.buildPreview(input)
     })
   )
 }

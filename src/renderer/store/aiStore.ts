@@ -12,6 +12,7 @@ import type {
   AiUsageEstimateRequest,
   CustomHttpMapping,
 } from '../../core/ai/types'
+import type { AiPreparedContext } from '../../core/ai/context'
 
 // Renderer store for the single-active AI connection (Phase 29). It never holds
 // a raw secret: saving a credential returns only AiCredentialMetadata, and that
@@ -68,6 +69,12 @@ interface AiState {
   listModels(connectionId: string): Promise<AiModelInfo[]>
   estimateUsage(request: AiUsageEstimateRequest): Promise<AiUsageEstimate | null>
   cancel(requestId: string): Promise<void>
+  previewContext(input: {
+    repositoryId: string
+    kind: AiUsageEstimateRequest['kind']
+    selectedUnstagedPaths?: string[]
+    commitMessage?: string
+  }): Promise<AiPreparedContext | null>
   saveCredential(
     connectionId: string,
     label: string,
@@ -202,6 +209,16 @@ export const useAiStore = create<AiState>((set, get) => ({
       set({ error: result.error })
       throw new Error(result.error)
     }
+  },
+
+  async previewContext(input) {
+    const result = await window.api.ai.previewContext(input)
+    if (!result.ok) {
+      set({ error: result.error })
+      return null
+    }
+    set({ error: null })
+    return result.data
   },
 
   async saveCredential(connectionId, label, secrets) {

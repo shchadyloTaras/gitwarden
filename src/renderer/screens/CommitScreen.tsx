@@ -1,8 +1,11 @@
-import React, { useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useProfilesStore } from '../store/profilesStore'
 import { useCommitStore } from '../store/commitStore'
 import { useAppStore } from '../store/appStore'
+import { useAiStore } from '../store/aiStore'
 import { safetyCheckService } from '../../core/safety/SafetyCheckService'
+import type { AiPreparedContext } from '../../core/ai/context'
+import { STR } from '../strings'
 
 const IDENTITY_CODES = new Set(['IDENTITY_UNSET', 'EMAIL_MISMATCH', 'EMAIL_FROM_GLOBAL_ONLY'])
 
@@ -26,10 +29,19 @@ export default function CommitScreen(): React.ReactElement {
   } = useCommitStore()
 
   const activeProfile = profiles.find((p) => p.id === activeProfileId)
+  const previewContext = useAiStore((s) => s.previewContext)
+  const [aiPreview, setAiPreview] = useState<AiPreparedContext | null>(null)
+  const [aiPreviewLoading, setAiPreviewLoading] = useState(false)
+  const [aiPreviewError, setAiPreviewError] = useState<string | null>(null)
 
   useEffect(() => {
     if (activeRepo) void load(activeRepo.localPath, activeRepo)
   }, [load, activeRepo])
+
+  useEffect(() => {
+    setAiPreview(null)
+    setAiPreviewError(null)
+  }, [activeRepo?.id, message])
 
   const safetyResult = useMemo(() => {
     if (!status || !identity || !repository) return null
@@ -67,6 +79,26 @@ export default function CommitScreen(): React.ReactElement {
   const handleCommit = async () => {
     if (!safetyResult?.canCommit || commitLoading) return
     await doCommit(message)
+  }
+
+  const handleAiPreview = async () => {
+    if (!repository) return
+    setAiPreviewLoading(true)
+    setAiPreviewError(null)
+    setAiPreview(null)
+    try {
+      const preview = await previewContext({
+        repositoryId: repository.id,
+        kind: 'commit-draft',
+        commitMessage: message,
+      })
+      if (preview) setAiPreview(preview)
+      else setAiPreviewError(STR.AI_PREVIEW_ERROR)
+    } catch (err) {
+      setAiPreviewError(err instanceof Error ? err.message : STR.AI_PREVIEW_ERROR)
+    } finally {
+      setAiPreviewLoading(false)
+    }
   }
 
   return (
@@ -281,6 +313,109 @@ export default function CommitScreen(): React.ReactElement {
               ✓ Committed {committedHash}
             </div>
           )}
+
+          {/* AI send preview */}
+          <div
+            data-testid="ai-send-preview-card"
+            style={{
+              marginBottom: '16px',
+              border: '1px solid var(--gw-border, #27272a)',
+              borderRadius: '4px',
+              background: 'var(--gw-surface, #18181b)',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '10px 12px',
+                borderBottom: aiPreview ? '1px solid var(--gw-border, #27272a)' : 'none',
+              }}
+            >
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{STR.AI_PREVIEW_TITLE}</div>
+                <div style={{ fontSize: 11, color: 'var(--gw-text-faint, #71717a)' }}>
+                  {STR.AI_PREVIEW_PAYLOAD_LABEL}
+                </div>
+              </div>
+              <button
+                data-testid="ai-preview-btn"
+                onClick={() => void handleAiPreview()}
+                disabled={aiPreviewLoading}
+                style={{
+                  background: 'none',
+                  color: 'var(--gw-text-muted, #a1a1aa)',
+                  border: '1px solid var(--gw-surface3, #3f3f46)',
+                  borderRadius: '4px',
+                  padding: '6px 12px',
+                  fontSize: '12px',
+                  cursor: aiPreviewLoading ? 'wait' : 'pointer',
+                }}
+              >
+                {aiPreviewLoading ? STR.AI_PREVIEW_LOADING : STR.AI_PREVIEW_BUTTON}
+              </button>
+            </div>
+
+            {aiPreviewError && (
+              <div
+                data-testid="ai-preview-error"
+                style={{
+                  padding: '8px 12px',
+                  color: 'var(--gw-danger, #f87171)',
+                  fontSize: 12,
+                }}
+              >
+                {aiPreviewError}
+              </div>
+            )}
+
+            {aiPreview && (
+              <div style={{ padding: '10px 12px' }}>
+                <div
+                  data-testid="ai-preview-host"
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: 'var(--gw-accent-text, #a5b4fc)',
+                    marginBottom: 6,
+                  }}
+                >
+                  {STR.AI_PREVIEW_HOST(aiPreview.destinationHost)}
+                </div>
+                <div
+                  data-testid="ai-preview-redactions"
+                  style={{ fontSize: 11, color: 'var(--gw-text-faint, #71717a)', marginBottom: 8 }}
+                >
+                  {STR.AI_PREVIEW_REDACTIONS(aiPreview.redactions.count)}
+                  {aiPreview.truncated
+                    ? ` ${STR.AI_PREVIEW_TRUNCATED(aiPreview.omittedChars)}`
+                    : ''}
+                </div>
+                <pre
+                  data-testid="ai-preview-payload"
+                  style={{
+                    margin: 0,
+                    maxHeight: 260,
+                    overflow: 'auto',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    background: 'var(--gw-input-bg, #09090b)',
+                    border: '1px solid var(--gw-border-subtle, #3f3f46)',
+                    borderRadius: '4px',
+                    padding: '10px',
+                    color: 'var(--gw-text, #f4f4f5)',
+                    fontSize: 11,
+                    lineHeight: '16px',
+                    fontFamily: 'monospace',
+                  }}
+                >
+                  {aiPreview.payloadText}
+                </pre>
+              </div>
+            )}
+          </div>
 
           {/* Commit button */}
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>

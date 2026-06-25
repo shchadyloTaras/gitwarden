@@ -28,6 +28,7 @@ import type {
   AiUsageEstimateRequest,
   CustomHttpMapping,
 } from '../src/core/ai/types.js'
+import type { AiPreparedContext } from '../src/core/ai/context.js'
 
 export type IpcResult<T> = { ok: true; data: T } | { ok: false; error: string }
 
@@ -221,6 +222,12 @@ export const api = {
     estimateUsage: (request: AiUsageEstimateRequest): Promise<IpcResult<AiUsageEstimate>> =>
       invoke('ai:estimateUsage', request),
     cancel: (requestId: string): Promise<IpcResult<null>> => invoke('ai:cancel', { requestId }),
+    previewContext: (input: {
+      repositoryId: string
+      kind: AiUsageEstimateRequest['kind']
+      selectedUnstagedPaths?: string[]
+      commitMessage?: string
+    }): Promise<IpcResult<AiPreparedContext>> => invoke('ai:previewContext', input),
   },
 }
 

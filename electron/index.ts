@@ -27,6 +27,7 @@ import {
   createAiTestCredentialStore,
 } from '../src/main/testing/aiFakes.js'
 import { createAiAdapterRegistry } from '../src/main/ai/index.js'
+import { AiContextBuilder } from '../src/main/ai/AiContextBuilder.js'
 import {
   TokenStore,
   TokenStoreDataSchema,
@@ -146,7 +147,10 @@ app.whenReady().then(async () => {
   const gitRunner = new GitRunner(gitPath)
 
   const profiles = new ProfileService(profilesStore)
+  const repositories = new RepositoryService(reposStore)
+  const settings = new SettingsService(settingsStore)
   const github = new GitHubAuthCoordinator(buildGitHubAuthDeps(profiles, userDataPath))
+  const git = new GitService(gitRunner)
 
   const aiConnectionsStore = new JsonStore(
     path.join(userDataPath, 'ai-connections.json'),
@@ -171,16 +175,24 @@ app.whenReady().then(async () => {
         credentials: aiCredentials,
         http: new FetchHttpClient(),
       })
+  const aiContextBuilder = new AiContextBuilder({
+    profiles,
+    repositories,
+    settings,
+    git,
+    aiConnections,
+  })
 
   registerIpcHandlers({
     profiles,
-    repositories: new RepositoryService(reposStore),
-    settings: new SettingsService(settingsStore),
-    git: new GitService(gitRunner),
+    repositories,
+    settings,
+    git,
     github,
     aiConnections,
     aiCredentials,
     aiAdapters,
+    aiContextBuilder,
     openExternal,
   })
 

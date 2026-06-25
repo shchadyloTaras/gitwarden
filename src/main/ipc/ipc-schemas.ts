@@ -13,6 +13,7 @@ import {
   AiPrivacyModeSchema,
   AiRetentionStateSchema,
   AiUsageEstimateRequestSchema,
+  AiRequestKindSchema,
   CustomHttpMappingSchema,
 } from '../../core/ai/schemas.js'
 import { isAllowedAiBaseUrl } from '../../core/ai/transport.js'
@@ -195,3 +196,10 @@ export const AiListModelsPayload = AiCredentialConnectionPayload
 export const AiEstimateUsagePayload = AiUsageEstimateRequestSchema
 
 export const AiCancelPayload = z.object({ requestId: z.string().min(1) })
+
+export const AiPreviewContextPayload = z.object({
+  repositoryId: z.string().min(1),
+  kind: AiRequestKindSchema,
+  selectedUnstagedPaths: z.array(z.string().min(1)).optional(),
+  commitMessage: z.string().optional(),
+})
