@@ -6,8 +6,14 @@ import type { GitService } from '../services/GitService.js'
 import type { IGitHubAuthCoordinator } from './GitHubAuthCoordinator.js'
 import type { IAiConnectionService } from '../services/AiConnectionService.js'
 import type { IAiCredentialStore } from '../storage/AiCredentialStore.js'
+import type { AiAdapter } from '../ai/types.js'
 import { detectProvider } from '../../core/ai/detection.js'
 import { maskSecret } from '../../core/ai/credentials.js'
+import {
+  AiConnectionTestResultSchema,
+  AiModelInfoSchema,
+  AiUsageEstimateSchema,
+} from '../../core/ai/schemas.js'
 import {
   ProfileGetPayload,
   ProfileCreatePayload,
@@ -42,6 +48,10 @@ import {
   AiSaveCredentialPayload,
   AiCredentialConnectionPayload,
   AiDetectProviderPayload,
+  AiTestConnectionPayload,
+  AiListModelsPayload,
+  AiEstimateUsagePayload,
+  AiCancelPayload,
 } from './ipc-schemas.js'
 import type { PushAuth } from '../services/GitService.js'
 
@@ -53,6 +63,7 @@ export interface Services {
   github: IGitHubAuthCoordinator
   aiConnections: IAiConnectionService
   aiCredentials: IAiCredentialStore
+  aiAdapters: AiAdapter
   /** Browser-open seam — real `shell.openExternal` in production, no-op under e2e. */
   openExternal: (url: string) => void | Promise<void>
 }
@@ -422,6 +433,41 @@ export function registerIpcHandlers(services: Services): void {
       return { detection: detectProvider(apiKey), maskedKeyLabel: maskSecret(apiKey.trim()) }
     })
   )
+
+  ipcMain.handle('ai:testConnection', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { connectionId } = AiTestConnectionPayload.parse(raw)
+      return AiConnectionTestResultSchema.parse(
+        await services.aiAdapters.testConnection(connectionId)
+      )
+    })
+  )
+
+  ipcMain.handle('ai:listModels', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { connectionId } = AiListModelsPayload.parse(raw)
+      return zodModelList(await services.aiAdapters.listModels(connectionId))
+    })
+  )
+
+  ipcMain.handle('ai:estimateUsage', (_e, raw: unknown) =>
+    wrap(async () => {
+      const input = AiEstimateUsagePayload.parse(raw)
+      return AiUsageEstimateSchema.parse(await services.aiAdapters.estimateUsage(input))
+    })
+  )
+
+  ipcMain.handle('ai:cancel', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { requestId } = AiCancelPayload.parse(raw)
+      await services.aiAdapters.cancel(requestId)
+      return null
+    })
+  )
+}
+
+function zodModelList(models: unknown): unknown {
+  return AiModelInfoSchema.array().parse(models)
 }
 
 /**

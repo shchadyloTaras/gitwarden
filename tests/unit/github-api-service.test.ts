@@ -43,6 +43,10 @@ class FakeHttp implements HttpClient {
 
   constructor(private readonly routes: Record<string, HttpResponse>) {}
 
+  async request(): Promise<HttpResponse> {
+    throw new Error('request() not used by GitHubApiService')
+  }
+
   async get(url: string, headers?: Record<string, string>): Promise<HttpResponse> {
     this.gets.push({ url, headers })
     const reply = this.routes[url]

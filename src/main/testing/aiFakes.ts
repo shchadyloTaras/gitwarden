@@ -1,13 +1,24 @@
 // Test-only fakes for the AI Connections feature — wired in ONLY when the env
 // flag `GITWARDEN_E2E_FAKE_AI=1` is set (see electron/index.ts). Production never
-// constructs these. They let the Phase 29 Playwright e2e exercise the credential
-// IPC without depending on Electron safeStorage (unavailable in headless CI),
-// while still proving the key invariant: the raw secret NEVER crosses back to the
-// renderer — only AiCredentialMetadata does.
+// constructs these. They let Playwright exercise credential + adapter IPC without
+// depending on Electron safeStorage or real AI network calls, while still proving
+// the key invariant: the raw secret NEVER crosses back to the renderer — only
+// AiCredentialMetadata does.
 
 import type { AiCredentialMetadata } from '../../core/ai/types.js'
+import type {
+  AiConnectionTestResult,
+  AiModelInfo,
+  AiUsageEstimate,
+  AiUsageEstimateRequest,
+} from '../../core/ai/types.js'
 import { maskSecret } from '../../core/ai/credentials.js'
+import { deriveLocalOnly } from '../../core/ai/transport.js'
+import type { IAiConnectionService } from '../services/AiConnectionService.js'
 import type { AiCredentialInput, IAiCredentialStore } from '../storage/AiCredentialStore.js'
+import { AiAdapterRegistry } from '../ai/AiAdapterRegistry.js'
+import { AiSpendGuard } from '../ai/spendGuard.js'
+import type { AiAdapter, AiStructuredRequest } from '../ai/types.js'
 
 const PRIMARY_FIELD = 'apiKey'
 
@@ -72,4 +83,98 @@ class FakeAiCredentialStore implements IAiCredentialStore {
 
 export function createAiTestCredentialStore(): IAiCredentialStore {
   return new FakeAiCredentialStore()
+}
+
+class FakeAiAdapter implements AiAdapter {
+  private readonly guard = new AiSpendGuard()
+
+  constructor(private readonly connections: IAiConnectionService) {}
+
+  async testConnection(connectionId: string): Promise<AiConnectionTestResult> {
+    const connection = await this.requireConnection(connectionId)
+    const models = await this.listModels(connectionId)
+    return {
+      connectionId,
+      ok: true,
+      localOnly: connection.capabilities.localOnly || deriveLocalOnly(connection.baseUrl),
+      models,
+      message: `Fake adapter returned ${models.length} model(s)`,
+    }
+  }
+
+  async listModels(connectionId: string): Promise<AiModelInfo[]> {
+    const connection = await this.requireConnection(connectionId)
+    const localOnly = connection.capabilities.localOnly || deriveLocalOnly(connection.baseUrl)
+    const ids = fakeModelIds(connection.kind, localOnly)
+    return ids.map((id, index) => ({
+      id,
+      label: index === 0 ? 'Recommended fake model' : undefined,
+      structuredOutput: true,
+      recommended: index === 0,
+      localOnly,
+    }))
+  }
+
+  async generateStructured<T>(request: AiStructuredRequest<T>): Promise<T> {
+    const estimate = this.guard.assertAllowed(request)
+    const candidates: unknown[] = [
+      {
+        conventional: 'feat(ai): add fake structured output',
+        plain: 'Add fake structured output',
+        summary: 'Fake adapter response for e2e.',
+      },
+      { summary: 'Fake change summary.', highlights: ['No network used.'] },
+      { findings: [], overall: 'Fake review passed.' },
+      { text: 'ok' },
+    ]
+    for (const candidate of candidates) {
+      const parsed = request.responseSchema.safeParse(candidate)
+      if (parsed.success) {
+        this.guard.record(estimate)
+        return parsed.data
+      }
+    }
+    throw new Error('Fake adapter has no matching structured response fixture')
+  }
+
+  estimateUsage(request: AiUsageEstimateRequest): Promise<AiUsageEstimate> {
+    return Promise.resolve(this.guard.estimate(request))
+  }
+
+  cancel(): Promise<void> {
+    return Promise.resolve()
+  }
+
+  private async requireConnection(connectionId: string) {
+    const connection = await this.connections.get(connectionId)
+    if (!connection) throw new Error(`AI connection not found: ${connectionId}`)
+    return connection
+  }
+}
+
+export function createAiTestAdapterRegistry(connections: IAiConnectionService): AiAdapterRegistry {
+  const adapter = new FakeAiAdapter(connections)
+  return new AiAdapterRegistry(connections, {
+    openrouter: adapter,
+    'openai-compatible': adapter,
+    anthropic: adapter,
+    ollama: adapter,
+    'custom-http': adapter,
+  })
+}
+
+function fakeModelIds(kind: string, localOnly: boolean): string[] {
+  if (localOnly) return ['local/fake-llama-3.2', 'local/fake-qwen-coder']
+  switch (kind) {
+    case 'anthropic':
+      return ['anthropic/claude-3.5-sonnet', 'anthropic/claude-3-haiku']
+    case 'openrouter':
+      return ['openrouter/fake-recommended', 'openrouter/fake-fast']
+    case 'ollama':
+      return ['ollama/fake-local']
+    case 'custom-http':
+      return ['custom-http/fake-model']
+    default:
+      return ['openai-compatible/fake-structured']
+  }
 }

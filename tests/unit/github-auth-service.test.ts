@@ -66,6 +66,10 @@ class FakeHttp implements HttpClient {
     throw new Error(`unexpected POST url: ${url}`)
   }
 
+  async request(): Promise<HttpResponse> {
+    throw new Error('request() not used by GitHubAuthService')
+  }
+
   async get(): Promise<HttpResponse> {
     throw new Error('get() not used by GitHubAuthService')
   }
@@ -138,6 +142,7 @@ describe('GitHubAuthService.requestDeviceCode', () => {
 
   it('rejects with a typed network error on a non-2xx response', async () => {
     const http: HttpClient = {
+      request: async () => ({ status: 503, json: {} }),
       postForm: async () => ({ status: 503, json: {} }),
       get: async () => ({ status: 503, json: {} }),
     }

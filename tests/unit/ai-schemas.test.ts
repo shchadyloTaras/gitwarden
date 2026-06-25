@@ -9,6 +9,9 @@ import {
   AiCredentialMetadataSchema,
   AiProviderDetectionSchema,
   AiUsageEstimateSchema,
+  AiModelInfoSchema,
+  AiConnectionTestResultSchema,
+  CustomHttpMappingSchema,
   AiReviewFindingSchema,
   AiCommitDraftSchema,
   AiChangeSummarySchema,
@@ -94,6 +97,30 @@ describe('AiConnection round-trip', () => {
     )
   })
 
+  it('requires Custom HTTP mappings only on custom-http connections', () => {
+    const mapping = {
+      method: 'POST' as const,
+      url: 'https://api.example.com/chat',
+      headersTemplate: { Authorization: 'Bearer {{apiKey}}' },
+      bodyTemplate: { model: '{{model}}' },
+      responseMapping: { text: '$.result' },
+    }
+    expect(AiConnectionSchema.safeParse({ ...fullConnection, kind: 'custom-http' }).success).toBe(
+      false
+    )
+    expect(
+      AiConnectionSchema.safeParse({
+        ...fullConnection,
+        kind: 'custom-http',
+        customHttpMapping: mapping,
+      }).success
+    ).toBe(true)
+    expect(
+      AiConnectionSchema.safeParse({ ...fullConnection, customHttpMapping: mapping }).success
+    ).toBe(false)
+    expect(CustomHttpMappingSchema.safeParse(mapping).success).toBe(true)
+  })
+
   it('validates a connections list wrapper', () => {
     const data = { connections: [fullConnection] }
     expect(AiConnectionsDataSchema.parse(data).connections).toHaveLength(1)
@@ -176,6 +203,24 @@ describe('AiProviderDetection', () => {
 describe('AiUsageEstimate + AiReviewFinding', () => {
   it('parses a usage estimate (optionals absent)', () => {
     expect(AiUsageEstimateSchema.parse({ inputTokens: 1200 }).inputTokens).toBe(1200)
+  })
+
+  it('parses model metadata and connection test results', () => {
+    const model = {
+      id: 'openrouter/fake',
+      structuredOutput: true,
+      recommended: true,
+      localOnly: false,
+    }
+    expect(AiModelInfoSchema.parse(model)).toEqual(model)
+    expect(
+      AiConnectionTestResultSchema.parse({
+        connectionId: 'ai-1',
+        ok: true,
+        localOnly: false,
+        models: [model],
+      }).models
+    ).toHaveLength(1)
   })
 
   it('parses a review finding with source + confidence', () => {

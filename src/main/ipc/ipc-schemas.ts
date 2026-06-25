@@ -12,6 +12,8 @@ import {
   AiConnectionKindSchema,
   AiPrivacyModeSchema,
   AiRetentionStateSchema,
+  AiUsageEstimateRequestSchema,
+  CustomHttpMappingSchema,
 } from '../../core/ai/schemas.js'
 import { isAllowedAiBaseUrl } from '../../core/ai/transport.js'
 
@@ -144,6 +146,7 @@ export const AiConnectionCreatePayload = z
     privacyMode: AiPrivacyModeSchema.optional(),
     retention: AiRetentionStateSchema.optional(),
     enabled: z.boolean().optional(),
+    customHttpMapping: CustomHttpMappingSchema.optional(),
   })
   .superRefine((v, ctx) => refineBaseUrl(v.baseUrl, ctx))
 
@@ -156,6 +159,7 @@ export const AiConnectionPatchSchema = z
     privacyMode: AiPrivacyModeSchema.optional(),
     retention: AiRetentionStateSchema.optional(),
     enabled: z.boolean().optional(),
+    customHttpMapping: CustomHttpMappingSchema.optional(),
   })
   .superRefine((v, ctx) => refineBaseUrl(v.baseUrl, ctx))
 
@@ -183,3 +187,11 @@ export const AiSaveCredentialPayload = z.object({
 export const AiCredentialConnectionPayload = z.object({ connectionId: z.string().min(1) })
 
 export const AiDetectProviderPayload = z.object({ apiKey: z.string().min(1) })
+
+export const AiTestConnectionPayload = AiCredentialConnectionPayload
+
+export const AiListModelsPayload = AiCredentialConnectionPayload
+
+export const AiEstimateUsagePayload = AiUsageEstimateRequestSchema
+
+export const AiCancelPayload = z.object({ requestId: z.string().min(1) })

@@ -72,6 +72,23 @@ describe('CustomHttpMappingSchema — boundary validation', () => {
     if (!res.success) expect(res.error.issues.some((i) => /shell/.test(i.message))).toBe(true)
   })
 
+  it('rejects mappings that leak the API key outside header values', () => {
+    const inUrl = { ...baseMapping, url: 'https://api.example.com/{{apiKey}}/chat' }
+    const inBody = { ...baseMapping, bodyTemplate: { apiKey: '{{apiKey}}' } }
+    const inHeaderName = {
+      ...baseMapping,
+      headersTemplate: { '{{apiKey}}': 'not allowed' },
+    }
+
+    for (const bad of [inUrl, inBody, inHeaderName]) {
+      const res = CustomHttpMappingSchema.safeParse(bad)
+      expect(res.success).toBe(false)
+      if (!res.success) {
+        expect(res.error.issues.some((i) => /apiKey/.test(i.message))).toBe(true)
+      }
+    }
+  })
+
   it('rejects a filter/script/wildcard JSONPath in responseMapping (not silently ignored)', () => {
     for (const text of ['$.choices[*].message.content', '$..content', '$.choices[?(@.x)]']) {
       const bad = { ...baseMapping, responseMapping: { ...baseMapping.responseMapping, text } }

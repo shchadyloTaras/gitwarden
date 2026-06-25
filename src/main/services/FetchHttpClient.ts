@@ -7,10 +7,27 @@
 // response body with Zod, so a non-JSON body is surfaced as `json: undefined` rather
 // than throwing here — the schema parse downstream produces the typed error.
 
-import type { HttpClient, HttpResponse } from './HttpClient.js'
+import type { HttpClient, HttpRequest, HttpResponse } from './HttpClient.js'
 
 export class FetchHttpClient implements HttpClient {
   constructor(private readonly fetchImpl: typeof fetch = fetch) {}
+
+  async request(request: HttpRequest): Promise<HttpResponse> {
+    const headers = { ...(request.headers ?? {}) }
+    let body = request.body
+    if (request.json !== undefined) {
+      body = JSON.stringify(request.json)
+      headers['Content-Type'] = headers['Content-Type'] ?? 'application/json'
+    }
+
+    const res = await this.fetchImpl(request.url, {
+      method: request.method,
+      headers,
+      body,
+      signal: request.signal,
+    })
+    return { status: res.status, json: await readJson(res) }
+  }
 
   async postForm(
     url: string,

@@ -22,7 +22,11 @@ import {
   AI_CREDENTIAL_STORE_DEFAULTS,
   type IAiCredentialStore,
 } from '../src/main/storage/AiCredentialStore.js'
-import { createAiTestCredentialStore } from '../src/main/testing/aiFakes.js'
+import {
+  createAiTestAdapterRegistry,
+  createAiTestCredentialStore,
+} from '../src/main/testing/aiFakes.js'
+import { createAiAdapterRegistry } from '../src/main/ai/index.js'
 import {
   TokenStore,
   TokenStoreDataSchema,
@@ -160,6 +164,13 @@ app.whenReady().then(async () => {
         ),
         new SecretStore()
       )
+  const aiAdapters = IS_E2E_FAKE_AI
+    ? createAiTestAdapterRegistry(aiConnections)
+    : createAiAdapterRegistry({
+        connections: aiConnections,
+        credentials: aiCredentials,
+        http: new FetchHttpClient(),
+      })
 
   registerIpcHandlers({
     profiles,
@@ -169,6 +180,7 @@ app.whenReady().then(async () => {
     github,
     aiConnections,
     aiCredentials,
+    aiAdapters,
     openExternal,
   })
 

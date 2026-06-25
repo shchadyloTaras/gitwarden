@@ -177,8 +177,11 @@ export const STR = {
   AI_BASEURL_HINT_LOCAL: 'Confirm the local server port (LM Studio defaults to 1234).',
   AI_MODEL_LABEL: 'Model',
   AI_MODEL_PLACEHOLDER: 'e.g. anthropic/claude-3.5-sonnet',
-  AI_MODEL_HINT:
-    'The fetched, capability-filtered model picker arrives with the adapters (Phase 30); enter the model id for now.',
+  AI_MODEL_HINT: 'Fetching models is the connection test. Local servers show all returned models.',
+  AI_MODELS_FETCH: 'Fetch models',
+  AI_MODELS_FETCHING: 'Fetching models…',
+  AI_MODELS_READY: (count: number) => `${count} model${count === 1 ? '' : 's'} available.`,
+  AI_MODELS_ERROR: 'Could not fetch models for this connection.',
   AI_NAME_LABEL: 'Connection name',
   AI_NAME_PLACEHOLDER: 'e.g. OpenRouter',
   AI_SAVE_CONNECTION: 'Save connection',

@@ -6,6 +6,10 @@ import {
   AiSaveCredentialPayload,
   AiCredentialConnectionPayload,
   AiDetectProviderPayload,
+  AiTestConnectionPayload,
+  AiListModelsPayload,
+  AiEstimateUsagePayload,
+  AiCancelPayload,
 } from '../../src/main/ipc/ipc-schemas.js'
 
 describe('AI IPC payload validation (Zod boundary)', () => {
@@ -140,6 +144,34 @@ describe('AI IPC payload validation (Zod boundary)', () => {
       expect(AiDetectProviderPayload.safeParse({ apiKey: 'sk-or-x' }).success).toBe(true)
       expect(AiDetectProviderPayload.safeParse({ apiKey: '' }).success).toBe(false)
       expect(AiDetectProviderPayload.safeParse({}).success).toBe(false)
+    })
+  })
+
+  describe('Phase 30 adapter payloads', () => {
+    it('validates testConnection/listModels/cancel payloads', () => {
+      expect(AiTestConnectionPayload.safeParse({ connectionId: 'ai-1' }).success).toBe(true)
+      expect(AiListModelsPayload.safeParse({ connectionId: 'ai-1' }).success).toBe(true)
+      expect(AiCancelPayload.safeParse({ requestId: 'req-1' }).success).toBe(true)
+      expect(AiTestConnectionPayload.safeParse({ connectionId: '' }).success).toBe(false)
+      expect(AiCancelPayload.safeParse({ requestId: '' }).success).toBe(false)
+    })
+
+    it('validates estimateUsage payloads with messages and caps', () => {
+      expect(
+        AiEstimateUsagePayload.safeParse({
+          connectionId: 'ai-1',
+          kind: 'change-summary',
+          messages: [{ role: 'user', content: 'hello' }],
+          maxOutputTokens: 500,
+        }).success
+      ).toBe(true)
+      expect(
+        AiEstimateUsagePayload.safeParse({
+          connectionId: 'ai-1',
+          kind: 'not-a-kind',
+          messages: [{ role: 'developer', content: 'hello' }],
+        }).success
+      ).toBe(false)
     })
   })
 })

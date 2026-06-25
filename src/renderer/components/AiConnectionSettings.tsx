@@ -102,7 +102,9 @@ function retentionLine(conn: AiConnection): string {
 function SetupForm(): React.ReactElement {
   const detect = useAiStore((s) => s.detect)
   const createConnection = useAiStore((s) => s.createConnection)
+  const updateConnection = useAiStore((s) => s.updateConnection)
   const saveCredential = useAiStore((s) => s.saveCredential)
+  const listModels = useAiStore((s) => s.listModels)
 
   const [apiKey, setApiKey] = useState('')
   const [detection, setDetection] = useState<AiProviderDetection | null>(null)
@@ -160,6 +162,11 @@ function SetupForm(): React.ReactElement {
       await saveCredential(created.id, `${titleCaseKind(detection.kind)} key`, {
         apiKey: apiKey.trim(),
       })
+      const fetched = await listModels(created.id)
+      if (model.trim().length === 0 && fetched[0]) {
+        await updateConnection(created.id, { defaultModel: fetched[0].id })
+        await listModels(created.id)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : STR.AI_SAVE_ERROR)
     } finally {
@@ -269,16 +276,22 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
   const deleteConnection = useAiStore((s) => s.deleteConnection)
   const saveCredential = useAiStore((s) => s.saveCredential)
   const deleteCredential = useAiStore((s) => s.deleteCredential)
+  const listModels = useAiStore((s) => s.listModels)
+  const testConnection = useAiStore((s) => s.testConnection)
+  const models = useAiStore((s) => s.models)
 
   const [name, setName] = useState(conn.name)
   const [model, setModel] = useState(conn.defaultModel ?? '')
   const [credKey, setCredKey] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [modelsLoading, setModelsLoading] = useState(false)
+  const [modelStatus, setModelStatus] = useState<string | null>(null)
 
   useEffect(() => {
     setName(conn.name)
     setModel(conn.defaultModel ?? '')
+    setModelStatus(null)
   }, [conn.id, conn.name, conn.defaultModel])
 
   const dirty = name.trim() !== conn.name || (model.trim() || '') !== (conn.defaultModel ?? '')
@@ -289,6 +302,19 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
       defaultModel: model.trim() || undefined,
     })
     setSaved(true)
+  }
+
+  async function handleFetchModels(): Promise<void> {
+    setModelsLoading(true)
+    setModelStatus(null)
+    try {
+      const result = await testConnection(conn.id)
+      const fetched = result?.models ?? (await listModels(conn.id))
+      if (fetched[0] && model.trim().length === 0) setModel(fetched[0].id)
+      setModelStatus(result ? STR.AI_MODELS_READY(fetched.length) : STR.AI_MODELS_ERROR)
+    } finally {
+      setModelsLoading(false)
+    }
   }
 
   return (
@@ -328,17 +354,55 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
 
       <div style={{ marginTop: 12 }}>
         <label style={LABEL}>{STR.AI_MODEL_LABEL}</label>
-        <input
-          data-testid="ai-edit-model-input"
-          type="text"
-          value={model}
-          onChange={(e) => {
-            setModel(e.target.value)
-            setSaved(false)
-          }}
-          placeholder={STR.AI_MODEL_PLACEHOLDER}
-          style={INPUT}
-        />
+        {models.length > 0 ? (
+          <select
+            data-testid="ai-model-select"
+            value={model}
+            onChange={(e) => {
+              setModel(e.target.value)
+              setSaved(false)
+            }}
+            style={{ ...INPUT, fontFamily: 'inherit' }}
+          >
+            <option value="">{STR.AI_MODEL_PLACEHOLDER}</option>
+            {models.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.label ? `${m.label} (${m.id})` : m.id}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            data-testid="ai-edit-model-input"
+            type="text"
+            value={model}
+            onChange={(e) => {
+              setModel(e.target.value)
+              setSaved(false)
+            }}
+            placeholder={STR.AI_MODEL_PLACEHOLDER}
+            style={INPUT}
+          />
+        )}
+        <div style={{ marginTop: 8, display: 'flex', gap: 10, alignItems: 'center' }}>
+          <button
+            data-testid="ai-fetch-models"
+            onClick={() => void handleFetchModels()}
+            disabled={modelsLoading}
+            style={{
+              ...SUBTLE_BTN,
+              opacity: modelsLoading ? 0.6 : 1,
+              cursor: modelsLoading ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {modelsLoading ? STR.AI_MODELS_FETCHING : STR.AI_MODELS_FETCH}
+          </button>
+          {modelStatus && (
+            <span data-testid="ai-model-status" style={HINT}>
+              {modelStatus}
+            </span>
+          )}
+        </div>
       </div>
 
       <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 12 }}>

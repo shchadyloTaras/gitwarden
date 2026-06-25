@@ -81,6 +81,8 @@ export interface AiConnection {
   privacyMode: AiPrivacyMode
   retention: AiRetentionState
   capabilities: AiConnectionCapabilities
+  /** Declarative request/response mapping for `custom-http` connections only. */
+  customHttpMapping?: CustomHttpMapping
   createdAt: string // ISO
   updatedAt: string // ISO
 }
@@ -133,8 +135,32 @@ export interface CustomHttpMapping {
   method: 'POST'
   url: string
   headersTemplate: Record<string, string>
-  bodyTemplate: unknown
+  bodyTemplate?: unknown
   responseMapping: CustomHttpResponseMapping
+}
+
+/** One chat-style message sent to an adapter. */
+export interface AiMessage {
+  role: 'system' | 'user' | 'assistant'
+  content: string
+}
+
+/** Renderer-safe model metadata returned by `ai:listModels`. */
+export interface AiModelInfo {
+  id: string
+  label?: string
+  structuredOutput: boolean
+  recommended?: boolean
+  localOnly: boolean
+}
+
+/** Renderer-safe connection probe result. It never contains request headers or secrets. */
+export interface AiConnectionTestResult {
+  connectionId: string
+  ok: boolean
+  localOnly: boolean
+  models: AiModelInfo[]
+  message?: string
 }
 
 /** Token/cost estimate surfaced before a send and after a response. */
@@ -142,6 +168,21 @@ export interface AiUsageEstimate {
   inputTokens: number
   outputTokens?: number
   estCostUsd?: number
+  warnings?: string[]
+  requiresExplicitWarning?: boolean
+}
+
+/** IPC-safe input for estimating usage before a send. */
+export interface AiUsageEstimateRequest {
+  connectionId: string
+  kind: AiRequestKind
+  messages?: AiMessage[]
+  prompt?: string
+  model?: string
+  maxOutputTokens?: number
+  estimatedInputTokens?: number
+  estimatedOutputTokens?: number
+  expensiveSendAcknowledged?: boolean
 }
 
 export type AiReviewCategory =

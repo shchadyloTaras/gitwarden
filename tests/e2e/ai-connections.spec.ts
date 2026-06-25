@@ -162,4 +162,31 @@ test.describe('AI Connections (injected fake credential store)', () => {
     expect(probe.metaJson).not.toContain('sk-or-v1-secret')
     expect(probe.connJson).not.toContain('sk-or-v1-secret')
   })
+
+  test('test connection and list models use fake adapters', async () => {
+    await win.getByTestId('ai-key-input').fill('sk-or-v1-e2e-models0000000000000')
+    await win.getByTestId('ai-name-input').fill('OpenRouter')
+    await win.getByTestId('ai-save-connection').click()
+    await expect(win.getByTestId('ai-connection-card')).toBeVisible()
+
+    const result = await win.evaluate(async () => {
+      const api = (window as Window & typeof globalThis).api
+      const list = await api.ai.listConnections()
+      const id = list.ok ? list.data.connections[0]?.id : undefined
+      if (!id) return null
+      const testResult = await api.ai.testConnection(id)
+      const models = await api.ai.listModels(id)
+      return {
+        ok: testResult.ok ? testResult.data.ok : false,
+        modelIds: models.ok ? models.data.map((m) => m.id) : [],
+      }
+    })
+
+    expect(result?.ok).toBe(true)
+    expect(result?.modelIds).toContain('openrouter/fake-recommended')
+
+    await win.getByTestId('ai-fetch-models').click()
+    await expect(win.getByTestId('ai-model-status')).toContainText('models available')
+    await expect(win.getByTestId('ai-model-select')).toBeVisible()
+  })
 })

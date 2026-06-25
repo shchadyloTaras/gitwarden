@@ -18,10 +18,15 @@ import type {
 import type {
   AiConnection,
   AiConnectionKind,
+  AiConnectionTestResult,
   AiCredentialMetadata,
+  AiModelInfo,
   AiPrivacyMode,
   AiProviderDetection,
   AiRetentionState,
+  AiUsageEstimate,
+  AiUsageEstimateRequest,
+  CustomHttpMapping,
 } from '../src/core/ai/types.js'
 
 export type IpcResult<T> = { ok: true; data: T } | { ok: false; error: string }
@@ -41,6 +46,7 @@ export interface AiConnectionCreateInput {
   privacyMode?: AiPrivacyMode
   retention?: AiRetentionState
   enabled?: boolean
+  customHttpMapping?: CustomHttpMapping
 }
 
 /** Editable fields on an existing connection. */
@@ -52,6 +58,7 @@ export type AiConnectionPatch = Partial<{
   privacyMode: AiPrivacyMode
   retention: AiRetentionState
   enabled: boolean
+  customHttpMapping: CustomHttpMapping
 }>
 
 /** Detection result + a masked key label; the raw key never crosses back. */
@@ -207,6 +214,13 @@ export const api = {
       invoke('ai:getCredentialMetadata', { connectionId }),
     detectProvider: (apiKey: string): Promise<IpcResult<AiProviderDetectionResult>> =>
       invoke('ai:detectProvider', { apiKey }),
+    testConnection: (connectionId: string): Promise<IpcResult<AiConnectionTestResult>> =>
+      invoke('ai:testConnection', { connectionId }),
+    listModels: (connectionId: string): Promise<IpcResult<AiModelInfo[]>> =>
+      invoke('ai:listModels', { connectionId }),
+    estimateUsage: (request: AiUsageEstimateRequest): Promise<IpcResult<AiUsageEstimate>> =>
+      invoke('ai:estimateUsage', request),
+    cancel: (requestId: string): Promise<IpcResult<null>> => invoke('ai:cancel', { requestId }),
   },
 }
 

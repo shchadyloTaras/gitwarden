@@ -8,7 +8,11 @@
 import { z } from 'zod'
 import { isAllowedAiBaseUrl } from './transport.js'
 import { isSafeJsonPath } from './jsonpath.js'
-import { collectMappingPlaceholders, isSupportedPlaceholder } from './customHttp.js'
+import {
+  collectMappingPlaceholders,
+  findPlaceholders,
+  isSupportedPlaceholder,
+} from './customHttp.js'
 import type { CustomHttpMapping } from './types.js'
 
 // ── Enums ────────────────────────────────────────────────────────────────────
@@ -70,6 +74,7 @@ export const AiConnectionSchema = z
     privacyMode: AiPrivacyModeSchema,
     retention: AiRetentionStateSchema,
     capabilities: AiConnectionCapabilitiesSchema,
+    customHttpMapping: z.lazy(() => CustomHttpMappingSchema).optional(),
     createdAt: z.string(),
     updatedAt: z.string(),
   })
@@ -81,6 +86,20 @@ export const AiConnectionSchema = z
         code: z.ZodIssueCode.custom,
         path: ['baseUrl'],
         message: 'baseUrl must be https:// (or http:// to a loopback host)',
+      })
+    }
+    if (conn.kind === 'custom-http' && conn.customHttpMapping === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['customHttpMapping'],
+        message: 'custom-http connections require a Custom HTTP mapping',
+      })
+    }
+    if (conn.kind !== 'custom-http' && conn.customHttpMapping !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['customHttpMapping'],
+        message: 'customHttpMapping is only valid for custom-http connections',
       })
     }
   })
@@ -115,12 +134,23 @@ export const CustomHttpResponseMappingSchema = z.object({
   outputTokens: z.string().optional(),
 })
 
+const JsonTemplateValueSchema: z.ZodType<unknown> = z.lazy(() =>
+  z.union([
+    z.string(),
+    z.number(),
+    z.boolean(),
+    z.null(),
+    z.array(JsonTemplateValueSchema),
+    z.record(JsonTemplateValueSchema),
+  ])
+)
+
 export const CustomHttpMappingSchema = z
   .object({
     method: z.literal('POST'),
     url: z.string(),
     headersTemplate: z.record(z.string()),
-    bodyTemplate: z.unknown(),
+    bodyTemplate: JsonTemplateValueSchema,
     responseMapping: CustomHttpResponseMappingSchema,
   })
   .superRefine((mapping, ctx) => {
@@ -148,6 +178,34 @@ export const CustomHttpMappingSchema = z
       })
     }
 
+    // 2b. Secret-leaking mapping guard: {{apiKey}} is only allowed in header
+    // values, where it can be masked in all renderer/log surfaces. It is never
+    // allowed in URLs, header names, or request bodies.
+    if (findPlaceholders(mapping.url).includes('apiKey')) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['url'],
+        message: '{{apiKey}} may only be used in header values',
+      })
+    }
+    for (const key of Object.keys(mapping.headersTemplate)) {
+      if (findPlaceholders(key).includes('apiKey')) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['headersTemplate', key],
+          message: '{{apiKey}} may only be used in header values',
+        })
+      }
+    }
+    const serializedBody = JSON.stringify(mapping.bodyTemplate) ?? ''
+    if (findPlaceholders(serializedBody).includes('apiKey')) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['bodyTemplate'],
+        message: '{{apiKey}} may only be used in header values',
+      })
+    }
+
     // 3. Response mapping is the safe JSONPath subset (no filter/script/wildcard).
     const checks: Array<[keyof typeof mapping.responseMapping, string | undefined]> = [
       ['text', mapping.responseMapping.text],
@@ -171,6 +229,41 @@ export const AiUsageEstimateSchema = z.object({
   inputTokens: z.number(),
   outputTokens: z.number().optional(),
   estCostUsd: z.number().optional(),
+  warnings: z.array(z.string()).optional(),
+  requiresExplicitWarning: z.boolean().optional(),
+})
+
+export const AiMessageSchema = z.object({
+  role: z.enum(['system', 'user', 'assistant']),
+  content: z.string(),
+})
+
+export const AiModelInfoSchema = z.object({
+  id: z.string(),
+  label: z.string().optional(),
+  structuredOutput: z.boolean(),
+  recommended: z.boolean().optional(),
+  localOnly: z.boolean(),
+})
+
+export const AiConnectionTestResultSchema = z.object({
+  connectionId: z.string(),
+  ok: z.boolean(),
+  localOnly: z.boolean(),
+  models: z.array(AiModelInfoSchema),
+  message: z.string().optional(),
+})
+
+export const AiUsageEstimateRequestSchema = z.object({
+  connectionId: z.string().min(1),
+  kind: AiRequestKindSchema,
+  messages: z.array(AiMessageSchema).optional(),
+  prompt: z.string().optional(),
+  model: z.string().optional(),
+  maxOutputTokens: z.number().int().positive().optional(),
+  estimatedInputTokens: z.number().int().min(0).optional(),
+  estimatedOutputTokens: z.number().int().min(0).optional(),
+  expensiveSendAcknowledged: z.boolean().optional(),
 })
 
 export const AiReviewFindingSchema = z.object({
@@ -206,4 +299,5 @@ export type AiConnectionInput = z.input<typeof AiConnectionSchema>
 export type AiCredentialMetadataInput = z.input<typeof AiCredentialMetadataSchema>
 export type AiProviderDetectionInput = z.input<typeof AiProviderDetectionSchema>
 export type CustomHttpMappingInput = z.input<typeof CustomHttpMappingSchema>
+export type AiUsageEstimateRequestInput = z.input<typeof AiUsageEstimateRequestSchema>
 export type AiConnectionsData = z.infer<typeof AiConnectionsDataSchema>

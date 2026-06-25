@@ -2,10 +2,15 @@ import { create } from 'zustand'
 import type {
   AiConnection,
   AiConnectionKind,
+  AiConnectionTestResult,
   AiCredentialMetadata,
+  AiModelInfo,
   AiPrivacyMode,
   AiProviderDetection,
   AiRetentionState,
+  AiUsageEstimate,
+  AiUsageEstimateRequest,
+  CustomHttpMapping,
 } from '../../core/ai/types'
 
 // Renderer store for the single-active AI connection (Phase 29). It never holds
@@ -22,6 +27,7 @@ interface AiConnectionCreateInput {
   privacyMode?: AiPrivacyMode
   retention?: AiRetentionState
   enabled?: boolean
+  customHttpMapping?: CustomHttpMapping
 }
 
 type AiConnectionPatch = Partial<{
@@ -32,6 +38,7 @@ type AiConnectionPatch = Partial<{
   privacyMode: AiPrivacyMode
   retention: AiRetentionState
   enabled: boolean
+  customHttpMapping: CustomHttpMapping
 }>
 
 interface AiProviderDetectionResult {
@@ -44,6 +51,8 @@ interface AiState {
   activeConnectionId: string | undefined
   /** Masked metadata for the active connection's credential, if any. */
   credentialMeta: AiCredentialMetadata | null
+  models: AiModelInfo[]
+  testResult: AiConnectionTestResult | null
   /** Global "Enable AI" consent (mirrors settings.aiEnabled). */
   aiEnabled: boolean
   loading: boolean
@@ -55,6 +64,10 @@ interface AiState {
   updateConnection(id: string, patch: AiConnectionPatch): Promise<void>
   deleteConnection(id: string): Promise<void>
   setActive(id: string | null): Promise<void>
+  testConnection(connectionId: string): Promise<AiConnectionTestResult | null>
+  listModels(connectionId: string): Promise<AiModelInfo[]>
+  estimateUsage(request: AiUsageEstimateRequest): Promise<AiUsageEstimate | null>
+  cancel(requestId: string): Promise<void>
   saveCredential(
     connectionId: string,
     label: string,
@@ -72,6 +85,8 @@ export const useAiStore = create<AiState>((set, get) => ({
   connections: [],
   activeConnectionId: undefined,
   credentialMeta: null,
+  models: [],
+  testResult: null,
   aiEnabled: false,
   loading: false,
   error: null,
@@ -100,6 +115,8 @@ export const useAiStore = create<AiState>((set, get) => ({
         activeConnectionId,
         aiEnabled,
         credentialMeta,
+        models: [],
+        testResult: null,
         loading: false,
         error: list.ok ? null : list.error,
       })
@@ -148,6 +165,43 @@ export const useAiStore = create<AiState>((set, get) => ({
       throw new Error(result.error)
     }
     await get().load()
+  },
+
+  async testConnection(connectionId) {
+    const result = await window.api.ai.testConnection(connectionId)
+    if (!result.ok) {
+      set({ error: result.error, testResult: null })
+      return null
+    }
+    set({ testResult: result.data, models: result.data.models, error: null })
+    return result.data
+  },
+
+  async listModels(connectionId) {
+    const result = await window.api.ai.listModels(connectionId)
+    if (!result.ok) {
+      set({ error: result.error, models: [] })
+      return []
+    }
+    set({ models: result.data, error: null })
+    return result.data
+  },
+
+  async estimateUsage(request) {
+    const result = await window.api.ai.estimateUsage(request)
+    if (!result.ok) {
+      set({ error: result.error })
+      return null
+    }
+    return result.data
+  },
+
+  async cancel(requestId) {
+    const result = await window.api.ai.cancel(requestId)
+    if (!result.ok) {
+      set({ error: result.error })
+      throw new Error(result.error)
+    }
   },
 
   async saveCredential(connectionId, label, secrets) {

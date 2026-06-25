@@ -15,7 +15,20 @@ export interface HttpResponse {
   json: unknown
 }
 
+export interface HttpRequest {
+  method: 'GET' | 'POST'
+  url: string
+  headers?: Record<string, string>
+  /** JSON request body; the concrete client serializes it as application/json. */
+  json?: unknown
+  /** Raw request body for protocol-specific calls. */
+  body?: string
+  signal?: AbortSignal
+}
+
 export interface HttpClient {
+  /** Generic JSON/raw request seam used by AI adapters. */
+  request(request: HttpRequest): Promise<HttpResponse>
   /** POST an `application/x-www-form-urlencoded` body and parse the JSON response. */
   postForm(
     url: string,

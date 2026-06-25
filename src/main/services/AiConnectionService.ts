@@ -4,6 +4,7 @@ import type {
   AiConnectionCapabilities,
   AiPrivacyMode,
   AiRetentionState,
+  CustomHttpMapping,
 } from '../../core/ai/types.js'
 import { AiConnectionSchema, type AiConnectionsData } from '../../core/ai/schemas.js'
 import { deriveLocalOnly } from '../../core/ai/transport.js'
@@ -31,6 +32,7 @@ export interface AiConnectionCreateInput {
   privacyMode?: AiPrivacyMode
   retention?: AiRetentionState
   enabled?: boolean
+  customHttpMapping?: CustomHttpMapping
 }
 
 /** Editable fields on an existing connection. */
@@ -42,6 +44,7 @@ export type AiConnectionPatch = Partial<{
   privacyMode: AiPrivacyMode
   retention: AiRetentionState
   enabled: boolean
+  customHttpMapping: CustomHttpMapping
 }>
 
 export interface IAiConnectionService {
@@ -86,8 +89,10 @@ export class AiConnectionService implements IAiConnectionService {
       baseUrl: input.baseUrl,
       defaultModel: input.defaultModel,
       privacyMode: input.privacyMode ?? 'preview-each',
-      retention: input.retention ?? defaultRetention(input.baseUrl),
-      capabilities: defaultCapabilities(input.kind, input.baseUrl),
+      retention:
+        input.retention ?? defaultRetention(input.kind, input.baseUrl, input.customHttpMapping),
+      capabilities: defaultCapabilities(input.kind, input.baseUrl, input.customHttpMapping),
+      customHttpMapping: input.customHttpMapping,
       createdAt: timestamp,
       updatedAt: timestamp,
     })
@@ -107,16 +112,18 @@ export class AiConnectionService implements IAiConnectionService {
     const current = data.connections[idx]
     const baseUrl = 'baseUrl' in patch ? patch.baseUrl : current.baseUrl
     const kind = patch.kind ?? current.kind
+    const customHttpMapping =
+      'customHttpMapping' in patch ? patch.customHttpMapping : current.customHttpMapping
     const merged: AiConnection = AiConnectionSchema.parse({
       ...current,
       ...patch,
       baseUrl,
       kind,
+      customHttpMapping,
       // Recompute the host-derived localOnly whenever the base URL/kind changes.
       capabilities: {
-        ...defaultCapabilities(kind, baseUrl),
-        ...current.capabilities,
-        localOnly: deriveLocalOnly(baseUrl),
+        ...defaultCapabilities(kind, baseUrl, customHttpMapping),
+        localOnly: deriveConnectionLocalOnly(kind, baseUrl, customHttpMapping),
       },
       updatedAt: this.now(),
     })
@@ -148,8 +155,12 @@ export class AiConnectionService implements IAiConnectionService {
 }
 
 /** Local (loopback) endpoints are the safest; remote endpoints need explicit acceptance. */
-function defaultRetention(baseUrl: string | undefined): AiRetentionState {
-  return deriveLocalOnly(baseUrl) ? 'zero-retention' : 'unknown'
+function defaultRetention(
+  kind: AiConnectionKind,
+  baseUrl: string | undefined,
+  customHttpMapping: CustomHttpMapping | undefined
+): AiRetentionState {
+  return deriveConnectionLocalOnly(kind, baseUrl, customHttpMapping) ? 'zero-retention' : 'unknown'
 }
 
 /**
@@ -158,9 +169,10 @@ function defaultRetention(baseUrl: string | undefined): AiRetentionState {
  */
 function defaultCapabilities(
   kind: AiConnectionKind,
-  baseUrl: string | undefined
+  baseUrl: string | undefined,
+  customHttpMapping: CustomHttpMapping | undefined
 ): AiConnectionCapabilities {
-  const localOnly = deriveLocalOnly(baseUrl)
+  const localOnly = deriveConnectionLocalOnly(kind, baseUrl, customHttpMapping)
   if (kind === 'custom-http') {
     return { structuredOutput: true, streaming: false, modelList: false, usage: false, localOnly }
   }
@@ -171,4 +183,14 @@ function defaultCapabilities(
     usage: kind !== 'ollama',
     localOnly,
   }
+}
+
+function deriveConnectionLocalOnly(
+  kind: AiConnectionKind,
+  baseUrl: string | undefined,
+  customHttpMapping: CustomHttpMapping | undefined
+): boolean {
+  if (kind === 'custom-http') return deriveLocalOnly(customHttpMapping?.url ?? baseUrl)
+  if (kind === 'ollama') return deriveLocalOnly(baseUrl ?? 'http://localhost:11434')
+  return deriveLocalOnly(baseUrl)
 }

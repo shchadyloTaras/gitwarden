@@ -16,10 +16,15 @@ import type {
 import type {
   AiConnection,
   AiConnectionKind,
+  AiConnectionTestResult,
   AiCredentialMetadata,
+  AiModelInfo,
   AiPrivacyMode,
   AiProviderDetection,
   AiRetentionState,
+  AiUsageEstimate,
+  AiUsageEstimateRequest,
+  CustomHttpMapping,
 } from '../../core/ai/types.js'
 
 type IpcResult<T> = { ok: true; data: T } | { ok: false; error: string }
@@ -37,6 +42,7 @@ interface AiConnectionCreateInput {
   privacyMode?: AiPrivacyMode
   retention?: AiRetentionState
   enabled?: boolean
+  customHttpMapping?: CustomHttpMapping
 }
 
 type AiConnectionPatch = Partial<{
@@ -47,6 +53,7 @@ type AiConnectionPatch = Partial<{
   privacyMode: AiPrivacyMode
   retention: AiRetentionState
   enabled: boolean
+  customHttpMapping: CustomHttpMapping
 }>
 
 interface AiProviderDetectionResult {
@@ -144,6 +151,10 @@ interface ElectronAPI {
     deleteCredential(connectionId: string): Promise<IpcResult<null>>
     getCredentialMetadata(connectionId: string): Promise<IpcResult<AiCredentialMetadata | null>>
     detectProvider(apiKey: string): Promise<IpcResult<AiProviderDetectionResult>>
+    testConnection(connectionId: string): Promise<IpcResult<AiConnectionTestResult>>
+    listModels(connectionId: string): Promise<IpcResult<AiModelInfo[]>>
+    estimateUsage(request: AiUsageEstimateRequest): Promise<IpcResult<AiUsageEstimate>>
+    cancel(requestId: string): Promise<IpcResult<null>>
   }
 }
 
