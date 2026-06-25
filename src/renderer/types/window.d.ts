@@ -197,6 +197,7 @@ interface ElectronAPI {
     reviewStagedChanges(input: {
       repositoryId: string
       commitMessage?: string
+      expensiveSendAcknowledged?: boolean
     }): Promise<IpcResult<AiChangeReview>>
     explainSafetyIssue(input: {
       repositoryId: string
@@ -212,13 +213,20 @@ interface ElectronAPI {
         hasToken: boolean
         tokenInvalid: boolean
       }
+      expensiveSendAcknowledged?: boolean
     }): Promise<IpcResult<AiPushBrief>>
-    generateHistorySummary(input: { repositoryId: string }): Promise<IpcResult<AiHistorySummary>>
+    generateHistorySummary(input: {
+      repositoryId: string
+      expensiveSendAcknowledged?: boolean
+    }): Promise<IpcResult<AiHistorySummary>>
     listBuiltInTemplates(): Promise<IpcResult<AiConnectionTemplateExport[]>>
     exportConnectionTemplate(id: string): Promise<IpcResult<AiConnectionTemplateExport>>
     importConnectionTemplate(template: AiConnectionTemplateExport): Promise<IpcResult<AiConnection>>
     duplicateConnection(id: string): Promise<IpcResult<AiConnection>>
-    generateRepoBrief(input: { repositoryId: string }): Promise<IpcResult<AiRepoBrief>>
+    generateRepoBrief(input: {
+      repositoryId: string
+      expensiveSendAcknowledged?: boolean
+    }): Promise<IpcResult<AiRepoBrief>>
     explainGitFailure(input: {
       repositoryId: string
       code: string
@@ -232,6 +240,7 @@ interface ElectronAPI {
     proposeAgenticActions(input: {
       repositoryId: string
       prompt: string
+      expensiveSendAcknowledged?: boolean
     }): Promise<IpcResult<AiAgenticProposal>>
     executeAgenticProposal(input: {
       repositoryId: string
@@ -241,6 +250,7 @@ interface ElectronAPI {
       repositoryId: string
       message: string
       history?: AiChatTurn[]
+      expensiveSendAcknowledged?: boolean
     }): Promise<IpcResult<AiChatResponse>>
   }
   pushBrief: {

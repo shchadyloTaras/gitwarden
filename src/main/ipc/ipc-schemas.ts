@@ -229,10 +229,12 @@ export const PushBriefPayload = z.object({
       tokenInvalid: z.boolean(),
     })
     .optional(),
+  expensiveSendAcknowledged: z.boolean().optional(),
 })
 
 export const HistorySummaryPayload = z.object({
   repositoryId: z.string().min(1),
+  expensiveSendAcknowledged: z.boolean().optional(),
 })
 
 export const AiCommitAssistantPayload = z.object({
@@ -254,6 +256,7 @@ export const AiSafetyCopilotPayload = z.object({
 
 export const RepoBriefPayload = z.object({
   repositoryId: z.string().min(1),
+  expensiveSendAcknowledged: z.boolean().optional(),
 })
 
 export const GitFailureExplainPayload = z.object({
@@ -283,12 +286,14 @@ export const AiConnectionTemplateImportPayload = AiConnectionTemplateExportSchem
 export const AiAgenticProposePayload = z.object({
   repositoryId: z.string().min(1),
   prompt: z.string().min(1),
+  expensiveSendAcknowledged: z.boolean().optional(),
 })
 
 export const AiChatPayload = z.object({
   repositoryId: z.string().min(1),
   message: z.string().min(1),
   history: z.array(AiChatTurnSchema).optional(),
+  expensiveSendAcknowledged: z.boolean().optional(),
 })
 
 export const AiAgenticExecutePayload = z.object({

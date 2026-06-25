@@ -82,4 +82,28 @@ describe('AiChangeReviewAssistant', () => {
     const review = await assistant.reviewStagedChanges({ repositoryId: 'repo-1' })
     expect(review.findings[0]?.source).toBe('ai')
   })
+
+  it('forwards expensiveSendAcknowledged to the adapter', async () => {
+    const generateStructured = vi.fn(async (request: AiStructuredRequest<unknown>) =>
+      request.responseSchema.parse({ findings: [], overall: 'Looks fine.' })
+    )
+
+    const assistant = new AiChangeReviewAssistant(
+      {
+        scanDeterministic: vi.fn(async () => []),
+      } as unknown as StagedChangeReviewService,
+      {
+        buildPreview: vi.fn(async () => previewFixture()),
+      } as unknown as AiContextBuilder,
+      { generateStructured } as unknown as AiAdapter
+    )
+
+    await assistant.reviewStagedChanges({
+      repositoryId: 'repo-1',
+      expensiveSendAcknowledged: true,
+    })
+    expect(generateStructured).toHaveBeenCalledWith(
+      expect.objectContaining({ expensiveSendAcknowledged: true })
+    )
+  })
 })

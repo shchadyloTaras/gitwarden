@@ -618,7 +618,7 @@ export function registerIpcHandlers(services: Services): void {
   ipcMain.handle('ai:generateRepoBrief', (_e, raw: unknown) =>
     wrap(async () => {
       const input = RepoBriefPayload.parse(raw)
-      const brief = await services.aiRepoBriefAssistant.generateRepoBrief(input.repositoryId)
+      const brief = await services.aiRepoBriefAssistant.generateRepoBrief(input)
       return AiRepoBriefSchema.parse(brief)
     })
   )
@@ -686,7 +686,7 @@ export function registerIpcHandlers(services: Services): void {
   ipcMain.handle('ai:proposeAgenticActions', (_e, raw: unknown) =>
     wrap(async () => {
       const input = AiAgenticProposePayload.parse(raw)
-      const proposal = await services.aiAgenticAssistant.propose(input.repositoryId, input.prompt)
+      const proposal = await services.aiAgenticAssistant.propose(input)
       return AiAgenticProposalSchema.parse(proposal)
     })
   )

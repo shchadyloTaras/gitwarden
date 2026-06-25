@@ -134,6 +134,41 @@ test.describe('AI Chat panel', () => {
     })
   })
 
+  test('each networked slash-command renders a result bubble with fake AI', async () => {
+    await win.evaluate(async () => {
+      const api = (window as Window & typeof globalThis).api
+      const created = await api.ai.createConnection({ name: 'Fake', kind: 'openrouter' })
+      if (!created.ok) throw new Error('connection create failed')
+      await api.ai.saveCredential(created.data.id, 'Fake key', { apiKey: 'sk-or-fake' })
+      await api.ai.setActiveConnection(created.data.id)
+      await api.settings.update({ aiEnabled: true })
+    })
+    await createRepo(win)
+
+    await win.getByTestId('header-ai-chat').click()
+    await expect(win.getByTestId('ai-chat-input')).toBeVisible({ timeout: 10000 })
+
+    const input = win.getByTestId('ai-chat-input')
+    const messages = win.getByTestId('ai-chat-message')
+
+    const cases: Array<{ command: string; expectText: string }> = [
+      { command: '/review', expectText: 'Fake AI advisory finding' },
+      { command: '/push-brief', expectText: 'Fake push brief' },
+      { command: '/history', expectText: 'Fake release' },
+      { command: '/repo-brief', expectText: 'Fake repo onboarding brief' },
+      { command: '/propose add a note file', expectText: 'Fake agentic proposal' },
+    ]
+
+    for (const { command, expectText } of cases) {
+      await input.fill(command)
+      await win.getByTestId('ai-chat-send').click()
+      await expect(messages.last()).toContainText(expectText, { timeout: 10000 })
+      await expect(messages.last()).not.toContainText(
+        'explicit expensive-send warning acknowledgement'
+      )
+    }
+  })
+
   test('chat shows setup when no connection exists', async () => {
     await createRepo(win)
     await win.getByTestId('header-ai-chat').click()

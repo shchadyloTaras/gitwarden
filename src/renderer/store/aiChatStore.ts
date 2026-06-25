@@ -6,9 +6,11 @@ import {
   type ChatCommandKind,
   type ParsedChatCommand,
 } from '../../core/ai/chatCommands'
+import { friendlyCapabilityError } from '../../core/ai/capabilityErrors'
 import type { AiAgenticProposal, AiChatTurn } from '../../core/ai/types'
 import { useAppStore } from './appStore'
 import { useAiStore } from './aiStore'
+import { STR } from '../strings'
 
 export interface ChatMessage {
   id: string
@@ -38,6 +40,9 @@ interface AiChatState {
   clear(): void
 }
 
+/** Slash-command / Enter is the user's expensive-send acknowledgement (Phase 55a: no inline preview gate). */
+const EXPENSIVE_SEND_ACK = { expensiveSendAcknowledged: true as const }
+
 let messageSeq = 0
 function nextId(): string {
   messageSeq += 1
@@ -51,6 +56,22 @@ function appendMessage(set: SetState, message: Omit<ChatMessage, 'id'>): string 
 }
 
 type SetState = (partial: Partial<AiChatState> | ((s: AiChatState) => Partial<AiChatState>)) => void
+
+function liveAiStoreError(): string | null {
+  return useAiStore.getState().error
+}
+
+function chatBubbleError(raw: string): string {
+  return friendlyCapabilityError(raw, STR.CHAT_CAPABILITY_STRUCTURED_PARSE_ERROR)
+}
+
+function throwAiStoreFailure(fallback: string): never {
+  throw new Error(chatBubbleError(liveAiStoreError() ?? fallback))
+}
+
+function throwIpcFailure(result: { ok: false; error: string }): never {
+  throw new Error(chatBubbleError(result.error))
+}
 
 export const useAiChatStore = create<AiChatState>((set, get) => ({
   messages: [],
@@ -97,11 +118,12 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
       const message = await runCapability(parsed, get)
       appendMessage(set, message)
     } catch (err) {
+      const raw = err instanceof Error ? err.message : String(err)
       appendMessage(set, {
         role: 'assistant',
         kind: parsed.kind,
         isError: true,
-        content: err instanceof Error ? err.message : String(err),
+        content: chatBubbleError(raw),
       })
     } finally {
       set({ pending: false })
@@ -124,7 +146,7 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
           role: 'assistant',
           kind: 'propose',
           isError: true,
-          content: result.error,
+          content: chatBubbleError(result.error),
         })
         return
       }
@@ -165,8 +187,8 @@ async function runCapability(
 
   switch (parsed.kind) {
     case 'commit': {
-      const draft = await ai.draftCommitMessage({ repositoryId })
-      if (!draft) throw new Error(ai.error ?? 'Could not draft a commit message.')
+      const draft = await ai.draftCommitMessage({ repositoryId, ...EXPENSIVE_SEND_ACK })
+      if (!draft) throwAiStoreFailure('Could not draft a commit message.')
       const body = draft.body ? `\n\n${draft.body}` : ''
       return {
         role: 'assistant',
@@ -175,8 +197,8 @@ async function runCapability(
       }
     }
     case 'review': {
-      const review = await ai.reviewStagedChanges({ repositoryId })
-      if (!review) throw new Error(ai.error ?? 'Could not review staged changes.')
+      const review = await ai.reviewStagedChanges({ repositoryId, ...EXPENSIVE_SEND_ACK })
+      if (!review) throwAiStoreFailure('Could not review staged changes.')
       const lines = review.findings.map(
         (f) => `• [${f.confidence}] ${f.category}${f.file ? ` (${f.file})` : ''}: ${f.why}`
       )
@@ -190,8 +212,13 @@ async function runCapability(
     case 'push-brief': {
       const branch = app.currentBranch
       if (!branch) throw new Error('No current branch to brief a push for.')
-      const brief = await ai.generatePushBrief({ repositoryId, remoteName: 'origin', branch })
-      if (!brief) throw new Error(ai.error ?? 'Could not generate a push brief.')
+      const brief = await ai.generatePushBrief({
+        repositoryId,
+        remoteName: 'origin',
+        branch,
+        ...EXPENSIVE_SEND_ACK,
+      })
+      if (!brief) throwAiStoreFailure('Could not generate a push brief.')
       const highlights = brief.highlights.map((h) => `• ${h}`).join('\n')
       return {
         role: 'assistant',
@@ -200,8 +227,8 @@ async function runCapability(
       }
     }
     case 'history': {
-      const summary = await ai.generateHistorySummary({ repositoryId })
-      if (!summary) throw new Error(ai.error ?? 'Could not generate a history summary.')
+      const summary = await ai.generateHistorySummary({ repositoryId, ...EXPENSIVE_SEND_ACK })
+      if (!summary) throwAiStoreFailure('Could not generate a history summary.')
       return {
         role: 'assistant',
         kind: 'history',
@@ -209,8 +236,8 @@ async function runCapability(
       }
     }
     case 'repo-brief': {
-      const result = await window.api.ai.generateRepoBrief({ repositoryId })
-      if (!result.ok) throw new Error(result.error)
+      const result = await window.api.ai.generateRepoBrief({ repositoryId, ...EXPENSIVE_SEND_ACK })
+      if (!result.ok) throwIpcFailure(result)
       const brief = result.data
       const build = brief.likelyBuildCommands.map((c) => `• ${c}`).join('\n')
       const test = brief.likelyTestCommands.map((c) => `• ${c}`).join('\n')
@@ -224,8 +251,9 @@ async function runCapability(
       const result = await window.api.ai.proposeAgenticActions({
         repositoryId,
         prompt: parsed.args || 'Propose helpful edits for this repository.',
+        ...EXPENSIVE_SEND_ACK,
       })
-      if (!result.ok) throw new Error(result.error)
+      if (!result.ok) throwIpcFailure(result)
       const proposal = result.data
       const files = proposal.fileEdits.map((e) => `• ${e.path}`).join('\n')
       return {
@@ -243,8 +271,9 @@ async function runCapability(
         repositoryId,
         message: currentMessage,
         history: buildHistory(priorMessages),
+        ...EXPENSIVE_SEND_ACK,
       })
-      if (!result.ok) throw new Error(result.error)
+      if (!result.ok) throwIpcFailure(result)
       return {
         role: 'assistant',
         kind: 'chat',

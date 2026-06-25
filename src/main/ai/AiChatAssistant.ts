@@ -14,6 +14,7 @@ export interface AiChatInput {
   repositoryId: string
   message: string
   history?: AiChatTurn[]
+  expensiveSendAcknowledged?: boolean
 }
 
 /**
@@ -43,14 +44,20 @@ export class AiChatAssistant {
       { role: 'user' as const, content: input.message },
     ]
 
-    const raw = await this.generateStructured(preview, AiChatResponseSchema, messages)
+    const raw = await this.generateStructured(
+      preview,
+      AiChatResponseSchema,
+      messages,
+      input.expensiveSendAcknowledged
+    )
     return parseChatResponse(raw)
   }
 
   private async generateStructured<T>(
     preview: Awaited<ReturnType<AiContextBuilder['buildPreview']>>,
     responseSchema: z.ZodType<T>,
-    messages: AiMessage[]
+    messages: AiMessage[],
+    expensiveSendAcknowledged?: boolean
   ): Promise<T> {
     const estimatedInputTokens = Math.ceil(
       messages.reduce((sum, m) => sum + m.content.length, 0) / 4
@@ -68,6 +75,7 @@ export class AiChatAssistant {
         truncated: preview.truncated,
       },
       estimatedInputTokens,
+      expensiveSendAcknowledged,
     })
   }
 }

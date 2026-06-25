@@ -511,3 +511,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Files: `SafetyCenterScreen.tsx`, `CommitScreen.tsx`, `changeReview.ts`, `SafetyCheckService.ts`; unit/e2e tests in `change-review.test.ts`, `safety-center.spec.ts`, `ai-change-review.spec.ts`.
 - Tests: `npm test`, targeted e2e, `npm run lint`.
 - Notes / follow-ups: Advisory findings remain available for AI chat `/review`; only `secret-like` deterministic findings block commit.
+
+### 2026-06-26 — Fix: AI Chat slash-command expensive-send ack & error surfacing
+
+- Fixed: Chat slash-commands (`/commit`, `/review`, `/push-brief`, `/history`, `/repo-brief`, `/propose`, free-text) now pass `expensiveSendAcknowledged: true` end-to-end so the spend guard no longer blocks after Phase 55a removed the inline preview gate. **Acknowledgement choice:** auto-ack on explicit command click/Enter (consistent with Phase 55a “paste-key-and-go” — inline preview→confirm is deferred; server-side redaction unchanged).
+- Fixed: Stale `useAiStore` snapshot in `runCapability` — fallback errors now read `useAiStore.getState().error` after each awaited call.
+- Fixed: Structured-parse / Zod failures render a single friendly chat bubble (`CHAT_CAPABILITY_STRUCTURED_PARSE_ERROR`); raw dumps stay in store/logs only.
+- Files: `capabilityErrors.ts`, all chat-capability assistants, IPC schemas/preload/window types, `aiStore.ts`, `aiChatStore.ts`, `strings.ts`; tests `ai-chat-store.test.ts`, `capability-errors.test.ts`, `ai-change-review-assistant.test.ts`, `ai-chat-panel.spec.ts`.
+- Tests: `npm test` → Vitest **453 passed** (+10). `npm run e2e tests/e2e/ai-chat-panel.spec.ts` → Playwright **5 passed** (all slash-commands render result bubbles with fake AI).

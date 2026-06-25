@@ -103,6 +103,7 @@ interface AiState {
   reviewStagedChanges(input: {
     repositoryId: string
     commitMessage?: string
+    expensiveSendAcknowledged?: boolean
   }): Promise<AiChangeReview | null>
   explainSafetyIssue(input: {
     repositoryId: string
@@ -118,8 +119,12 @@ interface AiState {
       hasToken: boolean
       tokenInvalid: boolean
     }
+    expensiveSendAcknowledged?: boolean
   }): Promise<AiPushBrief | null>
-  generateHistorySummary(input: { repositoryId: string }): Promise<AiHistorySummary | null>
+  generateHistorySummary(input: {
+    repositoryId: string
+    expensiveSendAcknowledged?: boolean
+  }): Promise<AiHistorySummary | null>
   saveCredential(
     connectionId: string,
     label: string,
@@ -131,6 +136,15 @@ interface AiState {
 
 function activeOf(connections: AiConnection[], activeId: string | undefined): AiConnection | null {
   return connections.find((c) => c.id === activeId) ?? null
+}
+
+function dedupeModels(models: AiModelInfo[]): AiModelInfo[] {
+  const seen = new Set<string>()
+  return models.filter((model) => {
+    if (seen.has(model.id)) return false
+    seen.add(model.id)
+    return true
+  })
 }
 
 export const useAiStore = create<AiState>((set, get) => ({
@@ -225,7 +239,7 @@ export const useAiStore = create<AiState>((set, get) => ({
       set({ error: result.error, testResult: null })
       return null
     }
-    set({ testResult: result.data, models: result.data.models, error: null })
+    set({ testResult: result.data, models: dedupeModels(result.data.models), error: null })
     return result.data
   },
 
@@ -235,8 +249,8 @@ export const useAiStore = create<AiState>((set, get) => ({
       set({ error: result.error, models: [] })
       return []
     }
-    set({ models: result.data, error: null })
-    return result.data
+    set({ models: dedupeModels(result.data), error: null })
+    return dedupeModels(result.data)
   },
 
   async estimateUsage(request) {

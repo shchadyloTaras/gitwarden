@@ -29,7 +29,8 @@ export class AiPushBriefAssistant {
     const raw = await this.generateStructured(
       preview,
       AiPushBriefAiResponseSchema,
-      PUSH_BRIEF_TASK_INSTRUCTION
+      PUSH_BRIEF_TASK_INSTRUCTION,
+      input.expensiveSendAcknowledged
     )
     const ai = parsePushBriefAiResponse(raw)
     return mergePushBrief(deterministic, ai)
@@ -42,7 +43,8 @@ export class AiPushBriefAssistant {
   private async generateStructured<T>(
     preview: Awaited<ReturnType<AiContextBuilder['buildPreview']>>,
     responseSchema: z.ZodType<T>,
-    taskInstruction: string
+    taskInstruction: string,
+    expensiveSendAcknowledged?: boolean
   ): Promise<T> {
     const messages = withTaskInstruction(createAiContextMessages(preview), taskInstruction)
     return this.adapters.generateStructured({
@@ -58,6 +60,7 @@ export class AiPushBriefAssistant {
         truncated: preview.truncated,
       },
       estimatedInputTokens: Math.ceil(preview.payloadText.length / 4),
+      expensiveSendAcknowledged,
     })
   }
 }

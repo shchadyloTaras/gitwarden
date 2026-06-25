@@ -11,6 +11,7 @@ import type { StagedChangeReviewService } from './StagedChangeReviewService.js'
 export interface AiChangeReviewAssistantInput {
   repositoryId: string
   commitMessage?: string
+  expensiveSendAcknowledged?: boolean
 }
 
 export class AiChangeReviewAssistant {
@@ -34,7 +35,8 @@ export class AiChangeReviewAssistant {
     const raw = await this.generateStructured(
       preview,
       AiChangeReviewSchema,
-      CHANGE_REVIEW_TASK_INSTRUCTION
+      CHANGE_REVIEW_TASK_INSTRUCTION,
+      input.expensiveSendAcknowledged
     )
     const aiReview = parseChangeReview(raw)
     const aiFindings = aiReview.findings.filter((f) => f.source === 'ai')
@@ -45,7 +47,8 @@ export class AiChangeReviewAssistant {
   private async generateStructured<T>(
     preview: Awaited<ReturnType<AiContextBuilder['buildPreview']>>,
     responseSchema: z.ZodType<T>,
-    taskInstruction: string
+    taskInstruction: string,
+    expensiveSendAcknowledged?: boolean
   ): Promise<T> {
     const messages = withTaskInstruction(createAiContextMessages(preview), taskInstruction)
     return this.adapters.generateStructured({
@@ -61,6 +64,7 @@ export class AiChangeReviewAssistant {
         truncated: preview.truncated,
       },
       estimatedInputTokens: Math.ceil(preview.payloadText.length / 4),
+      expensiveSendAcknowledged,
     })
   }
 }

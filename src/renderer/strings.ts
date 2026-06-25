@@ -83,16 +83,16 @@ export const STR = {
   ONBOARDING_FINISH: 'Finish',
   ONBOARDING_STEP_WELCOME_TITLE: 'Welcome to GitWarden',
   ONBOARDING_STEP_WELCOME_BODY:
-    'GitWarden keeps daily Git work tied to the right profile. This quick tour points out where profiles, repositories, safety, and Git actions live.',
+    'GitWarden keeps daily Git work tied to the right profile. This quick tour points out profiles, repositories, safety checks, Git actions, and the AI assistant.',
   ONBOARDING_STEP_HEADER_TITLE: 'Global header',
   ONBOARDING_STEP_HEADER_BODY:
-    'Your current repository, branch, safety badge, and active profile stay visible here while you work.',
+    'Pick the active repository and branch, watch the safety badge, see your profile, and open AI chat from here while you work.',
   ONBOARDING_STEP_NAV_TITLE: 'Navigation',
   ONBOARDING_STEP_NAV_BODY:
-    'Manage covers profiles and repositories. Git covers status, commits, remotes, branches, history, and the Safety Center. App holds settings.',
+    'Manage covers profiles and repositories. Git covers status, commits, remotes, branches, history, and the Safety Center. Settings holds appearance, Git path, AI connections, and this walkthrough.',
   ONBOARDING_STEP_PROFILES_TITLE: 'Create profiles first',
   ONBOARDING_STEP_PROFILES_BODY:
-    'Profiles hold your Git author name, email, GitHub username, SSH alias, and allowed remote hosts.',
+    'Profiles hold your Git author name, email, GitHub username, SSH alias, and allowed remote hosts. Connect GitHub on a profile to auto-fill identity and verify pushes.',
   ONBOARDING_STEP_REPOS_TITLE: 'Add repositories',
   ONBOARDING_STEP_REPOS_BODY:
     'Add an existing local repository, then assign it to exactly one profile so GitWarden can catch identity mixups.',
@@ -101,13 +101,19 @@ export const STR = {
     'Status separates staged, unstaged, and untracked files. Pick a repository, inspect the diff, then stage only what belongs in the next commit.',
   ONBOARDING_STEP_COMMIT_TITLE: 'Commit with safety checks',
   ONBOARDING_STEP_COMMIT_BODY:
-    'The Commit screen checks profile assignment, local Git identity, staged changes, conflicts, and message before enabling a commit.',
+    'The Commit screen checks profile assignment, local Git identity, staged changes, conflicts, and message before enabling a commit. An optional AI helper can draft commit messages here.',
   ONBOARDING_STEP_REMOTE_TITLE: 'Push only after confirmation',
   ONBOARDING_STEP_REMOTE_BODY:
     'Remote operations use a confirmation sheet with branch, remote host, profile, identity, and safety blockers before anything leaves your machine.',
   ONBOARDING_STEP_SAFETY_TITLE: 'Use Safety Center',
   ONBOARDING_STEP_SAFETY_BODY:
     'Safety Center audits identity, remote host, branch, and profile assignment in one place. Its verdict matches the commit and push gates.',
+  ONBOARDING_STEP_AI_CHAT_TITLE: 'Ask GitWarden AI',
+  ONBOARDING_STEP_AI_CHAT_BODY:
+    'Open AI chat for repo-aware help: ask questions, run slash-commands like /commit or /review, and get push briefs or failure explanations. Paste an API key inline or configure providers in Settings.',
+  ONBOARDING_STEP_AI_SETTINGS_TITLE: 'Connect an AI provider',
+  ONBOARDING_STEP_AI_SETTINGS_BODY:
+    'The AI Assistant tab is where you paste an API key, pick a model, and save. Saving a key enables AI across the app — including the chat panel and the commit helper.',
   ONBOARDING_STEP_SETTINGS_TITLE: 'Replay any time',
   ONBOARDING_STEP_SETTINGS_BODY:
     'The walkthrough stays available here, so you can rerun it after setup or share the app with someone new.',
@@ -196,6 +202,8 @@ export const STR = {
   AI_MODELS_FETCHING: 'Fetching models…',
   AI_MODELS_READY: (count: number) => `${count} model${count === 1 ? '' : 's'} available.`,
   AI_MODELS_ERROR: 'Could not fetch models for this connection.',
+  DROPDOWN_SEARCH_PLACEHOLDER: 'Search models…',
+  DROPDOWN_NO_MATCHES: 'No matching models',
   AI_SAVE_CONNECTION: 'Save connection',
   AI_SAVED: 'Connection saved.',
   AI_SAVE_ERROR: 'Failed to save the connection.',
@@ -252,6 +260,8 @@ export const STR = {
     'Paste an API key to set up a connection. GitWarden detects the provider and stores the key encrypted on this machine.',
   CHAT_SETUP_OPEN_SETTINGS: 'Advanced setup in Settings',
   CHAT_MODEL_LABEL: 'Model',
+  CHAT_CAPABILITY_STRUCTURED_PARSE_ERROR:
+    'The model returned an unexpected response. Try again or pick a model that supports structured JSON output.',
 
   // ── Safety Copilot (Phase 34) ──────────────────────────────────────────────
   SAFETY_COPILOT_EXPLAIN_BTN: 'Explain this',

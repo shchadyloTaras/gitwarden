@@ -13,6 +13,7 @@ import type { HistorySummaryService } from './HistorySummaryService.js'
 
 export interface AiHistorySummaryInput {
   repositoryId: string
+  expensiveSendAcknowledged?: boolean
 }
 
 export class AiHistorySummaryAssistant {
@@ -33,7 +34,8 @@ export class AiHistorySummaryAssistant {
     const raw = await this.generateStructured(
       preview,
       AiHistorySummaryAiResponseSchema,
-      HISTORY_SUMMARY_TASK_INSTRUCTION
+      HISTORY_SUMMARY_TASK_INSTRUCTION,
+      input.expensiveSendAcknowledged
     )
     const ai = parseHistorySummaryAiResponse(raw)
     return mergeHistorySummary(deterministic, ai)
@@ -46,7 +48,8 @@ export class AiHistorySummaryAssistant {
   private async generateStructured<T>(
     preview: Awaited<ReturnType<AiContextBuilder['buildPreview']>>,
     responseSchema: z.ZodType<T>,
-    taskInstruction: string
+    taskInstruction: string,
+    expensiveSendAcknowledged?: boolean
   ): Promise<T> {
     const messages = withTaskInstruction(createAiContextMessages(preview), taskInstruction)
     return this.adapters.generateStructured({
@@ -62,6 +65,7 @@ export class AiHistorySummaryAssistant {
         truncated: preview.truncated,
       },
       estimatedInputTokens: Math.ceil(preview.payloadText.length / 4),
+      expensiveSendAcknowledged,
     })
   }
 }

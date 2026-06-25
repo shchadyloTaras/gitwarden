@@ -13,6 +13,7 @@ export interface PushBriefInput {
   remoteName: string
   branch: string
   github?: AiPushIdentityContext['github']
+  expensiveSendAcknowledged?: boolean
 }
 
 export class PushBriefService {

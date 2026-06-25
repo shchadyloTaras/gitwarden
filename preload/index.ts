@@ -263,6 +263,7 @@ export const api = {
     reviewStagedChanges: (input: {
       repositoryId: string
       commitMessage?: string
+      expensiveSendAcknowledged?: boolean
     }): Promise<IpcResult<AiChangeReview>> => invoke('ai:reviewStagedChanges', input),
     explainSafetyIssue: (input: {
       repositoryId: string
@@ -278,9 +279,11 @@ export const api = {
         hasToken: boolean
         tokenInvalid: boolean
       }
+      expensiveSendAcknowledged?: boolean
     }): Promise<IpcResult<AiPushBrief>> => invoke('ai:generatePushBrief', input),
     generateHistorySummary: (input: {
       repositoryId: string
+      expensiveSendAcknowledged?: boolean
     }): Promise<IpcResult<AiHistorySummary>> => invoke('ai:generateHistorySummary', input),
     listBuiltInTemplates: (): Promise<IpcResult<AiConnectionTemplateExport[]>> =>
       invoke('ai:listBuiltInTemplates'),
@@ -291,8 +294,10 @@ export const api = {
     ): Promise<IpcResult<AiConnection>> => invoke('ai:importConnectionTemplate', template),
     duplicateConnection: (id: string): Promise<IpcResult<AiConnection>> =>
       invoke('ai:duplicateConnection', { id }),
-    generateRepoBrief: (input: { repositoryId: string }): Promise<IpcResult<AiRepoBrief>> =>
-      invoke('ai:generateRepoBrief', input),
+    generateRepoBrief: (input: {
+      repositoryId: string
+      expensiveSendAcknowledged?: boolean
+    }): Promise<IpcResult<AiRepoBrief>> => invoke('ai:generateRepoBrief', input),
     explainGitFailure: (input: {
       repositoryId: string
       code: string
@@ -306,6 +311,7 @@ export const api = {
     proposeAgenticActions: (input: {
       repositoryId: string
       prompt: string
+      expensiveSendAcknowledged?: boolean
     }): Promise<IpcResult<AiAgenticProposal>> => invoke('ai:proposeAgenticActions', input),
     executeAgenticProposal: (input: {
       repositoryId: string
@@ -316,6 +322,7 @@ export const api = {
       repositoryId: string
       message: string
       history?: AiChatTurn[]
+      expensiveSendAcknowledged?: boolean
     }): Promise<IpcResult<AiChatResponse>> => invoke('ai:chat', input),
   },
   pushBrief: {

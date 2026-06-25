@@ -8,6 +8,11 @@ import type { AiAdapter } from './types.js'
 import type { AiContextBuilder } from './AiContextBuilder.js'
 import type { RepoBriefService } from './RepoBriefService.js'
 
+export interface AiRepoBriefInput {
+  repositoryId: string
+  expensiveSendAcknowledged?: boolean
+}
+
 export class AiRepoBriefAssistant {
   constructor(
     private readonly repoBriefService: RepoBriefService,
@@ -15,16 +20,17 @@ export class AiRepoBriefAssistant {
     private readonly adapters: AiAdapter
   ) {}
 
-  async generateRepoBrief(repositoryId: string): Promise<AiRepoBrief> {
-    const deterministic = await this.repoBriefService.buildDeterministic(repositoryId)
+  async generateRepoBrief(input: AiRepoBriefInput): Promise<AiRepoBrief> {
+    const deterministic = await this.repoBriefService.buildDeterministic(input.repositoryId)
     const preview = await this.contextBuilder.buildPreview({
-      repositoryId,
+      repositoryId: input.repositoryId,
       kind: 'repo-brief',
     })
     const raw = await this.generateStructured(
       preview,
       AiRepoBriefAiResponseSchema,
-      REPO_BRIEF_TASK_INSTRUCTION
+      REPO_BRIEF_TASK_INSTRUCTION,
+      input.expensiveSendAcknowledged
     )
     return mergeRepoBrief(deterministic, parseRepoBriefAiResponse(raw))
   }
@@ -40,7 +46,8 @@ export class AiRepoBriefAssistant {
   private async generateStructured<T>(
     preview: Awaited<ReturnType<AiContextBuilder['buildPreview']>>,
     responseSchema: z.ZodType<T>,
-    taskInstruction: string
+    taskInstruction: string,
+    expensiveSendAcknowledged?: boolean
   ): Promise<T> {
     const messages = withTaskInstruction(createAiContextMessages(preview), taskInstruction)
     return this.adapters.generateStructured({
@@ -56,6 +63,7 @@ export class AiRepoBriefAssistant {
         truncated: preview.truncated,
       },
       estimatedInputTokens: Math.ceil(preview.payloadText.length / 4),
+      expensiveSendAcknowledged,
     })
   }
 }

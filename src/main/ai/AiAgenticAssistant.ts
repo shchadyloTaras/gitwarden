@@ -7,22 +7,29 @@ import { createAiContextMessages } from '../../core/ai/context.js'
 import type { AiAdapter } from './types.js'
 import type { AiContextBuilder } from './AiContextBuilder.js'
 
+export interface AiAgenticProposeInput {
+  repositoryId: string
+  prompt: string
+  expensiveSendAcknowledged?: boolean
+}
+
 export class AiAgenticAssistant {
   constructor(
     private readonly contextBuilder: AiContextBuilder,
     private readonly adapters: AiAdapter
   ) {}
 
-  async propose(repositoryId: string, userPrompt: string): Promise<AiAgenticProposal> {
+  async propose(input: AiAgenticProposeInput): Promise<AiAgenticProposal> {
     const preview = await this.contextBuilder.buildPreview({
-      repositoryId,
+      repositoryId: input.repositoryId,
       kind: 'agentic-proposal',
-      commitMessage: userPrompt,
+      commitMessage: input.prompt,
     })
     const raw = await this.generateStructured(
       preview,
       AiAgenticProposalSchema,
-      `${AGENTIC_PROPOSAL_TASK_INSTRUCTION}\n\nUser request: ${userPrompt}`
+      `${AGENTIC_PROPOSAL_TASK_INSTRUCTION}\n\nUser request: ${input.prompt}`,
+      input.expensiveSendAcknowledged
     )
     return validateAgenticProposal(parseAgenticProposal(raw))
   }
@@ -30,7 +37,8 @@ export class AiAgenticAssistant {
   private async generateStructured<T>(
     preview: Awaited<ReturnType<AiContextBuilder['buildPreview']>>,
     responseSchema: z.ZodType<T>,
-    taskInstruction: string
+    taskInstruction: string,
+    expensiveSendAcknowledged?: boolean
   ): Promise<T> {
     const messages = withTaskInstruction(createAiContextMessages(preview), taskInstruction)
     return this.adapters.generateStructured({
@@ -46,6 +54,7 @@ export class AiAgenticAssistant {
         truncated: preview.truncated,
       },
       estimatedInputTokens: Math.ceil(preview.payloadText.length / 4),
+      expensiveSendAcknowledged,
     })
   }
 }
