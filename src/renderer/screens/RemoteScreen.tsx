@@ -7,6 +7,8 @@ import type { GitHubPushContext } from '../../core/safety/SafetyCheckService'
 import { isHttpsGitHubRemoteUrl } from '../../core/github/remoteUrl'
 import type { GitRemote } from '../../core/types'
 import { STR } from '../strings'
+import SafetyIssueExplain from '../components/SafetyIssueExplain'
+import PushBriefPanel from '../components/PushBriefPanel'
 
 /** Renderer-side mirror of the main GitHubPushStatus (token-free). */
 type PushStatus = { hasToken: boolean; tokenInvalid: boolean; effectiveLogin?: string }
@@ -420,6 +422,24 @@ export default function RemoteScreen(): React.ReactElement {
               )}
             </div>
 
+            {repository && currentBranch && (
+              <PushBriefPanel
+                repositoryId={repository.id}
+                remoteName={selectedRemote.name}
+                branch={currentBranch}
+                github={
+                  githubContext
+                    ? {
+                        assignedLogin: githubContext.assignedLogin,
+                        effectiveLogin: githubContext.effectiveLogin,
+                        hasToken: githubContext.hasToken,
+                        tokenInvalid: githubContext.tokenInvalid ?? false,
+                      }
+                    : undefined
+                }
+              />
+            )}
+
             {/* Safety issues */}
             {pushSafetyResult && pushSafetyResult.issues.length > 0 && (
               <div
@@ -431,42 +451,20 @@ export default function RemoteScreen(): React.ReactElement {
                 }}
               >
                 {pushBlockers.map((issue) => (
-                  <div
+                  <SafetyIssueExplain
                     key={issue.code}
-                    data-testid="remote-push-blocker"
-                    style={{
-                      padding: '8px 12px',
-                      background: 'var(--gw-danger-bg, #450a0a)',
-                      borderBottom: '1px solid var(--gw-danger-border, #991b1b)',
-                      fontSize: '13px',
-                      color: 'var(--gw-danger, #f87171)',
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '8px',
-                    }}
-                  >
-                    <span style={{ flexShrink: 0 }}>⛔</span>
-                    <span>{issue.message}</span>
-                  </div>
+                    issue={issue}
+                    repositoryId={repository?.id}
+                    testIdPrefix="remote-push"
+                  />
                 ))}
                 {pushWarnings.map((issue) => (
-                  <div
+                  <SafetyIssueExplain
                     key={issue.code}
-                    data-testid="remote-push-warning"
-                    style={{
-                      padding: '8px 12px',
-                      background: 'var(--gw-warning-bg, #422006)',
-                      borderBottom: '1px solid var(--gw-warning-border, #78350f)',
-                      fontSize: '13px',
-                      color: 'var(--gw-warning, #fbbf24)',
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '8px',
-                    }}
-                  >
-                    <span style={{ flexShrink: 0 }}>⚠</span>
-                    <span>{issue.message}</span>
-                  </div>
+                    issue={issue}
+                    repositoryId={repository?.id}
+                    testIdPrefix="remote-push"
+                  />
                 ))}
               </div>
             )}

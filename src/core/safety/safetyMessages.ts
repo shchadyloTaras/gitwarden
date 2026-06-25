@@ -17,6 +17,7 @@ export const SAFETY_SEVERITY: Record<SafetyCode, Severity> = {
   GITHUB_TOKEN_MISSING: 'blocker',
   GITHUB_TOKEN_INVALID: 'blocker',
   GITHUB_NOT_CONNECTED: 'warning',
+  STAGED_SECRET_DETECTED: 'blocker',
 }
 
 export const SAFETY_MESSAGES: Record<SafetyCode, string> = {
@@ -41,4 +42,13 @@ export const SAFETY_MESSAGES: Record<SafetyCode, string> = {
     'The stored GitHub token was rejected (it may have been revoked or expired). Reconnect GitHub to continue.',
   GITHUB_NOT_CONNECTED:
     'This profile has no linked GitHub account. Connect GitHub to verify the push account.',
+  STAGED_SECRET_DETECTED:
+    'Staged changes contain secret-like content. Remove or redact before committing.',
+}
+
+export function stagedSecretMessage(file?: string): string {
+  if (file) {
+    return `Staged changes in ${file} contain secret-like content. Remove or redact before committing.`
+  }
+  return SAFETY_MESSAGES.STAGED_SECRET_DETECTED
 }

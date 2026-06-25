@@ -72,6 +72,22 @@ class FakeConnections implements IAiConnectionService {
   async setActive(): Promise<void> {
     throw new Error('setActive() not used')
   }
+
+  async duplicate(): Promise<AiConnection> {
+    throw new Error('duplicate() not used')
+  }
+
+  async exportTemplate(): Promise<never> {
+    throw new Error('exportTemplate() not used')
+  }
+
+  async importTemplate(): Promise<AiConnection> {
+    throw new Error('importTemplate() not used')
+  }
+
+  async listBuiltInTemplates(): Promise<never[]> {
+    return []
+  }
 }
 
 class FakeCredentials implements IAiCredentialStore {

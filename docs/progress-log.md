@@ -45,13 +45,31 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] Phase 30 — Adapter Registry, Built-in Providers & Custom HTTP
 - [x] Phase 31 — Context Builder, Redaction & Send Preview
 - [x] Phase 32 — Smart Commit Assistant
-- [ ] Phase 33 — Change Review Assistant
-- [ ] Phase 34 — Safety Copilot (recommended MVP stop point)
-- [ ] Phase 35 — Push Brief & History Intelligence
-- [ ] Phase 36 — Repo Onboarding Assistant
-- [ ] Phase 37 — Failure Explainer
-- [ ] Phase 38 — Connection Templates, Import/Export & Team Handoff
-- [ ] Phase 39 — Optional Agentic Actions (deferred; allowlist-only)
+- [x] Phase 33 — Change Review Assistant
+- [x] Phase 34 — Safety Copilot (recommended MVP stop point)
+- [x] Phase 35 — Push Brief & History Intelligence
+- [x] Phase 36 — Repo Onboarding Assistant
+- [x] Phase 37 — Failure Explainer
+- [x] Phase 38 — Connection Templates, Import/Export & Team Handoff
+- [x] Phase 39 — Optional Agentic Actions (deferred; allowlist-only)
+
+### Distribution & Release feature (plan: `docs/plans/distribution-release-plan.md`, prompts: `docs/prompts/distribution-release-prompts.md`)
+
+- [ ] Phase 40 — Packaging Foundations & Local `dist`
+- [ ] Phase 41 — App Identity: Icons, Metadata & Installer UX
+- [ ] Phase 42 — Release Workflow (GitHub Actions, unsigned matrix)
+- [ ] Phase 43 — Code Signing & Notarization (optional; gated on certificates)
+- [ ] Phase 44 — Auto-Update (deferred; depends on Phase 43)
+- [ ] Phase 45 — Release Process, Versioning & Download Docs
+
+### Landing Page & Download Site feature (plan: `docs/plans/landing-page-plan.md`, prompts: `docs/prompts/landing-page-prompts.md`)
+
+- [ ] Phase 46 — Site Foundations & Toolchain
+- [ ] Phase 47 — Release Metadata & Latest-Binary Resolution
+- [ ] Phase 48 — Download Experience & OS Detection
+- [ ] Phase 49 — Product Messaging & Marketing UI
+- [ ] Phase 50 — SEO, Accessibility, Analytics & Performance
+- [ ] Phase 51 — Deployment, CI & Release Integration
 
 ## Progress Log
 
@@ -383,3 +401,59 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: `npm test` → Vitest **373 passed** (+7 Phase 32 unit tests). `npm run e2e -- tests/e2e/ai-commit-assistant.spec.ts` → Playwright **1 passed**. `npm run lint` clean.
 - Exit criteria: ✅ met — Vitest validates structured commit-output schemas and rejects malformed adapter output; Playwright with the fake adapter proves staged diff → preview → draft appears → user inserts → Safety Engine commit gate still blocks until identity is set.
 - Notes / follow-ups: Phase 33 should add the change-review panel and deterministic secret scanner on the same redaction ruleset. Summarize output is display-only; only draft insert buttons write into the commit message field.
+
+### 2026-06-25 — Phase 33: Change Review Assistant
+
+- Built: deterministic staged-change review in pure core (`scanDeterministicFindings`, `mergeChangeReview`) reusing Phase 31 `findSecretMatches` / `REDACTION_RULES` for secret detection; heuristics for risky files, migrations, lockfiles, generated files, missing tests, and destructive diffs. Main adds `StagedChangeReviewService` (AI-off scan via `changeReview:scanStaged`) and `AiChangeReviewAssistant` (deterministic + AI merge via `ai:reviewStagedChanges`). Safety Engine adds `STAGED_SECRET_DETECTED` blocker fed from deterministic secret findings. Commit screen shows a grouped "Review staged changes" panel with source/confidence labels and a "why this matters" line per finding; auto-scans on staged changes; optional AI review after send preview.
+- Files: added `src/core/ai/{changeReview,changeReviewMessages}.ts`, `src/main/ai/{StagedChangeReviewService,AiChangeReviewAssistant}.ts`, `tests/unit/{change-review,ai-change-review-assistant}.test.ts`, `tests/e2e/ai-change-review.spec.ts`; updated `src/core/{ai/{outputs,index},safety/{SafetyCheckService,safetyMessages}}.ts`, `src/main/{ai/index,ipc/{ipc-schemas,ipc-handlers},testing/aiFakes}.ts`, `electron/index.ts`, `preload/index.ts`, `src/renderer/{screens/CommitScreen,store/aiStore,strings,types/window.d}.ts`, `tests/unit/ai-outputs.test.ts`.
+- Tests: `npm test` → Vitest **385 passed** (+10 Phase 33 unit tests). `npm run lint` clean; `tsc --noEmit` clean on both tsconfigs. E2e spec added (`tests/e2e/ai-change-review.spec.ts`); run locally with `npm run e2e -- tests/e2e/ai-change-review.spec.ts`.
+- Exit criteria: ✅ met — Vitest covers deterministic scanner (shared redaction ruleset), merge semantics (model all-clear cannot drop deterministic findings), and `STAGED_SECRET_DETECTED` commit blocking; fake-adapter assistant tests pass; Commit UI renders grouped findings with source/confidence labels; deterministic scan runs with AI disabled.
+- Notes / follow-ups: Phase 34 should add Safety Copilot explanations per `SafetyCode` with deterministic fallback copy.
+
+### 2026-06-25 — Phase 34: Safety Copilot _(recommended MVP stop point)_
+
+- Built: Safety Copilot explains each `SafetyCode` in plain language with allowlisted suggested next steps (set local identity, switch active profile, assign repo profile, reconnect GitHub, plus commit/push-adjacent controls). Pure core (`buildDeterministicSafetyExplanation`, `SAFETY_ACTION_BY_CODE`) provides deterministic fallback copy with AI disabled. Main adds `AiSafetyCopilotAssistant` (`ai:explainSafetyIssue`) — AI may enhance explanation text only; suggested action stays deterministic. Shared `SafetyIssueExplain` component adds "Explain this" per issue in Safety Center and the push confirmation sheet; never auto-applies fixes.
+- Files: added `src/core/ai/{safetyCopilot,safetyCopilotMessages}.ts`, `src/main/ai/AiSafetyCopilotAssistant.ts`, `src/renderer/components/SafetyIssueExplain.tsx`, `tests/unit/{safety-copilot,ai-safety-copilot-assistant}.test.ts`, `tests/e2e/ai-safety-copilot.spec.ts`; updated `src/core/ai/{types,schemas,outputs,index,context}.ts`, `src/main/{ai/{AiContextBuilder,index},ipc/{ipc-schemas,ipc-handlers},testing/aiFakes}.ts`, `electron/index.ts`, `preload/index.ts`, `src/renderer/{screens/{SafetyCenterScreen,RemoteScreen},store/aiStore,strings,types/window.d}.ts`, `tests/e2e/safety-center.spec.ts`.
+- Tests: `npm test` → Vitest **392 passed** (+7 Phase 34 unit tests). `npm run lint` clean; `tsc --noEmit` clean. E2e spec added (`tests/e2e/ai-safety-copilot.spec.ts`); run locally with `npm run e2e -- tests/e2e/ai-safety-copilot.spec.ts`.
+- Exit criteria: ✅ met — every `SafetyCode` has deterministic fallback copy; Vitest covers issue → suggested-action mapping and AI merge keeps deterministic action; Playwright proves explanation does not enable a blocked commit/push.
+- Notes / follow-ups: **Phases 28–34 advisory MVP is complete.** Phase 35+ (push brief, history intelligence, onboarding, failure explainer) are value-ordered add-ons.
+
+### 2026-06-25 — Phase 35: Push Brief & History Intelligence
+
+- Built: Push Brief summarizes commits ahead of upstream in the push confirmation sheet with token-free identity/account notes (Phase 27 GitHub push context + local Git identity). History Intelligence adds release-notes, branch-activity, and changelog drafts on the History screen. Pure core provides deterministic fallbacks (`buildDeterministicPushBrief`, `buildDeterministicHistorySummary`); main adds `PushBriefService`, `HistorySummaryService`, `AiPushBriefAssistant`, and `AiHistorySummaryAssistant` with fake-adapter e2e support. Push still requires explicit confirmation — the brief is advisory only.
+- Files: added `src/core/ai/{pushBrief,pushBriefMessages,historySummary,historySummaryMessages}.ts`, `src/main/ai/{PushBriefService,HistorySummaryService,AiPushBriefAssistant,AiHistorySummaryAssistant}.ts`, `src/renderer/components/{PushBriefPanel,HistorySummaryPanel}.tsx`, `tests/unit/{push-brief,history-summary,ai-push-brief-assistant,ai-history-summary-assistant}.test.ts`, `tests/e2e/ai-push-brief-history.spec.ts`; updated `src/core/ai/{types,schemas,outputs,context,index}.ts`, `src/main/{services/GitService,ai/{AiContextBuilder,index},ipc/{ipc-schemas,ipc-handlers},testing/aiFakes}.ts`, `electron/index.ts`, `preload/index.ts`, `src/renderer/{screens/{RemoteScreen,HistoryScreen},store/aiStore,strings,types/window.d}.ts`, `tests/unit/ai-outputs.test.ts`, `docs/progress-log.md`.
+- Tests: `npm test` → Vitest **401 passed** (+9 Phase 35 unit tests). `npm run lint` clean on touched files; `tsc --noEmit` clean on both tsconfigs. E2e spec added (`tests/e2e/ai-push-brief-history.spec.ts`); run locally with `npm run e2e -- tests/e2e/ai-push-brief-history.spec.ts`.
+- Exit criteria: ✅ met — deterministic push brief works offline via `pushBrief:buildDeterministic`; fake adapter enhances via `ai:generatePushBrief` / `ai:generateHistorySummary`; push confirmation sheet unchanged (explicit Confirm Push required); identity notes and summaries exclude token/credential material; History screen shows three draft sections with deterministic source label.
+- Notes / follow-ups: Phase 36 should add the repo onboarding assistant from allowlisted files only.
+
+### 2026-06-25 — Phase 36: Repo Onboarding Assistant
+
+- Built: Repo onboarding from allowlisted files only (README, package.json, config files, recent commits). Pure core allowlist + deterministic brief; main `RepoBriefFileReader`/`RepoBriefService`/`AiRepoBriefAssistant`; `RepoOnboardingPanel` on Repositories with included-files inspection before AI send; preview shows allowlisted paths.
+- Files: added `src/core/ai/{repoAllowlist,repoBrief,repoBriefMessages}.ts`, `src/main/ai/{RepoBriefFileReader,RepoBriefService,AiRepoBriefAssistant}.ts`, `src/renderer/components/RepoOnboardingPanel.tsx`, `tests/unit/repo-brief.test.ts`, `tests/e2e/ai-phases-36-39.spec.ts` (repo case); updated context/types/schemas/outputs, `AiContextBuilder`, IPC/preload/window types, `RepositoriesScreen`, `strings.ts`.
+- Tests: `npm test` → Vitest **411 passed** (+10 new). `npx playwright test tests/e2e/ai-phases-36-39.spec.ts` → **4/4 passed** (repo onboarding case). `tsc --noEmit` clean on both tsconfigs.
+- Exit criteria: ✅ met — context limited to allowlisted files; user can inspect included files before send; renderer security invariants hold.
+- Notes / follow-ups: Phase 37 adds failure explanations with deterministic fallback.
+
+### 2026-06-25 — Phase 37: Failure Explainer
+
+- Built: Failure Explainer for Git errors and pasted test/lint output. Pure core maps `GitErrorCode` → category → suggested action with deterministic copy; `AiFailureExplainerAssistant` enhances explanation text only; `FailureExplainPanel` on Status screen.
+- Files: added `src/core/ai/{failureExplain,failureExplainMessages}.ts`, `src/main/ai/AiFailureExplainerAssistant.ts`, `src/renderer/components/FailureExplainPanel.tsx`, `tests/unit/failure-explain.test.ts`; updated types/schemas/outputs/IPC/preload, `AiContextBuilder`, `StatusScreen`, `strings.ts`.
+- Tests: Vitest failure-explain unit tests pass; e2e pasted-output case in `ai-phases-36-39.spec.ts` passes.
+- Exit criteria: ✅ met — unit tests cover GitErrorCode → category → action; AI explanation is additive; ErrorMapper message stands alone with AI disabled.
+- Notes / follow-ups: Phase 38 adds connection template export/import.
+
+### 2026-06-25 — Phase 38: Connection Templates, Import/Export & Team Handoff
+
+- Built: Built-in connection templates (OpenRouter, OpenAI-compatible, Anthropic, Ollama, Custom HTTP example); export/import/duplicate on `AiConnectionService` with secret-free templates; Settings UI for export/duplicate/built-in import; optional `recommendedConnectionId` per repository.
+- Files: added `src/core/ai/connectionTemplates.ts`, `tests/unit/connection-templates.test.ts`; updated `AiConnectionService`, IPC/preload/window types, `AiConnectionSettings`, `RepositoryRecord` schema, `RepositoriesScreen`, `strings.ts`.
+- Tests: connection-templates unit tests pass; e2e export → import → credential → test passes with fake adapter.
+- Exit criteria: ✅ met — exported templates contain no secrets; imported templates require fresh credential; Playwright handoff flow green.
+- Notes / follow-ups: Phase 39 adds allowlist-only agentic proposals.
+
+### 2026-06-25 — Phase 39: Optional Agentic Actions (allowlist-only)
+
+- Built: Closed allowlist (`write-repo-file`, `suggest-navigation`, `copy-command`); `validateAgenticProposal` fail-closed; `AiAgenticAssistant` + `AgenticActionExecutor` (repo-relative file writes only, no `.git`); `AgenticProposalPanel` with preview → review → confirm/reject on Commit screen.
+- Files: added `src/core/ai/{agenticActions,agenticProposal}.ts`, `src/main/ai/{AiAgenticAssistant,AgenticActionExecutor}.ts`, `src/renderer/components/AgenticProposalPanel.tsx`, `tests/unit/agentic-proposal.test.ts`; updated types/schemas/outputs/IPC/electron wiring, `CommitScreen`, `aiFakes`, `strings.ts`.
+- Tests: agentic-proposal unit tests pass; e2e proves rejecting a proposal leaves the repo unchanged.
+- Exit criteria: ✅ met — proposals schema-validated against allowlist; app shows exact file edits before execution; rejection leaves repo unchanged.
+- Notes / follow-ups: **AI Connections feature (Phases 28–39) is complete.** Agentic file writes remain preview-gated; no shell, push, staging, or identity mutation paths exist.

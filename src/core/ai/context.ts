@@ -6,7 +6,7 @@ import type {
   RepositoryRecord,
   SafetyCheckResult,
 } from '../types.js'
-import type { AiPrivacyMode, AiRequestKind, AiMessage } from './types.js'
+import type { AiPrivacyMode, AiPushIdentityContext, AiRequestKind, AiMessage } from './types.js'
 import { redactSecrets, type RedactionMatch } from './redaction.js'
 
 export const AI_CONTEXT_FORMAT_VERSION = 1
@@ -34,6 +34,19 @@ export interface AiRawContext {
   recentCommits: GitCommit[]
   stagedDiffs: AiContextDiff[]
   selectedUnstagedDiffs: AiContextDiff[]
+  /** Set when requestKind is `safety-explain`. */
+  safetyIssueCode?: string
+  /** Commits ahead of upstream when requestKind is `push-brief`. */
+  commitsAhead?: GitCommit[]
+  /** Token-free push identity when requestKind is `push-brief`. */
+  pushIdentity?: AiPushIdentityContext
+  /** Allowlisted repo files when requestKind is `repo-brief` (Phase 36). */
+  allowlistedFiles?: Array<{ path: string; content: string }>
+  /** Pasted tool output when requestKind is `failure-explain` (Phase 37). */
+  failureToolOutput?: string
+  /** Git error code when requestKind is `failure-explain` (Phase 37). */
+  failureGitCode?: string
+  failureUserMessage?: string
 }
 
 export interface AiContextChunk {
@@ -61,6 +74,8 @@ export interface AiPreparedContext {
   truncated: boolean
   omittedChars: number
   redactions: AiContextRedactionSummary
+  /** Paths included in a repo-brief send (Phase 36). */
+  includedFiles?: string[]
 }
 
 export interface AiContextPrepareInput {
@@ -103,6 +118,7 @@ export function prepareAiContext(input: AiContextPrepareInput): AiPreparedContex
       matches,
       labels,
     },
+    includedFiles: input.rawContext.allowlistedFiles?.map((f) => f.path).sort(),
   }
 }
 

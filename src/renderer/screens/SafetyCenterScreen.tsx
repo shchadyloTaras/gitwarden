@@ -2,6 +2,7 @@ import React, { useEffect, useMemo } from 'react'
 import { useProfilesStore } from '../store/profilesStore'
 import { useSafetyCenterStore } from '../store/safetyCenterStore'
 import { useAppStore } from '../store/appStore'
+import SafetyIssueExplain from '../components/SafetyIssueExplain'
 import type { SafetyIssue } from '../../core/types'
 
 function ScopeLabel({ scope }: { scope: string | undefined }): React.ReactElement {
@@ -25,26 +26,14 @@ function Verdict({ ok, testId }: { ok: boolean; testId: string }): React.ReactEl
   )
 }
 
-function IssueRow({ issue }: { issue: SafetyIssue }): React.ReactElement {
-  const isBlocker = issue.severity === 'blocker'
-  return (
-    <div
-      data-testid={`safety-issue-${issue.code}`}
-      style={{
-        padding: '8px 12px',
-        background: isBlocker ? 'var(--gw-danger-bg, #450a0a)' : 'var(--gw-warning-bg, #422006)',
-        borderBottom: '1px solid var(--gw-border, #27272a)',
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: '8px',
-        fontSize: '13px',
-        color: isBlocker ? 'var(--gw-danger, #f87171)' : 'var(--gw-warning, #fbbf24)',
-      }}
-    >
-      <span style={{ flexShrink: 0 }}>{isBlocker ? '⛔' : '⚠'}</span>
-      <span>{issue.message}</span>
-    </div>
-  )
+function IssueRow({
+  issue,
+  repositoryId,
+}: {
+  issue: import('../../core/types').SafetyIssue
+  repositoryId?: string
+}): React.ReactElement {
+  return <SafetyIssueExplain issue={issue} repositoryId={repositoryId} testIdPrefix="safety" />
 }
 
 const CARD: React.CSSProperties = {
@@ -296,7 +285,7 @@ export default function SafetyCenterScreen(): React.ReactElement {
             <div style={CARD}>
               <div style={CARD_HEADER}>Issues ({allIssues.length})</div>
               {allIssues.map((issue) => (
-                <IssueRow key={issue.code} issue={issue} />
+                <IssueRow key={issue.code} issue={issue} repositoryId={repository?.id} />
               ))}
             </div>
           )}

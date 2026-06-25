@@ -14,8 +14,10 @@ import {
   AiRetentionStateSchema,
   AiUsageEstimateRequestSchema,
   AiRequestKindSchema,
+  AiConnectionTemplateExportSchema,
   CustomHttpMappingSchema,
 } from '../../core/ai/schemas.js'
+import { ALL_SAFETY_CODES } from '../../core/ai/safetyCopilot.js'
 import { isAllowedAiBaseUrl } from '../../core/ai/transport.js'
 
 // Profile request payloads
@@ -202,9 +204,92 @@ export const AiPreviewContextPayload = z.object({
   kind: AiRequestKindSchema,
   selectedUnstagedPaths: z.array(z.string().min(1)).optional(),
   commitMessage: z.string().optional(),
+  remoteName: z.string().min(1).optional(),
+  branch: z.string().min(1).optional(),
+  pushGithub: z
+    .object({
+      assignedLogin: z.string().optional(),
+      effectiveLogin: z.string().optional(),
+      hasToken: z.boolean(),
+      tokenInvalid: z.boolean(),
+    })
+    .optional(),
+})
+
+export const PushBriefPayload = z.object({
+  repositoryId: z.string().min(1),
+  remoteName: z.string().min(1),
+  branch: z.string().min(1),
+  github: z
+    .object({
+      assignedLogin: z.string().optional(),
+      effectiveLogin: z.string().optional(),
+      hasToken: z.boolean(),
+      tokenInvalid: z.boolean(),
+    })
+    .optional(),
+})
+
+export const HistorySummaryPayload = z.object({
+  repositoryId: z.string().min(1),
 })
 
 export const AiCommitAssistantPayload = z.object({
   repositoryId: z.string().min(1),
   commitMessage: z.string().optional(),
+})
+
+export const ChangeReviewScanPayload = z.object({
+  repositoryId: z.string().min(1),
+})
+
+export const SafetyCodeSchema = z.enum(ALL_SAFETY_CODES)
+
+export const AiSafetyCopilotPayload = z.object({
+  repositoryId: z.string().min(1),
+  safetyCode: SafetyCodeSchema,
+})
+
+export const RepoBriefPayload = z.object({
+  repositoryId: z.string().min(1),
+})
+
+export const GitFailureExplainPayload = z.object({
+  repositoryId: z.string().min(1),
+  code: z.enum([
+    'notARepository',
+    'authenticationFailed',
+    'remoteNotFound',
+    'branchNotFound',
+    'mergeConflict',
+    'nothingToCommit',
+    'networkError',
+    'gitNotFound',
+    'unknown',
+  ]),
+  userMessage: z.string(),
+  technicalDetails: z.string().optional(),
+})
+
+export const ToolFailureExplainPayload = z.object({
+  repositoryId: z.string().min(1),
+  output: z.string().min(1),
+})
+
+export const AiConnectionTemplateImportPayload = AiConnectionTemplateExportSchema
+
+export const AiAgenticProposePayload = z.object({
+  repositoryId: z.string().min(1),
+  prompt: z.string().min(1),
+})
+
+export const AiAgenticExecutePayload = z.object({
+  repositoryId: z.string().min(1),
+  fileEdits: z.array(
+    z.object({
+      path: z.string().min(1),
+      before: z.string().optional(),
+      after: z.string(),
+    })
+  ),
 })

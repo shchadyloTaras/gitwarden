@@ -26,6 +26,16 @@ import type {
   AiUsageEstimateRequest,
   AiCommitDraft,
   AiChangeSummary,
+  AiChangeReview,
+  AiReviewFinding,
+  AiSafetyExplanation,
+  AiPushBrief,
+  AiHistorySummary,
+  AiRepoBrief,
+  AiAllowlistedFile,
+  AiFailureExplanation,
+  AiConnectionTemplateExport,
+  AiAgenticProposal,
   CustomHttpMapping,
 } from '../../core/ai/types.js'
 import type { AiPreparedContext } from '../../core/ai/context.js'
@@ -163,6 +173,14 @@ interface ElectronAPI {
       kind: AiUsageEstimateRequest['kind']
       selectedUnstagedPaths?: string[]
       commitMessage?: string
+      remoteName?: string
+      branch?: string
+      pushGithub?: {
+        assignedLogin?: string
+        effectiveLogin?: string
+        hasToken: boolean
+        tokenInvalid: boolean
+      }
     }): Promise<IpcResult<AiPreparedContext>>
     draftCommitMessage(input: {
       repositoryId: string
@@ -172,6 +190,84 @@ interface ElectronAPI {
       repositoryId: string
       commitMessage?: string
     }): Promise<IpcResult<AiChangeSummary>>
+    reviewStagedChanges(input: {
+      repositoryId: string
+      commitMessage?: string
+    }): Promise<IpcResult<AiChangeReview>>
+    explainSafetyIssue(input: {
+      repositoryId: string
+      safetyCode: string
+    }): Promise<IpcResult<AiSafetyExplanation>>
+    generatePushBrief(input: {
+      repositoryId: string
+      remoteName: string
+      branch: string
+      github?: {
+        assignedLogin?: string
+        effectiveLogin?: string
+        hasToken: boolean
+        tokenInvalid: boolean
+      }
+    }): Promise<IpcResult<AiPushBrief>>
+    generateHistorySummary(input: { repositoryId: string }): Promise<IpcResult<AiHistorySummary>>
+    listBuiltInTemplates(): Promise<IpcResult<AiConnectionTemplateExport[]>>
+    exportConnectionTemplate(id: string): Promise<IpcResult<AiConnectionTemplateExport>>
+    importConnectionTemplate(template: AiConnectionTemplateExport): Promise<IpcResult<AiConnection>>
+    duplicateConnection(id: string): Promise<IpcResult<AiConnection>>
+    generateRepoBrief(input: { repositoryId: string }): Promise<IpcResult<AiRepoBrief>>
+    explainGitFailure(input: {
+      repositoryId: string
+      code: string
+      userMessage: string
+      technicalDetails?: string
+    }): Promise<IpcResult<AiFailureExplanation>>
+    explainToolOutput(input: {
+      repositoryId: string
+      output: string
+    }): Promise<IpcResult<AiFailureExplanation>>
+    proposeAgenticActions(input: {
+      repositoryId: string
+      prompt: string
+    }): Promise<IpcResult<AiAgenticProposal>>
+    executeAgenticProposal(input: {
+      repositoryId: string
+      fileEdits: Array<{ path: string; before?: string; after: string }>
+    }): Promise<IpcResult<{ writtenFiles: string[] }>>
+  }
+  pushBrief: {
+    buildDeterministic(input: {
+      repositoryId: string
+      remoteName: string
+      branch: string
+      github?: {
+        assignedLogin?: string
+        effectiveLogin?: string
+        hasToken: boolean
+        tokenInvalid: boolean
+      }
+    }): Promise<IpcResult<AiPushBrief>>
+  }
+  historySummary: {
+    buildDeterministic(input: { repositoryId: string }): Promise<IpcResult<AiHistorySummary>>
+  }
+  repoBrief: {
+    buildDeterministic(input: { repositoryId: string }): Promise<IpcResult<AiRepoBrief>>
+    listAllowlistedFiles(input: { repositoryId: string }): Promise<IpcResult<AiAllowlistedFile[]>>
+  }
+  failureExplain: {
+    gitFailure(input: {
+      repositoryId: string
+      code: string
+      userMessage: string
+      technicalDetails?: string
+    }): Promise<IpcResult<AiFailureExplanation>>
+    toolOutput(input: {
+      repositoryId: string
+      output: string
+    }): Promise<IpcResult<AiFailureExplanation>>
+  }
+  changeReview: {
+    scanStaged(input: { repositoryId: string }): Promise<IpcResult<AiReviewFinding[]>>
   }
 }
 

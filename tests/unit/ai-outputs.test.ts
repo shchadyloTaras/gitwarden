@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { parseChangeSummary, parseCommitDraft } from '../../src/core/ai/outputs'
-import { AiChangeSummarySchema, AiCommitDraftSchema } from '../../src/core/ai/schemas'
+import {
+  parseChangeReview,
+  parseChangeSummary,
+  parseCommitDraft,
+  parsePushBriefAiResponse,
+  parseHistorySummaryAiResponse,
+} from '../../src/core/ai/outputs'
+import {
+  AiChangeReviewSchema,
+  AiChangeSummarySchema,
+  AiCommitDraftSchema,
+} from '../../src/core/ai/schemas'
 
 describe('AI structured outputs (fail-closed)', () => {
   it('parseCommitDraft accepts a valid adapter payload', () => {
@@ -36,5 +46,43 @@ describe('AI structured outputs (fail-closed)', () => {
   it('parseChangeSummary rejects malformed adapter output', () => {
     expect(() => parseChangeSummary({ summary: 'missing highlights' })).toThrow()
     expect(AiChangeSummarySchema.safeParse({ highlights: [] }).success).toBe(false)
+  })
+
+  it('parseChangeReview accepts a valid adapter payload', () => {
+    const review = parseChangeReview({
+      findings: [
+        {
+          category: 'risky-file',
+          source: 'ai',
+          confidence: 'medium',
+          file: 'deploy.yml',
+          why: 'Deployment config changed.',
+        },
+      ],
+      overall: 'Review complete.',
+    })
+    expect(review.findings[0]?.source).toBe('ai')
+  })
+
+  it('parseChangeReview rejects malformed adapter output', () => {
+    expect(() => parseChangeReview({ findings: [{ category: 'nope' }] })).toThrow()
+    expect(AiChangeReviewSchema.safeParse({ findings: [] }).success).toBe(true)
+  })
+
+  it('parsePushBriefAiResponse accepts a valid adapter payload', () => {
+    const brief = parsePushBriefAiResponse({
+      summary: 'Publishing two commits.',
+      highlights: ['Adds feature', 'Fixes bug'],
+    })
+    expect(brief.highlights).toHaveLength(2)
+  })
+
+  it('parseHistorySummaryAiResponse accepts a valid adapter payload', () => {
+    const summary = parseHistorySummaryAiResponse({
+      releaseNotesDraft: '## v1',
+      branchActivity: 'Active on main.',
+      changelogDraft: '- Initial',
+    })
+    expect(summary.releaseNotesDraft).toContain('v1')
   })
 })

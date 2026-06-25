@@ -1,5 +1,6 @@
 import type { z } from 'zod'
 import type { AiRequestKind } from '../../core/ai/types.js'
+import type { SafetyCode } from '../../core/safety/SafetyCheckService.js'
 import {
   AI_CONTEXT_FORMAT_VERSION,
   createAiContextMessages,
@@ -23,14 +24,34 @@ import {
   OPENAI_COMPATIBLE_BASE_URL,
   OPENROUTER_BASE_URL,
 } from './adapterUtils.js'
+import type { RepoBriefService } from './RepoBriefService.js'
 
 const RECENT_COMMITS_LIMIT = 5
+const HISTORY_COMMITS_LIMIT = 30
+const PUSH_COMMITS_AHEAD_LIMIT = 30
+const REPO_BRIEF_COMMITS_LIMIT = 10
 
 export interface AiContextBuildInput {
   repositoryId: string
   kind: AiRequestKind
   selectedUnstagedPaths?: string[]
   commitMessage?: string
+  /** Which SafetyCode to explain when kind is `safety-explain`. */
+  safetyCode?: SafetyCode
+  /** Push Brief target remote (kind `push-brief`). */
+  remoteName?: string
+  /** Push Brief target branch (kind `push-brief`). */
+  branch?: string
+  /** Token-free GitHub push facts from the renderer (kind `push-brief`). */
+  pushGithub?: {
+    assignedLogin?: string
+    effectiveLogin?: string
+    hasToken: boolean
+    tokenInvalid: boolean
+  }
+  failureGitCode?: string
+  failureUserMessage?: string
+  failureToolOutput?: string
 }
 
 export interface AiContextBuilderDeps {
@@ -39,9 +60,15 @@ export interface AiContextBuilderDeps {
   settings: ISettingsService
   git: Pick<
     GitService,
-    'getStatus' | 'getEffectiveIdentity' | 'getRemotes' | 'getCommitHistory' | 'getDiff'
+    | 'getStatus'
+    | 'getEffectiveIdentity'
+    | 'getRemotes'
+    | 'getCommitHistory'
+    | 'getCommitsAhead'
+    | 'getDiff'
   >
   aiConnections: IAiConnectionService
+  repoBrief?: Pick<RepoBriefService, 'readAllowlistedFilesForContext'>
 }
 
 export interface AiContextBuilderOptions {
@@ -95,12 +122,40 @@ export class AiContextBuilder {
       this.deps.git.getStatus(repository.localPath),
       this.deps.git.getEffectiveIdentity(repository.localPath),
       this.deps.git.getRemotes(repository.localPath),
-      this.getRecentCommits(repository.localPath),
+      this.getRecentCommits(repository.localPath, input.kind),
     ])
 
     const activeProfile = settings.activeProfileId
       ? profiles.find((p) => p.id === settings.activeProfileId)
       : undefined
+    const assignedProfile = repository.assignedProfileId
+      ? profiles.find((p) => p.id === repository.assignedProfileId)
+      : undefined
+
+    const commitsAhead =
+      input.kind === 'push-brief' && input.remoteName && input.branch
+        ? await this.deps.git.getCommitsAhead(
+            repository.localPath,
+            input.remoteName,
+            input.branch,
+            PUSH_COMMITS_AHEAD_LIMIT
+          )
+        : undefined
+
+    const pushIdentity =
+      input.kind === 'push-brief' && input.remoteName && input.branch
+        ? {
+            remoteName: input.remoteName,
+            branch: input.branch,
+            remoteHost: remotes.find((r) => r.name === input.remoteName)?.host,
+            activeProfileName: activeProfile?.displayName,
+            activeProfileEmail: activeProfile?.gitAuthorEmail,
+            assignedProfileName: assignedProfile?.displayName,
+            identityName: identity.userName,
+            identityEmail: identity.userEmail,
+            github: input.pushGithub,
+          }
+        : undefined
     const safety = safetyCheckService.checkCommit({
       repository,
       activeProfile,
@@ -119,10 +174,18 @@ export class AiContextBuilder {
       )
       .map((file) => file.path)
     const selectedUnstagedPaths = unique(input.selectedUnstagedPaths ?? [])
+    const includeDiffs = input.kind !== 'repo-brief' && input.kind !== 'failure-explain'
 
-    const [stagedDiffs, selectedUnstagedDiffs] = await Promise.all([
-      this.collectDiffs(repository.localPath, stagedPaths, true),
-      this.collectDiffs(repository.localPath, selectedUnstagedPaths, false),
+    const [stagedDiffs, selectedUnstagedDiffs, allowlistedFiles] = await Promise.all([
+      includeDiffs
+        ? this.collectDiffs(repository.localPath, stagedPaths, true)
+        : Promise.resolve([]),
+      includeDiffs
+        ? this.collectDiffs(repository.localPath, selectedUnstagedPaths, false)
+        : Promise.resolve([]),
+      input.kind === 'repo-brief' && this.deps.repoBrief
+        ? this.deps.repoBrief.readAllowlistedFilesForContext(input.repositoryId)
+        : Promise.resolve(undefined),
     ])
 
     const rawContext: AiRawContext = {
@@ -144,6 +207,13 @@ export class AiContextBuilder {
       recentCommits,
       stagedDiffs,
       selectedUnstagedDiffs,
+      safetyIssueCode: input.safetyCode,
+      commitsAhead,
+      pushIdentity,
+      allowlistedFiles,
+      failureGitCode: input.failureGitCode,
+      failureUserMessage: input.failureUserMessage,
+      failureToolOutput: input.failureToolOutput,
     }
 
     return prepareAiContext({
@@ -164,7 +234,13 @@ export class AiContextBuilder {
     return repository
   }
 
-  private async getRecentCommits(repoPath: string) {
+  private async getRecentCommits(repoPath: string, kind: AiRequestKind) {
+    if (kind === 'history-summary') {
+      return this.deps.git.getCommitHistory(repoPath, HISTORY_COMMITS_LIMIT, 0).catch(() => [])
+    }
+    if (kind === 'repo-brief') {
+      return this.deps.git.getCommitHistory(repoPath, REPO_BRIEF_COMMITS_LIMIT, 0).catch(() => [])
+    }
     try {
       return await this.deps.git.getCommitHistory(repoPath, RECENT_COMMITS_LIMIT, 0)
     } catch {

@@ -12,9 +12,14 @@ import type {
   AiUsageEstimateRequest,
   AiCommitDraft,
   AiChangeSummary,
+  AiChangeReview,
+  AiSafetyExplanation,
+  AiPushBrief,
+  AiHistorySummary,
   CustomHttpMapping,
 } from '../../core/ai/types'
 import type { AiPreparedContext } from '../../core/ai/context'
+import type { SafetyCode } from '../../core/safety/SafetyCheckService'
 
 // Renderer store for the single-active AI connection (Phase 29). It never holds
 // a raw secret: saving a credential returns only AiCredentialMetadata, and that
@@ -76,6 +81,14 @@ interface AiState {
     kind: AiUsageEstimateRequest['kind']
     selectedUnstagedPaths?: string[]
     commitMessage?: string
+    remoteName?: string
+    branch?: string
+    pushGithub?: {
+      assignedLogin?: string
+      effectiveLogin?: string
+      hasToken: boolean
+      tokenInvalid: boolean
+    }
   }): Promise<AiPreparedContext | null>
   draftCommitMessage(input: {
     repositoryId: string
@@ -85,6 +98,26 @@ interface AiState {
     repositoryId: string
     commitMessage?: string
   }): Promise<AiChangeSummary | null>
+  reviewStagedChanges(input: {
+    repositoryId: string
+    commitMessage?: string
+  }): Promise<AiChangeReview | null>
+  explainSafetyIssue(input: {
+    repositoryId: string
+    safetyCode: SafetyCode
+  }): Promise<AiSafetyExplanation | null>
+  generatePushBrief(input: {
+    repositoryId: string
+    remoteName: string
+    branch: string
+    github?: {
+      assignedLogin?: string
+      effectiveLogin?: string
+      hasToken: boolean
+      tokenInvalid: boolean
+    }
+  }): Promise<AiPushBrief | null>
+  generateHistorySummary(input: { repositoryId: string }): Promise<AiHistorySummary | null>
   saveCredential(
     connectionId: string,
     label: string,
@@ -243,6 +276,46 @@ export const useAiStore = create<AiState>((set, get) => ({
 
   async summarizeStagedChanges(input) {
     const result = await window.api.ai.summarizeStagedChanges(input)
+    if (!result.ok) {
+      set({ error: result.error })
+      return null
+    }
+    set({ error: null })
+    return result.data
+  },
+
+  async reviewStagedChanges(input) {
+    const result = await window.api.ai.reviewStagedChanges(input)
+    if (!result.ok) {
+      set({ error: result.error })
+      return null
+    }
+    set({ error: null })
+    return result.data
+  },
+
+  async explainSafetyIssue(input) {
+    const result = await window.api.ai.explainSafetyIssue(input)
+    if (!result.ok) {
+      set({ error: result.error })
+      return null
+    }
+    set({ error: null })
+    return result.data
+  },
+
+  async generatePushBrief(input) {
+    const result = await window.api.ai.generatePushBrief(input)
+    if (!result.ok) {
+      set({ error: result.error })
+      return null
+    }
+    set({ error: null })
+    return result.data
+  },
+
+  async generateHistorySummary(input) {
+    const result = await window.api.ai.generateHistorySummary(input)
     if (!result.ok) {
       set({ error: result.error })
       return null

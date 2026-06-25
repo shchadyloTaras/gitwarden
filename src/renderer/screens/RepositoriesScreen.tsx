@@ -1,9 +1,11 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import type { RepositoryRecord } from '../../core/types'
 import { useRepositoriesStore } from '../store/repositoriesStore'
 import { useProfilesStore } from '../store/profilesStore'
 import { useAppStore } from '../store/appStore'
+import { useAiStore } from '../store/aiStore'
 import Dropdown from '../components/Dropdown'
+import RepoOnboardingPanel from '../components/RepoOnboardingPanel'
 import { STR } from '../strings'
 
 type Mode = 'idle' | 'add' | 'edit'
@@ -11,6 +13,7 @@ type Mode = 'idle' | 'add' | 'edit'
 interface EditForm {
   name: string
   assignedProfileId: string
+  recommendedConnectionId: string
   notes: string
 }
 
@@ -18,6 +21,7 @@ function editFormFromRepo(r: RepositoryRecord): EditForm {
   return {
     name: r.name,
     assignedProfileId: r.assignedProfileId ?? '',
+    recommendedConnectionId: r.recommendedConnectionId ?? '',
     notes: r.notes ?? '',
   }
 }
@@ -25,12 +29,23 @@ function editFormFromRepo(r: RepositoryRecord): EditForm {
 export default function RepositoriesScreen(): React.ReactElement {
   const { repos, addRepository, updateRepo, removeRepo } = useRepositoriesStore()
   const { profiles, activeProfileId } = useProfilesStore()
+  const { connections } = useAiStore()
+  const loadAi = useAiStore((s) => s.load)
   const setActiveRepo = useAppStore((s) => s.setActiveRepo)
+
+  useEffect(() => {
+    void loadAi()
+  }, [loadAi])
 
   const [mode, setMode] = useState<Mode>('idle')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [addPath, setAddPath] = useState('')
-  const [editForm, setEditForm] = useState<EditForm>({ name: '', assignedProfileId: '', notes: '' })
+  const [editForm, setEditForm] = useState<EditForm>({
+    name: '',
+    assignedProfileId: '',
+    recommendedConnectionId: '',
+    notes: '',
+  })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
@@ -89,6 +104,7 @@ export default function RepositoriesScreen(): React.ReactElement {
       await updateRepo(selectedId, {
         name: editForm.name.trim() || selectedRepo?.name,
         assignedProfileId: editForm.assignedProfileId || undefined,
+        recommendedConnectionId: editForm.recommendedConnectionId || undefined,
         notes: editForm.notes.trim() || undefined,
       })
       setSuccessMessage(STR.REPOSITORY_SAVED)
@@ -415,6 +431,24 @@ export default function RepositoriesScreen(): React.ReactElement {
               />
             </Field>
 
+            <Field label={STR.AI_REPO_RECOMMENDED_CONNECTION}>
+              <Dropdown
+                testId="repo-form-recommended-connection"
+                ariaLabel={STR.AI_REPO_RECOMMENDED_CONNECTION}
+                block
+                value={editForm.recommendedConnectionId}
+                onChange={(id) => {
+                  setSuccessMessage(null)
+                  setEditForm((f) => ({ ...f, recommendedConnectionId: id }))
+                }}
+                options={[
+                  { value: '', label: '— None —' },
+                  ...connections.map((c) => ({ value: c.id, label: c.name })),
+                ]}
+                triggerStyle={inputStyle}
+              />
+            </Field>
+
             <Field label="Notes">
               <textarea
                 data-testid="repo-form-notes"
@@ -531,6 +565,8 @@ export default function RepositoriesScreen(): React.ReactElement {
                 </div>
               )}
             </div>
+
+            {selectedRepo && <RepoOnboardingPanel repositoryId={selectedRepo.id} />}
           </div>
         )}
       </div>

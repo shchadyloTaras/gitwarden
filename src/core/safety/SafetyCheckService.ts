@@ -7,7 +7,8 @@ import type {
   SafetyIssue,
   SafetyCheckResult,
 } from '../types.js'
-import { SAFETY_MESSAGES, SAFETY_SEVERITY } from './safetyMessages.js'
+import type { AiReviewFinding } from '../ai/types.js'
+import { SAFETY_MESSAGES, SAFETY_SEVERITY, stagedSecretMessage } from './safetyMessages.js'
 
 // ── Issue catalogue ──────────────────────────────────────────────────────────
 
@@ -29,6 +30,7 @@ export type SafetyCode =
   | 'GITHUB_TOKEN_MISSING'
   | 'GITHUB_TOKEN_INVALID'
   | 'GITHUB_NOT_CONNECTED'
+  | 'STAGED_SECRET_DETECTED'
 
 function makeIssue(code: SafetyCode): SafetyIssue {
   return { code, message: SAFETY_MESSAGES[code], severity: SAFETY_SEVERITY[code] }
@@ -140,6 +142,7 @@ export interface SafetyCheckService {
     identity: EffectiveGitIdentity
     status: GitStatus
     commitMessage: string
+    reviewFindings?: AiReviewFinding[]
   }): SafetyCheckResult
 
   checkPush(input: {
@@ -166,6 +169,27 @@ function hasConflicts(status: GitStatus): boolean {
   return status.files.some((f) => f.indexStatus === 'conflicted')
 }
 
+function collectReviewSafetyIssues(findings: AiReviewFinding[]): SafetyIssue[] {
+  const issues: SafetyIssue[] = []
+  for (const finding of findings) {
+    if (finding.source !== 'deterministic') continue
+    if (finding.category === 'secret-like') {
+      issues.push({
+        code: 'STAGED_SECRET_DETECTED',
+        message: stagedSecretMessage(finding.file),
+        severity: SAFETY_SEVERITY.STAGED_SECRET_DETECTED,
+      })
+    } else {
+      issues.push({
+        code: `REVIEW_${finding.category.toUpperCase()}`,
+        message: finding.why,
+        severity: 'warning',
+      })
+    }
+  }
+  return issues
+}
+
 class SafetyCheckServiceImpl implements SafetyCheckService {
   checkRepositoryIdentity(input: {
     repository: RepositoryRecord
@@ -183,12 +207,16 @@ class SafetyCheckServiceImpl implements SafetyCheckService {
     identity: EffectiveGitIdentity
     status: GitStatus
     commitMessage: string
+    reviewFindings?: AiReviewFinding[]
   }): SafetyCheckResult {
     const issues = collectIdentityIssues(input)
 
     if (!hasStagedChanges(input.status)) issues.push(makeIssue('NOTHING_STAGED'))
     if (!input.commitMessage.trim()) issues.push(makeIssue('EMPTY_MESSAGE'))
     if (hasConflicts(input.status)) issues.push(makeIssue('HAS_CONFLICTS'))
+    if (input.reviewFindings?.length) {
+      issues.push(...collectReviewSafetyIssues(input.reviewFindings))
+    }
 
     return { canCommit: !hasBlocker(issues), canPush: true, issues }
   }

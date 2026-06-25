@@ -222,16 +222,27 @@ export class GitService {
   }
 
   async getCommitHistory(repoPath: string, limit: number, skip: number): Promise<GitCommit[]> {
+    return this.queryCommitLog(repoPath, ['-n', String(limit), '--skip', String(skip)])
+  }
+
+  /** Commits on HEAD not yet on remote/branch — used for Push Brief (Phase 35). */
+  async getCommitsAhead(
+    repoPath: string,
+    remote: string,
+    branch: string,
+    limit: number
+  ): Promise<GitCommit[]> {
+    try {
+      return await this.queryCommitLog(repoPath, ['-n', String(limit), `${remote}/${branch}..HEAD`])
+    } catch {
+      // First push — remote tracking branch may not exist yet.
+      return this.getCommitHistory(repoPath, limit, 0)
+    }
+  }
+
+  private async queryCommitLog(repoPath: string, extraArgs: string[]): Promise<GitCommit[]> {
     const result = await this.runner.run({
-      args: [
-        'log',
-        '-z',
-        '--format=%H%x00%h%x00%an%x00%ae%x00%aI%x00%s',
-        `-n`,
-        String(limit),
-        '--skip',
-        String(skip),
-      ],
+      args: ['log', '-z', '--format=%H%x00%h%x00%an%x00%ae%x00%aI%x00%s', ...extraArgs],
       cwd: repoPath,
       readOnly: true,
     })

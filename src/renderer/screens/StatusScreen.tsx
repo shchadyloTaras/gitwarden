@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import type { FileChange } from '../../core/types'
 import { useStatusStore } from '../store/statusStore'
 import { useAppStore } from '../store/appStore'
+import FailureExplainPanel from '../components/FailureExplainPanel'
 import { STR } from '../strings'
 
 function isStagedChange(f: FileChange): boolean {
@@ -616,6 +617,8 @@ export default function StatusScreen(): React.ReactElement {
           </button>
         )}
       </div>
+
+      {activeRepo && <FailureExplainPanel repositoryId={activeRepo.id} />}
 
       {/* Body */}
       <div style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>

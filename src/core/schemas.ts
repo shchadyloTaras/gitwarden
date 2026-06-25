@@ -36,6 +36,7 @@ export const RepositoryRecordSchema = z.object({
   notes: z.string().optional(),
   // Per-repo AI override (most specific in the precedence chain). Absent = inherit.
   aiOverride: z.enum(['enabled', 'disabled']).optional(),
+  recommendedConnectionId: z.string().optional(),
 })
 
 export const AppSettingsSchema = z.object({

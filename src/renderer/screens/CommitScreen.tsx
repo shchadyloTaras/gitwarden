@@ -5,7 +5,15 @@ import { useAppStore } from '../store/appStore'
 import { useAiStore } from '../store/aiStore'
 import { safetyCheckService } from '../../core/safety/SafetyCheckService'
 import type { AiPreparedContext } from '../../core/ai/context'
-import type { AiChangeSummary, AiCommitDraft } from '../../core/ai/types'
+import type {
+  AiChangeSummary,
+  AiChangeReview,
+  AiCommitDraft,
+  AiReviewFinding,
+  AiReviewCategory,
+} from '../../core/ai/types'
+import { groupFindingsByCategory } from '../../core/ai/changeReview'
+import AgenticProposalPanel from '../components/AgenticProposalPanel'
 import { STR } from '../strings'
 
 const IDENTITY_CODES = new Set(['IDENTITY_UNSET', 'EMAIL_MISMATCH', 'EMAIL_FROM_GLOBAL_ONLY'])
@@ -33,6 +41,8 @@ export default function CommitScreen(): React.ReactElement {
   const previewContext = useAiStore((s) => s.previewContext)
   const draftCommitMessage = useAiStore((s) => s.draftCommitMessage)
   const summarizeStagedChanges = useAiStore((s) => s.summarizeStagedChanges)
+  const reviewStagedChanges = useAiStore((s) => s.reviewStagedChanges)
+  const aiEnabled = useAiStore((s) => s.aiEnabled)
   const [aiPreview, setAiPreview] = useState<AiPreparedContext | null>(null)
   const [aiPreviewSeen, setAiPreviewSeen] = useState(false)
   const [aiPreviewLoading, setAiPreviewLoading] = useState(false)
@@ -42,6 +52,11 @@ export default function CommitScreen(): React.ReactElement {
   const [draftLoading, setDraftLoading] = useState(false)
   const [summarizeLoading, setSummarizeLoading] = useState(false)
   const [assistantError, setAssistantError] = useState<string | null>(null)
+  const [deterministicFindings, setDeterministicFindings] = useState<AiReviewFinding[]>([])
+  const [changeReview, setChangeReview] = useState<AiChangeReview | null>(null)
+  const [scanLoading, setScanLoading] = useState(false)
+  const [reviewLoading, setReviewLoading] = useState(false)
+  const [reviewError, setReviewError] = useState<string | null>(null)
 
   useEffect(() => {
     if (activeRepo) void load(activeRepo.localPath, activeRepo)
@@ -54,18 +69,10 @@ export default function CommitScreen(): React.ReactElement {
     setCommitDraft(null)
     setChangeSummary(null)
     setAssistantError(null)
+    setDeterministicFindings([])
+    setChangeReview(null)
+    setReviewError(null)
   }, [activeRepo?.id, message])
-
-  const safetyResult = useMemo(() => {
-    if (!status || !identity || !repository) return null
-    return safetyCheckService.checkCommit({
-      repository,
-      activeProfile,
-      identity,
-      status,
-      commitMessage: message,
-    })
-  }, [status, identity, repository, activeProfile, message])
 
   const stagedFiles = useMemo(
     () =>
@@ -78,6 +85,50 @@ export default function CommitScreen(): React.ReactElement {
       ),
     [status]
   )
+
+  const stagedPathsKey = useMemo(() => stagedFiles.map((f) => f.path).join('\0'), [stagedFiles])
+
+  useEffect(() => {
+    if (!repository || stagedFiles.length === 0) {
+      setDeterministicFindings([])
+      return
+    }
+    let cancelled = false
+    setScanLoading(true)
+    setReviewError(null)
+    void window.api.changeReview
+      .scanStaged({ repositoryId: repository.id })
+      .then((result) => {
+        if (cancelled) return
+        if (result.ok) {
+          setDeterministicFindings(result.data)
+          setChangeReview(null)
+        } else setReviewError(STR.CHANGE_REVIEW_SCAN_ERROR)
+      })
+      .catch(() => {
+        if (!cancelled) setReviewError(STR.CHANGE_REVIEW_SCAN_ERROR)
+      })
+      .finally(() => {
+        if (!cancelled) setScanLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [repository, stagedFiles.length, stagedPathsKey])
+
+  const reviewFindings = changeReview?.findings ?? deterministicFindings
+
+  const safetyResult = useMemo(() => {
+    if (!status || !identity || !repository) return null
+    return safetyCheckService.checkCommit({
+      repository,
+      activeProfile,
+      identity,
+      status,
+      commitMessage: message,
+      reviewFindings: deterministicFindings,
+    })
+  }, [status, identity, repository, activeProfile, message, deterministicFindings])
 
   const blockers = safetyResult?.issues.filter((i) => i.severity === 'blocker') ?? []
   const warnings = safetyResult?.issues.filter((i) => i.severity === 'warning') ?? []
@@ -163,8 +214,28 @@ export default function CommitScreen(): React.ReactElement {
     setMessage(trimmedBody ? `${subject}\n\n${trimmedBody}` : subject)
   }
 
+  const handleAiReview = async () => {
+    if (!repository || !aiPreviewSeen) return
+    setReviewLoading(true)
+    setReviewError(null)
+    try {
+      const review = await reviewStagedChanges({
+        repositoryId: repository.id,
+        commitMessage: message,
+      })
+      if (review) setChangeReview(review)
+      else setReviewError(STR.CHANGE_REVIEW_ERROR)
+    } catch (err) {
+      setReviewError(err instanceof Error ? err.message : STR.CHANGE_REVIEW_ERROR)
+    } finally {
+      setReviewLoading(false)
+    }
+  }
+
   const assistantReady = aiPreviewSeen && !aiPreviewLoading
   const assistantBusy = draftLoading || summarizeLoading
+  const reviewReady = aiEnabled && assistantReady && !scanLoading
+  const groupedFindings = groupFindingsByCategory(reviewFindings)
 
   return (
     <div
@@ -226,6 +297,178 @@ export default function CommitScreen(): React.ReactElement {
               )}
             </div>
           </div>
+
+          {/* Change Review Assistant */}
+          {stagedFiles.length > 0 && (
+            <div
+              data-testid="change-review-panel"
+              style={{
+                marginBottom: '16px',
+                border: '1px solid var(--gw-border, #27272a)',
+                borderRadius: '4px',
+                background: 'var(--gw-surface, #18181b)',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  padding: '10px 12px',
+                  borderBottom: '1px solid var(--gw-border, #27272a)',
+                }}
+              >
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{STR.CHANGE_REVIEW_TITLE}</div>
+                <div style={{ fontSize: 11, color: 'var(--gw-text-faint, #71717a)', marginTop: 4 }}>
+                  {STR.CHANGE_REVIEW_HINT}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                  padding: '10px 12px',
+                  borderBottom:
+                    reviewFindings.length > 0 || reviewError || scanLoading
+                      ? '1px solid var(--gw-border, #27272a)'
+                      : 'none',
+                }}
+              >
+                {aiEnabled && (
+                  <button
+                    data-testid="change-review-ai-btn"
+                    onClick={() => void handleAiReview()}
+                    disabled={!reviewReady || reviewLoading}
+                    title={!aiPreviewSeen ? STR.CHANGE_REVIEW_AI_PREVIEW_REQUIRED : undefined}
+                    style={{
+                      background: 'none',
+                      color: reviewReady
+                        ? 'var(--gw-text-muted, #a1a1aa)'
+                        : 'var(--gw-text-dim, #52525b)',
+                      border: '1px solid var(--gw-surface3, #3f3f46)',
+                      borderRadius: '4px',
+                      padding: '6px 12px',
+                      fontSize: '12px',
+                      cursor: reviewReady && !reviewLoading ? 'pointer' : 'not-allowed',
+                    }}
+                  >
+                    {reviewLoading ? STR.CHANGE_REVIEW_AI_LOADING : STR.CHANGE_REVIEW_AI_BUTTON}
+                  </button>
+                )}
+                {scanLoading && (
+                  <span
+                    data-testid="change-review-scanning"
+                    style={{ fontSize: 12, color: 'var(--gw-text-faint, #71717a)' }}
+                  >
+                    {STR.CHANGE_REVIEW_SCANNING}
+                  </span>
+                )}
+              </div>
+
+              {reviewError && (
+                <div
+                  data-testid="change-review-error"
+                  style={{ padding: '8px 12px', color: 'var(--gw-danger, #f87171)', fontSize: 12 }}
+                >
+                  {reviewError}
+                </div>
+              )}
+
+              {!scanLoading && reviewFindings.length === 0 && !reviewError && (
+                <div
+                  data-testid="change-review-clear"
+                  style={{
+                    padding: '10px 12px',
+                    fontSize: 12,
+                    color: 'var(--gw-text-faint, #71717a)',
+                  }}
+                >
+                  {STR.CHANGE_REVIEW_NO_FINDINGS}
+                </div>
+              )}
+
+              {reviewFindings.length > 0 && (
+                <div data-testid="change-review-findings" style={{ padding: '10px 12px' }}>
+                  {changeReview?.overall && (
+                    <div
+                      data-testid="change-review-overall"
+                      style={{ fontSize: 12, marginBottom: 10, lineHeight: '18px' }}
+                    >
+                      <span style={{ color: 'var(--gw-text-faint, #71717a)' }}>
+                        {STR.CHANGE_REVIEW_OVERALL}:{' '}
+                      </span>
+                      {changeReview.overall}
+                    </div>
+                  )}
+                  {Array.from(groupedFindings.entries()).map(([category, items]) => (
+                    <div
+                      key={category}
+                      data-testid={`change-review-group-${category}`}
+                      style={{ marginBottom: 12 }}
+                    >
+                      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>
+                        {categoryLabel(category)}
+                      </div>
+                      {items.map((finding, index) => (
+                        <div
+                          key={`${category}-${finding.file ?? index}-${finding.source}`}
+                          data-testid="change-review-finding"
+                          style={{
+                            marginBottom: 8,
+                            padding: '8px 10px',
+                            border: '1px solid var(--gw-border-subtle, #3f3f46)',
+                            borderRadius: '4px',
+                            fontSize: 12,
+                          }}
+                        >
+                          <div
+                            style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 4 }}
+                          >
+                            <span
+                              data-testid="change-review-source"
+                              style={{
+                                fontSize: 10,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.04em',
+                                color: 'var(--gw-text-faint, #71717a)',
+                              }}
+                            >
+                              {finding.source === 'deterministic'
+                                ? STR.CHANGE_REVIEW_SOURCE_DETERMINISTIC
+                                : STR.CHANGE_REVIEW_SOURCE_AI}
+                            </span>
+                            <span
+                              data-testid="change-review-confidence"
+                              style={{
+                                fontSize: 10,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.04em',
+                                color: 'var(--gw-text-faint, #71717a)',
+                              }}
+                            >
+                              {STR.CHANGE_REVIEW_CONFIDENCE(finding.confidence)}
+                            </span>
+                            {finding.file && (
+                              <span
+                                data-testid="change-review-file"
+                                style={{ fontSize: 11, color: 'var(--gw-text-muted, #a1a1aa)' }}
+                              >
+                                {finding.file}
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ color: 'var(--gw-text-faint, #71717a)', fontSize: 11 }}>
+                            {STR.CHANGE_REVIEW_WHY}
+                          </div>
+                          <div data-testid="change-review-why">{finding.why}</div>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Commit message */}
           <div style={{ marginBottom: '16px' }}>
@@ -683,10 +926,31 @@ export default function CommitScreen(): React.ReactElement {
               </button>
             </span>
           </div>
+
+          <AgenticProposalPanel />
         </>
       )}
     </div>
   )
+}
+
+function categoryLabel(category: AiReviewCategory): string {
+  switch (category) {
+    case 'secret-like':
+      return STR.CHANGE_REVIEW_CATEGORY_SECRET
+    case 'risky-file':
+      return STR.CHANGE_REVIEW_CATEGORY_RISKY
+    case 'migration':
+      return STR.CHANGE_REVIEW_CATEGORY_MIGRATION
+    case 'lockfile':
+      return STR.CHANGE_REVIEW_CATEGORY_LOCKFILE
+    case 'generated':
+      return STR.CHANGE_REVIEW_CATEGORY_GENERATED
+    case 'missing-tests':
+      return STR.CHANGE_REVIEW_CATEGORY_MISSING_TESTS
+    case 'destructive':
+      return STR.CHANGE_REVIEW_CATEGORY_DESTRUCTIVE
+  }
 }
 
 function DraftOption({

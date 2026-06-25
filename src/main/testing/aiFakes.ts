@@ -119,12 +119,50 @@ class FakeAiAdapter implements AiAdapter {
     const estimate = this.guard.assertAllowed(request)
     const candidates: unknown[] = [
       {
+        summary: 'Fake push brief for e2e.',
+        highlights: ['abc1234 — feat: first commit (Alice Dev)'],
+      },
+      {
+        releaseNotesDraft: '## Fake release\n- Initial commit',
+        branchActivity: 'One recent commit on main.',
+        changelogDraft: '* abc1234 — feat: initial — Alice Dev',
+      },
+      {
+        summary: 'Fake agentic proposal for e2e.',
+        actions: [{ kind: 'suggest-navigation', target: 'commit' }],
+        fileEdits: [{ path: 'agentic-note.txt', after: 'fake proposal content\n' }],
+      },
+      {
+        projectSummary: 'Fake repo onboarding brief for e2e.',
+        buildHint: 'npm run build',
+        testHint: 'npm run test',
+        likelyBuildCommands: ['npm run build'],
+        likelyTestCommands: ['npm run test'],
+      },
+      { explanation: 'Fake failure explanation for e2e.' },
+      {
+        explanation:
+          'Fake AI safety explanation for e2e. Use the profile assigned to this repository before committing.',
+      },
+      {
         conventional: 'feat(ai): add fake structured output',
         plain: 'Add fake structured output',
         summary: 'Fake adapter response for e2e.',
       },
       { summary: 'Fake change summary.', highlights: ['No network used.'] },
-      { findings: [], overall: 'Fake review passed.' },
+      {
+        findings: [
+          {
+            category: 'risky-file',
+            source: 'ai',
+            confidence: 'medium',
+            file: 'feature.txt',
+            why: 'Fake AI advisory finding for e2e.',
+          },
+        ],
+        overall: 'All clear from the model.',
+      },
+      { findings: [], overall: 'All clear from the model.' },
       { text: 'ok' },
     ]
     for (const candidate of candidates) {

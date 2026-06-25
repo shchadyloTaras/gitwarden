@@ -9,6 +9,15 @@ import type { IAiCredentialStore } from '../storage/AiCredentialStore.js'
 import type { AiAdapter } from '../ai/types.js'
 import type { AiContextBuilder } from '../ai/AiContextBuilder.js'
 import type { AiCommitAssistant } from '../ai/AiCommitAssistant.js'
+import type { AiChangeReviewAssistant } from '../ai/AiChangeReviewAssistant.js'
+import type { AiSafetyCopilotAssistant } from '../ai/AiSafetyCopilotAssistant.js'
+import type { AiPushBriefAssistant } from '../ai/AiPushBriefAssistant.js'
+import type { AiHistorySummaryAssistant } from '../ai/AiHistorySummaryAssistant.js'
+import type { AiRepoBriefAssistant } from '../ai/AiRepoBriefAssistant.js'
+import type { AiFailureExplainerAssistant } from '../ai/AiFailureExplainerAssistant.js'
+import type { AiAgenticAssistant } from '../ai/AiAgenticAssistant.js'
+import type { AgenticActionExecutor } from '../ai/AgenticActionExecutor.js'
+import type { StagedChangeReviewService } from '../ai/StagedChangeReviewService.js'
 import { detectProvider } from '../../core/ai/detection.js'
 import { maskSecret } from '../../core/ai/credentials.js'
 import {
@@ -56,8 +65,32 @@ import {
   AiCancelPayload,
   AiPreviewContextPayload,
   AiCommitAssistantPayload,
+  ChangeReviewScanPayload,
+  AiSafetyCopilotPayload,
+  PushBriefPayload,
+  HistorySummaryPayload,
+  RepoBriefPayload,
+  GitFailureExplainPayload,
+  ToolFailureExplainPayload,
+  AiConnectionTemplateImportPayload,
+  AiAgenticProposePayload,
+  AiAgenticExecutePayload,
 } from './ipc-schemas.js'
-import { AiChangeSummarySchema, AiCommitDraftSchema } from '../../core/ai/schemas.js'
+import {
+  AiChangeReviewSchema,
+  AiChangeSummarySchema,
+  AiCommitDraftSchema,
+  AiHistorySummarySchema,
+  AiPushBriefSchema,
+  AiReviewFindingSchema,
+  AiSafetyExplanationResultSchema,
+  AiRepoBriefSchema,
+  AiAllowlistedFileSchema,
+  AiFailureExplanationSchema,
+  AiConnectionTemplateExportSchema,
+  AiConnectionSchema,
+  AiAgenticProposalSchema,
+} from '../../core/ai/schemas.js'
 import type { PushAuth } from '../services/GitService.js'
 
 export interface Services {
@@ -71,6 +104,15 @@ export interface Services {
   aiAdapters: AiAdapter
   aiContextBuilder: AiContextBuilder
   aiCommitAssistant: AiCommitAssistant
+  aiChangeReviewAssistant: AiChangeReviewAssistant
+  aiSafetyCopilotAssistant: AiSafetyCopilotAssistant
+  aiPushBriefAssistant: AiPushBriefAssistant
+  aiHistorySummaryAssistant: AiHistorySummaryAssistant
+  aiRepoBriefAssistant: AiRepoBriefAssistant
+  aiFailureExplainerAssistant: AiFailureExplainerAssistant
+  aiAgenticAssistant: AiAgenticAssistant
+  agenticActionExecutor: AgenticActionExecutor
+  stagedChangeReview: StagedChangeReviewService
   /** Browser-open seam — real `shell.openExternal` in production, no-op under e2e. */
   openExternal: (url: string) => void | Promise<void>
 }
@@ -492,6 +534,163 @@ export function registerIpcHandlers(services: Services): void {
       const input = AiCommitAssistantPayload.parse(raw)
       const summary = await services.aiCommitAssistant.summarizeStagedChanges(input)
       return AiChangeSummarySchema.parse(summary)
+    })
+  )
+
+  ipcMain.handle('changeReview:scanStaged', (_e, raw: unknown) =>
+    wrap(async () => {
+      const input = ChangeReviewScanPayload.parse(raw)
+      const findings = await services.stagedChangeReview.scanDeterministic(input)
+      return AiReviewFindingSchema.array().parse(findings)
+    })
+  )
+
+  ipcMain.handle('ai:reviewStagedChanges', (_e, raw: unknown) =>
+    wrap(async () => {
+      const input = AiCommitAssistantPayload.parse(raw)
+      const review = await services.aiChangeReviewAssistant.reviewStagedChanges(input)
+      return AiChangeReviewSchema.parse(review)
+    })
+  )
+
+  ipcMain.handle('ai:explainSafetyIssue', (_e, raw: unknown) =>
+    wrap(async () => {
+      const input = AiSafetyCopilotPayload.parse(raw)
+      const explanation = await services.aiSafetyCopilotAssistant.explainSafetyIssue(input)
+      return AiSafetyExplanationResultSchema.parse(explanation)
+    })
+  )
+
+  ipcMain.handle('pushBrief:buildDeterministic', (_e, raw: unknown) =>
+    wrap(async () => {
+      const input = PushBriefPayload.parse(raw)
+      const brief = await services.aiPushBriefAssistant.buildDeterministic(input)
+      return AiPushBriefSchema.parse(brief)
+    })
+  )
+
+  ipcMain.handle('ai:generatePushBrief', (_e, raw: unknown) =>
+    wrap(async () => {
+      const input = PushBriefPayload.parse(raw)
+      const brief = await services.aiPushBriefAssistant.generatePushBrief(input)
+      return AiPushBriefSchema.parse(brief)
+    })
+  )
+
+  ipcMain.handle('historySummary:buildDeterministic', (_e, raw: unknown) =>
+    wrap(async () => {
+      const input = HistorySummaryPayload.parse(raw)
+      const summary = await services.aiHistorySummaryAssistant.buildDeterministic(
+        input.repositoryId
+      )
+      return AiHistorySummarySchema.parse(summary)
+    })
+  )
+
+  ipcMain.handle('ai:generateHistorySummary', (_e, raw: unknown) =>
+    wrap(async () => {
+      const input = HistorySummaryPayload.parse(raw)
+      const summary = await services.aiHistorySummaryAssistant.generateHistorySummary(input)
+      return AiHistorySummarySchema.parse(summary)
+    })
+  )
+
+  ipcMain.handle('repoBrief:buildDeterministic', (_e, raw: unknown) =>
+    wrap(async () => {
+      const input = RepoBriefPayload.parse(raw)
+      const brief = await services.aiRepoBriefAssistant.buildDeterministic(input.repositoryId)
+      return AiRepoBriefSchema.parse(brief)
+    })
+  )
+
+  ipcMain.handle('repoBrief:listAllowlistedFiles', (_e, raw: unknown) =>
+    wrap(async () => {
+      const input = RepoBriefPayload.parse(raw)
+      const files = await services.aiRepoBriefAssistant.listAllowlistedFiles(input.repositoryId)
+      return AiAllowlistedFileSchema.array().parse(files)
+    })
+  )
+
+  ipcMain.handle('ai:generateRepoBrief', (_e, raw: unknown) =>
+    wrap(async () => {
+      const input = RepoBriefPayload.parse(raw)
+      const brief = await services.aiRepoBriefAssistant.generateRepoBrief(input.repositoryId)
+      return AiRepoBriefSchema.parse(brief)
+    })
+  )
+
+  ipcMain.handle('failureExplain:gitFailure', (_e, raw: unknown) =>
+    wrap(async () => {
+      const input = GitFailureExplainPayload.parse(raw)
+      const explanation = services.aiFailureExplainerAssistant.buildDeterministicGitFailure(input)
+      return AiFailureExplanationSchema.parse(explanation)
+    })
+  )
+
+  ipcMain.handle('ai:explainGitFailure', (_e, raw: unknown) =>
+    wrap(async () => {
+      const input = GitFailureExplainPayload.parse(raw)
+      const explanation = await services.aiFailureExplainerAssistant.explainGitFailure(input)
+      return AiFailureExplanationSchema.parse(explanation)
+    })
+  )
+
+  ipcMain.handle('failureExplain:toolOutput', (_e, raw: unknown) =>
+    wrap(async () => {
+      const input = ToolFailureExplainPayload.parse(raw)
+      const explanation = services.aiFailureExplainerAssistant.buildDeterministicToolFailure(input)
+      return AiFailureExplanationSchema.parse(explanation)
+    })
+  )
+
+  ipcMain.handle('ai:explainToolOutput', (_e, raw: unknown) =>
+    wrap(async () => {
+      const input = ToolFailureExplainPayload.parse(raw)
+      const explanation = await services.aiFailureExplainerAssistant.explainToolOutput(input)
+      return AiFailureExplanationSchema.parse(explanation)
+    })
+  )
+
+  ipcMain.handle('ai:listBuiltInTemplates', () =>
+    wrap(() => services.aiConnections.listBuiltInTemplates())
+  )
+
+  ipcMain.handle('ai:exportConnectionTemplate', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { id } = AiConnectionIdPayload.parse(raw)
+      const template = await services.aiConnections.exportTemplate(id)
+      return AiConnectionTemplateExportSchema.parse(template)
+    })
+  )
+
+  ipcMain.handle('ai:importConnectionTemplate', (_e, raw: unknown) =>
+    wrap(async () => {
+      const template = AiConnectionTemplateImportPayload.parse(raw)
+      const connection = await services.aiConnections.importTemplate(template)
+      return AiConnectionSchema.parse(connection)
+    })
+  )
+
+  ipcMain.handle('ai:duplicateConnection', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { id } = AiConnectionIdPayload.parse(raw)
+      const connection = await services.aiConnections.duplicate(id)
+      return AiConnectionSchema.parse(connection)
+    })
+  )
+
+  ipcMain.handle('ai:proposeAgenticActions', (_e, raw: unknown) =>
+    wrap(async () => {
+      const input = AiAgenticProposePayload.parse(raw)
+      const proposal = await services.aiAgenticAssistant.propose(input.repositoryId, input.prompt)
+      return AiAgenticProposalSchema.parse(proposal)
+    })
+  )
+
+  ipcMain.handle('ai:executeAgenticProposal', (_e, raw: unknown) =>
+    wrap(async () => {
+      const input = AiAgenticExecutePayload.parse(raw)
+      return services.agenticActionExecutor.executeFileEdits(input.repositoryId, input.fileEdits)
     })
   )
 }

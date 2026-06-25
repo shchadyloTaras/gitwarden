@@ -81,6 +81,8 @@ export interface RepositoryRecord {
    * context-assembly time lands in Phase 31.
    */
   aiOverride?: 'enabled' | 'disabled'
+  /** Optional per-repo recommended AI connection (Phase 38). Non-secret pointer only. */
+  recommendedConnectionId?: string
 }
 
 export type ChangeKind =

@@ -45,6 +45,7 @@ export type AiRequestKind =
   | 'history-summary'
   | 'repo-brief'
   | 'failure-explain'
+  | 'agentic-proposal'
 
 /**
  * What a connection's adapter/endpoint can do.
@@ -236,4 +237,137 @@ export interface AiChangeReview {
   findings: AiReviewFinding[]
   /** Optional one-line overall impression. Advisory only. */
   overall?: string
+}
+
+/**
+ * Allowlisted app controls the Safety Copilot may point at (Phase 34).
+ * The AI never applies these — it only tells the user where to go.
+ */
+export type SafetySuggestedAction =
+  | 'set-local-identity'
+  | 'switch-active-profile'
+  | 'assign-repo-profile'
+  | 'reconnect-github'
+  | 'stage-changes'
+  | 'write-commit-message'
+  | 'resolve-conflicts'
+  | 'configure-remote'
+  | 'review-staged-changes'
+
+/** Safety Copilot explanation for one SafetyCode (Phase 34). */
+export interface AiSafetyExplanation {
+  code: string
+  explanation: string
+  suggestedAction: SafetySuggestedAction
+  actionHint: string
+  source: 'deterministic' | 'ai'
+}
+
+/** Token-free push identity facts for Push Brief (Phase 35). */
+export interface AiPushIdentityContext {
+  remoteName: string
+  branch: string
+  remoteHost?: string
+  activeProfileName?: string
+  activeProfileEmail?: string
+  assignedProfileName?: string
+  identityName?: string
+  identityEmail?: string
+  github?: {
+    assignedLogin?: string
+    effectiveLogin?: string
+    hasToken: boolean
+    tokenInvalid: boolean
+  }
+}
+
+/** Push Brief — commits ahead of upstream before explicit push confirmation (Phase 35). */
+export interface AiPushBrief {
+  summary: string
+  highlights: string[]
+  commitCount: number
+  identityNote: string
+  source: 'deterministic' | 'ai'
+}
+
+/** History Intelligence — release notes, branch activity, changelog drafts (Phase 35). */
+export interface AiHistorySummary {
+  releaseNotesDraft: string
+  branchActivity: string
+  changelogDraft: string
+  source: 'deterministic' | 'ai'
+}
+
+/** Metadata for one allowlisted file included in a repo brief (Phase 36). */
+export interface AiAllowlistedFile {
+  path: string
+  byteLength: number
+}
+
+/** Repo Onboarding Assistant output (Phase 36). Commands are inferred, never executed. */
+export interface AiRepoBrief {
+  projectSummary: string
+  likelyBuildCommands: string[]
+  likelyTestCommands: string[]
+  buildHint: string
+  testHint: string
+  includedFiles: string[]
+  source: 'deterministic' | 'ai'
+}
+
+/** Allowlisted app controls the Failure Explainer may point at (Phase 37). */
+export type FailureSuggestedAction =
+  | 'check-network'
+  | 'review-auth'
+  | 'configure-remote'
+  | 'switch-branch'
+  | 'resolve-conflicts'
+  | 'stage-changes'
+  | 'review-staged-changes'
+  | 'open-safety-center'
+  | 'open-repositories'
+  | 'open-settings'
+  | 'none'
+
+/** Failure Explainer output for Git errors or pasted tool output (Phase 37). */
+export interface AiFailureExplanation {
+  code: string
+  category: string
+  explanation: string
+  suggestedAction: FailureSuggestedAction
+  actionHint: string
+  source: 'deterministic' | 'ai'
+}
+
+/** Export/import template — no secrets, no runtime ids (Phase 38). */
+export interface AiConnectionTemplateExport {
+  version: 1
+  name: string
+  kind: AiConnectionKind
+  baseUrl?: string
+  defaultModel?: string
+  privacyMode: AiPrivacyMode
+  retention: AiRetentionState
+  customHttpMapping?: CustomHttpMapping
+}
+
+/** One proposed file edit in an agentic proposal (Phase 39). */
+export interface AiAgenticFileEdit {
+  path: string
+  before?: string
+  after: string
+}
+
+/** One allowlisted action in an agentic proposal (Phase 39). */
+export interface AiAgenticAction {
+  kind: 'write-repo-file' | 'suggest-navigation' | 'copy-command'
+  target?: string
+  command?: string
+}
+
+/** Agentic proposal — previewed and confirmed before any execution (Phase 39). */
+export interface AiAgenticProposal {
+  summary: string
+  actions: AiAgenticAction[]
+  fileEdits: AiAgenticFileEdit[]
 }

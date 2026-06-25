@@ -28,7 +28,19 @@ import {
 } from '../src/main/testing/aiFakes.js'
 import { createAiAdapterRegistry } from '../src/main/ai/index.js'
 import { AiContextBuilder } from '../src/main/ai/AiContextBuilder.js'
+import { RepoBriefService } from '../src/main/ai/RepoBriefService.js'
+import { AiRepoBriefAssistant } from '../src/main/ai/AiRepoBriefAssistant.js'
+import { AiFailureExplainerAssistant } from '../src/main/ai/AiFailureExplainerAssistant.js'
+import { AiAgenticAssistant } from '../src/main/ai/AiAgenticAssistant.js'
+import { AgenticActionExecutor } from '../src/main/ai/AgenticActionExecutor.js'
 import { AiCommitAssistant } from '../src/main/ai/AiCommitAssistant.js'
+import { AiChangeReviewAssistant } from '../src/main/ai/AiChangeReviewAssistant.js'
+import { AiSafetyCopilotAssistant } from '../src/main/ai/AiSafetyCopilotAssistant.js'
+import { PushBriefService } from '../src/main/ai/PushBriefService.js'
+import { HistorySummaryService } from '../src/main/ai/HistorySummaryService.js'
+import { AiPushBriefAssistant } from '../src/main/ai/AiPushBriefAssistant.js'
+import { AiHistorySummaryAssistant } from '../src/main/ai/AiHistorySummaryAssistant.js'
+import { StagedChangeReviewService } from '../src/main/ai/StagedChangeReviewService.js'
 import {
   TokenStore,
   TokenStoreDataSchema,
@@ -176,14 +188,43 @@ app.whenReady().then(async () => {
         credentials: aiCredentials,
         http: new FetchHttpClient(),
       })
+  const pushBriefService = new PushBriefService(repositories, profiles, settings, git)
+  const historySummaryService = new HistorySummaryService(repositories, git)
+  const repoBriefService = new RepoBriefService(repositories, git)
   const aiContextBuilder = new AiContextBuilder({
     profiles,
     repositories,
     settings,
     git,
     aiConnections,
+    repoBrief: repoBriefService,
   })
   const aiCommitAssistant = new AiCommitAssistant(aiContextBuilder, aiAdapters)
+  const stagedChangeReview = new StagedChangeReviewService(repositories, git)
+  const aiChangeReviewAssistant = new AiChangeReviewAssistant(
+    stagedChangeReview,
+    aiContextBuilder,
+    aiAdapters
+  )
+  const aiSafetyCopilotAssistant = new AiSafetyCopilotAssistant(aiContextBuilder, aiAdapters)
+  const aiPushBriefAssistant = new AiPushBriefAssistant(
+    pushBriefService,
+    aiContextBuilder,
+    aiAdapters
+  )
+  const aiHistorySummaryAssistant = new AiHistorySummaryAssistant(
+    historySummaryService,
+    aiContextBuilder,
+    aiAdapters
+  )
+  const aiRepoBriefAssistant = new AiRepoBriefAssistant(
+    repoBriefService,
+    aiContextBuilder,
+    aiAdapters
+  )
+  const aiFailureExplainerAssistant = new AiFailureExplainerAssistant(aiContextBuilder, aiAdapters)
+  const aiAgenticAssistant = new AiAgenticAssistant(aiContextBuilder, aiAdapters)
+  const agenticActionExecutor = new AgenticActionExecutor(repositories)
 
   registerIpcHandlers({
     profiles,
@@ -196,6 +237,15 @@ app.whenReady().then(async () => {
     aiAdapters,
     aiContextBuilder,
     aiCommitAssistant,
+    aiChangeReviewAssistant,
+    aiSafetyCopilotAssistant,
+    aiPushBriefAssistant,
+    aiHistorySummaryAssistant,
+    aiRepoBriefAssistant,
+    aiFailureExplainerAssistant,
+    aiAgenticAssistant,
+    agenticActionExecutor,
+    stagedChangeReview,
     openExternal,
   })
 

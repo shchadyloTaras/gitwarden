@@ -38,6 +38,7 @@ export const AiRequestKindSchema = z.enum([
   'history-summary',
   'repo-brief',
   'failure-explain',
+  'agentic-proposal',
 ])
 
 export const AiDetectionConfidenceSchema = z.enum(['high', 'medium', 'low'])
@@ -291,6 +292,166 @@ export const AiChangeSummarySchema = z.object({
 export const AiChangeReviewSchema = z.object({
   findings: z.array(AiReviewFindingSchema),
   overall: z.string().optional(),
+})
+
+export const SafetySuggestedActionSchema = z.enum([
+  'set-local-identity',
+  'switch-active-profile',
+  'assign-repo-profile',
+  'reconnect-github',
+  'stage-changes',
+  'write-commit-message',
+  'resolve-conflicts',
+  'configure-remote',
+  'review-staged-changes',
+])
+
+export const AiSafetyExplanationSchema = z.object({
+  explanation: z.string(),
+})
+
+export const AiSafetyExplanationResultSchema = z.object({
+  code: z.string(),
+  explanation: z.string(),
+  suggestedAction: SafetySuggestedActionSchema,
+  actionHint: z.string(),
+  source: z.enum(['deterministic', 'ai']),
+})
+
+export const AiPushIdentityContextSchema = z.object({
+  remoteName: z.string(),
+  branch: z.string(),
+  remoteHost: z.string().optional(),
+  activeProfileName: z.string().optional(),
+  activeProfileEmail: z.string().optional(),
+  assignedProfileName: z.string().optional(),
+  identityName: z.string().optional(),
+  identityEmail: z.string().optional(),
+  github: z
+    .object({
+      assignedLogin: z.string().optional(),
+      effectiveLogin: z.string().optional(),
+      hasToken: z.boolean(),
+      tokenInvalid: z.boolean(),
+    })
+    .optional(),
+})
+
+export const AiPushBriefSchema = z.object({
+  summary: z.string(),
+  highlights: z.array(z.string()),
+  commitCount: z.number().int().min(0),
+  identityNote: z.string(),
+  source: z.enum(['deterministic', 'ai']),
+})
+
+export const AiPushBriefAiResponseSchema = z.object({
+  summary: z.string(),
+  highlights: z.array(z.string()),
+})
+
+export const AiHistorySummarySchema = z.object({
+  releaseNotesDraft: z.string(),
+  branchActivity: z.string(),
+  changelogDraft: z.string(),
+  source: z.enum(['deterministic', 'ai']),
+})
+
+export const AiHistorySummaryAiResponseSchema = z.object({
+  releaseNotesDraft: z.string(),
+  branchActivity: z.string(),
+  changelogDraft: z.string(),
+})
+
+export const AiAllowlistedFileSchema = z.object({
+  path: z.string(),
+  byteLength: z.number().int().min(0),
+})
+
+export const AiRepoBriefSchema = z.object({
+  projectSummary: z.string(),
+  likelyBuildCommands: z.array(z.string()),
+  likelyTestCommands: z.array(z.string()),
+  buildHint: z.string(),
+  testHint: z.string(),
+  includedFiles: z.array(z.string()),
+  source: z.enum(['deterministic', 'ai']),
+})
+
+export const AiRepoBriefAiResponseSchema = z.object({
+  projectSummary: z.string(),
+  likelyBuildCommands: z.array(z.string()).optional(),
+  likelyTestCommands: z.array(z.string()).optional(),
+  buildHint: z.string().optional(),
+  testHint: z.string().optional(),
+})
+
+export const FailureSuggestedActionSchema = z.enum([
+  'check-network',
+  'review-auth',
+  'configure-remote',
+  'switch-branch',
+  'resolve-conflicts',
+  'stage-changes',
+  'review-staged-changes',
+  'open-safety-center',
+  'open-repositories',
+  'open-settings',
+  'none',
+])
+
+export const AiFailureExplanationSchema = z.object({
+  code: z.string(),
+  category: z.string(),
+  explanation: z.string(),
+  suggestedAction: FailureSuggestedActionSchema,
+  actionHint: z.string(),
+  source: z.enum(['deterministic', 'ai']),
+})
+
+export const AiFailureExplanationAiResponseSchema = z.object({
+  explanation: z.string(),
+})
+
+export const AiConnectionTemplateExportSchema = z
+  .object({
+    version: z.literal(1),
+    name: z.string().min(1),
+    kind: AiConnectionKindSchema,
+    baseUrl: z.string().optional(),
+    defaultModel: z.string().optional(),
+    privacyMode: AiPrivacyModeSchema,
+    retention: AiRetentionStateSchema,
+    customHttpMapping: z.lazy(() => CustomHttpMappingSchema).optional(),
+  })
+  .superRefine((v, ctx) => refineBaseUrl(v.baseUrl, ctx))
+
+function refineBaseUrl(baseUrl: string | undefined, ctx: z.RefinementCtx): void {
+  if (baseUrl !== undefined && !isAllowedAiBaseUrl(baseUrl)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['baseUrl'],
+      message: 'baseUrl must be https:// (or http:// to a loopback host)',
+    })
+  }
+}
+
+export const AiAgenticActionSchema = z.object({
+  kind: z.enum(['write-repo-file', 'suggest-navigation', 'copy-command']),
+  target: z.string().optional(),
+  command: z.string().optional(),
+})
+
+export const AiAgenticFileEditSchema = z.object({
+  path: z.string().min(1),
+  before: z.string().optional(),
+  after: z.string(),
+})
+
+export const AiAgenticProposalSchema = z.object({
+  summary: z.string(),
+  actions: z.array(AiAgenticActionSchema),
+  fileEdits: z.array(AiAgenticFileEditSchema),
 })
 
 // ── Derived types (single source of truth = the schema) ─────────────────────────

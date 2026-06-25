@@ -211,6 +211,6 @@ test.describe('Safety Center', () => {
     await expect(win.getByTestId('remote-push-sheet')).toBeVisible({ timeout: 5000 })
     // Confirm button must be disabled — matching the Safety Center "No"
     await expect(win.getByTestId('remote-push-confirm-btn')).toBeDisabled()
-    await expect(win.getByTestId('remote-push-blocker')).toBeVisible()
+    await expect(win.getByTestId('remote-push-issue-REMOTE_HOST_MISMATCH')).toBeVisible()
   })
 })

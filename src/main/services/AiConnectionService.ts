@@ -2,11 +2,21 @@ import type {
   AiConnection,
   AiConnectionKind,
   AiConnectionCapabilities,
+  AiConnectionTemplateExport,
   AiPrivacyMode,
   AiRetentionState,
   CustomHttpMapping,
 } from '../../core/ai/types.js'
-import { AiConnectionSchema, type AiConnectionsData } from '../../core/ai/schemas.js'
+import {
+  AiConnectionSchema,
+  AiConnectionTemplateExportSchema,
+  type AiConnectionsData,
+} from '../../core/ai/schemas.js'
+import {
+  assertTemplateHasNoSecrets,
+  BUILTIN_CONNECTION_TEMPLATES,
+  connectionToTemplateExport,
+} from '../../core/ai/connectionTemplates.js'
 import { deriveLocalOnly } from '../../core/ai/transport.js'
 import type { JsonStore } from '../storage/JsonStore.js'
 
@@ -54,6 +64,10 @@ export interface IAiConnectionService {
   update(id: string, patch: AiConnectionPatch): Promise<AiConnection>
   delete(id: string): Promise<void>
   setActive(id: string | null): Promise<void>
+  duplicate(id: string): Promise<AiConnection>
+  exportTemplate(id: string): Promise<AiConnectionTemplateExport>
+  importTemplate(template: AiConnectionTemplateExport): Promise<AiConnection>
+  listBuiltInTemplates(): Promise<AiConnectionTemplateExport[]>
 }
 
 export class AiConnectionService implements IAiConnectionService {
@@ -151,6 +165,48 @@ export class AiConnectionService implements IAiConnectionService {
     }
     data.activeConnectionId = id ?? undefined
     await this.store.write(data)
+  }
+
+  async duplicate(id: string): Promise<AiConnection> {
+    const source = await this.get(id)
+    if (!source) throw new Error(`AI connection not found: ${id}`)
+    return this.create({
+      name: `${source.name} (copy)`,
+      kind: source.kind,
+      baseUrl: source.baseUrl,
+      defaultModel: source.defaultModel,
+      privacyMode: source.privacyMode,
+      retention: source.retention,
+      customHttpMapping: source.customHttpMapping,
+      enabled: false,
+    })
+  }
+
+  async exportTemplate(id: string): Promise<AiConnectionTemplateExport> {
+    const source = await this.get(id)
+    if (!source) throw new Error(`AI connection not found: ${id}`)
+    const template = connectionToTemplateExport(source)
+    assertTemplateHasNoSecrets(template)
+    return AiConnectionTemplateExportSchema.parse(template)
+  }
+
+  async importTemplate(template: AiConnectionTemplateExport): Promise<AiConnection> {
+    const parsed = AiConnectionTemplateExportSchema.parse(template)
+    assertTemplateHasNoSecrets(parsed)
+    return this.create({
+      name: parsed.name,
+      kind: parsed.kind,
+      baseUrl: parsed.baseUrl,
+      defaultModel: parsed.defaultModel,
+      privacyMode: parsed.privacyMode,
+      retention: parsed.retention,
+      customHttpMapping: parsed.customHttpMapping,
+      enabled: false,
+    })
+  }
+
+  listBuiltInTemplates(): Promise<AiConnectionTemplateExport[]> {
+    return Promise.resolve(BUILTIN_CONNECTION_TEMPLATES)
   }
 }
 

@@ -287,6 +287,8 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
   const [saved, setSaved] = useState(false)
   const [modelsLoading, setModelsLoading] = useState(false)
   const [modelStatus, setModelStatus] = useState<string | null>(null)
+  const [templateMessage, setTemplateMessage] = useState<string | null>(null)
+  const load = useAiStore((s) => s.load)
 
   useEffect(() => {
     setName(conn.name)
@@ -315,6 +317,28 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
     } finally {
       setModelsLoading(false)
     }
+  }
+
+  async function handleExportTemplate(): Promise<void> {
+    setTemplateMessage(null)
+    const result = await window.api.ai.exportConnectionTemplate(conn.id)
+    if (!result.ok) {
+      setTemplateMessage(STR.AI_TEMPLATE_EXPORT_ERROR)
+      return
+    }
+    await navigator.clipboard.writeText(JSON.stringify(result.data, null, 2))
+    setTemplateMessage(STR.AI_TEMPLATE_EXPORTED)
+  }
+
+  async function handleDuplicate(): Promise<void> {
+    setTemplateMessage(null)
+    const result = await window.api.ai.duplicateConnection(conn.id)
+    if (!result.ok) {
+      setTemplateMessage(STR.AI_TEMPLATE_IMPORT_ERROR)
+      return
+    }
+    await load()
+    setTemplateMessage(STR.AI_TEMPLATE_IMPORT_SUCCESS)
   }
 
   return (
@@ -497,6 +521,43 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
         >
           {retentionLine(conn)}
         </p>
+      </div>
+
+      <div
+        style={{
+          marginTop: 18,
+          paddingTop: 16,
+          borderTop: '1px solid var(--gw-border, #27272a)',
+          display: 'flex',
+          gap: 10,
+          flexWrap: 'wrap',
+          alignItems: 'center',
+        }}
+      >
+        <button
+          type="button"
+          data-testid="ai-export-template"
+          onClick={() => void handleExportTemplate()}
+          style={SUBTLE_BTN}
+        >
+          {STR.AI_TEMPLATE_EXPORT}
+        </button>
+        <button
+          type="button"
+          data-testid="ai-duplicate-connection"
+          onClick={() => void handleDuplicate()}
+          style={SUBTLE_BTN}
+        >
+          {STR.AI_TEMPLATE_DUPLICATE}
+        </button>
+        {templateMessage && (
+          <span
+            data-testid="ai-template-message"
+            style={{ fontSize: 12, color: 'var(--gw-text-muted, #a1a1aa)' }}
+          >
+            {templateMessage}
+          </span>
+        )}
       </div>
 
       {/* Connection lifecycle: disable / delete. */}
@@ -694,6 +755,60 @@ function AdvancedDisclosure(): React.ReactElement {
   )
 }
 
+function BuiltInTemplates(): React.ReactElement {
+  const load = useAiStore((s) => s.load)
+  const [templates, setTemplates] = useState<Array<{ name: string; kind: string }>>([])
+  const [message, setMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    void window.api.ai.listBuiltInTemplates().then((res) => {
+      if (res.ok) setTemplates(res.data.map((t) => ({ name: t.name, kind: t.kind })))
+    })
+  }, [])
+
+  async function importTemplate(name: string): Promise<void> {
+    setMessage(null)
+    const list = await window.api.ai.listBuiltInTemplates()
+    if (!list.ok) {
+      setMessage(STR.AI_TEMPLATE_IMPORT_ERROR)
+      return
+    }
+    const template = list.data.find((t) => t.name === name)
+    if (!template) return
+    const result = await window.api.ai.importConnectionTemplate(template)
+    if (!result.ok) {
+      setMessage(STR.AI_TEMPLATE_IMPORT_ERROR)
+      return
+    }
+    await load()
+    setMessage(STR.AI_TEMPLATE_IMPORT_SUCCESS)
+  }
+
+  return (
+    <div style={CARD} data-testid="ai-builtin-templates">
+      <div style={SECTION_TITLE}>{STR.AI_TEMPLATE_BUILTIN}</div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {templates.map((t) => (
+          <button
+            key={t.name}
+            type="button"
+            data-testid={`ai-import-template-${t.kind}`}
+            onClick={() => void importTemplate(t.name)}
+            style={SUBTLE_BTN}
+          >
+            {t.name}
+          </button>
+        ))}
+      </div>
+      {message && (
+        <p data-testid="ai-import-template-message" style={{ ...HINT, marginTop: 10 }}>
+          {message}
+        </p>
+      )}
+    </div>
+  )
+}
+
 export default function AiConnectionSettings(): React.ReactElement {
   const load = useAiStore((s) => s.load)
   const connections = useAiStore((s) => s.connections)
@@ -709,6 +824,7 @@ export default function AiConnectionSettings(): React.ReactElement {
     <div data-testid="ai-section">
       {active ? <ActiveConnectionCard conn={active} /> : <SetupForm />}
       <EnableAiToggle />
+      <BuiltInTemplates />
       <RepoOverride />
       <AdvancedDisclosure />
     </div>

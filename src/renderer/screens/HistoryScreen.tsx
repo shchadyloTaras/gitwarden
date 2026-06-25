@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react'
 import { useHistoryStore } from '../store/historyStore'
 import { useAppStore } from '../store/appStore'
+import HistorySummaryPanel from '../components/HistorySummaryPanel'
+import { STR } from '../strings'
 
 const ROW: React.CSSProperties = {
   display: 'grid',
@@ -42,13 +44,15 @@ export default function HistoryScreen(): React.ReactElement {
           flexShrink: 0,
         }}
       >
-        <span style={{ fontWeight: 600, fontSize: 14 }}>History</span>
+        <span style={{ fontWeight: 600, fontSize: 14 }}>{STR.NAV_HISTORY}</span>
         {activeRepo && !loading && (
           <span style={{ fontSize: 12, color: 'var(--gw-text-faint, #71717a)' }}>
             {commits.length} commits loaded
           </span>
         )}
       </div>
+
+      {activeRepo && <HistorySummaryPanel repositoryId={activeRepo.id} />}
 
       {/* Body */}
       {!activeRepo ? (
