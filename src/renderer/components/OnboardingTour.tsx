@@ -92,9 +92,11 @@ function buildSteps(): OnboardingStep[] {
     {
       title: STR.ONBOARDING_STEP_SETTINGS_TITLE,
       body: STR.ONBOARDING_STEP_SETTINGS_BODY,
-      target: '[data-testid="settings-onboarding-card"]',
+      // The replay control now lives under the Walkthrough tab; spotlight the tab
+      // itself since it is always rendered regardless of the active Settings tab.
+      target: '[data-testid="settings-tab-walkthrough"]',
       screen: 'settings',
-      placement: 'top',
+      placement: 'bottom',
     },
   ]
 }

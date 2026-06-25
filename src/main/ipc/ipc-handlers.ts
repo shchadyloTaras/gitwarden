@@ -16,6 +16,7 @@ import type { AiHistorySummaryAssistant } from '../ai/AiHistorySummaryAssistant.
 import type { AiRepoBriefAssistant } from '../ai/AiRepoBriefAssistant.js'
 import type { AiFailureExplainerAssistant } from '../ai/AiFailureExplainerAssistant.js'
 import type { AiAgenticAssistant } from '../ai/AiAgenticAssistant.js'
+import type { AiChatAssistant } from '../ai/AiChatAssistant.js'
 import type { AgenticActionExecutor } from '../ai/AgenticActionExecutor.js'
 import type { StagedChangeReviewService } from '../ai/StagedChangeReviewService.js'
 import { detectProvider } from '../../core/ai/detection.js'
@@ -75,6 +76,7 @@ import {
   AiConnectionTemplateImportPayload,
   AiAgenticProposePayload,
   AiAgenticExecutePayload,
+  AiChatPayload,
 } from './ipc-schemas.js'
 import {
   AiChangeReviewSchema,
@@ -90,6 +92,7 @@ import {
   AiConnectionTemplateExportSchema,
   AiConnectionSchema,
   AiAgenticProposalSchema,
+  AiChatResponseSchema,
 } from '../../core/ai/schemas.js'
 import type { PushAuth } from '../services/GitService.js'
 
@@ -111,6 +114,7 @@ export interface Services {
   aiRepoBriefAssistant: AiRepoBriefAssistant
   aiFailureExplainerAssistant: AiFailureExplainerAssistant
   aiAgenticAssistant: AiAgenticAssistant
+  aiChatAssistant: AiChatAssistant
   agenticActionExecutor: AgenticActionExecutor
   stagedChangeReview: StagedChangeReviewService
   /** Browser-open seam — real `shell.openExternal` in production, no-op under e2e. */
@@ -691,6 +695,14 @@ export function registerIpcHandlers(services: Services): void {
     wrap(async () => {
       const input = AiAgenticExecutePayload.parse(raw)
       return services.agenticActionExecutor.executeFileEdits(input.repositoryId, input.fileEdits)
+    })
+  )
+
+  ipcMain.handle('ai:chat', (_e, raw: unknown) =>
+    wrap(async () => {
+      const input = AiChatPayload.parse(raw)
+      const response = await services.aiChatAssistant.chat(input)
+      return AiChatResponseSchema.parse(response)
     })
   )
 }

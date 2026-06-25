@@ -35,6 +35,7 @@ export { AiRepoBriefAssistant } from './AiRepoBriefAssistant.js'
 export { AiFailureExplainerAssistant } from './AiFailureExplainerAssistant.js'
 export { AiAgenticAssistant } from './AiAgenticAssistant.js'
 export { AgenticActionExecutor } from './AgenticActionExecutor.js'
+export { AiChatAssistant } from './AiChatAssistant.js'
 
 export function createAiAdapterRegistry(deps: {
   connections: IAiConnectionService

@@ -4,7 +4,8 @@ import {
   AiRequestKindSchema,
   type AiUsageEstimateRequestInput,
 } from '../../core/ai/schemas.js'
-import type { AiConnection, AiModelInfo } from '../../core/ai/types.js'
+import { parseStructuredAdapterValue } from '../../core/ai/structuredParse.js'
+import type { AiConnection, AiModelInfo, AiRequestKind } from '../../core/ai/types.js'
 import { deriveLocalOnly, isAllowedAiBaseUrl } from '../../core/ai/transport.js'
 import type { HttpClient, HttpResponse } from '../services/HttpClient.js'
 import type { IAiConnectionService } from '../services/AiConnectionService.js'
@@ -97,11 +98,16 @@ export function localOnlyFromBase(baseUrl: string): boolean {
   return deriveLocalOnly(baseUrl)
 }
 
-export function modelInfo(id: string, localOnly: boolean, label?: string): AiModelInfo {
+export function modelInfo(
+  id: string,
+  localOnly: boolean,
+  label?: string,
+  structuredOutput = true
+): AiModelInfo {
   return {
     id,
     label,
-    structuredOutput: true,
+    structuredOutput,
     recommended: isRecommendedModel(id) || undefined,
     localOnly,
   }
@@ -136,9 +142,37 @@ export function assertHttpOk(response: HttpResponse, label: string): void {
   }
 }
 
-export function parseStructuredValue<T>(schema: z.ZodType<T>, raw: unknown): T {
-  const value = typeof raw === 'string' ? parseJsonString(raw) : raw
-  return schema.parse(value)
+export function parseStructuredValue<T>(
+  schema: z.ZodType<T>,
+  raw: unknown,
+  kind: AiRequestKind
+): T {
+  return parseStructuredAdapterValue(schema, raw, kind)
+}
+
+export function modelSupportsStructuredOutput(supportedParameters: string[] | undefined): boolean {
+  if (!supportedParameters || supportedParameters.length === 0) return false
+  return supportedParameters.some(
+    (param) => param === 'structured_outputs' || param === 'response_format'
+  )
+}
+
+export async function assertStructuredOutputSupported(
+  listModels: (connectionId: string) => Promise<AiModelInfo[]>,
+  request: AiStructuredRequest<unknown>,
+  modelId: string | undefined
+): Promise<void> {
+  if (request.kind === 'chat') return
+  if (!modelId) return
+
+  const models = await listModels(request.connectionId)
+  const model = models.find((entry) => entry.id === modelId)
+  // Only block when the provider explicitly reports no structured-output support.
+  if (model && !model.structuredOutput) {
+    throw new Error(
+      `The selected model "${modelId}" does not support structured JSON output on this provider. Choose a structured-output-capable model or switch provider.`
+    )
+  }
 }
 
 export async function requestJson(
@@ -146,14 +180,6 @@ export async function requestJson(
   input: Parameters<HttpClient['request']>[0]
 ): Promise<HttpResponse> {
   return http.request(input)
-}
-
-function parseJsonString(text: string): unknown {
-  try {
-    return JSON.parse(text)
-  } catch {
-    throw new Error('AI provider returned non-JSON structured content')
-  }
 }
 
 function trimTrailingSlash(url: string): string {

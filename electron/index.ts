@@ -1,5 +1,9 @@
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, session, shell } from 'electron'
 import path from 'node:path'
+import {
+  installContentSecurityPolicy,
+  isDevRenderer,
+} from '../src/main/security/contentSecurityPolicy.js'
 import { GitLocator } from '../src/main/git/GitLocator.js'
 import { GitRunner } from '../src/main/git/GitRunner.js'
 import { GitService } from '../src/main/services/GitService.js'
@@ -39,6 +43,7 @@ import { AiSafetyCopilotAssistant } from '../src/main/ai/AiSafetyCopilotAssistan
 import { PushBriefService } from '../src/main/ai/PushBriefService.js'
 import { HistorySummaryService } from '../src/main/ai/HistorySummaryService.js'
 import { AiPushBriefAssistant } from '../src/main/ai/AiPushBriefAssistant.js'
+import { AiChatAssistant } from '../src/main/ai/AiChatAssistant.js'
 import { AiHistorySummaryAssistant } from '../src/main/ai/AiHistorySummaryAssistant.js'
 import { StagedChangeReviewService } from '../src/main/ai/StagedChangeReviewService.js'
 import {
@@ -61,6 +66,14 @@ const IS_E2E_FAKE_GITHUB = process.env['GITWARDEN_E2E_FAKE_GITHUB'] === '1'
 
 /** True for AI e2e — fake (in-memory) credential store so no safeStorage is needed. */
 const IS_E2E_FAKE_AI = process.env['GITWARDEN_E2E_FAKE_AI'] === '1'
+
+const IS_DEV_RENDERER = isDevRenderer()
+
+// Vite dev/HMR needs 'unsafe-eval', which triggers Electron's CSP security warning.
+// Production loads a bundled renderer with a strict CSP and no eval.
+if (IS_DEV_RENDERER) {
+  process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true'
+}
 
 /** The single browser-open seam, shared by the shell channel and the auth coordinator. */
 const openExternal = IS_E2E_FAKE_GITHUB
@@ -134,6 +147,8 @@ function createWindow(): void {
 }
 
 app.whenReady().then(async () => {
+  installContentSecurityPolicy(session.defaultSession, IS_DEV_RENDERER)
+
   const userDataPath = app.getPath('userData')
 
   const profilesStore = new JsonStore(
@@ -224,6 +239,7 @@ app.whenReady().then(async () => {
   )
   const aiFailureExplainerAssistant = new AiFailureExplainerAssistant(aiContextBuilder, aiAdapters)
   const aiAgenticAssistant = new AiAgenticAssistant(aiContextBuilder, aiAdapters)
+  const aiChatAssistant = new AiChatAssistant(aiContextBuilder, aiAdapters)
   const agenticActionExecutor = new AgenticActionExecutor(repositories)
 
   registerIpcHandlers({
@@ -244,6 +260,7 @@ app.whenReady().then(async () => {
     aiRepoBriefAssistant,
     aiFailureExplainerAssistant,
     aiAgenticAssistant,
+    aiChatAssistant,
     agenticActionExecutor,
     stagedChangeReview,
     openExternal,

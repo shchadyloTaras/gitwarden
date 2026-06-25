@@ -17,11 +17,13 @@ import {
   OPENAI_COMPATIBLE_BASE_URL,
   OPENROUTER_BASE_URL,
   assertHttpOk,
+  assertStructuredOutputSupported,
   getApiKey,
   getConnection,
   joinUrl,
   localOnlyFromBase,
   modelInfo,
+  modelSupportsStructuredOutput,
   parseStructuredValue,
   requestJson,
   resolveBaseUrl,
@@ -34,7 +36,15 @@ import type { AiStructuredRequest } from './types.js'
 
 const OpenAiModelsResponseSchema = z
   .object({
-    data: z.array(z.object({ id: z.string(), name: z.string().optional() }).passthrough()),
+    data: z.array(
+      z
+        .object({
+          id: z.string(),
+          name: z.string().optional(),
+          supported_parameters: z.array(z.string()).optional(),
+        })
+        .passthrough()
+    ),
   })
   .passthrough()
 
@@ -174,12 +184,12 @@ export class OpenAICompatibleAdapter extends BaseBuiltInAdapter {
     assertHttpOk(response, `${this.label} structured generation`)
     const parsed = OpenAiChatResponseSchema.parse(response.json)
     const raw = parsed.choices[0].message.content
-    const result = parseStructuredValue(request.responseSchema, raw)
+    const result = parseStructuredValue(request.responseSchema, raw, request.kind)
     this.guard.record(estimate)
     return result
   }
 
-  private async authHeaders(
+  protected async authHeaders(
     connection: AiConnection,
     required: boolean
   ): Promise<Record<string, string>> {
@@ -194,6 +204,29 @@ export class OpenAICompatibleAdapter extends BaseBuiltInAdapter {
 export class OpenRouterAdapter extends OpenAICompatibleAdapter {
   constructor(deps: AdapterDeps, guard: AiSpendGuard) {
     super(deps, guard, OPENROUTER_BASE_URL, 'OpenRouter')
+  }
+
+  override async listModels(connectionId: string): Promise<AiModelInfo[]> {
+    const connection = await getConnection(this.connections, connectionId)
+    const baseUrl = resolveBaseUrl(connection, OPENROUTER_BASE_URL)
+    const headers = await this.authHeaders(connection, true)
+    const response = await requestJson(this.http, {
+      method: 'GET',
+      url: joinUrl(baseUrl, '/models'),
+      headers,
+    })
+    assertHttpOk(response, 'OpenRouter model list')
+    const parsed = OpenAiModelsResponseSchema.parse(response.json)
+    return parsed.data.map((m) =>
+      modelInfo(m.id, false, m.name, modelSupportsStructuredOutput(m.supported_parameters))
+    )
+  }
+
+  override async generateStructured<T>(request: AiStructuredRequest<T>): Promise<T> {
+    const connection = await getConnection(this.connections, request.connectionId)
+    const effectiveModel = request.model ?? connection.defaultModel
+    await assertStructuredOutputSupported((id) => this.listModels(id), request, effectiveModel)
+    return super.generateStructured(request)
   }
 }
 
@@ -262,7 +295,7 @@ export class AnthropicAdapter extends BaseBuiltInAdapter {
     assertHttpOk(response, 'Anthropic structured generation')
     const parsed = AnthropicMessagesResponseSchema.parse(response.json)
     const raw = readAnthropicStructuredContent(parsed.content)
-    const result = parseStructuredValue(request.responseSchema, raw)
+    const result = parseStructuredValue(request.responseSchema, raw, request.kind)
     this.guard.record(estimate)
     return result
   }
@@ -321,7 +354,11 @@ export class OllamaAdapter extends BaseBuiltInAdapter {
     )
     assertHttpOk(response, 'Ollama structured generation')
     const parsed = OllamaChatResponseSchema.parse(response.json)
-    const result = parseStructuredValue(request.responseSchema, parsed.message.content)
+    const result = parseStructuredValue(
+      request.responseSchema,
+      parsed.message.content,
+      request.kind
+    )
     this.guard.record(estimate)
     return result
   }

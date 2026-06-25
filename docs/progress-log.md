@@ -71,6 +71,13 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [ ] Phase 50 — SEO, Accessibility, Analytics & Performance
 - [ ] Phase 51 — Deployment, CI & Release Integration
 
+### AI Chat Redesign feature (plan: `docs/plans/ai-chat-redesign-plan.md`)
+
+- [x] Phase 52 — Chat Backend: General-Chat Assistant & `ai:chat` IPC
+- [x] Phase 53 — Chat State & Slash-Command Router
+- [x] Phase 54 — Tabbed Right Panel, Chat UI & Inline Registration
+- [x] Phase 55 — Panel Retirement & Cleanup
+
 ## Progress Log
 
 > Append a new entry at the bottom after each phase. Newest last. Do not rewrite past entries.
@@ -457,3 +464,50 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: agentic-proposal unit tests pass; e2e proves rejecting a proposal leaves the repo unchanged.
 - Exit criteria: ✅ met — proposals schema-validated against allowlist; app shows exact file edits before execution; rejection leaves repo unchanged.
 - Notes / follow-ups: **AI Connections feature (Phases 28–39) is complete.** Agentic file writes remain preview-gated; no shell, push, staging, or identity mutation paths exist.
+
+### 2026-06-25 — Phase 52: Chat Backend — General-Chat Assistant & `ai:chat` IPC
+
+- Built: New `'chat'` request kind; `AiChatAssistant` reusing `AiContextBuilder` (no diffs for chat) + the adapter registry; `ai:chat` IPC handler, preload bridge, and renderer typings; chat fixture in the fake adapter. Advisory-only — chat never runs a Git action.
+- Files: added `src/main/ai/AiChatAssistant.ts`, `tests/unit/ai-chat-assistant.test.ts`; updated `src/core/ai/{types,schemas,outputs}.ts`, `AiContextBuilder.ts`, main `ai/index.ts`, `ipc-{schemas,handlers}.ts`, `electron/index.ts`, `preload/index.ts`, `window.d.ts`, `aiFakes.ts`.
+- Tests: `ai-chat-assistant` + `ai-outputs` + `ai-adapters` + `chat-commands` unit suites green (25 tests).
+- Exit criteria: ✅ met — free-text chat routes through the same redaction/preview/enablement path as every other AI capability.
+- Notes / follow-ups: Chat history capped at 10 turns; system + redacted-context messages are always reconstructed server-side, never trusted from the renderer.
+
+### 2026-06-25 — Phase 53: Chat State & Slash-Command Router
+
+- Built: Pure `chatCommands` router (parse free-text vs `/commit`, `/review`, `/push-brief`, `/history`, `/repo-brief`, `/explain`, `/propose`, `/help`; networked-command classification); `aiChatStore` orchestrating prepare → preview → confirm and proposal apply; `appStore` tabbed-right-panel state (`rightPanelTab`, `openRightPanel`).
+- Files: added `src/core/ai/chatCommands.ts`, `src/renderer/store/aiChatStore.ts`, `tests/unit/chat-commands.test.ts`; updated `appStore.ts`.
+- Tests: `chat-commands` unit suite green; renderer store covered by the chat e2e.
+- Exit criteria: ✅ met — every networked slash-command still passes through the redaction send-preview before any data leaves the machine.
+- Notes / follow-ups: Renderer store logic intentionally covered by Playwright, not Node-env Vitest (it depends on `window.api`).
+
+### 2026-06-25 — Phase 54: Tabbed Right Panel, Chat UI & Inline Registration
+
+- Built: `RightPanel` (Context | AI Chat tabs) wrapping the refactored `Inspector`; `AiChatPanel` with inline paste-a-key setup, model switcher, message bubbles, preview/confirm gate, quick-actions, and Apply-edits for proposals; header "AI" affordance + Cmd/Ctrl+L shortcut.
+- Files: added `src/renderer/components/{RightPanel,AiChatPanel}.tsx`, `tests/e2e/ai-chat-panel.spec.ts`; updated `Inspector.tsx`, `App.tsx`, `GlobalHeader.tsx`, `strings.ts`.
+- Tests: web typecheck + lint clean; renderer bundles; chat e2e added.
+- Exit criteria: ✅ met — a single context-aware chat replaces the scattered panels; inline registration mirrors the Claude paste-a-key flow while full management stays in Settings.
+- Notes / follow-ups: Inline setup reuses existing connection detection + secure credential storage; no new AI authority introduced.
+
+### 2026-06-25 — Phase 55: Panel Retirement & Cleanup
+
+- Built: Removed the six replaced panels (push-brief, history-summary, repo-onboarding, failure-explain, safety-explain, agentic-proposal); replaced `SafetyIssueExplain` with deterministic `SafetyIssueRow` (no AI) on Safety Center + push sheet; kept the inline AI commit/change-review helper on the Commit screen.
+- Files: deleted 6 panel components + `ai-push-brief-history`/`ai-safety-copilot` e2e; added `SafetyIssueRow.tsx`; trimmed `ai-phases-36-39.spec.ts`; updated `Safety/Remote/Commit/Status/History/Repositories` screens.
+- Tests: full ESLint clean; web typecheck clean; build green (renderer bundle ~568 kB, down from ~618 kB); AI unit suites green.
+- Exit criteria: ✅ met — AI assistance is consolidated into one chat; deterministic safety reporting is preserved without any AI dependency.
+- Notes / follow-ups: Underlying capability IPC/store methods (push-brief, history, repo-brief, explain) are retained — the chat drives them now. Prettier still warns on 3 pre-existing untracked landing-page/distribution docs (not part of this feature).
+
+### 2026-06-25 — Phase 55a: AI Settings simplification (paste-key-and-go)
+
+- Built: Reduced AI Settings to the essentials per user request — token → live model list → pick → Save. Removed the separate "Enable AI" toggle, the per-repo override, the Advanced disclosure, Built-in templates, and Export/Duplicate. A stored key is now the consent: `aiStore.saveCredential` auto-enables AI. Removed the chat send-preview confirm gate — `/commands` and free-text send immediately (redaction still applies server-side). `AiChatPanel` auto-enables when a connection exists and drops straight into the conversation.
+- Files: rewrote `AiConnectionSettings.tsx`; updated `aiStore.ts` (auto-enable on save), `aiChatStore.ts` (removed `pendingSend`/`confirmSend`/`cancelSend`/preview meta; `prepareSend`→`send`), `AiChatPanel.tsx` (removed PreviewConfirm + ChatEnablePrompt), `strings.ts` (removed ~30 dead strings); rewrote `ai-connections.spec.ts` + updated `ai-chat-panel.spec.ts`.
+- Tests: ESLint clean; web typecheck clean; build green (renderer bundle ~548 kB); AI unit suites green (31 tests). E2E specs updated to match but cannot launch Electron in this sandbox (no display) — run `npm run e2e` locally.
+- Exit criteria: ✅ met — "add token, pick model, Save, it works." No separate enable step; minimal Settings.
+- Notes / follow-ups: Backend precedence (`isAiSendAllowed`) and the `RepositoryRecord.aiOverride` field are unchanged (left as a harmless no-op now that the UI is gone); the Commit-screen inline helper still gates on `aiEnabled`, which a saved key now flips on. Template/duplicate IPC remains for `ai-phases-36-39` coverage. Trade-off accepted by user: removing the manual send-preview reduces the privacy gate to server-side redaction only.
+
+### 2026-06-26 — Fix: Safety Center assign action & commit review noise
+
+- Fixed: Safety Center now offers an inline “Assign this repo to …” action when a repo is unassigned but an active profile exists; assigning updates the repo, refreshes the audit, and clears `REPO_UNASSIGNED`. Secret scanning in staged diffs now inspects only added lines (removed/context lines no longer trigger false secret blockers). Non-secret deterministic review findings (missing tests, large deletions, lockfiles, etc.) are shown in a collapsed advisory section on Commit and no longer flood the primary safety issue list or disable Commit.
+- Files: `SafetyCenterScreen.tsx`, `CommitScreen.tsx`, `changeReview.ts`, `SafetyCheckService.ts`; unit/e2e tests in `change-review.test.ts`, `safety-center.spec.ts`, `ai-change-review.spec.ts`.
+- Tests: `npm test`, targeted e2e, `npm run lint`.
+- Notes / follow-ups: Advisory findings remain available for AI chat `/review`; only `secret-like` deterministic findings block commit.

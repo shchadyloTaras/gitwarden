@@ -115,24 +115,16 @@ test.describe('Smart Commit Assistant', () => {
     fs.rmSync(fixtureRepo, { recursive: true, force: true })
   })
 
-  test('preview → draft → insert still respects Safety Engine commit gate', async () => {
+  test('draft-with-AI: one click writes the message straight into the field and respects the commit gate', async () => {
     await win.getByTestId('nav-commit').click()
     await expect(win.getByTestId('commit-staged-summary')).toContainText('feature.txt')
 
-    await expect(win.getByTestId('ai-draft-message-btn')).toBeDisabled()
-
-    await win.getByTestId('ai-preview-btn').click()
-    await expect(win.getByTestId('ai-preview-host')).toContainText('openrouter.ai')
-
-    await expect(win.getByTestId('ai-draft-message-btn')).toBeEnabled({ timeout: 10000 })
-    await win.getByTestId('ai-draft-message-btn').click()
-
-    await expect(win.getByTestId('ai-commit-draft')).toBeVisible({ timeout: 10000 })
-    await expect(win.getByTestId('ai-commit-draft-summary')).toContainText('Fake adapter')
-
-    await win.getByTestId('ai-insert-conventional').click()
+    // One click drafts and inserts the conventional message directly — no preview
+    // panel, no variant picker.
+    await win.getByTestId('ai-commit-draft-toggle').click()
     await expect(win.getByTestId('commit-message')).toHaveValue(
-      /feat\(ai\): add fake structured output/
+      /feat\(ai\): add fake structured output/,
+      { timeout: 10000 }
     )
 
     await expect(win.getByTestId('commit-blocker')).toBeVisible({ timeout: 10000 })
@@ -140,5 +132,21 @@ test.describe('Smart Commit Assistant', () => {
 
     await win.getByTestId('commit-set-identity-btn').click()
     await expect(win.getByTestId('commit-btn')).toBeEnabled({ timeout: 10000 })
+  })
+
+  test('expensive send: large staged diff still drafts in one click (auto-acknowledged)', async () => {
+    const largeContent = `${'large-change-'.repeat(4_000)}\n`
+    fs.writeFileSync(path.join(fixtureRepo, 'large.txt'), largeContent)
+    execSync('git add large.txt', { cwd: fixtureRepo, stdio: 'pipe' })
+
+    await win.getByTestId('nav-commit').click()
+    await expect(win.getByTestId('commit-staged-summary')).toContainText('large.txt')
+
+    await win.getByTestId('ai-commit-draft-toggle').click()
+    await expect(win.getByTestId('commit-message')).toHaveValue(
+      /feat\(ai\): add fake structured output/,
+      { timeout: 10000 }
+    )
+    await expect(win.getByTestId('ai-commit-assistant-error')).toHaveCount(0)
   })
 })

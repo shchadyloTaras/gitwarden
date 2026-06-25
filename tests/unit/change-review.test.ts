@@ -5,63 +5,8 @@ import {
   mergeChangeReview,
   scanDeterministicFindings,
 } from '../../src/core/ai/changeReview'
-import { safetyCheckService } from '../../src/core/safety/SafetyCheckService'
-import type {
-  EffectiveGitIdentity,
-  GitStatus,
-  Profile,
-  RepositoryRecord,
-} from '../../src/core/types'
 
 const SECRET_TOKEN = 'ghp_0123456789abcdefghijklmnopqrstuvwxyz'
-
-function makeProfile(): Profile {
-  return {
-    id: 'profile-work',
-    displayName: 'Work',
-    gitAuthorName: 'Work User',
-    gitAuthorEmail: 'work@example.com',
-    githubUsername: 'work-user',
-    authenticationMethod: 'ssh',
-    expectedRemoteHosts: ['github.com'],
-  }
-}
-
-function makeRepo(): RepositoryRecord {
-  return {
-    id: 'repo-1',
-    name: 'my-repo',
-    localPath: '/path/to/repo',
-    assignedProfileId: 'profile-work',
-    isFavorite: false,
-  }
-}
-
-function makeIdentity(): EffectiveGitIdentity {
-  return {
-    userName: 'Work User',
-    userEmail: 'work@example.com',
-    nameSource: 'local',
-    emailSource: 'local',
-  }
-}
-
-function makeStatus(): GitStatus {
-  return {
-    files: [{ path: 'src/index.ts', indexStatus: 'modified', worktreeStatus: 'unmodified' }],
-    branch: 'main',
-    ahead: 0,
-    behind: 0,
-  }
-}
-
-const goodCommitInput = {
-  repository: makeRepo(),
-  activeProfile: makeProfile(),
-  identity: makeIdentity(),
-  status: makeStatus(),
-  commitMessage: 'feat: add login flow',
-}
 
 describe('scanDeterministicFindings', () => {
   it('detects secret-like content via the shared redaction ruleset', () => {
@@ -187,48 +132,5 @@ describe('groupFindingsByCategory', () => {
     ])
     expect(groups.get('lockfile')).toHaveLength(1)
     expect(groups.get('secret-like')).toHaveLength(1)
-  })
-})
-
-describe('checkCommit + deterministic secret findings', () => {
-  it('blocks commit when deterministic secret-like findings are present', () => {
-    const result = safetyCheckService.checkCommit({
-      ...goodCommitInput,
-      reviewFindings: [
-        {
-          category: 'secret-like',
-          source: 'deterministic',
-          confidence: 'high',
-          file: 'config.env',
-          why: 'Secret-like pattern in config.env.',
-        },
-      ],
-    })
-    expect(result.canCommit).toBe(false)
-    expect(result.issues.some((i) => i.code === 'STAGED_SECRET_DETECTED::config.env')).toBe(true)
-  })
-
-  it('does not add non-secret deterministic findings to commit safety issues', () => {
-    const result = safetyCheckService.checkCommit({
-      ...goodCommitInput,
-      reviewFindings: [
-        {
-          category: 'lockfile',
-          source: 'deterministic',
-          confidence: 'medium',
-          file: 'package-lock.json',
-          why: 'Lockfile diff.',
-        },
-        {
-          category: 'missing-tests',
-          source: 'deterministic',
-          confidence: 'low',
-          file: 'src/a.ts',
-          why: 'src/a.ts changed without a matching test file in this commit.',
-        },
-      ],
-    })
-    expect(result.canCommit).toBe(true)
-    expect(result.issues.some((i) => i.code.startsWith('REVIEW_'))).toBe(false)
   })
 })

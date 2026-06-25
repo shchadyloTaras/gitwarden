@@ -1,11 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import type { RepositoryRecord } from '../../core/types'
 import { useRepositoriesStore } from '../store/repositoriesStore'
 import { useProfilesStore } from '../store/profilesStore'
 import { useAppStore } from '../store/appStore'
-import { useAiStore } from '../store/aiStore'
 import Dropdown from '../components/Dropdown'
-import RepoOnboardingPanel from '../components/RepoOnboardingPanel'
+import ResizableMainSplit from '../components/ResizableMainSplit'
 import { STR } from '../strings'
 
 type Mode = 'idle' | 'add' | 'edit'
@@ -13,7 +12,6 @@ type Mode = 'idle' | 'add' | 'edit'
 interface EditForm {
   name: string
   assignedProfileId: string
-  recommendedConnectionId: string
   notes: string
 }
 
@@ -21,7 +19,6 @@ function editFormFromRepo(r: RepositoryRecord): EditForm {
   return {
     name: r.name,
     assignedProfileId: r.assignedProfileId ?? '',
-    recommendedConnectionId: r.recommendedConnectionId ?? '',
     notes: r.notes ?? '',
   }
 }
@@ -29,13 +26,7 @@ function editFormFromRepo(r: RepositoryRecord): EditForm {
 export default function RepositoriesScreen(): React.ReactElement {
   const { repos, addRepository, updateRepo, removeRepo } = useRepositoriesStore()
   const { profiles, activeProfileId } = useProfilesStore()
-  const { connections } = useAiStore()
-  const loadAi = useAiStore((s) => s.load)
   const setActiveRepo = useAppStore((s) => s.setActiveRepo)
-
-  useEffect(() => {
-    void loadAi()
-  }, [loadAi])
 
   const [mode, setMode] = useState<Mode>('idle')
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -43,7 +34,6 @@ export default function RepositoriesScreen(): React.ReactElement {
   const [editForm, setEditForm] = useState<EditForm>({
     name: '',
     assignedProfileId: '',
-    recommendedConnectionId: '',
     notes: '',
   })
   const [saving, setSaving] = useState(false)
@@ -104,7 +94,6 @@ export default function RepositoriesScreen(): React.ReactElement {
       await updateRepo(selectedId, {
         name: editForm.name.trim() || selectedRepo?.name,
         assignedProfileId: editForm.assignedProfileId || undefined,
-        recommendedConnectionId: editForm.recommendedConnectionId || undefined,
         notes: editForm.notes.trim() || undefined,
       })
       setSuccessMessage(STR.REPOSITORY_SAVED)
@@ -140,399 +129,228 @@ export default function RepositoriesScreen(): React.ReactElement {
     selectedRepo?.assignedProfileId !== activeProfileId
 
   return (
-    <div data-testid="screen-repositories" style={{ display: 'flex', height: '100%' }}>
-      {/* Left: repo list */}
-      <div
-        style={{
-          width: 220,
-          flexShrink: 0,
-          borderRight: '1px solid var(--gw-border, #27272a)',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        <div
-          style={{
-            padding: '12px 12px 8px',
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: '0.06em',
-            color: 'var(--gw-text-dim, #52525b)',
-          }}
-        >
-          REPOSITORIES
-        </div>
-
-        <div data-testid="repos-list" style={{ flex: 1, overflowY: 'auto' }}>
-          {repos.length === 0 && (
-            <div
-              style={{
-                padding: 12,
-                fontSize: 12,
-                color: 'var(--gw-text-dim, #52525b)',
-                fontStyle: 'italic',
-              }}
-            >
-              No repositories yet
-            </div>
-          )}
-          {repos.map((r) => {
-            const assigned = profiles.find((p) => p.id === r.assignedProfileId)
-            const mismatch =
-              r.assignedProfileId && activeProfileId && r.assignedProfileId !== activeProfileId
-            return (
-              <button
-                key={r.id}
-                data-testid="repo-item"
-                onClick={() => selectRepo(r)}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  width: '100%',
-                  padding: '8px 12px',
-                  background: selectedId === r.id ? 'var(--gw-surface2, #27272a)' : 'transparent',
-                  border: 'none',
-                  borderBottom: '1px solid var(--gw-border, #27272a)',
-                  color: 'var(--gw-text, #f4f4f5)',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  gap: 2,
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  {mismatch && (
-                    <span
-                      data-testid="repo-item-mismatch"
-                      title="Profile mismatch"
-                      style={{ color: 'var(--gw-warning, #fbbf24)', fontSize: 10 }}
-                    >
-                      ⚠
-                    </span>
-                  )}
-                  <span
-                    style={{
-                      fontSize: 13,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {r.name}
-                  </span>
-                </div>
-                <div
-                  style={{
-                    fontSize: 10,
-                    color: 'var(--gw-text-dim, #52525b)',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {assigned ? assigned.displayName : 'Unassigned'}
-                </div>
-              </button>
-            )
-          })}
-        </div>
-
-        <div style={{ padding: '8px 12px', borderTop: '1px solid var(--gw-border, #27272a)' }}>
-          <button
-            data-testid="repos-add-btn"
-            onClick={startAdd}
-            style={{
-              width: '100%',
-              padding: '6px 0',
-              background: 'var(--gw-surface3, #3f3f46)',
-              border: 'none',
-              borderRadius: 4,
-              color: 'var(--gw-text, #f4f4f5)',
-              cursor: 'pointer',
-              fontSize: 12,
-              fontWeight: 600,
-            }}
-          >
-            + Add Repository
-          </button>
-        </div>
-      </div>
-
-      {/* Right: content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
-        {mode === 'idle' && (
+    <div data-testid="screen-repositories" style={{ display: 'flex', height: '100%', minWidth: 0 }}>
+      <ResizableMainSplit
+        storageKey="gitwarden.layout.repositoriesSplit.v1"
+        resizeLabel={STR.REPOSITORIES_SPLIT_RESIZE_LABEL}
+        handleTestId="repositories-main-resize-handle"
+        startPaneTestId="repositories-list-pane"
+        endPaneTestId="repositories-detail-pane"
+        defaultStartWidth={220}
+        minStartWidth={180}
+        maxStartWidth={360}
+        minEndWidth={220}
+        start={
           <div
             style={{
+              flex: 1,
+              minHeight: 0,
+              borderRight: '1px solid var(--gw-border, #27272a)',
               display: 'flex',
-              height: '100%',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--gw-text-dim, #52525b)',
-              fontSize: 13,
+              flexDirection: 'column',
             }}
           >
-            Select a repository or add one.
-          </div>
-        )}
-
-        {mode === 'add' && (
-          <div style={{ maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <h2
-              style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--gw-text, #f4f4f5)' }}
+            <div
+              style={{
+                padding: '12px 12px 8px',
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: '0.06em',
+                color: 'var(--gw-text-dim, #52525b)',
+              }}
             >
-              Add Repository
-            </h2>
+              REPOSITORIES
+            </div>
 
-            <Field label="Repository Path">
-              <div style={{ display: 'flex', gap: 6 }}>
-                <input
-                  data-testid="repo-path-input"
-                  value={addPath}
-                  onChange={(e) => setAddPath(e.target.value)}
-                  placeholder="/path/to/your/repo"
-                  style={{ ...inputStyle, flex: 1 }}
-                />
-                <button
-                  type="button"
-                  data-testid="repo-browse-btn"
-                  onClick={() => {
-                    void handleBrowse()
-                  }}
+            <div data-testid="repos-list" style={{ flex: 1, overflowY: 'auto' }}>
+              {repos.length === 0 && (
+                <div
                   style={{
-                    padding: '6px 10px',
-                    background: 'var(--gw-surface3, #3f3f46)',
-                    border: 'none',
-                    borderRadius: 4,
-                    color: 'var(--gw-text, #f4f4f5)',
-                    cursor: 'pointer',
+                    padding: 12,
                     fontSize: 12,
+                    color: 'var(--gw-text-dim, #52525b)',
+                    fontStyle: 'italic',
                   }}
                 >
-                  Browse
-                </button>
-              </div>
-            </Field>
+                  No repositories yet
+                </div>
+              )}
+              {repos.map((r) => {
+                const assigned = profiles.find((p) => p.id === r.assignedProfileId)
+                const mismatch =
+                  r.assignedProfileId && activeProfileId && r.assignedProfileId !== activeProfileId
+                return (
+                  <button
+                    key={r.id}
+                    data-testid="repo-item"
+                    onClick={() => selectRepo(r)}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      width: '100%',
+                      padding: '8px 12px',
+                      background:
+                        selectedId === r.id ? 'var(--gw-surface2, #27272a)' : 'transparent',
+                      border: 'none',
+                      borderBottom: '1px solid var(--gw-border, #27272a)',
+                      color: 'var(--gw-text, #f4f4f5)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      gap: 2,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {mismatch && (
+                        <span
+                          data-testid="repo-item-mismatch"
+                          title="Profile mismatch"
+                          style={{ color: 'var(--gw-warning, #fbbf24)', fontSize: 10 }}
+                        >
+                          ⚠
+                        </span>
+                      )}
+                      <span
+                        style={{
+                          fontSize: 13,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {r.name}
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        color: 'var(--gw-text-dim, #52525b)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {assigned ? assigned.displayName : 'Unassigned'}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
 
-            {error && (
-              <div
-                data-testid="repo-error"
-                style={{ fontSize: 12, color: 'var(--gw-danger, #f87171)' }}
-              >
-                {error}
-              </div>
-            )}
-
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ padding: '8px 12px', borderTop: '1px solid var(--gw-border, #27272a)' }}>
               <button
-                data-testid="repo-validate-btn"
-                onClick={() => {
-                  void handleValidateAndAdd()
-                }}
-                disabled={saving}
+                data-testid="repos-add-btn"
+                onClick={startAdd}
                 style={{
-                  padding: '6px 18px',
-                  background: 'var(--gw-primary, #2563eb)',
+                  width: '100%',
+                  padding: '6px 0',
+                  background: 'var(--gw-surface3, #3f3f46)',
                   border: 'none',
                   borderRadius: 4,
-                  color: 'var(--gw-on-solid, #fff)',
-                  cursor: saving ? 'wait' : 'pointer',
+                  color: 'var(--gw-text, #f4f4f5)',
+                  cursor: 'pointer',
                   fontSize: 12,
                   fontWeight: 600,
                 }}
               >
-                {saving ? 'Validating…' : 'Validate & Add'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode('idle')}
-                style={{
-                  padding: '6px 14px',
-                  background: 'none',
-                  border: '1px solid var(--gw-surface3, #3f3f46)',
-                  borderRadius: 4,
-                  color: 'var(--gw-text-muted, #a1a1aa)',
-                  cursor: 'pointer',
-                  fontSize: 12,
-                }}
-              >
-                Cancel
+                + Add Repository
               </button>
             </div>
           </div>
-        )}
-
-        {mode === 'edit' && selectedRepo && (
-          <div style={{ maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {hasMismatch && (
+        }
+        end={
+          <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: 24 }}>
+            {mode === 'idle' && (
               <div
-                data-testid="repo-mismatch-warning"
                 style={{
-                  padding: '10px 14px',
-                  background: 'var(--gw-warning-bg, #422006)',
-                  border: '1px solid var(--gw-warning-border, #78350f)',
-                  borderRadius: 6,
-                  fontSize: 12,
-                  color: 'var(--gw-warning, #fbbf24)',
-                  lineHeight: 1.5,
+                  display: 'flex',
+                  height: '100%',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--gw-text-dim, #52525b)',
+                  fontSize: 13,
                 }}
               >
-                ⚠ This repository is assigned to{' '}
-                <strong>{assignedProfile?.displayName ?? 'a profile'}</strong>, but your active
-                profile is <strong>{activeProfile?.displayName ?? 'another profile'}</strong>.
-                Switch profiles before committing.
+                Select a repository or add one.
               </div>
             )}
 
-            <h2
-              style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--gw-text, #f4f4f5)' }}
-            >
-              Repository
-            </h2>
-
-            <Field label="Path">
-              <div
-                style={{
-                  ...inputStyle,
-                  color: 'var(--gw-text-faint, #71717a)',
-                  fontFamily: 'monospace',
-                  userSelect: 'text',
-                }}
-              >
-                {selectedRepo.localPath}
-              </div>
-            </Field>
-
-            <Field label="Name">
-              <input
-                data-testid="repo-form-name"
-                value={editForm.name}
-                onChange={(e) => {
-                  setSuccessMessage(null)
-                  setEditForm((f) => ({ ...f, name: e.target.value }))
-                }}
-                style={inputStyle}
-              />
-            </Field>
-
-            <Field label="Assigned Profile">
-              <Dropdown
-                testId="repo-form-profile"
-                ariaLabel="Assigned profile"
-                block
-                value={editForm.assignedProfileId}
-                onChange={(id) => {
-                  setSuccessMessage(null)
-                  setEditForm((f) => ({ ...f, assignedProfileId: id }))
-                }}
-                options={[
-                  { value: '', label: '— Unassigned —' },
-                  ...profiles.map((p) => ({ value: p.id, label: p.displayName })),
-                ]}
-                triggerStyle={inputStyle}
-              />
-            </Field>
-
-            <Field label={STR.AI_REPO_RECOMMENDED_CONNECTION}>
-              <Dropdown
-                testId="repo-form-recommended-connection"
-                ariaLabel={STR.AI_REPO_RECOMMENDED_CONNECTION}
-                block
-                value={editForm.recommendedConnectionId}
-                onChange={(id) => {
-                  setSuccessMessage(null)
-                  setEditForm((f) => ({ ...f, recommendedConnectionId: id }))
-                }}
-                options={[
-                  { value: '', label: '— None —' },
-                  ...connections.map((c) => ({ value: c.id, label: c.name })),
-                ]}
-                triggerStyle={inputStyle}
-              />
-            </Field>
-
-            <Field label="Notes">
-              <textarea
-                data-testid="repo-form-notes"
-                value={editForm.notes}
-                onChange={(e) => {
-                  setSuccessMessage(null)
-                  setEditForm((f) => ({ ...f, notes: e.target.value }))
-                }}
-                rows={3}
-                style={{ ...inputStyle, resize: 'vertical' }}
-              />
-            </Field>
-
-            {error && (
-              <div
-                data-testid="repo-error"
-                style={{ fontSize: 12, color: 'var(--gw-danger, #f87171)' }}
-              >
-                {error}
-              </div>
-            )}
-
-            {successMessage && (
-              <div
-                data-testid="repo-saved-msg"
-                role="status"
-                aria-live="polite"
-                style={{ fontSize: 12, color: 'var(--gw-success, #4ade80)' }}
-              >
-                {successMessage}
-              </div>
-            )}
-
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <button
-                data-testid="repo-save-btn"
-                onClick={() => {
-                  void handleSave()
-                }}
-                disabled={saving}
-                style={{
-                  padding: '6px 18px',
-                  background: 'var(--gw-primary, #2563eb)',
-                  border: 'none',
-                  borderRadius: 4,
-                  color: 'var(--gw-on-solid, #fff)',
-                  cursor: saving ? 'wait' : 'pointer',
-                  fontSize: 12,
-                  fontWeight: 600,
-                }}
-              >
-                {saving ? 'Saving…' : 'Save'}
-              </button>
-
-              {!confirmRemove && (
-                <button
-                  data-testid="repo-remove-btn"
-                  onClick={() => setConfirmRemove(true)}
-                  disabled={saving}
+            {mode === 'add' && (
+              <div style={{ maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <h2
                   style={{
-                    marginLeft: 'auto',
-                    padding: '6px 14px',
-                    background: 'none',
-                    border: '1px solid var(--gw-surface3, #3f3f46)',
-                    borderRadius: 4,
-                    color: 'var(--gw-danger, #f87171)',
-                    cursor: 'pointer',
-                    fontSize: 12,
+                    margin: 0,
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: 'var(--gw-text, #f4f4f5)',
                   }}
                 >
-                  Remove from App
-                </button>
-              )}
+                  Add Repository
+                </h2>
 
-              {confirmRemove && (
-                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 12, color: 'var(--gw-text-muted, #a1a1aa)' }}>
-                    Remove &ldquo;{selectedRepo.name}&rdquo;?
-                  </span>
+                <Field label="Repository Path">
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <input
+                      data-testid="repo-path-input"
+                      value={addPath}
+                      onChange={(e) => setAddPath(e.target.value)}
+                      placeholder="/path/to/your/repo"
+                      style={{ ...inputStyle, flex: 1 }}
+                    />
+                    <button
+                      type="button"
+                      data-testid="repo-browse-btn"
+                      onClick={() => {
+                        void handleBrowse()
+                      }}
+                      style={{
+                        padding: '6px 10px',
+                        background: 'var(--gw-surface3, #3f3f46)',
+                        border: 'none',
+                        borderRadius: 4,
+                        color: 'var(--gw-text, #f4f4f5)',
+                        cursor: 'pointer',
+                        fontSize: 12,
+                      }}
+                    >
+                      Browse
+                    </button>
+                  </div>
+                </Field>
+
+                {error && (
+                  <div
+                    data-testid="repo-error"
+                    style={{ fontSize: 12, color: 'var(--gw-danger, #f87171)' }}
+                  >
+                    {error}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    data-testid="repo-validate-btn"
+                    onClick={() => {
+                      void handleValidateAndAdd()
+                    }}
+                    disabled={saving}
+                    style={{
+                      padding: '6px 18px',
+                      background: 'var(--gw-primary, #2563eb)',
+                      border: 'none',
+                      borderRadius: 4,
+                      color: 'var(--gw-on-solid, #fff)',
+                      cursor: saving ? 'wait' : 'pointer',
+                      fontSize: 12,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {saving ? 'Validating…' : 'Validate & Add'}
+                  </button>
                   <button
                     type="button"
-                    onClick={() => setConfirmRemove(false)}
+                    onClick={() => setMode('idle')}
                     style={{
-                      padding: '4px 10px',
+                      padding: '6px 14px',
                       background: 'none',
                       border: '1px solid var(--gw-surface3, #3f3f46)',
                       borderRadius: 4,
@@ -543,15 +361,129 @@ export default function RepositoriesScreen(): React.ReactElement {
                   >
                     Cancel
                   </button>
+                </div>
+              </div>
+            )}
+
+            {mode === 'edit' && selectedRepo && (
+              <div style={{ maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {hasMismatch && (
+                  <div
+                    data-testid="repo-mismatch-warning"
+                    style={{
+                      padding: '10px 14px',
+                      background: 'var(--gw-warning-bg, #422006)',
+                      border: '1px solid var(--gw-warning-border, #78350f)',
+                      borderRadius: 6,
+                      fontSize: 12,
+                      color: 'var(--gw-warning, #fbbf24)',
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    ⚠ This repository is assigned to{' '}
+                    <strong>{assignedProfile?.displayName ?? 'a profile'}</strong>, but your active
+                    profile is <strong>{activeProfile?.displayName ?? 'another profile'}</strong>.
+                    Switch profiles before committing.
+                  </div>
+                )}
+
+                <h2
+                  style={{
+                    margin: 0,
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: 'var(--gw-text, #f4f4f5)',
+                  }}
+                >
+                  Repository
+                </h2>
+
+                <Field label="Path">
+                  <div
+                    style={{
+                      ...inputStyle,
+                      color: 'var(--gw-text-faint, #71717a)',
+                      fontFamily: 'monospace',
+                      userSelect: 'text',
+                    }}
+                  >
+                    {selectedRepo.localPath}
+                  </div>
+                </Field>
+
+                <Field label="Name">
+                  <input
+                    data-testid="repo-form-name"
+                    value={editForm.name}
+                    onChange={(e) => {
+                      setSuccessMessage(null)
+                      setEditForm((f) => ({ ...f, name: e.target.value }))
+                    }}
+                    style={inputStyle}
+                  />
+                </Field>
+
+                <Field label="Assigned Profile">
+                  <Dropdown
+                    testId="repo-form-profile"
+                    ariaLabel="Assigned profile"
+                    block
+                    value={editForm.assignedProfileId}
+                    onChange={(id) => {
+                      setSuccessMessage(null)
+                      setEditForm((f) => ({ ...f, assignedProfileId: id }))
+                    }}
+                    options={[
+                      { value: '', label: '— Unassigned —' },
+                      ...profiles.map((p) => ({ value: p.id, label: p.displayName })),
+                    ]}
+                    triggerStyle={inputStyle}
+                  />
+                </Field>
+
+                <Field label="Notes">
+                  <textarea
+                    data-testid="repo-form-notes"
+                    value={editForm.notes}
+                    onChange={(e) => {
+                      setSuccessMessage(null)
+                      setEditForm((f) => ({ ...f, notes: e.target.value }))
+                    }}
+                    rows={3}
+                    style={{ ...inputStyle, resize: 'vertical' }}
+                  />
+                </Field>
+
+                {error && (
+                  <div
+                    data-testid="repo-error"
+                    style={{ fontSize: 12, color: 'var(--gw-danger, #f87171)' }}
+                  >
+                    {error}
+                  </div>
+                )}
+
+                {successMessage && (
+                  <div
+                    data-testid="repo-saved-msg"
+                    role="status"
+                    aria-live="polite"
+                    style={{ fontSize: 12, color: 'var(--gw-success, #4ade80)' }}
+                  >
+                    {successMessage}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <button
-                    data-testid="repo-remove-confirm-btn"
+                    data-testid="repo-save-btn"
                     onClick={() => {
-                      void handleRemove()
+                      void handleSave()
                     }}
                     disabled={saving}
                     style={{
-                      padding: '4px 10px',
-                      background: 'var(--gw-danger-solid, #dc2626)',
+                      padding: '6px 18px',
+                      background: 'var(--gw-primary, #2563eb)',
                       border: 'none',
                       borderRadius: 4,
                       color: 'var(--gw-on-solid, #fff)',
@@ -560,16 +492,78 @@ export default function RepositoriesScreen(): React.ReactElement {
                       fontWeight: 600,
                     }}
                   >
-                    Remove
+                    {saving ? 'Saving…' : 'Save'}
                   </button>
-                </div>
-              )}
-            </div>
 
-            {selectedRepo && <RepoOnboardingPanel repositoryId={selectedRepo.id} />}
+                  {!confirmRemove && (
+                    <button
+                      data-testid="repo-remove-btn"
+                      onClick={() => setConfirmRemove(true)}
+                      disabled={saving}
+                      style={{
+                        marginLeft: 'auto',
+                        padding: '6px 14px',
+                        background: 'none',
+                        border: '1px solid var(--gw-surface3, #3f3f46)',
+                        borderRadius: 4,
+                        color: 'var(--gw-danger, #f87171)',
+                        cursor: 'pointer',
+                        fontSize: 12,
+                      }}
+                    >
+                      Remove from App
+                    </button>
+                  )}
+
+                  {confirmRemove && (
+                    <div
+                      style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}
+                    >
+                      <span style={{ fontSize: 12, color: 'var(--gw-text-muted, #a1a1aa)' }}>
+                        Remove &ldquo;{selectedRepo.name}&rdquo;?
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmRemove(false)}
+                        style={{
+                          padding: '4px 10px',
+                          background: 'none',
+                          border: '1px solid var(--gw-surface3, #3f3f46)',
+                          borderRadius: 4,
+                          color: 'var(--gw-text-muted, #a1a1aa)',
+                          cursor: 'pointer',
+                          fontSize: 12,
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        data-testid="repo-remove-confirm-btn"
+                        onClick={() => {
+                          void handleRemove()
+                        }}
+                        disabled={saving}
+                        style={{
+                          padding: '4px 10px',
+                          background: 'var(--gw-danger-solid, #dc2626)',
+                          border: 'none',
+                          borderRadius: 4,
+                          color: 'var(--gw-on-solid, #fff)',
+                          cursor: saving ? 'wait' : 'pointer',
+                          fontSize: 12,
+                          fontWeight: 600,
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        }
+      />
     </div>
   )
 }

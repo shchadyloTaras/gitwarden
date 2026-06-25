@@ -7,8 +7,7 @@ import type { GitHubPushContext } from '../../core/safety/SafetyCheckService'
 import { isHttpsGitHubRemoteUrl } from '../../core/github/remoteUrl'
 import type { GitRemote } from '../../core/types'
 import { STR } from '../strings'
-import SafetyIssueExplain from '../components/SafetyIssueExplain'
-import PushBriefPanel from '../components/PushBriefPanel'
+import SafetyIssueRow from '../components/SafetyIssueRow'
 
 /** Renderer-side mirror of the main GitHubPushStatus (token-free). */
 type PushStatus = { hasToken: boolean; tokenInvalid: boolean; effectiveLogin?: string }
@@ -422,24 +421,6 @@ export default function RemoteScreen(): React.ReactElement {
               )}
             </div>
 
-            {repository && currentBranch && (
-              <PushBriefPanel
-                repositoryId={repository.id}
-                remoteName={selectedRemote.name}
-                branch={currentBranch}
-                github={
-                  githubContext
-                    ? {
-                        assignedLogin: githubContext.assignedLogin,
-                        effectiveLogin: githubContext.effectiveLogin,
-                        hasToken: githubContext.hasToken,
-                        tokenInvalid: githubContext.tokenInvalid ?? false,
-                      }
-                    : undefined
-                }
-              />
-            )}
-
             {/* Safety issues */}
             {pushSafetyResult && pushSafetyResult.issues.length > 0 && (
               <div
@@ -451,20 +432,10 @@ export default function RemoteScreen(): React.ReactElement {
                 }}
               >
                 {pushBlockers.map((issue) => (
-                  <SafetyIssueExplain
-                    key={issue.code}
-                    issue={issue}
-                    repositoryId={repository?.id}
-                    testIdPrefix="remote-push"
-                  />
+                  <SafetyIssueRow key={issue.code} issue={issue} testIdPrefix="remote-push" />
                 ))}
                 {pushWarnings.map((issue) => (
-                  <SafetyIssueExplain
-                    key={issue.code}
-                    issue={issue}
-                    repositoryId={repository?.id}
-                    testIdPrefix="remote-push"
-                  />
+                  <SafetyIssueRow key={issue.code} issue={issue} testIdPrefix="remote-push" />
                 ))}
               </div>
             )}

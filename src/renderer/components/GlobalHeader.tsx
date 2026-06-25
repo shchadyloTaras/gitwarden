@@ -4,6 +4,7 @@ import { useProfilesStore, profileColor } from '../store/profilesStore'
 import { useRepositoriesStore } from '../store/repositoriesStore'
 import { useBranchStore } from '../store/branchStore'
 import Dropdown from './Dropdown'
+import { STR } from '../strings'
 
 const BADGE_STYLE: Record<SafetyBadge, React.CSSProperties> = {
   safe: { background: 'var(--gw-success-solid, #16a34a)', color: 'var(--gw-on-solid, #fff)' },
@@ -29,7 +30,8 @@ const SELECT_STYLE: React.CSSProperties = {
 }
 
 export default function GlobalHeader(): React.ReactElement {
-  const { activeRepo, currentBranch, safetyBadge, toggleInspector, setActiveRepo } = useAppStore()
+  const { activeRepo, currentBranch, safetyBadge, toggleInspector, openRightPanel, setActiveRepo } =
+    useAppStore()
   const repos = useRepositoriesStore((s) => s.repos)
   const profiles = useProfilesStore((s) => s.profiles)
   const activeProfileId = useProfilesStore((s) => s.activeProfileId)
@@ -157,10 +159,28 @@ export default function GlobalHeader(): React.ReactElement {
       )}
 
       <button
+        data-testid="header-ai-chat"
+        aria-label={STR.CHAT_OPEN_LABEL}
+        onClick={() => openRightPanel('chat')}
+        style={{
+          marginLeft: 4,
+          background: 'none',
+          border: '1px solid var(--gw-surface3, #3f3f46)',
+          borderRadius: 4,
+          color: 'var(--gw-text-muted, #a1a1aa)',
+          cursor: 'pointer',
+          padding: '2px 8px',
+          fontSize: 12,
+          fontWeight: 600,
+        }}
+      >
+        AI
+      </button>
+
+      <button
         aria-label="Toggle inspector"
         onClick={toggleInspector}
         style={{
-          marginLeft: 4,
           background: 'none',
           border: '1px solid var(--gw-surface3, #3f3f46)',
           borderRadius: 4,

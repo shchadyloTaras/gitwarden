@@ -3,13 +3,13 @@ import { _electron as electron } from 'playwright'
 import type { ElectronApplication, Page } from 'playwright'
 import path from 'node:path'
 
-// Phase 29 — AI Connections Manager & Credential Store.
+// Phase 29 / AI Settings simplification — AI Connections Manager & Credential Store.
 //
-// Drives the token-first Settings → AI flow against the injected fake credential
-// store (GITWARDEN_E2E_FAKE_AI=1, in-memory — no Electron safeStorage needed):
-//   create → save credential → edit → disable → delete
-// and asserts the two hard invariants:
-//   * enabling AI is a SEPARATE action from saving (saving leaves AI disabled);
+// Drives the simplified token-first Settings → AI flow against the injected fake
+// credential store (GITWARDEN_E2E_FAKE_AI=1, in-memory — no Electron safeStorage):
+//   paste key → save → pick model → delete
+// and asserts the invariants that still hold:
+//   * saving a key turns AI on automatically (no separate consent toggle);
 //   * the renderer can never read a raw credential back after save.
 
 function launchApp(): Promise<ElectronApplication> {
@@ -30,6 +30,13 @@ async function cleanupAi(win: Page): Promise<void> {
   })
 }
 
+async function aiEnabledSetting(win: Page): Promise<boolean | null> {
+  return win.evaluate(async () => {
+    const s = await (window as Window & typeof globalThis).api.settings.get()
+    return s.ok ? (s.data.aiEnabled ?? false) : null
+  })
+}
+
 test.describe('AI Connections (injected fake credential store)', () => {
   let app: ElectronApplication
   let win: Page
@@ -43,6 +50,8 @@ test.describe('AI Connections (injected fake credential store)', () => {
     await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
     await win.getByTestId('nav-settings').click()
     await expect(win.getByTestId('screen-settings')).toBeVisible()
+    // AI connection setup lives under the "AI Assistant" Settings tab.
+    await win.getByTestId('settings-tab-ai').click()
     await expect(win.getByTestId('ai-section')).toBeVisible()
   })
 
@@ -51,16 +60,12 @@ test.describe('AI Connections (injected fake credential store)', () => {
     await app.close()
   })
 
-  test('create → save credential → edit → disable → delete', async () => {
-    // ── create + save credential ──────────────────────────────────────────────
-    // Paste an OpenRouter key; detection identifies the provider with no extra field.
+  test('paste key → save (auto-enables) → pick model → delete', async () => {
+    // ── paste + save ───────────────────────────────────────────────────────────
+    // An OpenRouter key is detected with no extra field; "Save" is all it takes.
     await win.getByTestId('ai-key-input').fill('sk-or-v1-e2e000000000000000000000000')
     await expect(win.getByTestId('ai-detected')).toContainText('OpenRouter')
-    // High-confidence remote provider → no base URL field shown.
     await expect(win.getByTestId('ai-baseurl-input')).toHaveCount(0)
-
-    await win.getByTestId('ai-name-input').fill('OpenRouter')
-    await win.getByTestId('ai-model-input').fill('anthropic/claude-3.5-sonnet')
     await win.getByTestId('ai-save-connection').click()
 
     // The active-connection card appears with a MASKED credential (never the key).
@@ -69,30 +74,22 @@ test.describe('AI Connections (injected fake credential store)', () => {
     await expect(masked).toBeVisible()
     await expect(masked).not.toContainText('sk-or-v1-e2e')
 
-    // Enabling AI is a SEPARATE step — saving left it disabled, so nothing sends.
-    await expect(win.getByTestId('ai-enable-state')).toHaveText('AI disabled')
-    const enabledAfterSave = await win.evaluate(async () => {
-      const s = await (window as Window & typeof globalThis).api.settings.get()
-      return s.ok ? (s.data.aiEnabled ?? false) : null
-    })
-    expect(enabledAfterSave).toBe(false)
+    // Saving the key turned AI on automatically — no separate consent step.
+    expect(await aiEnabledSetting(win)).toBe(true)
 
-    // ── edit ──────────────────────────────────────────────────────────────────
-    await win.getByTestId('ai-edit-name-input').fill('My Router')
+    // ── pick a model from the provider's live list ──────────────────────────────
+    const select = win.getByTestId('ai-model-select')
+    await expect(select).toBeVisible({ timeout: 10000 })
+    await select.selectOption('openrouter/fake-fast')
     await win.getByTestId('ai-save-changes').click()
     await expect(win.getByTestId('ai-saved-msg')).toBeVisible()
-    const renamed = await win.evaluate(async () => {
+    const savedModel = await win.evaluate(async () => {
       const list = await (window as Window & typeof globalThis).api.ai.listConnections()
-      return list.ok ? list.data.connections[0]?.name : null
+      return list.ok ? list.data.connections[0]?.defaultModel : null
     })
-    expect(renamed).toBe('My Router')
+    expect(savedModel).toBe('openrouter/fake-fast')
 
-    // ── disable (the connection — distinct from deleting it) ───────────────────
-    await expect(win.getByTestId('ai-conn-state')).toHaveText('Connection on')
-    await win.getByTestId('ai-conn-toggle').click()
-    await expect(win.getByTestId('ai-conn-state')).toHaveText('Connection off')
-
-    // ── delete ─────────────────────────────────────────────────────────────────
+    // ── delete ───────────────────────────────────────────────────────────────────
     await win.getByTestId('ai-delete-connection').click()
     await win.getByTestId('ai-delete-confirm').click()
     // Back to the empty setup form; the connection (and its credential) are gone.
@@ -104,24 +101,15 @@ test.describe('AI Connections (injected fake credential store)', () => {
     expect(remaining).toBe(0)
   })
 
-  test('enabling AI is a separate, deliberate action from saving a connection', async () => {
+  test('saving a connection enables AI automatically', async () => {
+    expect(await aiEnabledSetting(win)).toBe(false)
+
     await win.getByTestId('ai-key-input').fill('sk-ant-api03-e2e0000000000000000')
     await expect(win.getByTestId('ai-detected')).toContainText('Anthropic')
-    await win.getByTestId('ai-name-input').fill('Anthropic')
     await win.getByTestId('ai-save-connection').click()
     await expect(win.getByTestId('ai-connection-card')).toBeVisible()
 
-    // AI still off after save.
-    await expect(win.getByTestId('ai-enable-state')).toHaveText('AI disabled')
-
-    // The toggle is the only thing that flips global consent.
-    await win.getByTestId('ai-enable-toggle').click()
-    await expect(win.getByTestId('ai-enable-state')).toHaveText('AI enabled')
-    const persisted = await win.evaluate(async () => {
-      const s = await (window as Window & typeof globalThis).api.settings.get()
-      return s.ok ? (s.data.aiEnabled ?? false) : null
-    })
-    expect(persisted).toBe(true)
+    expect(await aiEnabledSetting(win)).toBe(true)
   })
 
   test('ambiguous sk- key prompts for one base URL field; LM Studio pre-fills the local port', async () => {
@@ -138,7 +126,6 @@ test.describe('AI Connections (injected fake credential store)', () => {
 
   test('renderer cannot read a raw credential after save', async () => {
     await win.getByTestId('ai-key-input').fill('sk-or-v1-secret0000000000000000000')
-    await win.getByTestId('ai-name-input').fill('OpenRouter')
     await win.getByTestId('ai-save-connection').click()
     await expect(win.getByTestId('ai-connection-card')).toBeVisible()
 
@@ -163,30 +150,23 @@ test.describe('AI Connections (injected fake credential store)', () => {
     expect(probe.connJson).not.toContain('sk-or-v1-secret')
   })
 
-  test('test connection and list models use fake adapters', async () => {
+  test('refresh models uses the fake adapter', async () => {
     await win.getByTestId('ai-key-input').fill('sk-or-v1-e2e-models0000000000000')
-    await win.getByTestId('ai-name-input').fill('OpenRouter')
     await win.getByTestId('ai-save-connection').click()
     await expect(win.getByTestId('ai-connection-card')).toBeVisible()
-
-    const result = await win.evaluate(async () => {
-      const api = (window as Window & typeof globalThis).api
-      const list = await api.ai.listConnections()
-      const id = list.ok ? list.data.connections[0]?.id : undefined
-      if (!id) return null
-      const testResult = await api.ai.testConnection(id)
-      const models = await api.ai.listModels(id)
-      return {
-        ok: testResult.ok ? testResult.data.ok : false,
-        modelIds: models.ok ? models.data.map((m) => m.id) : [],
-      }
-    })
-
-    expect(result?.ok).toBe(true)
-    expect(result?.modelIds).toContain('openrouter/fake-recommended')
 
     await win.getByTestId('ai-fetch-models').click()
     await expect(win.getByTestId('ai-model-status')).toContainText('models available')
     await expect(win.getByTestId('ai-model-select')).toBeVisible()
+
+    const modelIds = await win.evaluate(async () => {
+      const api = (window as Window & typeof globalThis).api
+      const list = await api.ai.listConnections()
+      const id = list.ok ? list.data.connections[0]?.id : undefined
+      if (!id) return []
+      const models = await api.ai.listModels(id)
+      return models.ok ? models.data.map((m) => m.id) : []
+    })
+    expect(modelIds).toContain('openrouter/fake-recommended')
   })
 })

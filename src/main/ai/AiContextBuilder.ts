@@ -174,7 +174,8 @@ export class AiContextBuilder {
       )
       .map((file) => file.path)
     const selectedUnstagedPaths = unique(input.selectedUnstagedPaths ?? [])
-    const includeDiffs = input.kind !== 'repo-brief' && input.kind !== 'failure-explain'
+    const includeDiffs =
+      input.kind !== 'repo-brief' && input.kind !== 'failure-explain' && input.kind !== 'chat'
 
     const [stagedDiffs, selectedUnstagedDiffs, allowlistedFiles] = await Promise.all([
       includeDiffs

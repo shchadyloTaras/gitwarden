@@ -163,6 +163,10 @@ class FakeAiAdapter implements AiAdapter {
         overall: 'All clear from the model.',
       },
       { findings: [], overall: 'All clear from the model.' },
+      {
+        reply: 'Fake advisory chat reply for e2e. Use /review before committing.',
+        suggestedCommands: ['/review', '/commit'],
+      },
       { text: 'ok' },
     ]
     for (const candidate of candidates) {

@@ -90,7 +90,7 @@ async function setupRepoAndProfile(
   return profileId
 }
 
-test.describe('Change Review Assistant', () => {
+test.describe('Commit tab change review (removed)', () => {
   let app: ElectronApplication
   let win: Page
   let fixtureRepo: string
@@ -128,57 +128,45 @@ test.describe('Change Review Assistant', () => {
     fs.rmSync(fixtureRepo, { recursive: true, force: true })
   })
 
-  test('deterministic secret blocks commit (AI disabled) and survives message edits', async () => {
-    fs.writeFileSync(
-      path.join(fixtureRepo, 'secrets.env'),
-      'TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz\n'
-    )
-    execSync('git add secrets.env', { cwd: fixtureRepo, stdio: 'pipe' })
-    execSync('git config --unset user.email', { cwd: fixtureRepo, stdio: 'pipe' })
-    execSync('git config --unset user.name', { cwd: fixtureRepo, stdio: 'pipe' })
+  test('staged secret-like content does not block commit', async () => {
+    execSync('git config user.email "alice@example.com"', { cwd: fixtureRepo, stdio: 'pipe' })
+    execSync('git config user.name "Alice Dev"', { cwd: fixtureRepo, stdio: 'pipe' })
 
-    await setupRepoAndProfile(win, fixtureRepo, { aiEnabled: false })
+    await setupRepoAndProfile(win, fixtureRepo, { stageSecret: true, aiEnabled: false })
 
     await win.getByTestId('nav-commit').click()
+    await expect(win.getByTestId('commit-staged-summary')).toBeVisible({ timeout: 10000 })
 
-    // The secret surfaces as a Safety Engine blocker — no review panel, no AI needed.
-    const secretBlocker = win
-      .getByTestId('commit-blocker')
-      .filter({ hasText: 'secret-like content' })
-    await expect(secretBlocker).toBeVisible({ timeout: 10000 })
-    await expect(win.getByTestId('change-review-panel')).toHaveCount(0)
-    // AI is off → the commit-message AI affordance is not offered.
-    await expect(win.getByTestId('ai-commit-draft-toggle')).toHaveCount(0)
+    await expect(
+      win.getByTestId('commit-blocker').filter({ hasText: 'secret-like content' })
+    ).toHaveCount(0)
+    await expect(win.getByTestId('commit-review-advisories')).toHaveCount(0)
 
-    // Typing a commit message must NOT clear the deterministic secret blocker.
     await win.getByTestId('commit-message').fill('feat: add secrets')
-    await expect(secretBlocker).toBeVisible()
-    await expect(win.getByTestId('commit-btn')).toBeDisabled()
+    await expect(win.getByTestId('commit-btn')).toBeEnabled()
   })
 
   test('Commit tab AI is limited to the commit message even with AI enabled', async () => {
+    execSync('git config user.email "alice@example.com"', { cwd: fixtureRepo, stdio: 'pipe' })
+    execSync('git config user.name "Alice Dev"', { cwd: fixtureRepo, stdio: 'pipe' })
+
     await setupRepoAndProfile(win, fixtureRepo, { stageSecret: true, aiEnabled: true })
 
     await win.getByTestId('nav-commit').click()
+    await expect(win.getByTestId('commit-staged-summary')).toBeVisible({ timeout: 10000 })
 
-    // The deterministic secret still blocks via the Safety Engine.
     await expect(
       win.getByTestId('commit-blocker').filter({ hasText: 'secret-like content' })
-    ).toBeVisible({ timeout: 10000 })
-
-    // No repo-review / summarize / review-panel affordances remain on the Commit tab.
+    ).toHaveCount(0)
     await expect(win.getByTestId('change-review-panel')).toHaveCount(0)
     await expect(win.getByTestId('change-review-ai-btn')).toHaveCount(0)
     await expect(win.getByTestId('ai-summarize-btn')).toHaveCount(0)
+    await expect(win.getByTestId('commit-review-advisories')).toHaveCount(0)
 
-    // The only AI affordance is drafting the commit message, attached to the field.
     await expect(win.getByTestId('ai-commit-draft-toggle')).toBeVisible()
-    await win.getByTestId('ai-commit-draft-toggle').click()
-    await expect(win.getByTestId('ai-commit-assistant')).toBeVisible()
-    await expect(win.getByTestId('ai-draft-message-btn')).toBeVisible()
   })
 
-  test('non-secret review advisories stay collapsed and do not block commit', async () => {
+  test('change review advisories are not shown on Commit tab', async () => {
     execSync('git config user.email "alice@example.com"', { cwd: fixtureRepo, stdio: 'pipe' })
     execSync('git config user.name "Alice Dev"', { cwd: fixtureRepo, stdio: 'pipe' })
     fs.mkdirSync(path.join(fixtureRepo, 'src'), { recursive: true })
@@ -198,8 +186,7 @@ test.describe('Change Review Assistant', () => {
     await expect(win.getByTestId('commit-staged-summary')).toBeVisible({ timeout: 10000 })
     await win.getByTestId('commit-message').fill('feat: bulk changes')
 
-    await expect(win.getByTestId('commit-review-advisories')).toBeVisible({ timeout: 10000 })
-    await expect(win.getByTestId('commit-review-advisory')).not.toHaveCount(0)
+    await expect(win.getByTestId('commit-review-advisories')).toHaveCount(0)
     await expect(win.getByTestId('commit-warning')).toHaveCount(0)
     await expect(win.getByTestId('commit-btn')).toBeEnabled()
   })

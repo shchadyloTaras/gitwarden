@@ -46,6 +46,7 @@ export type AiRequestKind =
   | 'repo-brief'
   | 'failure-explain'
   | 'agentic-proposal'
+  | 'chat'
 
 /**
  * What a connection's adapter/endpoint can do.
@@ -370,4 +371,25 @@ export interface AiAgenticProposal {
   summary: string
   actions: AiAgenticAction[]
   fileEdits: AiAgenticFileEdit[]
+}
+
+/**
+ * One turn of the advisory chat conversation sent to the model (Phase 52). Only
+ * user/assistant turns are carried as history; the system + redacted-context
+ * messages are reconstructed server-side on every send, never trusted from the
+ * renderer.
+ */
+export interface AiChatTurn {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+/**
+ * Free-text advisory chat response (Phase 52). Advisory only — the chat never
+ * runs a Git action. `suggestedCommands` are slash-command hints (e.g.
+ * "/review") the user may choose to run; they are not auto-executed.
+ */
+export interface AiChatResponse {
+  reply: string
+  suggestedCommands?: string[]
 }

@@ -39,6 +39,7 @@ export const AiRequestKindSchema = z.enum([
   'repo-brief',
   'failure-explain',
   'agentic-proposal',
+  'chat',
 ])
 
 export const AiDetectionConfidenceSchema = z.enum(['high', 'medium', 'low'])
@@ -281,7 +282,7 @@ export const AiCommitDraftSchema = z.object({
   conventional: z.string(),
   plain: z.string(),
   summary: z.string(),
-  body: z.string().optional(),
+  body: z.preprocess((value) => (value === null ? undefined : value), z.string().optional()),
 })
 
 export const AiChangeSummarySchema = z.object({
@@ -452,6 +453,19 @@ export const AiAgenticProposalSchema = z.object({
   summary: z.string(),
   actions: z.array(AiAgenticActionSchema),
   fileEdits: z.array(AiAgenticFileEditSchema),
+})
+
+// ── Advisory chat (Phase 52) ─────────────────────────────────────────────────
+
+export const AiChatTurnSchema = z.object({
+  role: z.enum(['user', 'assistant']),
+  content: z.string().min(1),
+})
+
+/** Fail-closed parse target for free-text chat adapter output (Phase 52). */
+export const AiChatResponseSchema = z.object({
+  reply: z.string(),
+  suggestedCommands: z.array(z.string()).optional(),
 })
 
 // ── Derived types (single source of truth = the schema) ─────────────────────────

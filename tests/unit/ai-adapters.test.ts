@@ -242,6 +242,228 @@ describe('built-in AI adapters', () => {
     expect(http.requests[0].headers).toMatchObject({ Authorization: 'Bearer sk-or-secret' })
   })
 
+  it('reads OpenRouter supported_parameters when deciding structured output capability', async () => {
+    const conn = connection('openrouter')
+    const http = new FakeHttp([
+      {
+        status: 200,
+        json: {
+          data: [
+            {
+              id: 'openrouter/structured',
+              supported_parameters: ['temperature', 'structured_outputs'],
+            },
+            {
+              id: 'openrouter/plain',
+              supported_parameters: ['temperature'],
+            },
+          ],
+        },
+      },
+    ])
+    const adapter = new OpenRouterAdapter(
+      {
+        connections: new FakeConnections([conn]),
+        credentials: new FakeCredentials({ [conn.id]: { apiKey: 'sk-or-secret' } }),
+        http,
+      },
+      new AiSpendGuard()
+    )
+
+    const models = await adapter.listModels(conn.id)
+    expect(models).toEqual([
+      expect.objectContaining({ id: 'openrouter/structured', structuredOutput: true }),
+      expect.objectContaining({ id: 'openrouter/plain', structuredOutput: false }),
+    ])
+  })
+
+  it('rejects non-chat structured requests for OpenRouter models without structured output', async () => {
+    const conn = connection('openrouter', { defaultModel: 'openrouter/plain' })
+    const schema = z.object({ summary: z.string(), highlights: z.array(z.string()) })
+    const http = new FakeHttp([
+      {
+        status: 200,
+        json: {
+          data: [{ id: 'openrouter/plain', supported_parameters: ['temperature'] }],
+        },
+      },
+    ])
+    const adapter = new OpenRouterAdapter(
+      {
+        connections: new FakeConnections([conn]),
+        credentials: new FakeCredentials({ [conn.id]: { apiKey: 'sk-or-secret' } }),
+        http,
+      },
+      new AiSpendGuard()
+    )
+
+    await expect(
+      adapter.generateStructured(
+        structuredRequest(conn.id, schema, { kind: 'commit-draft', model: 'openrouter/plain' })
+      )
+    ).rejects.toThrow(/does not support structured JSON output/)
+    expect(http.requests).toHaveLength(1)
+  })
+
+  it('rejects non-chat structured requests when OpenRouter connection.defaultModel is unsupported and request.model is omitted', async () => {
+    const conn = connection('openrouter', { defaultModel: 'openrouter/plain' })
+    const schema = z.object({ summary: z.string(), highlights: z.array(z.string()) })
+    const http = new FakeHttp([
+      {
+        status: 200,
+        json: {
+          data: [{ id: 'openrouter/plain', supported_parameters: ['temperature'] }],
+        },
+      },
+    ])
+    const adapter = new OpenRouterAdapter(
+      {
+        connections: new FakeConnections([conn]),
+        credentials: new FakeCredentials({ [conn.id]: { apiKey: 'sk-or-secret' } }),
+        http,
+      },
+      new AiSpendGuard()
+    )
+
+    await expect(
+      adapter.generateStructured(structuredRequest(conn.id, schema, { kind: 'commit-draft' }))
+    ).rejects.toThrow(/does not support structured JSON output/)
+    expect(http.requests).toHaveLength(1)
+  })
+
+  it('allows non-chat structured requests for an explicit supported OpenRouter model', async () => {
+    const conn = connection('openrouter', { defaultModel: 'openrouter/plain' })
+    const schema = z.object({ summary: z.string(), highlights: z.array(z.string()) })
+    const http = new FakeHttp([
+      {
+        status: 200,
+        json: {
+          data: [
+            {
+              id: 'openrouter/structured',
+              supported_parameters: ['temperature', 'structured_outputs'],
+            },
+            { id: 'openrouter/plain', supported_parameters: ['temperature'] },
+          ],
+        },
+      },
+      {
+        status: 200,
+        json: {
+          choices: [{ message: { content: '{"summary":"ok","highlights":["a"]}' } }],
+        },
+      },
+    ])
+    const adapter = new OpenRouterAdapter(
+      {
+        connections: new FakeConnections([conn]),
+        credentials: new FakeCredentials({ [conn.id]: { apiKey: 'sk-or-secret' } }),
+        http,
+      },
+      new AiSpendGuard()
+    )
+
+    await expect(
+      adapter.generateStructured(
+        structuredRequest(conn.id, schema, {
+          kind: 'commit-draft',
+          model: 'openrouter/structured',
+        })
+      )
+    ).resolves.toEqual({ summary: 'ok', highlights: ['a'] })
+    expect(http.requests).toHaveLength(2)
+    expect(http.requests[1].url).toContain('/chat/completions')
+  })
+
+  it('still allows chat for OpenRouter models without structured output', async () => {
+    const conn = connection('openrouter', { defaultModel: 'openrouter/plain' })
+    const schema = z.object({
+      reply: z.string(),
+      suggestedCommands: z.array(z.string()).optional(),
+    })
+    const http = new FakeHttp([
+      {
+        status: 200,
+        json: {
+          choices: [{ message: { content: 'Hello from chat.' } }],
+        },
+      },
+    ])
+    const adapter = new OpenRouterAdapter(
+      {
+        connections: new FakeConnections([conn]),
+        credentials: new FakeCredentials({ [conn.id]: { apiKey: 'sk-or-secret' } }),
+        http,
+      },
+      new AiSpendGuard()
+    )
+
+    await expect(
+      adapter.generateStructured(structuredRequest(conn.id, schema, { kind: 'chat' }))
+    ).resolves.toEqual({ reply: 'Hello from chat.' })
+    expect(http.requests).toHaveLength(1)
+    expect(http.requests[0].url).toContain('/chat/completions')
+  })
+
+  it('does not block non-chat structured requests when the effective OpenRouter model is absent from the model list', async () => {
+    const conn = connection('openrouter', { defaultModel: 'openrouter/unknown' })
+    const schema = z.object({ summary: z.string(), highlights: z.array(z.string()) })
+    const http = new FakeHttp([
+      {
+        status: 200,
+        json: {
+          data: [{ id: 'openrouter/other', supported_parameters: ['temperature'] }],
+        },
+      },
+      {
+        status: 200,
+        json: {
+          choices: [{ message: { content: '{"summary":"ok","highlights":[]}' } }],
+        },
+      },
+    ])
+    const adapter = new OpenRouterAdapter(
+      {
+        connections: new FakeConnections([conn]),
+        credentials: new FakeCredentials({ [conn.id]: { apiKey: 'sk-or-secret' } }),
+        http,
+      },
+      new AiSpendGuard()
+    )
+
+    await expect(
+      adapter.generateStructured(structuredRequest(conn.id, schema, { kind: 'commit-draft' }))
+    ).resolves.toEqual({ summary: 'ok', highlights: [] })
+    expect(http.requests).toHaveLength(2)
+  })
+
+  it('accepts plain-text chat output from OpenAI-compatible adapters', async () => {
+    const conn = connection('openai-compatible', {
+      baseUrl: 'http://127.0.0.1:1234/v1',
+      defaultModel: 'local-model',
+    })
+    const schema = z.object({
+      reply: z.string(),
+      suggestedCommands: z.array(z.string()).optional(),
+    })
+    const http = new FakeHttp([
+      {
+        status: 200,
+        json: {
+          choices: [{ message: { content: 'Use /review before committing.' } }],
+        },
+      },
+    ])
+    const adapter = new OpenAICompatibleAdapter(
+      { connections: new FakeConnections([conn]), credentials: new FakeCredentials(), http },
+      new AiSpendGuard()
+    )
+
+    await expect(
+      adapter.generateStructured(structuredRequest(conn.id, schema, { kind: 'chat' }))
+    ).resolves.toEqual({ reply: 'Use /review before committing.' })
+  })
+
   it('parses Anthropic tool-use structured output through the caller Zod schema', async () => {
     const conn = connection('anthropic', { defaultModel: 'claude-test' })
     const schema = z.object({ summary: z.string(), highlights: z.array(z.string()) })

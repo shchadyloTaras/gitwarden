@@ -36,6 +36,8 @@ import type {
   AiFailureExplanation,
   AiConnectionTemplateExport,
   AiAgenticProposal,
+  AiChatTurn,
+  AiChatResponse,
   CustomHttpMapping,
 } from '../../core/ai/types.js'
 import type { AiPreparedContext } from '../../core/ai/context.js'
@@ -185,10 +187,12 @@ interface ElectronAPI {
     draftCommitMessage(input: {
       repositoryId: string
       commitMessage?: string
+      expensiveSendAcknowledged?: boolean
     }): Promise<IpcResult<AiCommitDraft>>
     summarizeStagedChanges(input: {
       repositoryId: string
       commitMessage?: string
+      expensiveSendAcknowledged?: boolean
     }): Promise<IpcResult<AiChangeSummary>>
     reviewStagedChanges(input: {
       repositoryId: string
@@ -233,6 +237,11 @@ interface ElectronAPI {
       repositoryId: string
       fileEdits: Array<{ path: string; before?: string; after: string }>
     }): Promise<IpcResult<{ writtenFiles: string[] }>>
+    chat(input: {
+      repositoryId: string
+      message: string
+      history?: AiChatTurn[]
+    }): Promise<IpcResult<AiChatResponse>>
   }
   pushBrief: {
     buildDeterministic(input: {

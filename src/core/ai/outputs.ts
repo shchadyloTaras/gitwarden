@@ -8,6 +8,7 @@ import {
   AiFailureExplanationAiResponseSchema,
   AiAgenticProposalSchema,
   AiSafetyExplanationSchema,
+  AiChatResponseSchema,
 } from './schemas.js'
 import type {
   AiChangeReview,
@@ -18,6 +19,7 @@ import type {
   AiRepoBrief,
   AiAgenticProposal,
   AiSafetyExplanation,
+  AiChatResponse,
 } from './types.js'
 
 /** Fail-closed parsing for Smart Commit Assistant adapter output (Phase 32). */
@@ -97,3 +99,11 @@ export function parseAgenticProposal(raw: unknown): AiAgenticProposal {
 
 export const AGENTIC_PROPOSAL_TASK_INSTRUCTION =
   'Propose allowlisted helper actions for the repository context. Return JSON with: summary (string), actions (array of { kind: write-repo-file|suggest-navigation|copy-command, optional target, optional command }), fileEdits (array of { path, optional before, after }). Never propose push, staging, identity changes, shell execution, or .git/config writes. English only.'
+
+/** Fail-closed parsing for advisory chat adapter output (Phase 52). */
+export function parseChatResponse(raw: unknown): AiChatResponse {
+  return AiChatResponseSchema.parse(raw)
+}
+
+export const CHAT_TASK_INSTRUCTION =
+  "You are GitWarden's advisory assistant. Answer the user's question using only the provided post-redaction repository context and your general knowledge of Git and software development. Return JSON with: reply (a helpful, concise plain-text answer) and optional suggestedCommands (array of GitWarden slash-commands that would help, drawn only from: /commit, /review, /push-brief, /history, /repo-brief, /explain, /propose). English only. Advisory only — you never run Git actions, never change identity or config, never bypass a safety gate, and never claim a change is safe if secrets might be present. Recommend existing GitWarden controls rather than raw shell commands."

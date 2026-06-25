@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react'
 import { useHistoryStore } from '../store/historyStore'
 import { useAppStore } from '../store/appStore'
-import HistorySummaryPanel from '../components/HistorySummaryPanel'
 import { STR } from '../strings'
 
 const ROW: React.CSSProperties = {
@@ -51,8 +50,6 @@ export default function HistoryScreen(): React.ReactElement {
           </span>
         )}
       </div>
-
-      {activeRepo && <HistorySummaryPanel repositoryId={activeRepo.id} />}
 
       {/* Body */}
       {!activeRepo ? (

@@ -3,25 +3,21 @@ import { useAppStore } from '../store/appStore'
 import { useProfilesStore, profileColor } from '../store/profilesStore'
 
 export default function Inspector(): React.ReactElement {
-  const { activeRepo, currentBranch, safetyBadge, inspectorOpen } = useAppStore()
+  const { activeRepo, currentBranch, safetyBadge } = useAppStore()
   const profiles = useProfilesStore((s) => s.profiles)
   const activeProfileId = useProfilesStore((s) => s.activeProfileId)
   const activeProfile = profiles.find((p) => p.id === activeProfileId) ?? null
 
-  if (!inspectorOpen) return <></>
-
   return (
-    <aside
+    <div
       data-testid="inspector-panel"
       style={{
-        width: 220,
-        flexShrink: 0,
-        background: 'var(--gw-surface, #18181b)',
-        borderLeft: '1px solid var(--gw-border, #27272a)',
+        height: '100%',
         padding: '12px',
         fontSize: 12,
         color: 'var(--gw-text-muted, #a1a1aa)',
         overflowY: 'auto',
+        boxSizing: 'border-box',
       }}
     >
       <div
@@ -96,7 +92,7 @@ export default function Inspector(): React.ReactElement {
           {safetyBadge}
         </span>
       </Section>
-    </aside>
+    </div>
   )
 }
 

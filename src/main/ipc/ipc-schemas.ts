@@ -16,6 +16,7 @@ import {
   AiRequestKindSchema,
   AiConnectionTemplateExportSchema,
   CustomHttpMappingSchema,
+  AiChatTurnSchema,
 } from '../../core/ai/schemas.js'
 import { ALL_SAFETY_CODES } from '../../core/ai/safetyCopilot.js'
 import { isAllowedAiBaseUrl } from '../../core/ai/transport.js'
@@ -237,6 +238,7 @@ export const HistorySummaryPayload = z.object({
 export const AiCommitAssistantPayload = z.object({
   repositoryId: z.string().min(1),
   commitMessage: z.string().optional(),
+  expensiveSendAcknowledged: z.boolean().optional(),
 })
 
 export const ChangeReviewScanPayload = z.object({
@@ -281,6 +283,12 @@ export const AiConnectionTemplateImportPayload = AiConnectionTemplateExportSchem
 export const AiAgenticProposePayload = z.object({
   repositoryId: z.string().min(1),
   prompt: z.string().min(1),
+})
+
+export const AiChatPayload = z.object({
+  repositoryId: z.string().min(1),
+  message: z.string().min(1),
+  history: z.array(AiChatTurnSchema).optional(),
 })
 
 export const AiAgenticExecutePayload = z.object({

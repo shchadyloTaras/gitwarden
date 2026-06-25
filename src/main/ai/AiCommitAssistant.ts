@@ -5,6 +5,7 @@ import {
   parseChangeSummary,
   parseCommitDraft,
 } from '../../core/ai/outputs.js'
+import { AI_COMMIT_DRAFT_JSON_SCHEMA } from '../../core/ai/providerSchemas.js'
 import { AiChangeSummarySchema, AiCommitDraftSchema } from '../../core/ai/schemas.js'
 import type { AiChangeSummary, AiCommitDraft } from '../../core/ai/types.js'
 import { createAiContextMessages, type AiPreparedContext } from '../../core/ai/context.js'
@@ -14,6 +15,7 @@ import type { AiContextBuilder } from './AiContextBuilder.js'
 export interface AiCommitAssistantInput {
   repositoryId: string
   commitMessage?: string
+  expensiveSendAcknowledged?: boolean
 }
 
 export class AiCommitAssistant {
@@ -31,7 +33,8 @@ export class AiCommitAssistant {
     const raw = await this.generateStructured(
       preview,
       AiCommitDraftSchema,
-      COMMIT_DRAFT_TASK_INSTRUCTION
+      COMMIT_DRAFT_TASK_INSTRUCTION,
+      input.expensiveSendAcknowledged
     )
     return parseCommitDraft(raw)
   }
@@ -45,7 +48,8 @@ export class AiCommitAssistant {
     const raw = await this.generateStructured(
       preview,
       AiChangeSummarySchema,
-      CHANGE_SUMMARY_TASK_INSTRUCTION
+      CHANGE_SUMMARY_TASK_INSTRUCTION,
+      input.expensiveSendAcknowledged
     )
     return parseChangeSummary(raw)
   }
@@ -53,7 +57,8 @@ export class AiCommitAssistant {
   private async generateStructured<T>(
     preview: AiPreparedContext,
     responseSchema: z.ZodType<T>,
-    taskInstruction: string
+    taskInstruction: string,
+    expensiveSendAcknowledged?: boolean
   ): Promise<T> {
     const messages = withTaskInstruction(createAiContextMessages(preview), taskInstruction)
     return this.adapters.generateStructured({
@@ -62,13 +67,14 @@ export class AiCommitAssistant {
       kind: preview.kind,
       messages,
       responseSchema,
-      responseSchemaJson: zodToMinimalJsonSchema(responseSchema),
+      responseSchemaJson: providerJsonSchemaForKind(preview.kind, responseSchema),
       metadata: {
         destinationHost: preview.destinationHost,
         redactionCount: preview.redactions.count,
         truncated: preview.truncated,
       },
       estimatedInputTokens: Math.ceil(preview.payloadText.length / 4),
+      expensiveSendAcknowledged,
     })
   }
 }
@@ -81,9 +87,24 @@ function withTaskInstruction(
   return [{ ...system, content: `${system.content}\n\n${taskInstruction}` }, user]
 }
 
-function zodToMinimalJsonSchema(schema: z.ZodType<unknown>): unknown {
+function providerJsonSchemaForKind(
+  kind: AiPreparedContext['kind'],
+  responseSchema: z.ZodType<unknown>
+): unknown {
+  if (kind === 'commit-draft') return AI_COMMIT_DRAFT_JSON_SCHEMA
+  if (kind === 'change-summary') {
+    return {
+      type: 'object',
+      additionalProperties: false,
+      required: ['summary', 'highlights'],
+      properties: {
+        summary: { type: 'string' },
+        highlights: { type: 'array', items: { type: 'string' } },
+      },
+    }
+  }
   return {
     type: 'object',
-    description: schema.description ?? 'GitWarden structured response',
+    description: responseSchema.description ?? 'GitWarden structured response',
   }
 }

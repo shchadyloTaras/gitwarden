@@ -129,4 +129,87 @@ test.describe('Connect GitHub UI (injected fake service)', () => {
     await expect(win.getByTestId('github-linked-badge')).toHaveCount(0)
     await expect(win.getByTestId('github-connect-btn')).toBeVisible()
   })
+
+  // ── One-click connect from a brand-new profile (variant B) ─────────────────
+
+  test('new profile: Connect GitHub saves a draft and auto-fills identity', async () => {
+    // Start a new profile and fill ONLY the display name — GitHub supplies the rest.
+    await win.getByTestId('profiles-new-btn').click()
+    await win.getByTestId('profile-form-displayName').fill('Work')
+
+    await win.getByTestId('github-connect-new-btn').click()
+
+    // The draft is saved and the modal opens against the new profile id.
+    await expect(win.getByTestId('github-connect-modal')).toBeVisible()
+    await expect(win.getByTestId('github-connect-user-code')).toHaveText('WDJB-MJHT')
+    await expect(win.getByTestId('github-connect-success')).toBeVisible({ timeout: 10000 })
+    await win.getByTestId('github-connect-done').click()
+    await expect(win.getByTestId('github-connect-modal')).toHaveCount(0)
+
+    // Identity auto-fills from the GitHub account; the typed display name is preserved.
+    await expect(win.getByTestId('profile-form-gitAuthorName')).toHaveValue('The Octocat')
+    await expect(win.getByTestId('profile-form-githubUsername')).toHaveValue('octocat')
+    await expect(win.getByTestId('profile-form-gitAuthorEmail')).toHaveValue(
+      'octocat@users.noreply.github.com'
+    )
+    await expect(win.getByTestId('profile-form-displayName')).toHaveValue('Work')
+    await expect(win.getByTestId('github-linked-badge')).toBeVisible()
+
+    // Exactly one profile persisted — the draft, now linked.
+    const list = await win.evaluate(async () =>
+      (window as Window & typeof globalThis).api.profiles.list()
+    )
+    expect(list.ok ? list.data.length : 0).toBe(1)
+    expect(list.ok ? list.data[0].linkedGitHub?.login : null).toBe('octocat')
+  })
+
+  test('new profile: Connect GitHub requires a display name', async () => {
+    await win.getByTestId('profiles-new-btn').click()
+    // No display name entered.
+    await win.getByTestId('github-connect-new-btn').click()
+
+    // No modal, an inline error, and nothing persisted.
+    await expect(win.getByTestId('github-connect-modal')).toHaveCount(0)
+    await expect(win.getByText('Enter a display name to connect a GitHub account.')).toBeVisible()
+    const list = await win.evaluate(async () =>
+      (window as Window & typeof globalThis).api.profiles.list()
+    )
+    expect(list.ok ? list.data.length : 0).toBe(0)
+  })
+
+  test('new profile: cancelling OAuth keeps the saved draft', async () => {
+    await win.getByTestId('profiles-new-btn').click()
+    await win.getByTestId('profile-form-displayName').fill('Draft')
+    await win.getByTestId('github-connect-new-btn').click()
+    await expect(win.getByTestId('github-connect-modal')).toBeVisible()
+
+    await win.getByTestId('github-connect-cancel').click()
+    await expect(win.getByTestId('github-connect-modal')).toHaveCount(0)
+
+    // The draft survives, unlinked, and the screen explains it.
+    await expect(win.getByTestId('profile-saved-msg')).toBeVisible()
+    await expect(win.getByTestId('github-linked-badge')).toHaveCount(0)
+    await expect(win.getByTestId('github-connect-btn')).toBeVisible()
+
+    const list = await win.evaluate(async () =>
+      (window as Window & typeof globalThis).api.profiles.list()
+    )
+    expect(list.ok ? list.data.length : 0).toBe(1)
+    expect(list.ok ? list.data[0].displayName : null).toBe('Draft')
+  })
+
+  test('connecting as a different account than declared warns about the mismatch', async () => {
+    // Declare a username the authorized account will NOT match.
+    await win.getByTestId('profiles-new-btn').click()
+    await win.getByTestId('profile-form-displayName').fill('Personal')
+    await win.getByTestId('profile-form-githubUsername').fill('someone-else')
+
+    await win.getByTestId('github-connect-new-btn').click()
+    await expect(win.getByTestId('github-connect-success')).toBeVisible({ timeout: 10000 })
+    await win.getByTestId('github-connect-done').click()
+
+    // The mismatch is surfaced, and the username is corrected to the authorized account.
+    await expect(win.getByTestId('profile-warning-msg')).toBeVisible()
+    await expect(win.getByTestId('profile-form-githubUsername')).toHaveValue('octocat')
+  })
 })

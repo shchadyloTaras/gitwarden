@@ -93,10 +93,12 @@ interface AiState {
   draftCommitMessage(input: {
     repositoryId: string
     commitMessage?: string
+    expensiveSendAcknowledged?: boolean
   }): Promise<AiCommitDraft | null>
   summarizeStagedChanges(input: {
     repositoryId: string
     commitMessage?: string
+    expensiveSendAcknowledged?: boolean
   }): Promise<AiChangeSummary | null>
   reviewStagedChanges(input: {
     repositoryId: string
@@ -332,6 +334,12 @@ export const useAiStore = create<AiState>((set, get) => ({
     }
     // Keep only the masked metadata the main process returned — never the secret.
     set({ credentialMeta: result.data })
+    // A stored credential is the consent: AI turns on automatically (no separate
+    // toggle). Saving a key means "use it" — the per-send redaction still applies.
+    if (!get().aiEnabled) {
+      const updated = await window.api.settings.update({ aiEnabled: true })
+      if (updated.ok) set({ aiEnabled: updated.data.aiEnabled ?? true })
+    }
   },
 
   async deleteCredential(connectionId) {

@@ -59,4 +59,25 @@ describe('AiSpendGuard', () => {
     expect(estimate.warnings?.join(' ')).toContain('daily soft cap')
     expect(estimate.requiresExplicitWarning).toBe(true)
   })
+
+  it('does not treat the per-request cap as an expensive-send acknowledgement bypass', () => {
+    const guard = new AiSpendGuard({ perRequestTokenCap: 10, expensiveTokenWarning: 20 })
+
+    const estimate = guard.estimate({
+      connectionId: 'ai-1',
+      kind: 'commit-draft',
+      estimatedInputTokens: 11,
+    })
+    expect(estimate.warnings?.join(' ')).toContain('per-request cap')
+    expect(estimate.requiresExplicitWarning).toBeFalsy()
+
+    expect(() =>
+      guard.assertAllowed({
+        connectionId: 'ai-1',
+        kind: 'commit-draft',
+        estimatedInputTokens: 11,
+        expensiveSendAcknowledged: true,
+      })
+    ).toThrow(/per-request cap/)
+  })
 })

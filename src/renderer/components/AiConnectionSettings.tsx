@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import { useAiStore } from '../store/aiStore'
-import { useAppStore } from '../store/appStore'
-import { useRepositoriesStore } from '../store/repositoriesStore'
 import { requiresBaseUrlEntry } from '../../core/ai/detection'
 import type { AiConnection, AiConnectionKind, AiProviderDetection } from '../../core/ai/types'
 import { STR } from '../strings'
@@ -86,19 +84,11 @@ function titleCaseKind(kind: AiConnectionKind | 'unknown'): string {
   }
 }
 
-function retentionLine(conn: AiConnection): string {
-  if (conn.capabilities.localOnly) return STR.AI_RETENTION_LOCAL
-  switch (conn.retention) {
-    case 'zero-retention':
-      return STR.AI_RETENTION_ZERO
-    case 'user-accepted':
-      return STR.AI_RETENTION_ACCEPTED
-    default:
-      return STR.AI_RETENTION_UNKNOWN
-  }
-}
-
-/** The setup form shown when there is no active connection. */
+/**
+ * Step 1 — paste a key. Detection names the provider; "Save" creates the
+ * connection, stores the key (which auto-enables AI), and loads the model list.
+ * The model is then picked in the active card (step 2).
+ */
 function SetupForm(): React.ReactElement {
   const detect = useAiStore((s) => s.detect)
   const createConnection = useAiStore((s) => s.createConnection)
@@ -109,8 +99,6 @@ function SetupForm(): React.ReactElement {
   const [apiKey, setApiKey] = useState('')
   const [detection, setDetection] = useState<AiProviderDetection | null>(null)
   const [baseUrl, setBaseUrl] = useState('')
-  const [name, setName] = useState('')
-  const [model, setModel] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -125,19 +113,11 @@ function SetupForm(): React.ReactElement {
     if (!result) return
     setDetection(result.detection)
     if (result.detection.suggestedBaseUrl) setBaseUrl(result.detection.suggestedBaseUrl)
-    if (name.trim().length === 0 && result.detection.kind !== 'unknown') {
-      setName(titleCaseKind(result.detection.kind))
-    }
   }
 
   const showBaseUrl = detection !== null && requiresBaseUrlEntry(detection)
   const isUnknown = detection !== null && detection.kind === 'unknown'
-  const canSave =
-    detection !== null &&
-    !isUnknown &&
-    apiKey.trim().length > 0 &&
-    name.trim().length > 0 &&
-    !saving
+  const canSave = detection !== null && !isUnknown && apiKey.trim().length > 0 && !saving
 
   async function handleSave(): Promise<void> {
     if (!detection || detection.kind === 'unknown') return
@@ -148,25 +128,20 @@ function SetupForm(): React.ReactElement {
         ? baseUrl.trim() || undefined
         : detection.suggestedBaseUrl
       const created = await createConnection({
-        name: name.trim(),
+        name: titleCaseKind(detection.kind),
         kind: detection.kind,
         baseUrl: effectiveBaseUrl,
-        defaultModel: model.trim() || undefined,
       })
       if (!created) {
         setError(STR.AI_SAVE_ERROR)
         return
       }
-      // "Save connection" attaches the key too — it is encrypted in main and the
-      // raw value never comes back. AI stays disabled until the separate toggle.
+      // Storing the key enables AI automatically (see aiStore.saveCredential).
       await saveCredential(created.id, `${titleCaseKind(detection.kind)} key`, {
         apiKey: apiKey.trim(),
       })
       const fetched = await listModels(created.id)
-      if (model.trim().length === 0 && fetched[0]) {
-        await updateConnection(created.id, { defaultModel: fetched[0].id })
-        await listModels(created.id)
-      }
+      if (fetched[0]) await updateConnection(created.id, { defaultModel: fetched[0].id })
     } catch (err) {
       setError(err instanceof Error ? err.message : STR.AI_SAVE_ERROR)
     } finally {
@@ -218,31 +193,6 @@ function SetupForm(): React.ReactElement {
         </div>
       )}
 
-      <div style={{ marginTop: 14 }}>
-        <label style={LABEL}>{STR.AI_NAME_LABEL}</label>
-        <input
-          data-testid="ai-name-input"
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder={STR.AI_NAME_PLACEHOLDER}
-          style={{ ...INPUT, fontFamily: 'inherit' }}
-        />
-      </div>
-
-      <div style={{ marginTop: 14 }}>
-        <label style={LABEL}>{STR.AI_MODEL_LABEL}</label>
-        <input
-          data-testid="ai-model-input"
-          type="text"
-          value={model}
-          onChange={(e) => setModel(e.target.value)}
-          placeholder={STR.AI_MODEL_PLACEHOLDER}
-          style={INPUT}
-        />
-        <p style={HINT}>{STR.AI_MODEL_HINT}</p>
-      </div>
-
       <div style={{ marginTop: 18, display: 'flex', alignItems: 'center', gap: 12 }}>
         <button
           data-testid="ai-save-connection"
@@ -269,7 +219,11 @@ function SetupForm(): React.ReactElement {
   )
 }
 
-/** The active-connection card shown once a connection exists. */
+/**
+ * Step 2 — the active connection: pick a model (from the provider's live list),
+ * manage the stored key, save, or delete. No separate enable toggle — a saved
+ * key is the consent.
+ */
 function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElement {
   const credentialMeta = useAiStore((s) => s.credentialMeta)
   const updateConnection = useAiStore((s) => s.updateConnection)
@@ -280,29 +234,27 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
   const testConnection = useAiStore((s) => s.testConnection)
   const models = useAiStore((s) => s.models)
 
-  const [name, setName] = useState(conn.name)
   const [model, setModel] = useState(conn.defaultModel ?? '')
   const [credKey, setCredKey] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [saved, setSaved] = useState(false)
   const [modelsLoading, setModelsLoading] = useState(false)
   const [modelStatus, setModelStatus] = useState<string | null>(null)
-  const [templateMessage, setTemplateMessage] = useState<string | null>(null)
-  const load = useAiStore((s) => s.load)
 
   useEffect(() => {
-    setName(conn.name)
     setModel(conn.defaultModel ?? '')
     setModelStatus(null)
-  }, [conn.id, conn.name, conn.defaultModel])
+  }, [conn.id, conn.defaultModel])
 
-  const dirty = name.trim() !== conn.name || (model.trim() || '') !== (conn.defaultModel ?? '')
+  // Load the model list once so the dropdown is populated from the provider API.
+  useEffect(() => {
+    if (credentialMeta && models.length === 0) void listModels(conn.id)
+  }, [conn.id, credentialMeta, models.length, listModels])
+
+  const dirty = (model.trim() || '') !== (conn.defaultModel ?? '')
 
   async function handleSaveChanges(): Promise<void> {
-    await updateConnection(conn.id, {
-      name: name.trim() || conn.name,
-      defaultModel: model.trim() || undefined,
-    })
+    await updateConnection(conn.id, { defaultModel: model.trim() || undefined })
     setSaved(true)
   }
 
@@ -319,64 +271,16 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
     }
   }
 
-  async function handleExportTemplate(): Promise<void> {
-    setTemplateMessage(null)
-    const result = await window.api.ai.exportConnectionTemplate(conn.id)
-    if (!result.ok) {
-      setTemplateMessage(STR.AI_TEMPLATE_EXPORT_ERROR)
-      return
-    }
-    await navigator.clipboard.writeText(JSON.stringify(result.data, null, 2))
-    setTemplateMessage(STR.AI_TEMPLATE_EXPORTED)
-  }
-
-  async function handleDuplicate(): Promise<void> {
-    setTemplateMessage(null)
-    const result = await window.api.ai.duplicateConnection(conn.id)
-    if (!result.ok) {
-      setTemplateMessage(STR.AI_TEMPLATE_IMPORT_ERROR)
-      return
-    }
-    await load()
-    setTemplateMessage(STR.AI_TEMPLATE_IMPORT_SUCCESS)
-  }
-
   return (
     <div style={CARD} data-testid="ai-connection-card">
       <div style={SECTION_TITLE}>{STR.AI_SECTION_LABEL}</div>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 6 }}>
-        <span
-          data-testid="ai-conn-state"
-          style={{
-            fontSize: 12,
-            fontWeight: 600,
-            color: conn.enabled ? 'var(--gw-success, #4ade80)' : 'var(--gw-text-faint, #71717a)',
-          }}
-        >
-          {conn.enabled ? STR.AI_CONN_ENABLED : STR.AI_CONN_DISABLED}
-        </span>
-        <span style={{ fontSize: 12, color: 'var(--gw-text-faint, #71717a)' }}>
-          {titleCaseKind(conn.kind)}
-          {conn.baseUrl ? ` · ${conn.baseUrl}` : ''}
-        </span>
+      <div style={{ fontSize: 12, color: 'var(--gw-text-faint, #71717a)', marginBottom: 12 }}>
+        {titleCaseKind(conn.kind)}
+        {conn.baseUrl ? ` · ${conn.baseUrl}` : ''}
       </div>
 
-      <div style={{ marginTop: 12 }}>
-        <label style={LABEL}>{STR.AI_NAME_LABEL}</label>
-        <input
-          data-testid="ai-edit-name-input"
-          type="text"
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value)
-            setSaved(false)
-          }}
-          style={{ ...INPUT, fontFamily: 'inherit' }}
-        />
-      </div>
-
-      <div style={{ marginTop: 12 }}>
+      <div style={{ marginTop: 4 }}>
         <label style={LABEL}>{STR.AI_MODEL_LABEL}</label>
         {models.length > 0 ? (
           <select
@@ -504,63 +408,7 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
         )}
       </div>
 
-      {/* Privacy / retention status. */}
-      <div style={{ marginTop: 16 }}>
-        <label style={LABEL}>{STR.AI_RETENTION_LABEL}</label>
-        <p
-          data-testid="ai-retention-status"
-          style={{
-            ...HINT,
-            marginTop: 0,
-            color: conn.capabilities.localOnly
-              ? 'var(--gw-success, #4ade80)'
-              : conn.retention === 'unknown'
-                ? 'var(--gw-warning, #fbbf24)'
-                : 'var(--gw-text-muted, #a1a1aa)',
-          }}
-        >
-          {retentionLine(conn)}
-        </p>
-      </div>
-
-      <div
-        style={{
-          marginTop: 18,
-          paddingTop: 16,
-          borderTop: '1px solid var(--gw-border, #27272a)',
-          display: 'flex',
-          gap: 10,
-          flexWrap: 'wrap',
-          alignItems: 'center',
-        }}
-      >
-        <button
-          type="button"
-          data-testid="ai-export-template"
-          onClick={() => void handleExportTemplate()}
-          style={SUBTLE_BTN}
-        >
-          {STR.AI_TEMPLATE_EXPORT}
-        </button>
-        <button
-          type="button"
-          data-testid="ai-duplicate-connection"
-          onClick={() => void handleDuplicate()}
-          style={SUBTLE_BTN}
-        >
-          {STR.AI_TEMPLATE_DUPLICATE}
-        </button>
-        {templateMessage && (
-          <span
-            data-testid="ai-template-message"
-            style={{ fontSize: 12, color: 'var(--gw-text-muted, #a1a1aa)' }}
-          >
-            {templateMessage}
-          </span>
-        )}
-      </div>
-
-      {/* Connection lifecycle: disable / delete. */}
+      {/* Delete the connection (and its credential). */}
       <div
         style={{
           marginTop: 18,
@@ -571,14 +419,6 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
           alignItems: 'center',
         }}
       >
-        <button
-          data-testid="ai-conn-toggle"
-          onClick={() => void updateConnection(conn.id, { enabled: !conn.enabled })}
-          style={SUBTLE_BTN}
-        >
-          {conn.enabled ? STR.AI_CONN_DISABLE_BTN : STR.AI_CONN_ENABLE_BTN}
-        </button>
-
         {confirmDelete ? (
           <>
             <span style={{ fontSize: 12, color: 'var(--gw-danger, #f87171)' }}>
@@ -613,202 +453,6 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
   )
 }
 
-/** The global "Enable AI" consent toggle — a separate, deliberate step from saving. */
-function EnableAiToggle(): React.ReactElement {
-  const aiEnabled = useAiStore((s) => s.aiEnabled)
-  const setAiEnabled = useAiStore((s) => s.setAiEnabled)
-
-  return (
-    <div style={CARD} data-testid="ai-enable-card">
-      <div style={SECTION_TITLE}>{STR.AI_ENABLE_LABEL}</div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button
-          data-testid="ai-enable-toggle"
-          role="switch"
-          aria-checked={aiEnabled}
-          onClick={() => void setAiEnabled(!aiEnabled)}
-          style={{
-            width: 44,
-            height: 24,
-            borderRadius: 12,
-            border: 'none',
-            cursor: 'pointer',
-            background: aiEnabled ? 'var(--gw-accent, #6366f1)' : 'var(--gw-surface3, #3f3f46)',
-            position: 'relative',
-            flexShrink: 0,
-          }}
-        >
-          <span
-            style={{
-              position: 'absolute',
-              top: 3,
-              left: aiEnabled ? 23 : 3,
-              width: 18,
-              height: 18,
-              borderRadius: '50%',
-              background: '#fff',
-              transition: 'left 0.15s',
-            }}
-          />
-        </button>
-        <span
-          data-testid="ai-enable-state"
-          style={{
-            fontSize: 13,
-            fontWeight: 600,
-            color: aiEnabled ? 'var(--gw-success, #4ade80)' : 'var(--gw-text-faint, #71717a)',
-          }}
-        >
-          {aiEnabled ? STR.AI_ENABLE_ON : STR.AI_ENABLE_OFF}
-        </span>
-      </div>
-      <p style={HINT}>{STR.AI_ENABLE_HINT}</p>
-    </div>
-  )
-}
-
-/** Per-repo override entry point for the active repository (enforced in Phase 31). */
-function RepoOverride(): React.ReactElement {
-  const activeRepo = useAppStore((s) => s.activeRepo)
-  const updateRepo = useRepositoriesStore((s) => s.updateRepo)
-  const repos = useRepositoriesStore((s) => s.repos)
-  const current = repos.find((r) => r.id === activeRepo?.id) ?? activeRepo
-  const value: 'inherit' | 'enabled' | 'disabled' = current?.aiOverride ?? 'inherit'
-
-  const options: { id: 'inherit' | 'enabled' | 'disabled'; label: string }[] = [
-    { id: 'inherit', label: STR.AI_REPO_OVERRIDE_INHERIT },
-    { id: 'enabled', label: STR.AI_REPO_OVERRIDE_ON },
-    { id: 'disabled', label: STR.AI_REPO_OVERRIDE_OFF },
-  ]
-
-  return (
-    <div style={CARD} data-testid="ai-repo-override-card">
-      <div style={SECTION_TITLE}>{STR.AI_REPO_OVERRIDE_LABEL}</div>
-      {current ? (
-        <div data-testid="ai-repo-override" style={{ display: 'flex', gap: 6 }}>
-          {options.map((o) => {
-            const selected = value === o.id
-            return (
-              <button
-                key={o.id}
-                data-testid={`ai-repo-override-${o.id}`}
-                onClick={() =>
-                  void updateRepo(current.id, {
-                    aiOverride: o.id === 'inherit' ? undefined : o.id,
-                  })
-                }
-                style={{
-                  padding: '6px 16px',
-                  borderRadius: 4,
-                  fontSize: 13,
-                  cursor: 'pointer',
-                  border: selected
-                    ? '2px solid var(--gw-accent, #6366f1)'
-                    : '1px solid var(--gw-surface3, #3f3f46)',
-                  background: selected
-                    ? 'var(--gw-accent-soft, #1e1b4b)'
-                    : 'var(--gw-surface2, #27272a)',
-                  color: selected
-                    ? 'var(--gw-accent-text, #a5b4fc)'
-                    : 'var(--gw-text-muted, #a1a1aa)',
-                  fontWeight: selected ? 600 : 400,
-                }}
-              >
-                {o.label}
-              </button>
-            )
-          })}
-        </div>
-      ) : (
-        <p style={{ ...HINT, marginTop: 0 }}>{STR.AI_REPO_OVERRIDE_NO_REPO}</p>
-      )}
-      <p style={HINT}>{STR.AI_REPO_OVERRIDE_HINT}</p>
-    </div>
-  )
-}
-
-/** Advanced disclosure — Custom HTTP / manual base URL land with the adapters (Phase 30). */
-function AdvancedDisclosure(): React.ReactElement {
-  const [open, setOpen] = useState(false)
-  return (
-    <div style={CARD} data-testid="ai-advanced-card">
-      <button
-        data-testid="ai-advanced-toggle"
-        onClick={() => setOpen((v) => !v)}
-        style={{
-          ...SECTION_TITLE,
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          padding: 0,
-        }}
-      >
-        {open ? '▾ ' : '▸ '}
-        {STR.AI_ADVANCED_LABEL}
-      </button>
-      {open && (
-        <p data-testid="ai-advanced-panel" style={{ ...HINT, marginTop: 10 }}>
-          {STR.AI_ADVANCED_HINT}
-        </p>
-      )}
-    </div>
-  )
-}
-
-function BuiltInTemplates(): React.ReactElement {
-  const load = useAiStore((s) => s.load)
-  const [templates, setTemplates] = useState<Array<{ name: string; kind: string }>>([])
-  const [message, setMessage] = useState<string | null>(null)
-
-  useEffect(() => {
-    void window.api.ai.listBuiltInTemplates().then((res) => {
-      if (res.ok) setTemplates(res.data.map((t) => ({ name: t.name, kind: t.kind })))
-    })
-  }, [])
-
-  async function importTemplate(name: string): Promise<void> {
-    setMessage(null)
-    const list = await window.api.ai.listBuiltInTemplates()
-    if (!list.ok) {
-      setMessage(STR.AI_TEMPLATE_IMPORT_ERROR)
-      return
-    }
-    const template = list.data.find((t) => t.name === name)
-    if (!template) return
-    const result = await window.api.ai.importConnectionTemplate(template)
-    if (!result.ok) {
-      setMessage(STR.AI_TEMPLATE_IMPORT_ERROR)
-      return
-    }
-    await load()
-    setMessage(STR.AI_TEMPLATE_IMPORT_SUCCESS)
-  }
-
-  return (
-    <div style={CARD} data-testid="ai-builtin-templates">
-      <div style={SECTION_TITLE}>{STR.AI_TEMPLATE_BUILTIN}</div>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {templates.map((t) => (
-          <button
-            key={t.name}
-            type="button"
-            data-testid={`ai-import-template-${t.kind}`}
-            onClick={() => void importTemplate(t.name)}
-            style={SUBTLE_BTN}
-          >
-            {t.name}
-          </button>
-        ))}
-      </div>
-      {message && (
-        <p data-testid="ai-import-template-message" style={{ ...HINT, marginTop: 10 }}>
-          {message}
-        </p>
-      )}
-    </div>
-  )
-}
-
 export default function AiConnectionSettings(): React.ReactElement {
   const load = useAiStore((s) => s.load)
   const connections = useAiStore((s) => s.connections)
@@ -823,10 +467,6 @@ export default function AiConnectionSettings(): React.ReactElement {
   return (
     <div data-testid="ai-section">
       {active ? <ActiveConnectionCard conn={active} /> : <SetupForm />}
-      <EnableAiToggle />
-      <BuiltInTemplates />
-      <RepoOverride />
-      <AdvancedDisclosure />
     </div>
   )
 }

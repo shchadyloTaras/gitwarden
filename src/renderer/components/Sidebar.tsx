@@ -26,7 +26,7 @@ const GROUP_LABELS: Record<string, string> = {
   app: 'APP',
 }
 
-export default function Sidebar(): React.ReactElement {
+export default function Sidebar({ width }: { width: number }): React.ReactElement {
   const { activeScreen, navigate } = useAppStore()
 
   let lastGroup: string | undefined
@@ -35,13 +35,16 @@ export default function Sidebar(): React.ReactElement {
     <nav
       data-testid="sidebar-nav"
       style={{
-        width: 180,
-        flexShrink: 0,
+        width,
+        flex: `0 0 ${width}px`,
+        minWidth: 0,
         background: 'var(--gw-surface, #18181b)',
         borderRight: '1px solid var(--gw-border, #27272a)',
         display: 'flex',
         flexDirection: 'column',
         padding: '8px 0',
+        boxSizing: 'border-box',
+        overflowX: 'hidden',
         overflowY: 'auto',
       }}
     >
@@ -84,10 +87,20 @@ export default function Sidebar(): React.ReactElement {
                 fontSize: 13,
                 textAlign: 'left',
                 fontFamily: 'inherit',
+                minWidth: 0,
               }}
             >
               <span style={{ fontSize: 15, width: 18, textAlign: 'center' }}>{item.icon}</span>
-              {item.label}
+              <span
+                style={{
+                  minWidth: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {item.label}
+              </span>
             </button>
           </React.Fragment>
         )

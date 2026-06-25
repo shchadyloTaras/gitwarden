@@ -122,7 +122,10 @@ test.describe('Repository management', () => {
     const repoName = path.basename(fixtureRepo)
     await expect(win.getByTestId('repos-list')).toContainText(repoName, { timeout: 10000 })
 
-    // Should now be in edit mode — assign Work profile
+    // Should now be in edit mode — no per-repo AI connection selector
+    await expect(win.getByTestId('repo-form-recommended-connection')).not.toBeVisible()
+
+    // Assign Work profile
     await win.getByTestId('repo-form-profile').click()
     await win.getByTestId(`repo-form-profile-option-${workId}`).click()
     await win.getByTestId('repo-save-btn').click()

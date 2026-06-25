@@ -151,6 +151,45 @@ body {
   outline-offset: 2px;
 }
 
+.gw-resize-handle {
+  position: relative;
+  flex: 0 0 8px;
+  width: 8px;
+  align-self: stretch;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 2;
+}
+
+.gw-resize-handle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: transparent;
+  transition:
+    background-color 0.12s ease,
+    width 0.12s ease;
+}
+
+.gw-resize-handle:hover::before,
+.gw-resize-handle:focus-visible::before,
+.gw-resize-handle--active::before {
+  width: 2px;
+  background: var(--gw-accent, #6366f1);
+}
+
+.gw-resize-handle:focus-visible {
+  outline-offset: -2px;
+}
+
 /* Remove default focus ring where we provide custom styling */
 button:focus:not(:focus-visible),
 select:focus:not(:focus-visible),

@@ -38,6 +38,8 @@ import type {
   AiFailureExplanation,
   AiConnectionTemplateExport,
   AiAgenticProposal,
+  AiChatTurn,
+  AiChatResponse,
   CustomHttpMapping,
 } from '../src/core/ai/types.js'
 import type { AiPreparedContext } from '../src/core/ai/context.js'
@@ -251,10 +253,12 @@ export const api = {
     draftCommitMessage: (input: {
       repositoryId: string
       commitMessage?: string
+      expensiveSendAcknowledged?: boolean
     }): Promise<IpcResult<AiCommitDraft>> => invoke('ai:draftCommitMessage', input),
     summarizeStagedChanges: (input: {
       repositoryId: string
       commitMessage?: string
+      expensiveSendAcknowledged?: boolean
     }): Promise<IpcResult<AiChangeSummary>> => invoke('ai:summarizeStagedChanges', input),
     reviewStagedChanges: (input: {
       repositoryId: string
@@ -308,6 +312,11 @@ export const api = {
       fileEdits: Array<{ path: string; before?: string; after: string }>
     }): Promise<IpcResult<{ writtenFiles: string[] }>> =>
       invoke('ai:executeAgenticProposal', input),
+    chat: (input: {
+      repositoryId: string
+      message: string
+      history?: AiChatTurn[]
+    }): Promise<IpcResult<AiChatResponse>> => invoke('ai:chat', input),
   },
   pushBrief: {
     buildDeterministic: (input: {

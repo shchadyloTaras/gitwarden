@@ -108,7 +108,7 @@ export class CustomHttpAdapter extends AbortableAiAdapter implements AiAdapter {
     assertHttpOk(response, 'Custom HTTP structured generation')
     const raw = getByJsonPath(response.json, mapping.responseMapping.text)
     if (raw === undefined) throw new Error('Custom HTTP response mapping did not resolve text')
-    const result = parseStructuredValue(request.responseSchema, raw)
+    const result = parseStructuredValue(request.responseSchema, raw, request.kind)
     this.guard.record(estimate)
     return result
   }

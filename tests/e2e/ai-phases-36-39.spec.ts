@@ -45,23 +45,6 @@ async function seedAiConnection(win: Page): Promise<void> {
   })
 }
 
-async function addFixtureRepo(win: Page, repoPath: string, name = 'Demo'): Promise<void> {
-  await win.evaluate(
-    async ([pathArg, repoName]: [string, string]) => {
-      const api = (window as Window & typeof globalThis).api
-      const res = await api.repositories.create({
-        name: repoName,
-        localPath: pathArg,
-        isFavorite: false,
-      })
-      if (!res.ok) throw new Error(res.error)
-    },
-    [repoPath, name]
-  )
-  await win.reload()
-  await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
-}
-
 let fixtureRepo: string
 
 test.beforeAll(() => {
@@ -88,7 +71,7 @@ test.afterAll(() => {
   }
 })
 
-test.describe('AI Phases 36–39', () => {
+test.describe('AI connection templates', () => {
   let app: ElectronApplication
   let win: Page
 
@@ -104,28 +87,6 @@ test.describe('AI Phases 36–39', () => {
 
   test.afterEach(async () => {
     await app.close()
-  })
-
-  test('repo onboarding lists allowlisted files and builds a brief', async () => {
-    await addFixtureRepo(win, fixtureRepo)
-
-    await win.getByTestId('nav-repositories').click()
-    await win.getByTestId('repo-item').first().click()
-    await win.getByTestId('repo-onboarding-open-btn').click()
-    await expect(win.getByTestId('repo-onboarding-panel')).toBeVisible()
-    await expect(win.getByTestId('repo-onboarding-included-files')).toContainText('README.md')
-    await expect(win.getByTestId('repo-onboarding-included-files')).toContainText('package.json')
-  })
-
-  test('failure explainer works on pasted output', async () => {
-    await addFixtureRepo(win, fixtureRepo)
-
-    await win.getByTestId('nav-status').click()
-    await win
-      .getByTestId('failure-explain-input')
-      .fill('FAIL example.test.ts\nAssertionError: expected true')
-    await win.getByTestId('failure-explain-btn').click()
-    await expect(win.getByTestId('failure-explain-result')).toBeVisible()
   })
 
   test('export template → import → credential → test with fake adapter', async () => {
@@ -146,19 +107,5 @@ test.describe('AI Phases 36–39', () => {
 
     expect(exportedJson.exported).not.toContain('sk-or-fake')
     expect(exportedJson.ok).toBe(true)
-  })
-
-  test('rejecting an agentic proposal leaves the repo unchanged', async () => {
-    await addFixtureRepo(win, fixtureRepo)
-
-    await win.getByTestId('nav-commit').click()
-    await win.getByTestId('agentic-prompt-input').fill('Add a helper note file')
-    await win.getByTestId('agentic-preview-btn').click()
-    await win.getByTestId('agentic-propose-btn').click()
-    await expect(win.getByTestId('agentic-proposal-review')).toBeVisible()
-    await win.getByTestId('agentic-reject-btn').click()
-    await expect(win.getByTestId('agentic-proposal-review')).toBeHidden()
-
-    expect(fs.existsSync(path.join(fixtureRepo, 'agentic-note.txt'))).toBe(false)
   })
 })

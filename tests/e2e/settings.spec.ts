@@ -49,15 +49,64 @@ test('Settings screen renders with appearance picker and git path input', async 
     await win.click('[data-testid="nav-settings"]')
     await win.waitForSelector('[data-testid="screen-settings"]')
 
-    // Appearance picker should be visible with all three options
+    // General is the default tab: appearance picker + default folder visible.
     await expect(win.locator('[data-testid="settings-appearance-system"]')).toBeVisible()
     await expect(win.locator('[data-testid="settings-appearance-light"]')).toBeVisible()
     await expect(win.locator('[data-testid="settings-appearance-dark"]')).toBeVisible()
+    await expect(win.locator('[data-testid="settings-default-folder-input"]')).toBeVisible()
 
-    // Git path input should be visible
+    // Custom Git Path lives under the Git tab — hidden until that tab is active.
+    await expect(win.locator('[data-testid="settings-git-path-input"]')).toHaveCount(0)
+    await win.click('[data-testid="settings-tab-git"]')
     await expect(win.locator('[data-testid="settings-git-path-input"]')).toBeVisible()
     await expect(win.locator('[data-testid="settings-git-path-validate"]')).toBeVisible()
-    await expect(win.locator('[data-testid="settings-default-folder-input"]')).toBeVisible()
+  } finally {
+    await app?.close()
+  }
+})
+
+test('Settings screen — tab navigation switches between General, Git, AI Assistant and Walkthrough', async () => {
+  let app: ElectronApplication | null = null
+  try {
+    app = await launchApp()
+    const win = await app.firstWindow()
+    await win.waitForSelector('[data-testid="main-content"]')
+
+    await win.click('[data-testid="nav-settings"]')
+    await win.waitForSelector('[data-testid="screen-settings"]')
+
+    // The tab strip is part of the Settings screen.
+    await expect(win.locator('[data-testid="settings-tabs"]')).toBeVisible()
+
+    // General tab is selected by default.
+    await expect(win.locator('[data-testid="settings-tabpanel-general"]')).toBeVisible()
+    await expect(win.locator('[data-testid="settings-appearance-picker"]')).toBeVisible()
+    await expect(win.locator('[data-testid="settings-tab-general"]')).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+
+    // Git tab → Custom Git Path.
+    await win.click('[data-testid="settings-tab-git"]')
+    await expect(win.locator('[data-testid="settings-tabpanel-git"]')).toBeVisible()
+    await expect(win.locator('[data-testid="settings-git-path-input"]')).toBeVisible()
+    await expect(win.locator('[data-testid="settings-appearance-picker"]')).toHaveCount(0)
+
+    // AI Assistant tab → connection setup.
+    await win.click('[data-testid="settings-tab-ai"]')
+    await expect(win.locator('[data-testid="settings-tabpanel-ai"]')).toBeVisible()
+    await expect(win.locator('[data-testid="ai-section"]')).toBeVisible()
+
+    // Walkthrough tab → replay action. Save row is not shown here.
+    await win.click('[data-testid="settings-tab-walkthrough"]')
+    await expect(win.locator('[data-testid="settings-tabpanel-walkthrough"]')).toBeVisible()
+    await expect(win.locator('[data-testid="settings-start-onboarding"]')).toBeVisible()
+    await expect(win.locator('[data-testid="settings-save"]')).toHaveCount(0)
+
+    // Back to General restores the appearance picker and the Save row.
+    await win.click('[data-testid="settings-tab-general"]')
+    await expect(win.locator('[data-testid="settings-appearance-picker"]')).toBeVisible()
+    await expect(win.locator('[data-testid="settings-save"]')).toBeVisible()
   } finally {
     await app?.close()
   }
@@ -104,6 +153,10 @@ test('Settings screen — git path validation with real git binary', async () =>
 
     await win.click('[data-testid="nav-settings"]')
     await win.waitForSelector('[data-testid="screen-settings"]')
+
+    // Custom Git Path lives under the Git tab.
+    await win.click('[data-testid="settings-tab-git"]')
+    await win.waitForSelector('[data-testid="settings-git-path-input"]')
 
     // Find the real git path on this machine
     let gitPath = '/usr/bin/git'

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import type { FileChange } from '../../core/types'
 import { useStatusStore } from '../store/statusStore'
 import { useAppStore } from '../store/appStore'
-import FailureExplainPanel from '../components/FailureExplainPanel'
+import ResizableMainSplit from '../components/ResizableMainSplit'
 import { STR } from '../strings'
 
 function isStagedChange(f: FileChange): boolean {
@@ -618,8 +618,6 @@ export default function StatusScreen(): React.ReactElement {
         )}
       </div>
 
-      {activeRepo && <FailureExplainPanel repositoryId={activeRepo.id} />}
-
       {/* Body */}
       <div style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
         {!activeRepo && (
@@ -638,185 +636,201 @@ export default function StatusScreen(): React.ReactElement {
         )}
 
         {activeRepo && (
-          <>
-            {/* Left: file list */}
-            <div
-              style={{
-                width: 300,
-                flexShrink: 0,
-                borderRight: '1px solid var(--gw-border, #27272a)',
-                overflow: 'auto',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
-              {loading && !status && (
-                <div
-                  data-testid="status-loading"
-                  style={{ padding: 24, color: 'var(--gw-text-faint, #71717a)', fontSize: 13 }}
-                >
-                  Loading…
-                </div>
-              )}
+          <ResizableMainSplit
+            storageKey="gitwarden.layout.statusSplit.v1"
+            resizeLabel={STR.STATUS_SPLIT_RESIZE_LABEL}
+            handleTestId="status-main-resize-handle"
+            startPaneTestId="status-changes-pane"
+            endPaneTestId="status-diff-pane"
+            defaultStartWidth={300}
+            minStartWidth={180}
+            maxStartWidth={480}
+            minEndWidth={220}
+            start={
+              <div
+                style={{
+                  flex: 1,
+                  minHeight: 0,
+                  borderRight: '1px solid var(--gw-border, #27272a)',
+                  overflow: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                {loading && !status && (
+                  <div
+                    data-testid="status-loading"
+                    style={{ padding: 24, color: 'var(--gw-text-faint, #71717a)', fontSize: 13 }}
+                  >
+                    Loading…
+                  </div>
+                )}
 
-              {(error || opError) && (
-                <div
-                  data-testid="status-error"
-                  style={{ padding: '10px 12px', fontSize: 12, color: 'var(--gw-danger, #f87171)' }}
-                >
-                  {error ?? opError}
-                </div>
-              )}
+                {(error || opError) && (
+                  <div
+                    data-testid="status-error"
+                    style={{
+                      padding: '10px 12px',
+                      fontSize: 12,
+                      color: 'var(--gw-danger, #f87171)',
+                    }}
+                  >
+                    {error ?? opError}
+                  </div>
+                )}
 
-              {status && (
-                <>
-                  <section data-testid="staged-section">
-                    <SectionHeader
-                      title="STAGED CHANGES"
-                      count={staged.length}
-                      bulkLabel="Unstage All"
-                      bulkTestId="status-unstage-all"
-                      onBulk={() => act(unstageAll)}
-                    />
-                    <div data-testid="staged-list">
-                      {staged.length === 0 && (
-                        <div
-                          style={{
-                            padding: '8px 12px',
-                            fontSize: 12,
-                            color: 'var(--gw-text-dim, #52525b)',
-                          }}
-                        >
-                          No staged changes
-                        </div>
-                      )}
-                      {staged.map((f) => (
-                        <FileRow
-                          key={f.path}
-                          file={f}
-                          kindKey={f.indexStatus}
-                          actionLabel="Unstage"
-                          actionTestId="unstage-btn"
-                          rowTestId="staged-file-row"
-                          onAction={(p) => act(() => unstageFile(p))}
-                          onSelect={() => selectFile(f, 'staged')}
-                          selected={selectedFile?.path === f.path && diffMode === 'staged'}
-                        />
-                      ))}
-                    </div>
-                  </section>
+                {status && (
+                  <>
+                    <section data-testid="staged-section">
+                      <SectionHeader
+                        title="STAGED CHANGES"
+                        count={staged.length}
+                        bulkLabel="Unstage All"
+                        bulkTestId="status-unstage-all"
+                        onBulk={() => act(unstageAll)}
+                      />
+                      <div data-testid="staged-list">
+                        {staged.length === 0 && (
+                          <div
+                            style={{
+                              padding: '8px 12px',
+                              fontSize: 12,
+                              color: 'var(--gw-text-dim, #52525b)',
+                            }}
+                          >
+                            No staged changes
+                          </div>
+                        )}
+                        {staged.map((f) => (
+                          <FileRow
+                            key={f.path}
+                            file={f}
+                            kindKey={f.indexStatus}
+                            actionLabel="Unstage"
+                            actionTestId="unstage-btn"
+                            rowTestId="staged-file-row"
+                            onAction={(p) => act(() => unstageFile(p))}
+                            onSelect={() => selectFile(f, 'staged')}
+                            selected={selectedFile?.path === f.path && diffMode === 'staged'}
+                          />
+                        ))}
+                      </div>
+                    </section>
 
-                  <section data-testid="unstaged-section">
-                    <SectionHeader
-                      title="UNSTAGED CHANGES"
-                      count={unstaged.length}
-                      bulkLabel="Stage All"
-                      bulkTestId="status-stage-all"
-                      onBulk={() => act(stageAll)}
-                    />
-                    <div data-testid="unstaged-list">
-                      {unstaged.length === 0 && (
-                        <div
-                          style={{
-                            padding: '8px 12px',
-                            fontSize: 12,
-                            color: 'var(--gw-text-dim, #52525b)',
-                          }}
-                        >
-                          No unstaged changes
-                        </div>
-                      )}
-                      {unstaged.map((f) => (
-                        <FileRow
-                          key={f.path}
-                          file={f}
-                          kindKey={f.worktreeStatus}
-                          actionLabel="Stage"
-                          actionTestId="stage-btn"
-                          rowTestId="unstaged-file-row"
-                          onAction={(p) => act(() => stageFile(p))}
-                          onSelect={() => selectFile(f, 'unstaged')}
-                          selected={selectedFile?.path === f.path && diffMode === 'unstaged'}
-                          extraAction={{
-                            label: STR.DISCARD_TRACKED_LABEL,
-                            testId: 'discard-btn',
-                            onClick: (p) => {
-                              setConfirmCleanPath(null)
-                              setConfirmDiscardPath(p)
-                            },
-                          }}
-                          confirmKey={confirmDiscardPath}
-                          onConfirmAccept={() => void doDiscardFile(f.path)}
-                          onConfirmCancel={() => setConfirmDiscardPath(null)}
-                        />
-                      ))}
-                    </div>
-                  </section>
+                    <section data-testid="unstaged-section">
+                      <SectionHeader
+                        title="UNSTAGED CHANGES"
+                        count={unstaged.length}
+                        bulkLabel="Stage All"
+                        bulkTestId="status-stage-all"
+                        onBulk={() => act(stageAll)}
+                      />
+                      <div data-testid="unstaged-list">
+                        {unstaged.length === 0 && (
+                          <div
+                            style={{
+                              padding: '8px 12px',
+                              fontSize: 12,
+                              color: 'var(--gw-text-dim, #52525b)',
+                            }}
+                          >
+                            No unstaged changes
+                          </div>
+                        )}
+                        {unstaged.map((f) => (
+                          <FileRow
+                            key={f.path}
+                            file={f}
+                            kindKey={f.worktreeStatus}
+                            actionLabel="Stage"
+                            actionTestId="stage-btn"
+                            rowTestId="unstaged-file-row"
+                            onAction={(p) => act(() => stageFile(p))}
+                            onSelect={() => selectFile(f, 'unstaged')}
+                            selected={selectedFile?.path === f.path && diffMode === 'unstaged'}
+                            extraAction={{
+                              label: STR.DISCARD_TRACKED_LABEL,
+                              testId: 'discard-btn',
+                              onClick: (p) => {
+                                setConfirmCleanPath(null)
+                                setConfirmDiscardPath(p)
+                              },
+                            }}
+                            confirmKey={confirmDiscardPath}
+                            onConfirmAccept={() => void doDiscardFile(f.path)}
+                            onConfirmCancel={() => setConfirmDiscardPath(null)}
+                          />
+                        ))}
+                      </div>
+                    </section>
 
-                  <section data-testid="untracked-section">
-                    <SectionHeader
-                      title="UNTRACKED FILES"
-                      count={untracked.length}
-                      bulkLabel="Stage All"
-                      bulkTestId="status-stage-untracked-all"
-                      onBulk={() => act(stageAll)}
-                    />
-                    <div data-testid="untracked-list">
-                      {untracked.length === 0 && (
-                        <div
-                          style={{
-                            padding: '8px 12px',
-                            fontSize: 12,
-                            color: 'var(--gw-text-dim, #52525b)',
-                          }}
-                        >
-                          No untracked files
-                        </div>
-                      )}
-                      {untracked.map((f) => (
-                        <FileRow
-                          key={f.path}
-                          file={f}
-                          kindKey="untracked"
-                          actionLabel="Stage"
-                          actionTestId="stage-btn"
-                          rowTestId="untracked-file-row"
-                          onAction={(p) => act(() => stageFile(p))}
-                          onSelect={() => selectFile(f, 'unstaged')}
-                          selected={selectedFile?.path === f.path}
-                          extraAction={{
-                            label: STR.DELETE_UNTRACKED_LABEL,
-                            testId: 'clean-btn',
-                            onClick: (p) => {
-                              setConfirmDiscardPath(null)
-                              setConfirmCleanPath(p)
-                            },
-                            danger: true,
-                          }}
-                          confirmKey={confirmCleanPath}
-                          onConfirmAccept={() => void doCleanFile(f.path)}
-                          onConfirmCancel={() => setConfirmCleanPath(null)}
-                        />
-                      ))}
-                    </div>
-                  </section>
-                </>
-              )}
-            </div>
-
-            {/* Right: diff panel */}
-            <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-              <DiffPanel
-                file={selectedFile}
-                diff={diff}
-                loading={diffLoading}
-                diffMode={diffMode}
-                canViewStaged={canViewStaged}
-                canViewUnstaged={canViewUnstaged}
-                onToggle={setDiffMode}
-              />
-            </div>
-          </>
+                    <section data-testid="untracked-section">
+                      <SectionHeader
+                        title="UNTRACKED FILES"
+                        count={untracked.length}
+                        bulkLabel="Stage All"
+                        bulkTestId="status-stage-untracked-all"
+                        onBulk={() => act(stageAll)}
+                      />
+                      <div data-testid="untracked-list">
+                        {untracked.length === 0 && (
+                          <div
+                            style={{
+                              padding: '8px 12px',
+                              fontSize: 12,
+                              color: 'var(--gw-text-dim, #52525b)',
+                            }}
+                          >
+                            No untracked files
+                          </div>
+                        )}
+                        {untracked.map((f) => (
+                          <FileRow
+                            key={f.path}
+                            file={f}
+                            kindKey="untracked"
+                            actionLabel="Stage"
+                            actionTestId="stage-btn"
+                            rowTestId="untracked-file-row"
+                            onAction={(p) => act(() => stageFile(p))}
+                            onSelect={() => selectFile(f, 'unstaged')}
+                            selected={selectedFile?.path === f.path}
+                            extraAction={{
+                              label: STR.DELETE_UNTRACKED_LABEL,
+                              testId: 'clean-btn',
+                              onClick: (p) => {
+                                setConfirmDiscardPath(null)
+                                setConfirmCleanPath(p)
+                              },
+                              danger: true,
+                            }}
+                            confirmKey={confirmCleanPath}
+                            onConfirmAccept={() => void doCleanFile(f.path)}
+                            onConfirmCancel={() => setConfirmCleanPath(null)}
+                          />
+                        ))}
+                      </div>
+                    </section>
+                  </>
+                )}
+              </div>
+            }
+            end={
+              <div
+                style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+              >
+                <DiffPanel
+                  file={selectedFile}
+                  diff={diff}
+                  loading={diffLoading}
+                  diffMode={diffMode}
+                  canViewStaged={canViewStaged}
+                  canViewUnstaged={canViewUnstaged}
+                  onToggle={setDiffMode}
+                />
+              </div>
+            }
+          />
         )}
       </div>
     </div>

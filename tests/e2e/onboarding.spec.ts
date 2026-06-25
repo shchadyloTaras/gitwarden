@@ -22,6 +22,8 @@ async function resetOnboarding(win: Page): Promise<void> {
 async function openTourFromSettings(win: Page): Promise<void> {
   await win.getByTestId('nav-settings').click()
   await expect(win.getByTestId('screen-settings')).toBeVisible()
+  // The replay control lives under the "Walkthrough" Settings tab.
+  await win.getByTestId('settings-tab-walkthrough').click()
   await win.getByTestId('settings-start-onboarding').click()
   await expect(win.getByTestId('onboarding-overlay')).toBeVisible()
 }

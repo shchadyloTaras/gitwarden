@@ -7,8 +7,7 @@ import type {
   SafetyIssue,
   SafetyCheckResult,
 } from '../types.js'
-import type { AiReviewFinding } from '../ai/types.js'
-import { SAFETY_MESSAGES, SAFETY_SEVERITY, stagedSecretMessage } from './safetyMessages.js'
+import { SAFETY_MESSAGES, SAFETY_SEVERITY } from './safetyMessages.js'
 
 // ── Issue catalogue ──────────────────────────────────────────────────────────
 
@@ -142,7 +141,6 @@ export interface SafetyCheckService {
     identity: EffectiveGitIdentity
     status: GitStatus
     commitMessage: string
-    reviewFindings?: AiReviewFinding[]
   }): SafetyCheckResult
 
   checkPush(input: {
@@ -169,28 +167,6 @@ function hasConflicts(status: GitStatus): boolean {
   return status.files.some((f) => f.indexStatus === 'conflicted')
 }
 
-function reviewFindingIssueCode(finding: AiReviewFinding): string {
-  const base =
-    finding.category === 'secret-like'
-      ? 'STAGED_SECRET_DETECTED'
-      : `REVIEW_${finding.category.toUpperCase()}`
-  return finding.file ? `${base}::${finding.file}` : base
-}
-
-function collectReviewSafetyIssues(findings: AiReviewFinding[]): SafetyIssue[] {
-  const issues: SafetyIssue[] = []
-  for (const finding of findings) {
-    if (finding.source !== 'deterministic') continue
-    if (finding.category !== 'secret-like') continue
-    issues.push({
-      code: reviewFindingIssueCode(finding),
-      message: stagedSecretMessage(finding.file),
-      severity: SAFETY_SEVERITY.STAGED_SECRET_DETECTED,
-    })
-  }
-  return issues
-}
-
 class SafetyCheckServiceImpl implements SafetyCheckService {
   checkRepositoryIdentity(input: {
     repository: RepositoryRecord
@@ -208,16 +184,12 @@ class SafetyCheckServiceImpl implements SafetyCheckService {
     identity: EffectiveGitIdentity
     status: GitStatus
     commitMessage: string
-    reviewFindings?: AiReviewFinding[]
   }): SafetyCheckResult {
     const issues = collectIdentityIssues(input)
 
     if (!hasStagedChanges(input.status)) issues.push(makeIssue('NOTHING_STAGED'))
     if (!input.commitMessage.trim()) issues.push(makeIssue('EMPTY_MESSAGE'))
     if (hasConflicts(input.status)) issues.push(makeIssue('HAS_CONFLICTS'))
-    if (input.reviewFindings?.length) {
-      issues.push(...collectReviewSafetyIssues(input.reviewFindings))
-    }
 
     return { canCommit: !hasBlocker(issues), canPush: true, issues }
   }
