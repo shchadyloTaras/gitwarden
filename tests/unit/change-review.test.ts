@@ -80,6 +80,35 @@ describe('scanDeterministicFindings', () => {
     expect(findings[0]?.why).toContain('config.env')
   })
 
+  it('does not flag secret-like content that appears only in removed diff lines', () => {
+    const diffs: AiContextDiff[] = [
+      {
+        path: 'config.env',
+        staged: true,
+        diff: `--- a/config.env\n+++ b/config.env\n-API_TOKEN=${SECRET_TOKEN}\n`,
+      },
+      {
+        path: 'secrets.txt',
+        staged: true,
+        diff: `-TOKEN=${SECRET_TOKEN}\n`,
+      },
+    ]
+    const findings = scanDeterministicFindings(diffs)
+    expect(findings.some((f) => f.category === 'secret-like')).toBe(false)
+  })
+
+  it('flags secret-like content in newly added diff lines', () => {
+    const diffs: AiContextDiff[] = [
+      {
+        path: 'config.env',
+        staged: true,
+        diff: `-OLD=value\n+API_TOKEN=${SECRET_TOKEN}\n`,
+      },
+    ]
+    const findings = scanDeterministicFindings(diffs)
+    expect(findings.some((f) => f.category === 'secret-like')).toBe(true)
+  })
+
   it('flags lockfiles, migrations, and risky paths', () => {
     const diffs: AiContextDiff[] = [
       { path: 'package-lock.json', staged: true, diff: '+  "version": "2"\n' },
@@ -176,10 +205,10 @@ describe('checkCommit + deterministic secret findings', () => {
       ],
     })
     expect(result.canCommit).toBe(false)
-    expect(result.issues.some((i) => i.code === 'STAGED_SECRET_DETECTED')).toBe(true)
+    expect(result.issues.some((i) => i.code === 'STAGED_SECRET_DETECTED::config.env')).toBe(true)
   })
 
-  it('warns but does not block on non-secret deterministic findings', () => {
+  it('does not add non-secret deterministic findings to commit safety issues', () => {
     const result = safetyCheckService.checkCommit({
       ...goodCommitInput,
       reviewFindings: [
@@ -190,9 +219,16 @@ describe('checkCommit + deterministic secret findings', () => {
           file: 'package-lock.json',
           why: 'Lockfile diff.',
         },
+        {
+          category: 'missing-tests',
+          source: 'deterministic',
+          confidence: 'low',
+          file: 'src/a.ts',
+          why: 'src/a.ts changed without a matching test file in this commit.',
+        },
       ],
     })
     expect(result.canCommit).toBe(true)
-    expect(result.issues.some((i) => i.severity === 'warning')).toBe(true)
+    expect(result.issues.some((i) => i.code.startsWith('REVIEW_'))).toBe(false)
   })
 })

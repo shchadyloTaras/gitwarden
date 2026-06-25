@@ -153,6 +153,55 @@ test.describe('Safety Center', () => {
     await expect(win.getByTestId('commit-blocker')).toBeVisible()
   })
 
+  test('REPO_UNASSIGNED: inline assign clears blocker when active profile exists', async () => {
+    const profileId = await win.evaluate(async () => {
+      const api = (window as Window & typeof globalThis).api
+      const res = await api.profiles.create({
+        displayName: 'GitWarden',
+        gitAuthorName: 'Alice Dev',
+        gitAuthorEmail: 'alice@example.com',
+        githubUsername: 'gitwarden',
+        authenticationMethod: 'ssh',
+        expectedRemoteHosts: [],
+      })
+      return res.ok ? res.data.id : null
+    })
+    expect(profileId).toBeTruthy()
+
+    await win.evaluate(async (id: string) => {
+      const api = (window as Window & typeof globalThis).api
+      await api.settings.update({ activeProfileId: id })
+    }, profileId as string)
+
+    await win.evaluate(async (repoPath: string) => {
+      const api = (window as Window & typeof globalThis).api
+      await api.repositories.create({
+        name: 'unassigned-fixture',
+        localPath: repoPath,
+        isFavorite: false,
+      })
+    }, fixtureRemote)
+
+    await win.reload()
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
+
+    await win.getByTestId('nav-safety-center').click()
+    await expect(win.getByTestId('screen-safety-center')).toBeVisible()
+    await expect(win.getByTestId('safety-can-commit')).toBeVisible({ timeout: 10000 })
+
+    await expect(win.getByTestId('safety-issue-REPO_UNASSIGNED')).toBeVisible()
+    await expect(win.getByTestId('safety-assign-repo-btn')).toBeVisible()
+    await expect(win.getByTestId('safety-assign-repo-btn')).toContainText('GitWarden')
+
+    await win.getByTestId('safety-assign-repo-btn').click()
+
+    await expect(win.getByTestId('safety-issue-REPO_UNASSIGNED')).toHaveCount(0, {
+      timeout: 10000,
+    })
+    await expect(win.getByTestId('safety-assigned-profile-name')).toContainText('GitWarden')
+    await expect(win.getByTestId('safety-can-commit')).toContainText('Yes')
+  })
+
   test('REMOTE_HOST_MISMATCH: Safety Center blocks push, matches RemoteScreen gate', async () => {
     // Profile with github.com constraint — local bare repo has no host
     const profileId = await win.evaluate(async () => {

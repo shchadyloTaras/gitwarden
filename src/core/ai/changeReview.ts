@@ -114,17 +114,30 @@ function scanFilePath(path: string, stagedPaths: Set<string>): AiReviewFinding[]
   return findings
 }
 
+/** Lines newly added in a unified diff (excludes `+++` file headers). */
+function extractAddedDiffLines(diff: string): string {
+  const added: string[] = []
+  for (const line of diff.split('\n')) {
+    if (line.startsWith('+++')) continue
+    if (line.startsWith('+')) added.push(line.slice(1))
+  }
+  return added.join('\n')
+}
+
 function scanDiffContent(path: string, diff: string): AiReviewFinding[] {
   const findings: AiReviewFinding[] = []
 
-  for (const match of findSecretMatches(diff)) {
-    findings.push({
-      category: 'secret-like',
-      source: 'deterministic',
-      confidence: 'high',
-      file: path,
-      why: whySecretDetected(match.label, path),
-    })
+  const addedContent = extractAddedDiffLines(diff)
+  if (addedContent.trim()) {
+    for (const match of findSecretMatches(addedContent)) {
+      findings.push({
+        category: 'secret-like',
+        source: 'deterministic',
+        confidence: 'high',
+        file: path,
+        why: whySecretDetected(match.label, path),
+      })
+    }
   }
 
   const { additions, deletions } = countDiffLines(diff)

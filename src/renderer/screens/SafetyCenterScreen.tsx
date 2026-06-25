@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useProfilesStore } from '../store/profilesStore'
 import { useSafetyCenterStore } from '../store/safetyCenterStore'
+import { useRepositoriesStore } from '../store/repositoriesStore'
 import { useAppStore } from '../store/appStore'
-import SafetyIssueExplain from '../components/SafetyIssueExplain'
+import SafetyIssueRow from '../components/SafetyIssueRow'
 import type { SafetyIssue } from '../../core/types'
 
 function ScopeLabel({ scope }: { scope: string | undefined }): React.ReactElement {
@@ -28,12 +29,10 @@ function Verdict({ ok, testId }: { ok: boolean; testId: string }): React.ReactEl
 
 function IssueRow({
   issue,
-  repositoryId,
 }: {
   issue: import('../../core/types').SafetyIssue
-  repositoryId?: string
 }): React.ReactElement {
-  return <SafetyIssueExplain issue={issue} repositoryId={repositoryId} testIdPrefix="safety" />
+  return <SafetyIssueRow issue={issue} testIdPrefix="safety" />
 }
 
 const CARD: React.CSSProperties = {
@@ -77,7 +76,11 @@ const VALUE: React.CSSProperties = {
 
 export default function SafetyCenterScreen(): React.ReactElement {
   const activeRepo = useAppStore((s) => s.activeRepo)
+  const setActiveRepo = useAppStore((s) => s.setActiveRepo)
+  const updateRepo = useRepositoriesStore((s) => s.updateRepo)
   const { profiles, activeProfileId } = useProfilesStore()
+  const [assigning, setAssigning] = useState(false)
+  const [assignError, setAssignError] = useState<string | null>(null)
   const {
     repository,
     activeProfile,
@@ -116,6 +119,26 @@ export default function SafetyCenterScreen(): React.ReactElement {
 
   const profileMismatch =
     activeProfile && assignedProfile && activeProfile.id !== assignedProfile.id
+  const repoUnassigned = repository && !repository.assignedProfileId
+
+  const handleAssignToActiveProfile = async () => {
+    if (!repository || !activeProfile_) return
+    setAssigning(true)
+    setAssignError(null)
+    try {
+      await updateRepo(repository.id, { assignedProfileId: activeProfile_.id })
+      const updated =
+        useRepositoriesStore.getState().repos.find((r) => r.id === repository.id) ?? null
+      if (updated) {
+        setActiveRepo(updated)
+        await load(updated.localPath, updated, activeProfile_, profiles)
+      }
+    } catch (err) {
+      setAssignError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setAssigning(false)
+    }
+  }
 
   return (
     <div
@@ -188,6 +211,56 @@ export default function SafetyCenterScreen(): React.ReactElement {
               >
                 This repository is assigned to <strong>{assignedProfile!.displayName}</strong>, but
                 your active profile is <strong>{activeProfile!.displayName}</strong>.
+              </div>
+            )}
+            {repoUnassigned && activeProfile_ && (
+              <div
+                style={{
+                  padding: '10px 12px',
+                  background: 'var(--gw-accent-soft, #1e1b4b)',
+                  borderTop: '1px solid var(--gw-border, #27272a)',
+                }}
+              >
+                <button
+                  data-testid="safety-assign-repo-btn"
+                  onClick={() => void handleAssignToActiveProfile()}
+                  disabled={assigning}
+                  style={{
+                    background: 'var(--gw-primary, #2563eb)',
+                    color: 'var(--gw-on-solid, #fff)',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '6px 12px',
+                    fontSize: '12px',
+                    cursor: assigning ? 'wait' : 'pointer',
+                  }}
+                >
+                  {assigning ? 'Assigning…' : `Assign this repo to ${activeProfile_.displayName}`}
+                </button>
+                {assignError && (
+                  <div
+                    style={{
+                      marginTop: '6px',
+                      fontSize: '12px',
+                      color: 'var(--gw-danger, #f87171)',
+                    }}
+                  >
+                    {assignError}
+                  </div>
+                )}
+              </div>
+            )}
+            {repoUnassigned && !activeProfile_ && (
+              <div
+                data-testid="safety-assign-repo-hint"
+                style={{
+                  padding: '7px 12px',
+                  background: 'var(--gw-warning-bg, #422006)',
+                  fontSize: '12px',
+                  color: 'var(--gw-warning, #fbbf24)',
+                }}
+              >
+                Select or create a profile in Profiles, then assign this repository to it.
               </div>
             )}
           </div>
@@ -285,7 +358,7 @@ export default function SafetyCenterScreen(): React.ReactElement {
             <div style={CARD}>
               <div style={CARD_HEADER}>Issues ({allIssues.length})</div>
               {allIssues.map((issue) => (
-                <IssueRow key={issue.code} issue={issue} repositoryId={repository?.id} />
+                <IssueRow key={issue.code} issue={issue} />
               ))}
             </div>
           )}

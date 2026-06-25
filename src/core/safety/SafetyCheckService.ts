@@ -169,23 +169,24 @@ function hasConflicts(status: GitStatus): boolean {
   return status.files.some((f) => f.indexStatus === 'conflicted')
 }
 
+function reviewFindingIssueCode(finding: AiReviewFinding): string {
+  const base =
+    finding.category === 'secret-like'
+      ? 'STAGED_SECRET_DETECTED'
+      : `REVIEW_${finding.category.toUpperCase()}`
+  return finding.file ? `${base}::${finding.file}` : base
+}
+
 function collectReviewSafetyIssues(findings: AiReviewFinding[]): SafetyIssue[] {
   const issues: SafetyIssue[] = []
   for (const finding of findings) {
     if (finding.source !== 'deterministic') continue
-    if (finding.category === 'secret-like') {
-      issues.push({
-        code: 'STAGED_SECRET_DETECTED',
-        message: stagedSecretMessage(finding.file),
-        severity: SAFETY_SEVERITY.STAGED_SECRET_DETECTED,
-      })
-    } else {
-      issues.push({
-        code: `REVIEW_${finding.category.toUpperCase()}`,
-        message: finding.why,
-        severity: 'warning',
-      })
-    }
+    if (finding.category !== 'secret-like') continue
+    issues.push({
+      code: reviewFindingIssueCode(finding),
+      message: stagedSecretMessage(finding.file),
+      severity: SAFETY_SEVERITY.STAGED_SECRET_DETECTED,
+    })
   }
   return issues
 }

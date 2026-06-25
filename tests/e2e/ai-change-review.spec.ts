@@ -128,7 +128,7 @@ test.describe('Change Review Assistant', () => {
     fs.rmSync(fixtureRepo, { recursive: true, force: true })
   })
 
-  test('deterministic secret scanner blocks commit with AI disabled', async () => {
+  test('deterministic secret blocks commit (AI disabled) and survives message edits', async () => {
     fs.writeFileSync(
       path.join(fixtureRepo, 'secrets.env'),
       'TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz\n'
@@ -140,41 +140,67 @@ test.describe('Change Review Assistant', () => {
     await setupRepoAndProfile(win, fixtureRepo, { aiEnabled: false })
 
     await win.getByTestId('nav-commit').click()
-    await expect(win.getByTestId('change-review-panel')).toBeVisible({ timeout: 10000 })
-    await expect(win.getByTestId('change-review-group-secret-like')).toBeVisible({
-      timeout: 10000,
-    })
-    await expect(win.getByTestId('change-review-source').first()).toContainText('Deterministic')
 
+    // The secret surfaces as a Safety Engine blocker — no review panel, no AI needed.
+    const secretBlocker = win
+      .getByTestId('commit-blocker')
+      .filter({ hasText: 'secret-like content' })
+    await expect(secretBlocker).toBeVisible({ timeout: 10000 })
+    await expect(win.getByTestId('change-review-panel')).toHaveCount(0)
+    // AI is off → the commit-message AI affordance is not offered.
+    await expect(win.getByTestId('ai-commit-draft-toggle')).toHaveCount(0)
+
+    // Typing a commit message must NOT clear the deterministic secret blocker.
     await win.getByTestId('commit-message').fill('feat: add secrets')
-    await expect(win.getByTestId('commit-blocker')).toBeVisible({ timeout: 10000 })
+    await expect(secretBlocker).toBeVisible()
     await expect(win.getByTestId('commit-btn')).toBeDisabled()
   })
 
-  test('fake AI review renders grouped findings; model all-clear cannot clear a secret', async () => {
+  test('Commit tab AI is limited to the commit message even with AI enabled', async () => {
     await setupRepoAndProfile(win, fixtureRepo, { stageSecret: true, aiEnabled: true })
 
     await win.getByTestId('nav-commit').click()
-    await expect(win.getByTestId('change-review-group-secret-like')).toBeVisible({
-      timeout: 10000,
-    })
 
-    await win.getByTestId('ai-preview-btn').click()
-    await expect(win.getByTestId('ai-preview-host')).toContainText('openrouter.ai')
+    // The deterministic secret still blocks via the Safety Engine.
+    await expect(
+      win.getByTestId('commit-blocker').filter({ hasText: 'secret-like content' })
+    ).toBeVisible({ timeout: 10000 })
 
-    await win.getByTestId('change-review-ai-btn').click()
-    await expect(win.getByTestId('change-review-findings')).toBeVisible({ timeout: 10000 })
+    // No repo-review / summarize / review-panel affordances remain on the Commit tab.
+    await expect(win.getByTestId('change-review-panel')).toHaveCount(0)
+    await expect(win.getByTestId('change-review-ai-btn')).toHaveCount(0)
+    await expect(win.getByTestId('ai-summarize-btn')).toHaveCount(0)
 
-    await expect(win.getByTestId('change-review-group-secret-like')).toBeVisible()
-    await expect(win.getByTestId('change-review-confidence').first()).toContainText('high')
+    // The only AI affordance is drafting the commit message, attached to the field.
+    await expect(win.getByTestId('ai-commit-draft-toggle')).toBeVisible()
+    await win.getByTestId('ai-commit-draft-toggle').click()
+    await expect(win.getByTestId('ai-commit-assistant')).toBeVisible()
+    await expect(win.getByTestId('ai-draft-message-btn')).toBeVisible()
+  })
 
-    const aiSources = win.getByTestId('change-review-source').filter({ hasText: 'AI' })
-    await expect(aiSources.first()).toBeVisible()
+  test('non-secret review advisories stay collapsed and do not block commit', async () => {
+    execSync('git config user.email "alice@example.com"', { cwd: fixtureRepo, stdio: 'pipe' })
+    execSync('git config user.name "Alice Dev"', { cwd: fixtureRepo, stdio: 'pipe' })
+    fs.mkdirSync(path.join(fixtureRepo, 'src'), { recursive: true })
+    for (let i = 0; i < 5; i++) {
+      fs.writeFileSync(
+        path.join(fixtureRepo, `src/feature${i}.ts`),
+        `export const value${i} = ${i}\n`
+      )
+      execSync(`git add src/feature${i}.ts`, { cwd: fixtureRepo, stdio: 'pipe' })
+    }
+    fs.writeFileSync(path.join(fixtureRepo, 'readme.txt'), 'shrunk\n')
+    execSync('git add readme.txt', { cwd: fixtureRepo, stdio: 'pipe' })
 
-    await expect(win.getByTestId('change-review-overall')).toHaveCount(0)
+    await setupRepoAndProfile(win, fixtureRepo, { aiEnabled: false })
 
-    await win.getByTestId('commit-message').fill('feat: add secrets')
-    await win.getByTestId('commit-set-identity-btn').click()
-    await expect(win.getByTestId('commit-btn')).toBeDisabled({ timeout: 10000 })
+    await win.getByTestId('nav-commit').click()
+    await expect(win.getByTestId('commit-staged-summary')).toBeVisible({ timeout: 10000 })
+    await win.getByTestId('commit-message').fill('feat: bulk changes')
+
+    await expect(win.getByTestId('commit-review-advisories')).toBeVisible({ timeout: 10000 })
+    await expect(win.getByTestId('commit-review-advisory')).not.toHaveCount(0)
+    await expect(win.getByTestId('commit-warning')).toHaveCount(0)
+    await expect(win.getByTestId('commit-btn')).toBeEnabled()
   })
 })
