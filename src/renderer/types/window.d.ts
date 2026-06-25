@@ -24,6 +24,8 @@ import type {
   AiRetentionState,
   AiUsageEstimate,
   AiUsageEstimateRequest,
+  AiCommitDraft,
+  AiChangeSummary,
   CustomHttpMapping,
 } from '../../core/ai/types.js'
 import type { AiPreparedContext } from '../../core/ai/context.js'
@@ -162,6 +164,14 @@ interface ElectronAPI {
       selectedUnstagedPaths?: string[]
       commitMessage?: string
     }): Promise<IpcResult<AiPreparedContext>>
+    draftCommitMessage(input: {
+      repositoryId: string
+      commitMessage?: string
+    }): Promise<IpcResult<AiCommitDraft>>
+    summarizeStagedChanges(input: {
+      repositoryId: string
+      commitMessage?: string
+    }): Promise<IpcResult<AiChangeSummary>>
   }
 }
 

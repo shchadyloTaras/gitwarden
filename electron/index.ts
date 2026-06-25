@@ -28,6 +28,7 @@ import {
 } from '../src/main/testing/aiFakes.js'
 import { createAiAdapterRegistry } from '../src/main/ai/index.js'
 import { AiContextBuilder } from '../src/main/ai/AiContextBuilder.js'
+import { AiCommitAssistant } from '../src/main/ai/AiCommitAssistant.js'
 import {
   TokenStore,
   TokenStoreDataSchema,
@@ -182,6 +183,7 @@ app.whenReady().then(async () => {
     git,
     aiConnections,
   })
+  const aiCommitAssistant = new AiCommitAssistant(aiContextBuilder, aiAdapters)
 
   registerIpcHandlers({
     profiles,
@@ -193,6 +195,7 @@ app.whenReady().then(async () => {
     aiCredentials,
     aiAdapters,
     aiContextBuilder,
+    aiCommitAssistant,
     openExternal,
   })
 

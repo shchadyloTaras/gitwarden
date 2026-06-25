@@ -5,6 +5,7 @@ import { useAppStore } from '../store/appStore'
 import { useAiStore } from '../store/aiStore'
 import { safetyCheckService } from '../../core/safety/SafetyCheckService'
 import type { AiPreparedContext } from '../../core/ai/context'
+import type { AiChangeSummary, AiCommitDraft } from '../../core/ai/types'
 import { STR } from '../strings'
 
 const IDENTITY_CODES = new Set(['IDENTITY_UNSET', 'EMAIL_MISMATCH', 'EMAIL_FROM_GLOBAL_ONLY'])
@@ -30,9 +31,17 @@ export default function CommitScreen(): React.ReactElement {
 
   const activeProfile = profiles.find((p) => p.id === activeProfileId)
   const previewContext = useAiStore((s) => s.previewContext)
+  const draftCommitMessage = useAiStore((s) => s.draftCommitMessage)
+  const summarizeStagedChanges = useAiStore((s) => s.summarizeStagedChanges)
   const [aiPreview, setAiPreview] = useState<AiPreparedContext | null>(null)
+  const [aiPreviewSeen, setAiPreviewSeen] = useState(false)
   const [aiPreviewLoading, setAiPreviewLoading] = useState(false)
   const [aiPreviewError, setAiPreviewError] = useState<string | null>(null)
+  const [commitDraft, setCommitDraft] = useState<AiCommitDraft | null>(null)
+  const [changeSummary, setChangeSummary] = useState<AiChangeSummary | null>(null)
+  const [draftLoading, setDraftLoading] = useState(false)
+  const [summarizeLoading, setSummarizeLoading] = useState(false)
+  const [assistantError, setAssistantError] = useState<string | null>(null)
 
   useEffect(() => {
     if (activeRepo) void load(activeRepo.localPath, activeRepo)
@@ -40,7 +49,11 @@ export default function CommitScreen(): React.ReactElement {
 
   useEffect(() => {
     setAiPreview(null)
+    setAiPreviewSeen(false)
     setAiPreviewError(null)
+    setCommitDraft(null)
+    setChangeSummary(null)
+    setAssistantError(null)
   }, [activeRepo?.id, message])
 
   const safetyResult = useMemo(() => {
@@ -92,14 +105,66 @@ export default function CommitScreen(): React.ReactElement {
         kind: 'commit-draft',
         commitMessage: message,
       })
-      if (preview) setAiPreview(preview)
-      else setAiPreviewError(STR.AI_PREVIEW_ERROR)
+      if (preview) {
+        setAiPreview(preview)
+        setAiPreviewSeen(true)
+      } else setAiPreviewError(STR.AI_PREVIEW_ERROR)
     } catch (err) {
       setAiPreviewError(err instanceof Error ? err.message : STR.AI_PREVIEW_ERROR)
     } finally {
       setAiPreviewLoading(false)
     }
   }
+
+  const handleDraftMessage = async () => {
+    if (!repository || !aiPreviewSeen) return
+    setDraftLoading(true)
+    setAssistantError(null)
+    setCommitDraft(null)
+    try {
+      const draft = await draftCommitMessage({
+        repositoryId: repository.id,
+        commitMessage: message,
+      })
+      if (draft) setCommitDraft(draft)
+      else setAssistantError(STR.AI_COMMIT_DRAFT_ERROR)
+    } catch (err) {
+      setAssistantError(err instanceof Error ? err.message : STR.AI_COMMIT_DRAFT_ERROR)
+    } finally {
+      setDraftLoading(false)
+    }
+  }
+
+  const handleSummarize = async () => {
+    if (!repository || !aiPreviewSeen) return
+    setSummarizeLoading(true)
+    setAssistantError(null)
+    setChangeSummary(null)
+    try {
+      const summary = await summarizeStagedChanges({
+        repositoryId: repository.id,
+        commitMessage: message,
+      })
+      if (summary) setChangeSummary(summary)
+      else setAssistantError(STR.AI_COMMIT_SUMMARIZE_ERROR)
+    } catch (err) {
+      setAssistantError(err instanceof Error ? err.message : STR.AI_COMMIT_SUMMARIZE_ERROR)
+    } finally {
+      setSummarizeLoading(false)
+    }
+  }
+
+  const insertCommitText = (text: string) => {
+    setMessage(text)
+  }
+
+  const insertCommitWithBody = (subject: string, body?: string) => {
+    const trimmedBody = body?.trim()
+    setMessage(trimmedBody ? `${subject}\n\n${trimmedBody}` : subject)
+  }
+
+  const assistantReady = aiPreviewSeen && !aiPreviewLoading
+  const assistantBusy = draftLoading || summarizeLoading
 
   return (
     <div
@@ -417,6 +482,173 @@ export default function CommitScreen(): React.ReactElement {
             )}
           </div>
 
+          {/* Smart Commit Assistant */}
+          <div
+            data-testid="ai-commit-assistant-card"
+            style={{
+              marginBottom: '16px',
+              border: '1px solid var(--gw-border, #27272a)',
+              borderRadius: '4px',
+              background: 'var(--gw-surface, #18181b)',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{ padding: '10px 12px', borderBottom: '1px solid var(--gw-border, #27272a)' }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 600 }}>{STR.AI_COMMIT_ASSISTANT_TITLE}</div>
+              <div style={{ fontSize: 11, color: 'var(--gw-text-faint, #71717a)', marginTop: 4 }}>
+                {STR.AI_COMMIT_ASSISTANT_HINT}
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '8px',
+                padding: '10px 12px',
+                borderBottom:
+                  commitDraft || changeSummary || assistantError
+                    ? '1px solid var(--gw-border, #27272a)'
+                    : 'none',
+              }}
+            >
+              <button
+                data-testid="ai-draft-message-btn"
+                onClick={() => void handleDraftMessage()}
+                disabled={!assistantReady || assistantBusy}
+                title={!aiPreviewSeen ? STR.AI_COMMIT_PREVIEW_REQUIRED : undefined}
+                style={{
+                  background: 'none',
+                  color: assistantReady
+                    ? 'var(--gw-text-muted, #a1a1aa)'
+                    : 'var(--gw-text-dim, #52525b)',
+                  border: '1px solid var(--gw-surface3, #3f3f46)',
+                  borderRadius: '4px',
+                  padding: '6px 12px',
+                  fontSize: '12px',
+                  cursor: assistantReady && !assistantBusy ? 'pointer' : 'not-allowed',
+                }}
+              >
+                {draftLoading ? STR.AI_COMMIT_DRAFT_LOADING : STR.AI_COMMIT_DRAFT_BUTTON}
+              </button>
+              <button
+                data-testid="ai-summarize-btn"
+                onClick={() => void handleSummarize()}
+                disabled={!assistantReady || assistantBusy}
+                title={!aiPreviewSeen ? STR.AI_COMMIT_PREVIEW_REQUIRED : undefined}
+                style={{
+                  background: 'none',
+                  color: assistantReady
+                    ? 'var(--gw-text-muted, #a1a1aa)'
+                    : 'var(--gw-text-dim, #52525b)',
+                  border: '1px solid var(--gw-surface3, #3f3f46)',
+                  borderRadius: '4px',
+                  padding: '6px 12px',
+                  fontSize: '12px',
+                  cursor: assistantReady && !assistantBusy ? 'pointer' : 'not-allowed',
+                }}
+              >
+                {summarizeLoading
+                  ? STR.AI_COMMIT_SUMMARIZE_LOADING
+                  : STR.AI_COMMIT_SUMMARIZE_BUTTON}
+              </button>
+            </div>
+
+            {!aiPreviewSeen && !aiPreviewLoading && (
+              <div
+                data-testid="ai-commit-preview-required"
+                style={{
+                  padding: '8px 12px',
+                  fontSize: 11,
+                  color: 'var(--gw-text-faint, #71717a)',
+                }}
+              >
+                {STR.AI_COMMIT_PREVIEW_REQUIRED}
+              </div>
+            )}
+
+            {assistantError && (
+              <div
+                data-testid="ai-commit-assistant-error"
+                style={{
+                  padding: '8px 12px',
+                  color: 'var(--gw-danger, #f87171)',
+                  fontSize: 12,
+                }}
+              >
+                {assistantError}
+              </div>
+            )}
+
+            {commitDraft && (
+              <div data-testid="ai-commit-draft" style={{ padding: '10px 12px' }}>
+                <DraftOption
+                  label={STR.AI_COMMIT_DRAFT_CONVENTIONAL}
+                  text={commitDraft.conventional}
+                  testId="ai-insert-conventional"
+                  onInsert={() => insertCommitWithBody(commitDraft.conventional, commitDraft.body)}
+                />
+                <DraftOption
+                  label={STR.AI_COMMIT_DRAFT_PLAIN}
+                  text={commitDraft.plain}
+                  testId="ai-insert-plain"
+                  onInsert={() => insertCommitWithBody(commitDraft.plain, commitDraft.body)}
+                />
+                <div style={{ fontSize: 12, marginBottom: 8 }}>
+                  <span style={{ color: 'var(--gw-text-faint, #71717a)' }}>
+                    {STR.AI_COMMIT_DRAFT_SUMMARY}:{' '}
+                  </span>
+                  <span data-testid="ai-commit-draft-summary">{commitDraft.summary}</span>
+                </div>
+                {commitDraft.body && (
+                  <DraftOption
+                    label={STR.AI_COMMIT_DRAFT_BODY}
+                    text={commitDraft.body}
+                    testId="ai-insert-body"
+                    onInsert={() => insertCommitText(commitDraft.body ?? '')}
+                  />
+                )}
+              </div>
+            )}
+
+            {changeSummary && (
+              <div data-testid="ai-change-summary" style={{ padding: '10px 12px' }}>
+                <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>
+                  {STR.AI_COMMIT_SUMMARY_TITLE}
+                </div>
+                <div
+                  data-testid="ai-change-summary-text"
+                  style={{ fontSize: 12, marginBottom: 8, lineHeight: '18px' }}
+                >
+                  {changeSummary.summary}
+                </div>
+                {changeSummary.highlights.length > 0 && (
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: 'var(--gw-text-faint, #71717a)',
+                        marginBottom: 4,
+                      }}
+                    >
+                      {STR.AI_COMMIT_HIGHLIGHTS}
+                    </div>
+                    <ul
+                      data-testid="ai-change-summary-highlights"
+                      style={{ margin: 0, paddingLeft: 18, fontSize: 12 }}
+                    >
+                      {changeSummary.highlights.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Commit button */}
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <span
@@ -453,6 +685,51 @@ export default function CommitScreen(): React.ReactElement {
           </div>
         </>
       )}
+    </div>
+  )
+}
+
+function DraftOption({
+  label,
+  text,
+  testId,
+  onInsert,
+}: {
+  label: string
+  text: string
+  testId: string
+  onInsert: () => void
+}): React.ReactElement {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 8,
+        marginBottom: 8,
+        fontSize: 12,
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ color: 'var(--gw-text-faint, #71717a)' }}>{label}: </span>
+        <span style={{ wordBreak: 'break-word' }}>{text}</span>
+      </div>
+      <button
+        data-testid={testId}
+        onClick={onInsert}
+        style={{
+          flexShrink: 0,
+          background: 'var(--gw-primary, #2563eb)',
+          color: 'var(--gw-on-solid, #fff)',
+          border: 'none',
+          borderRadius: '4px',
+          padding: '4px 10px',
+          fontSize: 11,
+          cursor: 'pointer',
+        }}
+      >
+        {STR.AI_COMMIT_INSERT}
+      </button>
     </div>
   )
 }

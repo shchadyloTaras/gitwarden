@@ -44,7 +44,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] Phase 29 — AI Connections Manager & Credential Store
 - [x] Phase 30 — Adapter Registry, Built-in Providers & Custom HTTP
 - [x] Phase 31 — Context Builder, Redaction & Send Preview
-- [ ] Phase 32 — Smart Commit Assistant
+- [x] Phase 32 — Smart Commit Assistant
 - [ ] Phase 33 — Change Review Assistant
 - [ ] Phase 34 — Safety Copilot (recommended MVP stop point)
 - [ ] Phase 35 — Push Brief & History Intelligence
@@ -375,3 +375,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: `npm test` → Vitest **366 passed** (+6 Phase 31 unit tests). `npm run e2e` → Playwright **52 passed** (+1 AI preview test; build succeeded). `npx tsc --noEmit -p tsconfig.node.json` and `npx tsc --noEmit -p tsconfig.web.json` clean. `npm run lint` clean.
 - Exit criteria: ✅ met — the existing pure-core redaction matrix still passes; new context tests prove redaction runs on the full serialized context before chunking (including a token longer than the chunk size), and large payloads chunk/truncate deterministically after redaction. The builder enforces repo → global → connection precedence before any Git service call, so a repo opted out of AI blocks context assembly entirely. A recording fake-adapter test captures only post-redaction fixture payloads (GitHub token, API key, credential URL password removed); this proves the checked fixtures, not real-world completeness. Playwright verifies the Commit screen shows the post-redaction payload and destination host before any diff is sent onward.
 - Notes / follow-ups: Phase 32 should consume `AiContextBuilder`/`createAiContextMessages` rather than re-reading diffs. The preview is currently a compact Commit-screen surface for staged context; selected unstaged paths are supported by the builder/IPC for later review flows.
+
+### 2026-06-25 — Phase 32: Smart Commit Assistant
+
+- Built: the first advisory AI vertical slice on the Commit screen. `AiCommitAssistant` in main drafts commit messages and summarizes staged changes using only `AiContextBuilder` output (never a fresh raw-diff path), then calls the adapter registry with Zod-validated structured responses (`AiCommitDraft`, `AiChangeSummary`). The UI adds "Draft message" and "Summarize staged changes" with insert buttons; AI never commits — the existing Safety Engine commit gate remains authoritative. Send-preview must be shown first (`preview-each` posture).
+- Files: added `src/core/ai/outputs.ts`, `src/main/ai/AiCommitAssistant.ts`, `tests/unit/ai-{outputs,commit-assistant}.test.ts`, `tests/e2e/ai-commit-assistant.spec.ts`; updated `src/main/ipc/{ipc-schemas,ipc-handlers}.ts`, `src/main/ai/index.ts`, `electron/index.ts`, `preload/index.ts`, `src/renderer/{store/aiStore,screens/CommitScreen,strings,types/window.d}.ts`.
+- Tests: `npm test` → Vitest **373 passed** (+7 Phase 32 unit tests). `npm run e2e -- tests/e2e/ai-commit-assistant.spec.ts` → Playwright **1 passed**. `npm run lint` clean.
+- Exit criteria: ✅ met — Vitest validates structured commit-output schemas and rejects malformed adapter output; Playwright with the fake adapter proves staged diff → preview → draft appears → user inserts → Safety Engine commit gate still blocks until identity is set.
+- Notes / follow-ups: Phase 33 should add the change-review panel and deterministic secret scanner on the same redaction ruleset. Summarize output is display-only; only draft insert buttons write into the commit message field.

@@ -203,3 +203,8 @@ export const AiPreviewContextPayload = z.object({
   selectedUnstagedPaths: z.array(z.string().min(1)).optional(),
   commitMessage: z.string().optional(),
 })
+
+export const AiCommitAssistantPayload = z.object({
+  repositoryId: z.string().min(1),
+  commitMessage: z.string().optional(),
+})

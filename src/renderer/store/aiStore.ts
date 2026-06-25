@@ -10,6 +10,8 @@ import type {
   AiRetentionState,
   AiUsageEstimate,
   AiUsageEstimateRequest,
+  AiCommitDraft,
+  AiChangeSummary,
   CustomHttpMapping,
 } from '../../core/ai/types'
 import type { AiPreparedContext } from '../../core/ai/context'
@@ -75,6 +77,14 @@ interface AiState {
     selectedUnstagedPaths?: string[]
     commitMessage?: string
   }): Promise<AiPreparedContext | null>
+  draftCommitMessage(input: {
+    repositoryId: string
+    commitMessage?: string
+  }): Promise<AiCommitDraft | null>
+  summarizeStagedChanges(input: {
+    repositoryId: string
+    commitMessage?: string
+  }): Promise<AiChangeSummary | null>
   saveCredential(
     connectionId: string,
     label: string,
@@ -213,6 +223,26 @@ export const useAiStore = create<AiState>((set, get) => ({
 
   async previewContext(input) {
     const result = await window.api.ai.previewContext(input)
+    if (!result.ok) {
+      set({ error: result.error })
+      return null
+    }
+    set({ error: null })
+    return result.data
+  },
+
+  async draftCommitMessage(input) {
+    const result = await window.api.ai.draftCommitMessage(input)
+    if (!result.ok) {
+      set({ error: result.error })
+      return null
+    }
+    set({ error: null })
+    return result.data
+  },
+
+  async summarizeStagedChanges(input) {
+    const result = await window.api.ai.summarizeStagedChanges(input)
     if (!result.ok) {
       set({ error: result.error })
       return null

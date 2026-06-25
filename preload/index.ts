@@ -26,6 +26,8 @@ import type {
   AiRetentionState,
   AiUsageEstimate,
   AiUsageEstimateRequest,
+  AiCommitDraft,
+  AiChangeSummary,
   CustomHttpMapping,
 } from '../src/core/ai/types.js'
 import type { AiPreparedContext } from '../src/core/ai/context.js'
@@ -228,6 +230,14 @@ export const api = {
       selectedUnstagedPaths?: string[]
       commitMessage?: string
     }): Promise<IpcResult<AiPreparedContext>> => invoke('ai:previewContext', input),
+    draftCommitMessage: (input: {
+      repositoryId: string
+      commitMessage?: string
+    }): Promise<IpcResult<AiCommitDraft>> => invoke('ai:draftCommitMessage', input),
+    summarizeStagedChanges: (input: {
+      repositoryId: string
+      commitMessage?: string
+    }): Promise<IpcResult<AiChangeSummary>> => invoke('ai:summarizeStagedChanges', input),
   },
 }
 

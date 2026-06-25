@@ -8,6 +8,7 @@ import type { IAiConnectionService } from '../services/AiConnectionService.js'
 import type { IAiCredentialStore } from '../storage/AiCredentialStore.js'
 import type { AiAdapter } from '../ai/types.js'
 import type { AiContextBuilder } from '../ai/AiContextBuilder.js'
+import type { AiCommitAssistant } from '../ai/AiCommitAssistant.js'
 import { detectProvider } from '../../core/ai/detection.js'
 import { maskSecret } from '../../core/ai/credentials.js'
 import {
@@ -54,7 +55,9 @@ import {
   AiEstimateUsagePayload,
   AiCancelPayload,
   AiPreviewContextPayload,
+  AiCommitAssistantPayload,
 } from './ipc-schemas.js'
+import { AiChangeSummarySchema, AiCommitDraftSchema } from '../../core/ai/schemas.js'
 import type { PushAuth } from '../services/GitService.js'
 
 export interface Services {
@@ -67,6 +70,7 @@ export interface Services {
   aiCredentials: IAiCredentialStore
   aiAdapters: AiAdapter
   aiContextBuilder: AiContextBuilder
+  aiCommitAssistant: AiCommitAssistant
   /** Browser-open seam — real `shell.openExternal` in production, no-op under e2e. */
   openExternal: (url: string) => void | Promise<void>
 }
@@ -472,6 +476,22 @@ export function registerIpcHandlers(services: Services): void {
     wrap(async () => {
       const input = AiPreviewContextPayload.parse(raw)
       return services.aiContextBuilder.buildPreview(input)
+    })
+  )
+
+  ipcMain.handle('ai:draftCommitMessage', (_e, raw: unknown) =>
+    wrap(async () => {
+      const input = AiCommitAssistantPayload.parse(raw)
+      const draft = await services.aiCommitAssistant.draftCommitMessage(input)
+      return AiCommitDraftSchema.parse(draft)
+    })
+  )
+
+  ipcMain.handle('ai:summarizeStagedChanges', (_e, raw: unknown) =>
+    wrap(async () => {
+      const input = AiCommitAssistantPayload.parse(raw)
+      const summary = await services.aiCommitAssistant.summarizeStagedChanges(input)
+      return AiChangeSummarySchema.parse(summary)
     })
   )
 }

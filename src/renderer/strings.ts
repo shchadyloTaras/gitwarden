@@ -225,6 +225,23 @@ export const STR = {
   AI_PREVIEW_TRUNCATED: (omitted: number) =>
     `Preview truncated after redaction (${omitted} chars omitted).`,
   AI_PREVIEW_ERROR: 'Could not prepare the AI preview.',
+  AI_COMMIT_ASSISTANT_TITLE: 'Smart Commit Assistant',
+  AI_COMMIT_ASSISTANT_HINT:
+    'Review the send preview first, then draft or summarize. AI never commits.',
+  AI_COMMIT_DRAFT_BUTTON: 'Draft message',
+  AI_COMMIT_DRAFT_LOADING: 'Drafting…',
+  AI_COMMIT_SUMMARIZE_BUTTON: 'Summarize staged changes',
+  AI_COMMIT_SUMMARIZE_LOADING: 'Summarizing…',
+  AI_COMMIT_PREVIEW_REQUIRED: 'Show what will be sent before using AI on this repo.',
+  AI_COMMIT_DRAFT_ERROR: 'Could not draft a commit message.',
+  AI_COMMIT_SUMMARIZE_ERROR: 'Could not summarize staged changes.',
+  AI_COMMIT_DRAFT_CONVENTIONAL: 'Conventional',
+  AI_COMMIT_DRAFT_PLAIN: 'Plain',
+  AI_COMMIT_DRAFT_SUMMARY: 'Summary',
+  AI_COMMIT_DRAFT_BODY: 'Body',
+  AI_COMMIT_INSERT: 'Insert',
+  AI_COMMIT_SUMMARY_TITLE: 'Staged change summary',
+  AI_COMMIT_HIGHLIGHTS: 'Highlights',
 
   // ── Inspector ──────────────────────────────────────────────────────────────
   INSPECTOR_TITLE: 'Inspector',
