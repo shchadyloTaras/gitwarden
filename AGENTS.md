@@ -42,7 +42,7 @@ npm run build    # electron-builder package
 
 ## Operating workflow (per phase)
 
-1. **Read** the matching prompt in `docs/prompts/phase-prompts.md` (or `docs/prompts/github-oauth-prompts.md` for the OAuth feature), the plan's phase section, and the relevant Appendix in the plan.
+1. **Read** the matching prompt in `docs/prompts/phase-prompts.md` (or `docs/prompts/github-oauth-prompts.md` for the OAuth feature, or `docs/prompts/ai-integration-prompts.md` for the AI Connections feature), the plan's phase section, and the relevant Appendix in the plan.
 2. **Check the gate** — confirm the previous phase's Exit criteria are ✅ in `docs/progress-log.md`. Don't start a phase before its dependencies are done.
 3. **Implement** following the Architecture rules above.
 4. **Verify** by running the phase's tests (`npm test` / `npm run e2e`). A phase is not done until its Exit-criteria tests are green.
@@ -52,7 +52,7 @@ npm run build    # electron-builder package
 
 ## Build order (dependency-driven)
 
-`0 → 1 → … → 20` (MVP, complete), then GitHub OAuth `21 → 22 → 23 → 24 → 25 → 26 → 27`.
+`0 → 1 → … → 20` (MVP, complete), then GitHub OAuth `21 → 22 → 23 → 24 → 25 → 26 → 27`, then AI Connections `28 → … → 34` (advisory MVP stop) → `35 → 38` add-ons → `39` deferred (agentic, allowlist-only).
 
 Logic and infra are built and fully tested before any UI, so the engine is verified headlessly first. Full status: `docs/progress-log.md`.
 
@@ -79,5 +79,6 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 
 - **Full plan:** `docs/plans/gitwarden-plan.md` · **Phase prompts:** `docs/prompts/phase-prompts.md`
 - **GitHub OAuth feature:** `docs/plans/github-oauth-plan.md` + `docs/prompts/github-oauth-prompts.md`
+- **AI Connections feature:** `docs/plans/ai-integration-plan.md` + `docs/prompts/ai-integration-prompts.md`
 - **Decisions (ADR):** `DECISIONS.md` · **Security threat model:** `SECURITY.md`
 - **Status, checklist & progress log:** `docs/progress-log.md`

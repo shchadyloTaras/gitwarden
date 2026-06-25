@@ -105,3 +105,62 @@ These rules are **non-negotiable** like the rules above.
     revoke access on GitHub. A token thus stays valid on GitHub until the user revokes it;
     a revoked/expired token surfaces later as `GITHUB_TOKEN_INVALID` (401) and triggers the
     re-auth prompt.
+
+## AI Connections (advisory layer)
+
+Added with the AI Connections feature (`docs/plans/ai-integration-plan.md` §3–§6). The central
+new risk is that **sending a diff to an AI endpoint can mean sending source code to a third
+party.** These rules are **non-negotiable** like the rules above.
+
+16. **Source-code-to-provider is the central risk; default-off with fixed precedence.**
+    No repo context leaves the machine until the user both enables AI and selects an active
+    connection. When the enable flags disagree, precedence is one-directional —
+    **per-repo override → global enable → `connection.enabled`** — and a more specific opt-out
+    always wins. A repo opted out of AI blocks context assembly entirely. The AI is advisory:
+    no blocker, gate, or Git mutation may depend on model output.
+
+17. **Preview before send — payload _and_ destination host.** Default privacy mode is
+    `preview-each`: before a sensitive request the user sees the exact **post-redaction** payload
+    and the **destination host**. `preview-first-run` (structure-only, first run) is a conscious
+    downgrade the user must opt into. The host is shown because that is where the data actually
+    goes — see rule 20.
+
+18. **Prompt redaction runs on the full context, before chunking.** Known token / private-key /
+    GitHub-token / env-secret / credential-URL shapes are stripped from the **whole** context
+    **before** any truncation or chunking, so a split boundary can never carry an un-scanned
+    secret into a later chunk. Redaction and the deterministic secret scanner share **one**
+    ruleset (`src/core/ai/redaction.ts`) — not two tables that can drift. Redaction is
+    defense-in-depth and best-effort, **not** a guarantee; it never replaces user review of the
+    preview.
+
+19. **AI credentials at rest — `AiCredentialStore` only; never in connection JSON, never back to
+    the renderer.** API keys and Custom HTTP header secrets live **only** in the encrypted
+    `AiCredentialStore` (Electron `safeStorage`), keyed by `connectionId`. They are **never** a
+    field on `AiConnection` (or any persisted model), **never** written to JSON, **never**
+    returned to the renderer after save (the renderer receives only `AiCredentialMetadata` — a
+    masked preview + which fields are stored), and **never** logged. Secret header values are
+    masked everywhere they surface, including exported templates (Phase 38).
+
+20. **`baseUrl` is a send-destination control, not a secret.** A connection's `baseUrl` is
+    intentionally non-secret JSON so the send preview can display the host. The corollary is that
+    a tampered or swapped `baseUrl` is a **recipient-change** risk: it silently redirects where
+    source is sent. The preview-shows-the-host rule (17) is the mitigation — a changed destination
+    is visible before any send. Transport is `https://` only for every adapter (built-in and
+    Custom HTTP), except plain `http://` to a loopback host (`localhost` / `127.0.0.1` / `[::1]`)
+    for local servers. HTTPS/cert validation is never disabled.
+
+21. **Custom HTTP is declarative and constrained — never an evaluation surface.** A Custom HTTP
+    mapping may interpolate **only** the closed placeholder set (`{{apiKey}}`, `{{model}}`,
+    `{{messagesJson}}`, `{{promptJson}}`, `{{responseSchemaJson}}`, `{{metadataJson}}`); any other
+    placeholder is rejected. Response extraction uses a **safe JSONPath subset** — dotted-key and
+    numeric-index navigation only (`$.choices[0].message.content`). Filter (`?(…)`), script,
+    recursive-descent (`..`), and wildcard (`*`, `[*]`) expressions are **rejected, not silently
+    ignored**; the navigator performs pure property access and cannot evaluate code. No arbitrary
+    JavaScript, no file reads, no shell. Mappings are validated by Zod at the boundary
+    (`CustomHttpMappingSchema`).
+
+22. **Retention posture is surfaced and unknown-retention is opt-in.** GitWarden shows a
+    connection's retention state; an endpoint that cannot attest zero-retention requires explicit
+    user acceptance (`user-accepted`) before sends on the default path. Local (loopback)
+    connections are presented as the safest. No prompt/response logging by default; any future
+    diagnostic logging must be redacted and opt-in.

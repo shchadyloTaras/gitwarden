@@ -64,3 +64,69 @@ Source: `docs/plans/github-oauth-plan.md` §1, §1.1, Appendix B–D. Reverses t
 - **Node.js:** ≥ 20 LTS — _Rationale:_ matches the Node bundled by current Electron and provides a stable, supported `child_process`/`fs` API surface.
 - **Electron:** ≥ 30 — _Rationale:_ recent enough to default-enable the renderer lockdown the threat model requires (`sandbox: true`, `contextIsolation`) and to ship current Chromium security fixes.
 - **git:** ≥ 2.30 (resolved at runtime, not bundled) — _Rationale:_ a baseline with stable porcelain v2 status output and the config/env flags the Safety Engine relies on.
+
+## 6. AI Connections — advisory layer (Phases 28–34)
+
+Source: `docs/plans/ai-integration-plan.md` §1–§6. These decisions are binding for the AI
+feature; they extend, and never weaken, the deterministic Safety Engine.
+
+- **Token-first, single active connection.** The default Settings → AI UX is "paste the API
+  key you already have": GitWarden detects the provider from the key, fetches the models that
+  key can use (the fetch _is_ the connection test — no separate Test button on the primary
+  path), the user picks one and saves. Under the hood it is still an n8n-style connection model
+  (`AiConnection[]`, reusable credential + adapter + capabilities), but the MVP UI exposes one
+  active connection, not a manager of many.
+  - _Rationale:_ near-zero setup for the 80% case without throwing away the reusable-connection
+    data model the advanced path and Phase 38 templates need.
+- **Save and Enable are two deliberate steps.** "Save connection" attaches a key and a model;
+  "Enable AI" is a separate consent that allows repo content to leave the machine. Saving with
+  AI still disabled sends nothing.
+  - _Rationale:_ the privacy consent (data leaving the machine) must be a conscious, distinct
+    act — not a side effect of configuring a provider.
+- **Advisory-only — AI owns no Git action.** The AI explains, drafts, and recommends. **No
+  blocker, gate, or Git mutation may depend on model output.** It never commits, pushes, changes
+  identity, rewrites config, or clears a deterministic finding; a model "all clear" cannot
+  override the Safety Engine or the deterministic secret scanner. (Phase 39 agentic actions stay
+  deferred and allowlist-only.)
+  - _Rationale:_ GitWarden's reason to exist — preventing the wrong-identity commit/push — is a
+    deterministic guarantee; AI sits beside it, never inside the control path.
+- **Default-off with fixed, one-directional precedence.** AI is disabled until the user enables
+  it. When flags disagree, precedence is **per-repo override → global enable → `connection.enabled`**;
+  a more specific opt-out always wins, and no flag can re-enable what a more specific flag turned
+  off. A repo opted out of AI blocks context assembly entirely.
+  - _Rationale:_ a single, predictable rule means a user can always reason about whether a given
+    repo's content can be sent, and the safest setting dominates.
+- **Zero-retention / unknown-retention is a conscious downgrade.** GitWarden surfaces a
+  connection's retention state (`zero-retention` | `unknown` | `user-accepted`). An endpoint that
+  cannot attest zero-retention requires the user to explicitly accept the downgrade. Default
+  privacy mode is `preview-each` (the user sees the exact post-redaction payload **and**
+  destination host before each sensitive send); `preview-first-run` is a conscious downgrade.
+  - _Rationale:_ sending a diff can mean sending source to a third party; the retention posture
+    and the actual destination must be visible and opt-in, not buried.
+- **`localOnly` is derived from the resolved host, not the kind.** Any connection whose base URL
+  resolves to loopback (`localhost` / `127.0.0.1` / `[::1]`) is surfaced as the most private
+  choice — including an `openai-compatible` connection pointed at LM Studio / vLLM / llama.cpp,
+  not just `ollama`. Transport is `https://` only for every adapter, except plain `http://` to
+  loopback.
+  - _Rationale:_ privacy status must follow where data actually goes, not a provider label; local
+    servers over plain http on loopback are legitimately the safest path.
+- **Custom HTTP is declarative, not code.** The power-user escape hatch supports only a closed
+  placeholder set (`{{apiKey}}`, `{{model}}`, `{{messagesJson}}`, `{{promptJson}}`,
+  `{{responseSchemaJson}}`, `{{metadataJson}}`) and a **safe JSONPath subset** for response
+  mapping — dotted-key and numeric-index navigation only (`$.choices[0].message.content`). Filter
+  (`?(…)`), script, recursive-descent, and wildcard expressions are **rejected, not silently
+  ignored**. No arbitrary JS, no file reads, no shell.
+  - _Rationale:_ a user-supplied mapping must never become an evaluation surface; rejecting (vs
+    ignoring) unsafe paths makes the constraint enforceable and auditable.
+- **One redaction / secret-scanner ruleset.** The prompt-redaction patterns (Phase 31) and the
+  deterministic secret scanner (Phase 33) are the **same** core ruleset (`src/core/ai/redaction.ts`),
+  not two parallel tables that can drift apart. Redaction runs on the **full** context **before**
+  any chunk/truncation, so no split boundary can carry an un-scanned secret into a later chunk.
+  - _Rationale:_ two pattern tables inevitably diverge; one shared source keeps "what we redact"
+    and "what we warn about" identical, and pre-chunk redaction removes a whole class of leak.
+- **Secrets never live in `AiConnection` JSON.** A connection record — including `baseUrl`, the
+  send destination — is non-secret JSON. API keys and custom header secrets are referenced only by
+  `connectionId` and live in the encrypted `AiCredentialStore`; they never cross back to the
+  renderer after save. (See SECURITY.md §16–§20.)
+  - _Rationale:_ keeping the destination non-secret is what lets the send preview show the host;
+    keeping the credential out of the record is what keeps it out of logs, exports, and the renderer.

@@ -38,6 +38,21 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] Phase 26 — "Connect GitHub" UI (safe stop point)
 - [x] Phase 27 — Token-based Push (HTTPS) + Safety Engine (optional)
 
+### AI Connections feature (plan: `docs/plans/ai-integration-plan.md`, prompts: `docs/prompts/ai-integration-prompts.md`)
+
+- [x] Phase 28 — AI Foundations, Decisions & Connection Contracts
+- [ ] Phase 29 — AI Connections Manager & Credential Store
+- [ ] Phase 30 — Adapter Registry, Built-in Providers & Custom HTTP
+- [ ] Phase 31 — Context Builder, Redaction & Send Preview
+- [ ] Phase 32 — Smart Commit Assistant
+- [ ] Phase 33 — Change Review Assistant
+- [ ] Phase 34 — Safety Copilot (recommended MVP stop point)
+- [ ] Phase 35 — Push Brief & History Intelligence
+- [ ] Phase 36 — Repo Onboarding Assistant
+- [ ] Phase 37 — Failure Explainer
+- [ ] Phase 38 — Connection Templates, Import/Export & Team Handoff
+- [ ] Phase 39 — Optional Agentic Actions (deferred; allowlist-only)
+
 ## Progress Log
 
 > Append a new entry at the bottom after each phase. Newest last. Do not rewrite past entries.
@@ -312,3 +327,19 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: `npm test` → Vitest **228 passed** (+12: 8 GitHub safety-matrix + 4 askpass integration). `npx playwright test` → **46 passed** (+2 `github-push-safety.spec.ts`). `npm run lint` clean (ESLint + Prettier). `npx tsc --noEmit` clean on both tsconfigs.
 - Exit criteria: ✅ met — Vitest covers the four-code matrix (match / mismatch / missing / invalid, + not-connected + SSH-unaffected). Integration asserts the askpass helper echoes username/password from env, and that an HTTPS-token push carries the token in `extraEnv` but **not** in `argv`, the remote URL, or `.git/config` (and a no-auth push attaches no credential env). Playwright (injected fake → token resolves to `@octocat`): a profile linked to `@mallory` is **blocked** by `GITHUB_ACCOUNT_MISMATCH` with Confirm disabled; a profile linked to `@octocat` shows "matches" with Confirm enabled (push proceeds only on that explicit click).
 - Notes / follow-ups: The Windows `.cmd` askpass helper is shipped but exercised only on Windows (the helper-echo integration test is `skipIf(win32)`; CI is Unix). The full token push to real github.com is covered only by the manual smoke check (Appendix D) — CI never makes a real network/auth call; the e2e asserts the safety gate, and the integration test asserts the wiring against a non-routable host offline. `repo` scope is still not requested — identity scopes suffice for the account-verification gate; a real HTTPS push to a private repo would need a `repo`-scope re-auth (left for when/if that flow is added).
+
+### 2026-06-25 — Phase 28: AI Foundations, Decisions & Connection Contracts
+
+- Built: the pure-core contracts for the advisory AI layer — types, Zod boundary schemas, the safe-JSONPath navigator, the shared transport gate, the single redaction ruleset, and credential masking. No network, no UI, no Electron; everything lives in `src/core/ai/` and runs headlessly under Vitest.
+  - `src/core/ai/types.ts`: `AiConnectionKind`, `AiPrivacyMode` (`preview-each` default; `preview-first-run` a conscious downgrade), `AiRetentionState`, `AiRequestKind`, `AiConnection` (non-secret JSON incl. `baseUrl`), `AiConnectionCapabilities` (`localOnly` documented as host-derived, not kind-derived), `AiCredentialMetadata`, `AiProviderDetection`, `CustomHttpMapping`, `AiUsageEstimate`, `AiReviewFinding`, plus the per-feature outputs `AiCommitDraft` / `AiChangeSummary` / `AiChangeReview`.
+  - `src/core/ai/schemas.ts`: Zod mirrors for all of the above. `AiConnectionSchema` refines a present `baseUrl` through the transport gate. `CustomHttpMappingSchema.superRefine` enforces §6.3 — transport gate on `url`, the closed placeholder set, and the safe-JSONPath subset on every `responseMapping` field — so a malformed mapping is rejected at the boundary.
+  - `src/core/ai/transport.ts`: `isLoopbackHost` / `isAllowedAiBaseUrl` (https-only, plain-http-loopback-excepted) / `deriveLocalOnly` (host-derived `localOnly`, §4) — the shared rule for every adapter (Phase 30).
+  - `src/core/ai/jsonpath.ts`: a tiny safe-subset navigator — dotted keys, numeric indices, bracket-quoted simple keys only. `parseJsonPath` **throws** (`UnsafeJsonPathError`) on `..` / `*` / `[*]` / `?(…)` / scripts / slices / unions; `getByJsonPath` does pure property access and cannot evaluate code.
+  - `src/core/ai/customHttp.ts`: the closed placeholder allowlist (`apiKey`, `model`, `messagesJson`, `promptJson`, `responseSchemaJson`, `metadataJson`) + helpers to collect/flag unsupported placeholders across url/headers/body.
+  - `src/core/ai/redaction.ts`: the **single** ruleset (reused by the Phase 33 scanner) — private-key PEM blocks, GitHub tokens, JWTs, AWS keys, Slack tokens, provider API keys, credential URLs, and env-secret assignments. `redactSecrets` (keeps env var NAME + the credential-URL host visible), `findSecretMatches`, `containsSecret`.
+  - `src/core/ai/credentials.ts`: `maskSecret` for `AiCredentialMetadata.maskedPreview` (reveals ≤ last 4 chars).
+  - `DECISIONS.md` §6 (token-first single-active-connection, save vs enable, advisory-only, default-off precedence repo→global→connection, retention/preview policy, `localOnly`-by-host, declarative Custom HTTP + safe JSONPath, one redaction ruleset, secrets-never-in-connection-JSON). `SECURITY.md` rules 16–22 (source-to-provider risk, preview payload+host, redaction-before-chunking, `AiCredentialStore`-only credentials, `baseUrl`-tampering as a send-destination risk, declarative Custom HTTP constraints, retention/opt-in).
+- Files: added `src/core/ai/{types,schemas,transport,jsonpath,customHttp,redaction,credentials,index}.ts` and `tests/unit/ai-{schemas,transport,jsonpath,custom-http,redaction,credentials}.test.ts`; updated `DECISIONS.md`, `SECURITY.md`, `docs/progress-log.md`.
+- Tests: `npm test` → Vitest **293 passed** (+65 new across 6 AI files). `npx tsc --noEmit` clean on `tsconfig.node.json` and `tsconfig.web.json`. ESLint + Prettier clean on all touched files.
+- Exit criteria: ✅ met — `src/core/ai/` stays pure (no node/electron/DOM imports); schemas round-trip and reject unknown enums/shapes; `CustomHttpMapping` validation rejects non-HTTPS-non-loopback URLs, unsupported placeholders, and filter/script/wildcard/recursive-descent JSONPath (rejected, not ignored); the redaction matrix covers every required category and proves the raw secret is removed while the env var name and destination host stay visible; both docs updated.
+- Notes / follow-ups: redaction is intentionally conservative (known token shapes) and best-effort — **not** a guarantee; the "redaction runs before chunking" property is asserted end-to-end in Phase 31 where the context builder + chunker exist. `getByJsonPath` / `redactSecrets` / `isAllowedAiBaseUrl` are written now so Phase 30 adapters and the Phase 31 context builder reuse them rather than re-implementing. No `ai:*` IPC, adapter, or store yet — those start in Phase 29 (`AiConnectionService` + `AiCredentialStore`).
