@@ -1,8 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AiChatAssistant } from '../../src/main/ai/AiChatAssistant'
-import type { AiContextBuilder } from '../../src/main/ai/AiContextBuilder'
-import type { AiAdapter } from '../../src/main/ai/types'
-import { AI_CHAT_RESPONSE_JSON_SCHEMA } from '../../src/core/ai/providerSchemas'
 
 describe('AiChatAssistant', () => {
   const preview = {
@@ -19,11 +16,14 @@ describe('AiChatAssistant', () => {
   }
 
   let contextBuilder: Pick<AiContextBuilder, 'buildPreview'>
-  let adapters: Pick<AiAdapter, 'generateStructured'>
+  let adapters: Pick<AiAdapter, 'generateStructured' | 'generateTextStream'>
 
   beforeEach(() => {
     contextBuilder = { buildPreview: vi.fn().mockResolvedValue(preview) }
     adapters = {
+      generateTextStream: vi.fn(async (_request, onDelta) => {
+        onDelta('Run /review before committing.')
+      }),
       generateStructured: vi.fn().mockResolvedValue({
         reply: 'Run /review before committing.',
         suggestedCommands: ['/review'],
@@ -36,7 +36,7 @@ describe('AiChatAssistant', () => {
     const result = await assistant.chat({ repositoryId: 'repo-1', message: 'What should I do?' })
 
     expect(result.reply).toBe('Run /review before committing.')
-    expect(result.suggestedCommands).toEqual(['/review'])
+    expect(result.suggestedCommands).toBeUndefined()
     expect(contextBuilder.buildPreview).toHaveBeenCalledWith(
       expect.objectContaining({ kind: 'chat', repositoryId: 'repo-1' })
     )
@@ -53,16 +53,24 @@ describe('AiChatAssistant', () => {
       ],
     })
 
-    const call = (adapters.generateStructured as ReturnType<typeof vi.fn>).mock.calls[0][0]
+    const call = (adapters.generateTextStream as ReturnType<typeof vi.fn>).mock.calls[0][0]
     const roles = call.messages.map((m: { role: string }) => m.role)
     expect(roles).toEqual(['system', 'user', 'user', 'assistant', 'user'])
     expect(call.messages[0].content).toContain('advisory')
     expect(call.messages.at(-1).content).toBe('And now?')
     expect(call.kind).toBe('chat')
-    expect(call.responseSchemaJson).toEqual(AI_CHAT_RESPONSE_JSON_SCHEMA)
   })
 
-  it('fails closed when the adapter returns a malformed response', async () => {
+  it('falls back to structured output when streaming is unsupported', async () => {
+    adapters.generateTextStream = vi.fn().mockRejectedValue(new Error('unsupported'))
+    const assistant = new AiChatAssistant(contextBuilder as AiContextBuilder, adapters as AiAdapter)
+    const result = await assistant.chat({ repositoryId: 'repo-1', message: 'hi' })
+    expect(result.reply).toBe('Run /review before committing.')
+    expect(adapters.generateStructured).toHaveBeenCalled()
+  })
+
+  it('fails closed when streaming and structured fallback both fail', async () => {
+    adapters.generateTextStream = vi.fn().mockRejectedValue(new Error('unsupported'))
     adapters.generateStructured = vi.fn().mockResolvedValue({ notReply: 1 })
     const assistant = new AiChatAssistant(contextBuilder as AiContextBuilder, adapters as AiAdapter)
     await expect(assistant.chat({ repositoryId: 'repo-1', message: 'hi' })).rejects.toThrow()

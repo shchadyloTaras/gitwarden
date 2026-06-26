@@ -13,6 +13,12 @@ export interface HttpResponse {
   status: number
   /** Parsed JSON body. `unknown` — callers validate with Zod before use. */
   json: unknown
+  /**
+   * Raw response body text. Retained so error paths can surface a provider's
+   * reason even when the body is non-JSON or empty (some local OpenAI-compatible
+   * servers return plain-text 400s). Undefined when the body was empty.
+   */
+  bodyText?: string
 }
 
 export interface HttpRequest {

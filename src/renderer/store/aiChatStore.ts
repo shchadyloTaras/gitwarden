@@ -3,9 +3,11 @@ import {
   parseChatInput,
   chatHelpText,
   isNetworkedChatCommand,
+  parseExplainTarget,
   type ChatCommandKind,
   type ParsedChatCommand,
 } from '../../core/ai/chatCommands'
+import { normalizeContextPaths } from '../../core/ai/chatContext'
 import { friendlyCapabilityError } from '../../core/ai/capabilityErrors'
 import type { AiAgenticProposal, AiChatTurn } from '../../core/ai/types'
 import { useAppStore } from './appStore'
@@ -26,15 +28,24 @@ export interface ChatMessage {
   proposal?: AiAgenticProposal
   /** Set once a proposal's edits have been applied. */
   proposalApplied?: boolean
+  /** True while tokens are still arriving for a streaming reply. */
+  streaming?: boolean
+}
+
+export interface ChatSendOptions {
+  contextPaths?: string[]
 }
 
 interface AiChatState {
   messages: ChatMessage[]
   pending: boolean
   error: string | null
+  activeRequestId: string | null
 
   /** Parse the input and run the matching capability (free-text or slash-command). */
-  send(text: string): Promise<void>
+  send(text: string, options?: ChatSendOptions): Promise<void>
+  /** Stop an in-flight streaming chat send. */
+  cancel(): Promise<void>
   /** Apply a proposal's file edits after explicit confirmation. */
   applyProposal(messageId: string): Promise<void>
   clear(): void
@@ -77,8 +88,9 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
   messages: [],
   pending: false,
   error: null,
+  activeRequestId: null,
 
-  async send(text) {
+  async send(text, options) {
     const parsed = parseChatInput(text)
     if (parsed.kind === 'unknown') {
       // Push the user's literal input, then a local help reply — never networked.
@@ -115,6 +127,10 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
 
     set({ pending: true, error: null })
     try {
+      if (parsed.kind === 'chat') {
+        await runStreamingChat(parsed, get, set, options?.contextPaths)
+        return
+      }
       const message = await runCapability(parsed, get)
       appendMessage(set, message)
     } catch (err) {
@@ -126,7 +142,21 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
         content: chatBubbleError(raw),
       })
     } finally {
-      set({ pending: false })
+      set({ pending: false, activeRequestId: null })
+    }
+  },
+
+  async cancel() {
+    const requestId = get().activeRequestId
+    if (!requestId) return
+    try {
+      await window.api.ai.cancel(requestId)
+    } finally {
+      set((s) => ({
+        pending: false,
+        activeRequestId: null,
+        messages: s.messages.map((m) => (m.streaming ? { ...m, streaming: false } : m)),
+      }))
     }
   },
 
@@ -164,14 +194,114 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
   },
 
   clear() {
-    set({ messages: [], error: null })
+    set({ messages: [], error: null, activeRequestId: null })
   },
 }))
 
-/** Build conversation history (user/assistant turns only) for a free-text chat send. */
+function updateMessage(set: SetState, messageId: string, patch: Partial<ChatMessage>): void {
+  set((s) => ({
+    messages: s.messages.map((m) => (m.id === messageId ? { ...m, ...patch } : m)),
+  }))
+}
+
+async function runStreamingChat(
+  parsed: ParsedChatCommand,
+  get: () => AiChatState,
+  set: SetState,
+  contextPaths?: string[]
+): Promise<void> {
+  const repo = useAppStore.getState().activeRepo
+  if (!repo) throw new Error('Select a repository first.')
+
+  const requestId = crypto.randomUUID()
+  const assistantId = appendMessage(set, {
+    role: 'assistant',
+    kind: 'chat',
+    content: '',
+    streaming: true,
+  })
+  set({ activeRequestId: requestId })
+
+  const currentMessage = parsed.args || parsed.raw
+  const priorMessages = get().messages.filter((m) => m.id !== assistantId).slice(0, -1)
+  const selectedUnstagedPaths = normalizeContextPaths(contextPaths ?? [])
+
+  let settled = false
+  const finish = (): void => {
+    settled = true
+  }
+
+  const unsub = window.api.ai.onChatStreamEvent((event) => {
+    if (event.requestId !== requestId || settled) return
+    if (event.type === 'delta') {
+      set((s) => ({
+        messages: s.messages.map((m) =>
+          m.id === assistantId ? { ...m, content: m.content + event.delta } : m
+        ),
+      }))
+      return
+    }
+    if (event.type === 'done') {
+      finish()
+      unsub()
+      updateMessage(set, assistantId, {
+        streaming: false,
+        suggestedCommands: event.suggestedCommands,
+      })
+      return
+    }
+    if (event.type === 'error') {
+      finish()
+      unsub()
+      updateMessage(set, assistantId, {
+        streaming: false,
+        isError: true,
+        content: chatBubbleError(event.error),
+      })
+    }
+  })
+
+  try {
+    const result = await window.api.ai.chatStream({
+      repositoryId: repo.id,
+      message: currentMessage,
+      history: buildHistory(priorMessages),
+      selectedUnstagedPaths:
+        selectedUnstagedPaths.length > 0 ? selectedUnstagedPaths : undefined,
+      requestId,
+      ...EXPENSIVE_SEND_ACK,
+    })
+    if (!settled) {
+      unsub()
+      if (!result.ok) {
+        updateMessage(set, assistantId, {
+          streaming: false,
+          isError: true,
+          content: chatBubbleError(result.error),
+        })
+        return
+      }
+      updateMessage(set, assistantId, {
+        streaming: false,
+        content: result.data.reply,
+        suggestedCommands: result.data.suggestedCommands,
+      })
+    }
+  } catch (err) {
+    unsub()
+    const raw = err instanceof Error ? err.message : String(err)
+    updateMessage(set, assistantId, {
+      streaming: false,
+      isError: true,
+      content: chatBubbleError(raw),
+    })
+  }
+}
+
+/** Build conversation history for a free-text chat send (Cursor-style multi-turn). */
 function buildHistory(messages: ChatMessage[]): AiChatTurn[] {
   return messages
-    .filter((m) => !m.isError && (m.role === 'user' || (m.role === 'assistant' && !m.kind)))
+    .filter((m) => !m.isError && (m.role === 'user' || m.role === 'assistant'))
     .map((m) => ({ role: m.role, content: m.content }))
 }
 
@@ -263,23 +393,43 @@ async function runCapability(
         content: `${proposal.summary}${files ? `\n\nProposed file edits (not applied yet):\n${files}` : ''}`,
       }
     }
-    case 'chat':
-    default: {
-      const currentMessage = parsed.args || parsed.raw
-      const priorMessages = get().messages.slice(0, -1)
-      const result = await window.api.ai.chat({
+    case 'explain': {
+      const target = parseExplainTarget(parsed.args)
+      if (!target) {
+        return {
+          role: 'assistant',
+          kind: 'explain',
+          isError: true,
+          content:
+            'Usage: /explain SAFETY_CODE (e.g. IDENTITY_UNSET) or paste failing tool/build output after /explain.',
+        }
+      }
+      if (target.kind === 'safety-code' && target.safetyCode) {
+        const explanation = await ai.explainSafetyIssue({
+          repositoryId,
+          safetyCode: target.safetyCode,
+        })
+        if (!explanation) throwAiStoreFailure('Could not explain the safety issue.')
+        return {
+          role: 'assistant',
+          kind: 'explain',
+          content: `${explanation.explanation}\n\nSuggested: ${explanation.actionHint}`,
+        }
+      }
+      const result = await window.api.ai.explainToolOutput({
         repositoryId,
-        message: currentMessage,
-        history: buildHistory(priorMessages),
-        ...EXPENSIVE_SEND_ACK,
+        output: target.output ?? parsed.args,
       })
       if (!result.ok) throwIpcFailure(result)
+      const explanation = result.data
       return {
         role: 'assistant',
-        kind: 'chat',
-        content: result.data.reply,
-        suggestedCommands: result.data.suggestedCommands,
+        kind: 'explain',
+        content: `${explanation.explanation}\n\nSuggested: ${explanation.actionHint}`,
       }
     }
+    case 'chat':
+    default:
+      throw new Error('Free-text chat must use runStreamingChat.')
   }
 }

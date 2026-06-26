@@ -6,7 +6,7 @@ import type {
   AiUsageEstimateRequest,
 } from '../../core/ai/types.js'
 import type { IAiConnectionService } from '../services/AiConnectionService.js'
-import type { AiAdapter, AiStructuredRequest } from './types.js'
+import type { AiAdapter, AiStructuredRequest, AiTextStreamRequest } from './types.js'
 
 export type AiAdapterMap = Record<AiConnectionKind, AiAdapter>
 
@@ -27,6 +27,13 @@ export class AiAdapterRegistry implements AiAdapter {
 
   async generateStructured<T>(request: AiStructuredRequest<T>): Promise<T> {
     return (await this.resolve(request.connectionId)).generateStructured(request)
+  }
+
+  async generateTextStream(
+    request: AiTextStreamRequest,
+    onDelta: (delta: string) => void
+  ): Promise<void> {
+    return (await this.resolve(request.connectionId)).generateTextStream(request, onDelta)
   }
 
   async estimateUsage(request: AiUsageEstimateRequest): Promise<AiUsageEstimate> {

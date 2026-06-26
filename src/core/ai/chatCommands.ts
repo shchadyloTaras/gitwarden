@@ -4,6 +4,9 @@
 // decides what (if anything) to send, always through the same redaction + send
 // -preview + enablement pipeline as every other AI feature.
 
+import { ALL_SAFETY_CODES } from './safetyCopilot.js'
+import type { SafetyCode } from '../safety/SafetyCheckService.js'
+
 /**
  * What a parsed chat line resolves to. `chat` is free-text (general advisory
  * Q&A). `help`/`unknown` are handled locally and never reach the network.
@@ -15,6 +18,7 @@ export type ChatCommandKind =
   | 'history'
   | 'repo-brief'
   | 'propose'
+  | 'explain'
   | 'help'
   | 'chat'
   | 'unknown'
@@ -49,6 +53,12 @@ export const CHAT_COMMANDS: ChatCommandSpec[] = [
     description: 'Propose allowlisted file edits (preview + confirm)',
     requiresArgs: true,
   },
+  {
+    command: '/explain',
+    kind: 'explain',
+    description: 'Explain a safety issue code or pasted tool/build output',
+    requiresArgs: true,
+  },
   { command: '/help', kind: 'help', description: 'List available commands' },
 ]
 
@@ -60,8 +70,20 @@ const NETWORKED_KINDS: ReadonlySet<ChatCommandKind> = new Set<ChatCommandKind>([
   'history',
   'repo-brief',
   'propose',
+  'explain',
   'chat',
 ])
+
+const SAFETY_CODE_SET = new Set<string>(ALL_SAFETY_CODES)
+
+/** How `/explain` args are classified before the store picks an IPC path. */
+export type ExplainTargetKind = 'safety-code' | 'tool-output'
+
+export interface ParsedExplainTarget {
+  kind: ExplainTargetKind
+  safetyCode?: SafetyCode
+  output?: string
+}
 
 /** True when running this command sends repo context to the AI provider. */
 export function isNetworkedChatCommand(kind: ChatCommandKind): boolean {
@@ -95,4 +117,32 @@ export function chatHelpText(): string {
     ...CHAT_COMMANDS.map((c) => `${c.command} — ${c.description}`),
     'Or just type a question to chat about this repository.',
   ].join('\n')
+}
+
+/**
+ * Classify `/explain` trailing text: a known SafetyCode token, or pasted tool/build
+ * output (everything else non-empty).
+ */
+export function parseExplainTarget(args: string): ParsedExplainTarget | null {
+  const trimmed = args.trim()
+  if (trimmed.length === 0) return null
+
+  const firstToken = trimmed.split(/\s+/)[0]?.toUpperCase()
+  if (firstToken && SAFETY_CODE_SET.has(firstToken)) {
+    return { kind: 'safety-code', safetyCode: firstToken as SafetyCode }
+  }
+  return { kind: 'tool-output', output: trimmed }
+}
+
+/**
+ * Slash-command autocomplete for the chat composer. Pass the full draft; returns
+ * matching commands when the user is typing a `/` token (before or without args).
+ */
+export function filterSlashCommands(input: string): ChatCommandSpec[] {
+  const trimmed = input.trimStart()
+  if (!trimmed.startsWith('/')) return []
+  const spaceIndex = trimmed.search(/\s/)
+  if (spaceIndex !== -1) return []
+  const partial = trimmed.toLowerCase()
+  return CHAT_COMMANDS.filter((c) => c.command.startsWith(partial))
 }

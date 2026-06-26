@@ -393,3 +393,9 @@ export interface AiChatResponse {
   reply: string
   suggestedCommands?: string[]
 }
+
+/** Push events for a streaming chat send (main → renderer). */
+export type AiChatStreamEvent =
+  | { requestId: string; type: 'delta'; delta: string }
+  | { requestId: string; type: 'done'; suggestedCommands?: string[] }
+  | { requestId: string; type: 'error'; error: string }

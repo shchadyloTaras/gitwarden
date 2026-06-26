@@ -38,6 +38,7 @@ import type {
   AiAgenticProposal,
   AiChatTurn,
   AiChatResponse,
+  AiChatStreamEvent,
   CustomHttpMapping,
 } from '../../core/ai/types.js'
 import type { AiPreparedContext } from '../../core/ai/context.js'
@@ -250,8 +251,19 @@ interface ElectronAPI {
       repositoryId: string
       message: string
       history?: AiChatTurn[]
+      selectedUnstagedPaths?: string[]
+      requestId?: string
       expensiveSendAcknowledged?: boolean
     }): Promise<IpcResult<AiChatResponse>>
+    chatStream(input: {
+      repositoryId: string
+      message: string
+      history?: AiChatTurn[]
+      selectedUnstagedPaths?: string[]
+      requestId: string
+      expensiveSendAcknowledged?: boolean
+    }): Promise<IpcResult<AiChatResponse>>
+    onChatStreamEvent(callback: (event: AiChatStreamEvent) => void): () => void
   }
   pushBrief: {
     buildDeterministic(input: {

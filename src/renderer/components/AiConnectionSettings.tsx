@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { useAiStore } from '../store/aiStore'
 import { requiresBaseUrlEntry } from '../../core/ai/detection'
 import type { AiConnection, AiConnectionKind, AiProviderDetection } from '../../core/ai/types'
+import Dropdown from './Dropdown'
+import { modelDropdownOptions } from './aiModelOptions'
 import { STR } from '../strings'
 
 const CARD: React.CSSProperties = {
@@ -283,22 +285,22 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
       <div style={{ marginTop: 4 }}>
         <label style={LABEL}>{STR.AI_MODEL_LABEL}</label>
         {models.length > 0 ? (
-          <select
-            data-testid="ai-model-select"
+          <Dropdown
+            testId="ai-model-select"
+            ariaLabel={STR.AI_MODEL_LABEL}
+            placeholder={STR.AI_MODEL_PLACEHOLDER}
             value={model}
-            onChange={(e) => {
-              setModel(e.target.value)
+            block
+            searchable
+            searchPlaceholder={STR.DROPDOWN_SEARCH_PLACEHOLDER}
+            noMatchesLabel={STR.DROPDOWN_NO_MATCHES}
+            options={modelDropdownOptions(models)}
+            onChange={(v) => {
+              setModel(v)
               setSaved(false)
             }}
-            style={{ ...INPUT, fontFamily: 'inherit' }}
-          >
-            <option value="">{STR.AI_MODEL_PLACEHOLDER}</option>
-            {models.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.label ? `${m.label} (${m.id})` : m.id}
-              </option>
-            ))}
-          </select>
+            triggerStyle={{ ...INPUT, fontFamily: 'inherit' }}
+          />
         ) : (
           <input
             data-testid="ai-edit-model-input"

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import type { NavScreen } from '../store/appStore'
+import type { NavScreen, RightPanelTab } from '../store/appStore'
 import { useAppStore } from '../store/appStore'
 import { STR } from '../strings'
 
@@ -10,6 +10,7 @@ interface OnboardingStep {
   body: string
   target?: string
   screen?: NavScreen
+  openRightPanel?: RightPanelTab
   placement: Placement
 }
 
@@ -90,9 +91,23 @@ function buildSteps(): OnboardingStep[] {
       placement: 'bottom',
     },
     {
+      title: STR.ONBOARDING_STEP_AI_CHAT_TITLE,
+      body: STR.ONBOARDING_STEP_AI_CHAT_BODY,
+      target: '[data-testid="header-ai-chat"]',
+      openRightPanel: 'chat',
+      placement: 'bottom',
+    },
+    {
+      title: STR.ONBOARDING_STEP_AI_SETTINGS_TITLE,
+      body: STR.ONBOARDING_STEP_AI_SETTINGS_BODY,
+      target: '[data-testid="settings-tab-ai"]',
+      screen: 'settings',
+      placement: 'bottom',
+    },
+    {
       title: STR.ONBOARDING_STEP_SETTINGS_TITLE,
       body: STR.ONBOARDING_STEP_SETTINGS_BODY,
-      // The replay control now lives under the Walkthrough tab; spotlight the tab
+      // The replay control lives under the Walkthrough tab; spotlight the tab
       // itself since it is always rendered regardless of the active Settings tab.
       target: '[data-testid="settings-tab-walkthrough"]',
       screen: 'settings',
@@ -150,6 +165,7 @@ export default function OnboardingTour({
   onSkip,
 }: OnboardingTourProps): React.ReactElement | null {
   const navigate = useAppStore((s) => s.navigate)
+  const openRightPanel = useAppStore((s) => s.openRightPanel)
   const steps = useMemo(() => buildSteps(), [])
   const [stepIndex, setStepIndex] = useState(0)
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null)
@@ -164,9 +180,10 @@ export default function OnboardingTour({
   }, [open])
 
   useEffect(() => {
-    if (!open || !step.screen) return
-    navigate(step.screen)
-  }, [navigate, open, step.screen])
+    if (!open) return
+    if (step.screen) navigate(step.screen)
+    if (step.openRightPanel) openRightPanel(step.openRightPanel)
+  }, [navigate, open, openRightPanel, step.openRightPanel, step.screen])
 
   useEffect(() => {
     if (!open) return

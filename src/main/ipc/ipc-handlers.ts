@@ -1,4 +1,5 @@
 import { ipcMain, dialog } from 'electron'
+import { z } from 'zod'
 import type { IProfileService } from '../services/ProfileService.js'
 import type { IRepositoryService } from '../services/RepositoryService.js'
 import type { ISettingsService } from '../services/SettingsService.js'
@@ -77,6 +78,7 @@ import {
   AiAgenticProposePayload,
   AiAgenticExecutePayload,
   AiChatPayload,
+  AiChatStreamEventSchema,
 } from './ipc-schemas.js'
 import {
   AiChangeReviewSchema,
@@ -131,6 +133,8 @@ async function wrap<T>(fn: () => Promise<T>): Promise<IpcResult<T>> {
     return { ok: false, error: err instanceof Error ? err.message : String(err) }
   }
 }
+
+const AI_CHAT_STREAM_EVENT_CHANNEL = 'ai:chatStreamEvent'
 
 export function registerIpcHandlers(services: Services): void {
   // Profiles
@@ -703,6 +707,35 @@ export function registerIpcHandlers(services: Services): void {
       const input = AiChatPayload.parse(raw)
       const response = await services.aiChatAssistant.chat(input)
       return AiChatResponseSchema.parse(response)
+    })
+  )
+
+  ipcMain.handle('ai:chatStream', (event, raw: unknown) =>
+    wrap(async () => {
+      const input = AiChatPayload.parse(raw)
+      const requestId = input.requestId ?? crypto.randomUUID()
+      const sender = event.sender
+      const emit = (payload: Omit<z.infer<typeof AiChatStreamEventSchema>, 'requestId'>): void => {
+        sender.send(
+          AI_CHAT_STREAM_EVENT_CHANNEL,
+          AiChatStreamEventSchema.parse({ requestId, ...payload })
+        )
+      }
+      try {
+        const response = await services.aiChatAssistant.chatStream(
+          { ...input, requestId },
+          {
+            onDelta: (delta) => emit({ type: 'delta', delta }),
+          }
+        )
+        const parsed = AiChatResponseSchema.parse(response)
+        emit({ type: 'done', suggestedCommands: parsed.suggestedCommands })
+        return parsed
+      } catch (err) {
+        const error = err instanceof Error ? err.message : String(err)
+        emit({ type: 'error', error })
+        throw err
+      }
     })
   )
 }

@@ -5,7 +5,7 @@ import {
   parseChangeSummary,
   parseCommitDraft,
 } from '../../core/ai/outputs.js'
-import { AI_COMMIT_DRAFT_JSON_SCHEMA } from '../../core/ai/providerSchemas.js'
+import { providerJsonSchemaForKind } from '../../core/ai/providerSchemas.js'
 import { AiChangeSummarySchema, AiCommitDraftSchema } from '../../core/ai/schemas.js'
 import type { AiChangeSummary, AiCommitDraft } from '../../core/ai/types.js'
 import { createAiContextMessages, type AiPreparedContext } from '../../core/ai/context.js'
@@ -67,7 +67,7 @@ export class AiCommitAssistant {
       kind: preview.kind,
       messages,
       responseSchema,
-      responseSchemaJson: providerJsonSchemaForKind(preview.kind, responseSchema),
+      responseSchemaJson: providerJsonSchemaForKind(preview.kind),
       metadata: {
         destinationHost: preview.destinationHost,
         redactionCount: preview.redactions.count,
@@ -85,26 +85,4 @@ function withTaskInstruction(
 ): ReturnType<typeof createAiContextMessages> {
   const [system, user] = messages
   return [{ ...system, content: `${system.content}\n\n${taskInstruction}` }, user]
-}
-
-function providerJsonSchemaForKind(
-  kind: AiPreparedContext['kind'],
-  responseSchema: z.ZodType<unknown>
-): unknown {
-  if (kind === 'commit-draft') return AI_COMMIT_DRAFT_JSON_SCHEMA
-  if (kind === 'change-summary') {
-    return {
-      type: 'object',
-      additionalProperties: false,
-      required: ['summary', 'highlights'],
-      properties: {
-        summary: { type: 'string' },
-        highlights: { type: 'array', items: { type: 'string' } },
-      },
-    }
-  }
-  return {
-    type: 'object',
-    description: responseSchema.description ?? 'GitWarden structured response',
-  }
 }

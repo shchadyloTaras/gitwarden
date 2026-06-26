@@ -225,6 +225,133 @@ describe('built-in AI adapters', () => {
     await expect(adapter.generateStructured(structuredRequest(conn.id, schema))).rejects.toThrow()
   })
 
+  it('falls back to json_object when strict json_schema returns HTTP 400', async () => {
+    const conn = connection('openai-compatible', {
+      baseUrl: 'http://127.0.0.1:1234/v1',
+      defaultModel: 'local-model',
+    })
+    const schema = z.object({ summary: z.string(), highlights: z.array(z.string()) })
+    const http = new FakeHttp([
+      { status: 400, json: { error: { message: 'json_schema unsupported' } } },
+      { status: 400, json: { error: { message: 'strict schema rejected' } } },
+      {
+        status: 200,
+        json: { choices: [{ message: { content: '{"summary":"fallback","highlights":["a"]}' } }] },
+      },
+    ])
+    const adapter = new OpenAICompatibleAdapter(
+      { connections: new FakeConnections([conn]), credentials: new FakeCredentials(), http },
+      new AiSpendGuard()
+    )
+
+    await expect(adapter.generateStructured(structuredRequest(conn.id, schema))).resolves.toEqual({
+      summary: 'fallback',
+      highlights: ['a'],
+    })
+    expect(http.requests).toHaveLength(3)
+    expect(http.requests[0].json).toMatchObject({
+      response_format: { type: 'json_schema', json_schema: { strict: true } },
+    })
+    expect(http.requests[2].json).toMatchObject({ response_format: { type: 'json_object' } })
+  })
+
+  it('falls back to a plain chat completion when every response_format attempt returns HTTP 400', async () => {
+    const conn = connection('openai-compatible', {
+      baseUrl: 'http://127.0.0.1:1234/v1',
+      defaultModel: 'local-model',
+    })
+    const schema = z.object({ summary: z.string(), highlights: z.array(z.string()) })
+    const http = new FakeHttp([
+      { status: 400, json: { error: { message: 'json_schema unsupported' } } },
+      { status: 400, json: { error: { message: 'strict schema rejected' } } },
+      { status: 400, json: { error: { message: 'json_object unsupported' } } },
+      {
+        status: 200,
+        json: { choices: [{ message: { content: '{"summary":"plain","highlights":["x"]}' } }] },
+      },
+    ])
+    const adapter = new OpenAICompatibleAdapter(
+      { connections: new FakeConnections([conn]), credentials: new FakeCredentials(), http },
+      new AiSpendGuard()
+    )
+
+    await expect(adapter.generateStructured(structuredRequest(conn.id, schema))).resolves.toEqual({
+      summary: 'plain',
+      highlights: ['x'],
+    })
+    expect(http.requests).toHaveLength(4)
+    expect(http.requests[3].json).not.toHaveProperty('response_format')
+  })
+
+  it('surfaces the provider error body when structured generation exhausts every attempt', async () => {
+    const conn = connection('openai-compatible', {
+      baseUrl: 'http://127.0.0.1:1234/v1',
+      defaultModel: 'local-model',
+    })
+    const schema = z.object({ summary: z.string(), highlights: z.array(z.string()) })
+    const body = {
+      error: { message: "This model's maximum context length is 8192 tokens.", code: 'context_length_exceeded' },
+    }
+    const http = new FakeHttp([
+      { status: 400, json: body },
+      { status: 400, json: body },
+      { status: 400, json: body },
+      { status: 400, json: body },
+    ])
+    const adapter = new OpenAICompatibleAdapter(
+      { connections: new FakeConnections([conn]), credentials: new FakeCredentials(), http },
+      new AiSpendGuard()
+    )
+
+    await expect(adapter.generateStructured(structuredRequest(conn.id, schema))).rejects.toThrow(
+      /maximum context length is 8192 tokens/
+    )
+    expect(http.requests).toHaveLength(4)
+  })
+
+  it('surfaces a non-JSON error body (raw bodyText) when the provider returns plain text', async () => {
+    const conn = connection('openai-compatible', {
+      baseUrl: 'http://127.0.0.1:1234/v1',
+      defaultModel: 'local-model',
+    })
+    const schema = z.object({ summary: z.string(), highlights: z.array(z.string()) })
+    const plain = { status: 400, json: undefined, bodyText: "Error: System role not supported" }
+    const http = new FakeHttp([plain, plain, plain, plain])
+    const adapter = new OpenAICompatibleAdapter(
+      { connections: new FakeConnections([conn]), credentials: new FakeCredentials(), http },
+      new AiSpendGuard()
+    )
+
+    await expect(adapter.generateStructured(structuredRequest(conn.id, schema))).rejects.toThrow(
+      /System role not supported/
+    )
+  })
+
+  it('retries the next response_format shape when an attempt returns unparseable content', async () => {
+    const conn = connection('openai-compatible', {
+      baseUrl: 'http://127.0.0.1:1234/v1',
+      defaultModel: 'local-model',
+    })
+    const schema = z.object({ summary: z.string(), highlights: z.array(z.string()) })
+    const http = new FakeHttp([
+      { status: 200, json: { choices: [{ message: { content: 'sorry, no JSON here' } }] } },
+      {
+        status: 200,
+        json: { choices: [{ message: { content: '{"summary":"recovered","highlights":[]}' } }] },
+      },
+    ])
+    const adapter = new OpenAICompatibleAdapter(
+      { connections: new FakeConnections([conn]), credentials: new FakeCredentials(), http },
+      new AiSpendGuard()
+    )
+
+    await expect(adapter.generateStructured(structuredRequest(conn.id, schema))).resolves.toEqual({
+      summary: 'recovered',
+      highlights: [],
+    })
+    expect(http.requests).toHaveLength(2)
+  })
+
   it('uses OpenRouter default routing with a stored API key', async () => {
     const conn = connection('openrouter')
     const http = new FakeHttp([{ status: 200, json: { data: [{ id: 'openrouter/fake' }] } }])
@@ -572,6 +699,9 @@ describe('AiAdapterRegistry', () => {
       }),
       listModels: async () => [],
       generateStructured: async () => {
+        throw new Error('not used')
+      },
+      generateTextStream: async () => {
         throw new Error('not used')
       },
       estimateUsage: async () => ({ inputTokens: 1 }),

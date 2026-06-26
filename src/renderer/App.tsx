@@ -197,6 +197,7 @@ export default function App(): React.ReactElement {
   const closeOnboarding = useOnboardingStore((s) => s.close)
   const navigate = useAppStore((s) => s.navigate)
   const openRightPanel = useAppStore((s) => s.openRightPanel)
+  const requestChatFocus = useAppStore((s) => s.requestChatFocus)
   const inspectorOpen = useAppStore((s) => s.inspectorOpen)
   // Signal for tests: set to true once all initial store loads complete.
   const [storesReady, setStoresReady] = useState(false)
@@ -279,6 +280,7 @@ export default function App(): React.ReactElement {
       if (e.key.toLowerCase() === 'l') {
         e.preventDefault()
         openRightPanel('chat')
+        requestChatFocus()
         return
       }
       const idx = parseInt(e.key, 10) - 1
@@ -289,7 +291,7 @@ export default function App(): React.ReactElement {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [navigate, openRightPanel, onboardingOpen])
+  }, [navigate, openRightPanel, requestChatFocus, onboardingOpen])
 
   const handleOnboardingComplete = useCallback(() => {
     closeOnboarding()

@@ -10,9 +10,11 @@ import type {
 import type { HttpClient } from '../services/HttpClient.js'
 import type { IAiConnectionService } from '../services/AiConnectionService.js'
 import type { IAiCredentialStore } from '../storage/AiCredentialStore.js'
+import { isStructuredParseFailure } from '../../core/ai/capabilityErrors.js'
 import {
   ANTHROPIC_BASE_URL,
   AbortableAiAdapter,
+  HttpStatusError,
   OLLAMA_BASE_URL,
   OPENAI_COMPATIBLE_BASE_URL,
   OPENROUTER_BASE_URL,
@@ -27,12 +29,15 @@ import {
   parseStructuredValue,
   requestJson,
   resolveBaseUrl,
+  streamOpenAiChatCompletions,
   usageInputFromStructured,
+  usageInputFromTextStream,
   validateStructuredRequest,
+  validateTextStreamRequest,
 } from './adapterUtils.js'
 import type { AdapterDeps } from './adapterUtils.js'
 import { AiSpendGuard } from './spendGuard.js'
-import type { AiStructuredRequest } from './types.js'
+import type { AiStructuredRequest, AiTextStreamRequest } from './types.js'
 
 const OpenAiModelsResponseSchema = z
   .object({
@@ -160,33 +165,70 @@ export class OpenAICompatibleAdapter extends BaseBuiltInAdapter {
     const estimate = this.guard.assertAllowed(usageInputFromStructured({ ...request, model }))
     const headers = await this.authHeaders(connection, !localOnly)
 
-    const response = await this.withAbortSignal(request.requestId, (signal) =>
-      requestJson(this.http, {
-        method: 'POST',
+    const attempts = openAiStructuredAttempts(request, model)
+    let lastError: Error | undefined
+    for (const json of attempts) {
+      const isFinalAttempt = json === attempts[attempts.length - 1]
+      try {
+        const response = await this.withAbortSignal(request.requestId, (signal) =>
+          requestJson(this.http, {
+            method: 'POST',
+            url: joinUrl(baseUrl, '/chat/completions'),
+            headers,
+            signal,
+            json,
+          })
+        )
+        // Throws an HttpStatusError carrying the provider's error body on any
+        // non-2xx (e.g. a 400 that explains an unsupported response_format or a
+        // context-length overflow), so the surfaced message names the real cause.
+        assertHttpOk(response, `${this.label} structured generation`)
+        const parsed = OpenAiChatResponseSchema.parse(response.json)
+        const raw = parsed.choices[0].message.content
+        const result = parseStructuredValue(request.responseSchema, raw, request.kind)
+        this.guard.record(estimate)
+        return result
+      } catch (err) {
+        // Earlier attempts use progressively looser request shapes: a 400 (the
+        // shape was rejected) or an unparseable 200 (the model ignored the schema)
+        // should fall through to the next shape — ultimately the plain completion.
+        if (!isFinalAttempt && isRetriableStructuredError(err)) {
+          lastError = err instanceof Error ? err : new Error(String(err))
+          continue
+        }
+        throw err
+      }
+    }
+    throw lastError ?? new Error(`${this.label} structured generation failed`)
+  }
+
+  async generateTextStream(
+    request: AiTextStreamRequest,
+    onDelta: (delta: string) => void
+  ): Promise<void> {
+    validateTextStreamRequest(request)
+    const connection = await getConnection(this.connections, request.connectionId)
+    const baseUrl = resolveBaseUrl(connection, this.fallbackBaseUrl)
+    const localOnly = localOnlyFromBase(baseUrl)
+    const model = request.model ?? connection.defaultModel
+    if (!model) throw new Error('AI model is required')
+    const estimate = this.guard.assertAllowed(usageInputFromTextStream({ ...request, model }))
+    const headers = await this.authHeaders(connection, !localOnly)
+
+    await this.withAbortSignal(request.requestId, (signal) =>
+      streamOpenAiChatCompletions(fetch, {
         url: joinUrl(baseUrl, '/chat/completions'),
         headers,
-        signal,
-        json: {
+        body: {
           model,
           messages: request.messages,
           temperature: 0.2,
-          response_format: {
-            type: 'json_schema',
-            json_schema: {
-              name: 'gitwarden_response',
-              strict: true,
-              schema: request.responseSchemaJson,
-            },
-          },
         },
+        signal,
+        onDelta,
       })
     )
-    assertHttpOk(response, `${this.label} structured generation`)
-    const parsed = OpenAiChatResponseSchema.parse(response.json)
-    const raw = parsed.choices[0].message.content
-    const result = parseStructuredValue(request.responseSchema, raw, request.kind)
     this.guard.record(estimate)
-    return result
   }
 
   protected async authHeaders(
@@ -299,6 +341,13 @@ export class AnthropicAdapter extends BaseBuiltInAdapter {
     this.guard.record(estimate)
     return result
   }
+
+  async generateTextStream(
+    _request: AiTextStreamRequest,
+    _onDelta: (delta: string) => void
+  ): Promise<void> {
+    throw new Error('Streaming is not supported for Anthropic connections.')
+  }
 }
 
 export class OllamaAdapter extends BaseBuiltInAdapter {
@@ -362,6 +411,13 @@ export class OllamaAdapter extends BaseBuiltInAdapter {
     this.guard.record(estimate)
     return result
   }
+
+  async generateTextStream(
+    _request: AiTextStreamRequest,
+    _onDelta: (delta: string) => void
+  ): Promise<void> {
+    throw new Error('Streaming is not supported for Ollama connections.')
+  }
 }
 
 function anthropicHeaders(apiKey: string | undefined): Record<string, string> {
@@ -394,4 +450,46 @@ function readAnthropicStructuredContent(content: Array<Record<string, unknown>>)
   const text = content.find((item) => item['type'] === 'text')
   if (text && 'text' in text) return text['text']
   throw new Error('Anthropic response did not contain structured output')
+}
+
+function openAiStructuredAttempts<T>(
+  request: AiStructuredRequest<T>,
+  model: string
+): Record<string, unknown>[] {
+  const base = {
+    model,
+    messages: request.messages,
+    temperature: 0.2,
+  }
+  const schema = request.responseSchemaJson
+  return [
+    {
+      ...base,
+      response_format: {
+        type: 'json_schema',
+        json_schema: { name: 'gitwarden_response', strict: true, schema },
+      },
+    },
+    {
+      ...base,
+      response_format: {
+        type: 'json_schema',
+        json_schema: { name: 'gitwarden_response', strict: false, schema },
+      },
+    },
+    {
+      ...base,
+      response_format: { type: 'json_object' },
+    },
+    base,
+  ]
+}
+
+function isRetriableStructuredError(err: unknown): boolean {
+  // Only a rejected request shape (HTTP 400) or a structured-parse failure is
+  // worth retrying with a looser shape; auth/rate-limit/server errors and aborts
+  // propagate immediately rather than hammering the provider four times.
+  if (err instanceof HttpStatusError) return err.status === 400
+  if (err instanceof Error) return isStructuredParseFailure(err.message)
+  return false
 }

@@ -519,3 +519,9 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Fixed: Structured-parse / Zod failures render a single friendly chat bubble (`CHAT_CAPABILITY_STRUCTURED_PARSE_ERROR`); raw dumps stay in store/logs only.
 - Files: `capabilityErrors.ts`, all chat-capability assistants, IPC schemas/preload/window types, `aiStore.ts`, `aiChatStore.ts`, `strings.ts`; tests `ai-chat-store.test.ts`, `capability-errors.test.ts`, `ai-change-review-assistant.test.ts`, `ai-chat-panel.spec.ts`.
 - Tests: `npm test` → Vitest **453 passed** (+10). `npm run e2e tests/e2e/ai-chat-panel.spec.ts` → Playwright **5 passed** (all slash-commands render result bubbles with fake AI).
+
+### 2026-06-26 — Fix: provider JSON schemas for chat slash-commands (HTTP 400)
+
+- Fixed: Slash-commands (`/review`, `/push-brief`, `/history`, `/repo-brief`, `/propose`, `/commit`) were sending placeholder `{ type: 'object', description: … }` schemas that OpenAI-compatible APIs reject under strict `json_schema` mode (HTTP 400). All request kinds now use full provider JSON schemas in `src/core/ai/providerSchemas.ts`.
+- Fixed: `OpenAICompatibleAdapter` retries structured sends on HTTP 400 — strict `json_schema` → non-strict → `json_object` → plain completion — so models like Gemma that lack strict structured-output still return parseable JSON.
+- Files: `providerSchemas.ts`, all structured assistants, `builtInAdapters.ts`; tests `provider-schemas.test.ts`, `ai-adapters.test.ts`.

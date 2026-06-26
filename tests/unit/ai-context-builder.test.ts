@@ -149,6 +149,10 @@ class RecordingAdapter implements AiAdapter {
     return request.responseSchema.parse({ ok: true })
   }
 
+  async generateTextStream(): Promise<void> {
+    throw new Error('not used')
+  }
+
   async testConnection(): Promise<AiConnectionTestResult> {
     throw new Error('not used')
   }

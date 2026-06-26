@@ -26,7 +26,7 @@ import {
 } from './adapterUtils.js'
 import type { AdapterDeps } from './adapterUtils.js'
 import { AiSpendGuard } from './spendGuard.js'
-import type { AiAdapter, AiStructuredRequest } from './types.js'
+import type { AiAdapter, AiStructuredRequest, AiTextStreamRequest } from './types.js'
 
 const PLACEHOLDER_RE = /\{\{\s*([A-Za-z0-9_]+)\s*\}\}/g
 const EXACT_PLACEHOLDER_RE = /^\{\{\s*([A-Za-z0-9_]+)\s*\}\}$/
@@ -111,6 +111,13 @@ export class CustomHttpAdapter extends AbortableAiAdapter implements AiAdapter {
     const result = parseStructuredValue(request.responseSchema, raw, request.kind)
     this.guard.record(estimate)
     return result
+  }
+
+  async generateTextStream(
+    _request: AiTextStreamRequest,
+    _onDelta: (delta: string) => void
+  ): Promise<void> {
+    throw new Error('Streaming is not supported for Custom HTTP connections.')
   }
 
   private async renderRequest<T>(

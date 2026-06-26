@@ -4,6 +4,7 @@ import { PUSH_BRIEF_TASK_INSTRUCTION, parsePushBriefAiResponse } from '../../cor
 import { AiPushBriefAiResponseSchema } from '../../core/ai/schemas.js'
 import type { AiPushBrief } from '../../core/ai/types.js'
 import { createAiContextMessages } from '../../core/ai/context.js'
+import { providerJsonSchemaForKind } from '../../core/ai/providerSchemas.js'
 import type { AiAdapter } from './types.js'
 import type { AiContextBuilder } from './AiContextBuilder.js'
 import type { PushBriefInput, PushBriefService } from './PushBriefService.js'
@@ -53,7 +54,7 @@ export class AiPushBriefAssistant {
       kind: preview.kind,
       messages,
       responseSchema,
-      responseSchemaJson: zodToMinimalJsonSchema(responseSchema),
+      responseSchemaJson: providerJsonSchemaForKind(preview.kind),
       metadata: {
         destinationHost: preview.destinationHost,
         redactionCount: preview.redactions.count,
@@ -71,11 +72,4 @@ function withTaskInstruction(
 ): ReturnType<typeof createAiContextMessages> {
   const [system, user] = messages
   return [{ ...system, content: `${system.content}\n\n${taskInstruction}` }, user]
-}
-
-function zodToMinimalJsonSchema(schema: z.ZodType<unknown>): unknown {
-  return {
-    type: 'object',
-    description: schema.description ?? 'GitWarden structured response',
-  }
 }

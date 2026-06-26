@@ -2,6 +2,7 @@ import type { z } from 'zod'
 import { mergeChangeReview } from '../../core/ai/changeReview.js'
 import { CHANGE_REVIEW_TASK_INSTRUCTION, parseChangeReview } from '../../core/ai/outputs.js'
 import { createAiContextMessages } from '../../core/ai/context.js'
+import { providerJsonSchemaForKind } from '../../core/ai/providerSchemas.js'
 import { AiChangeReviewSchema } from '../../core/ai/schemas.js'
 import type { AiChangeReview, AiReviewFinding } from '../../core/ai/types.js'
 import type { AiAdapter } from './types.js'
@@ -57,7 +58,7 @@ export class AiChangeReviewAssistant {
       kind: preview.kind,
       messages,
       responseSchema,
-      responseSchemaJson: zodToMinimalJsonSchema(responseSchema),
+      responseSchemaJson: providerJsonSchemaForKind(preview.kind),
       metadata: {
         destinationHost: preview.destinationHost,
         redactionCount: preview.redactions.count,
@@ -75,13 +76,6 @@ function withTaskInstruction(
 ): ReturnType<typeof createAiContextMessages> {
   const [system, user] = messages
   return [{ ...system, content: `${system.content}\n\n${taskInstruction}` }, user]
-}
-
-function zodToMinimalJsonSchema(schema: z.ZodType<unknown>): unknown {
-  return {
-    type: 'object',
-    description: schema.description ?? 'GitWarden structured response',
-  }
 }
 
 export type { AiReviewFinding }

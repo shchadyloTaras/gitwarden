@@ -18,7 +18,7 @@ import type { IAiConnectionService } from '../services/AiConnectionService.js'
 import type { AiCredentialInput, IAiCredentialStore } from '../storage/AiCredentialStore.js'
 import { AiAdapterRegistry } from '../ai/AiAdapterRegistry.js'
 import { AiSpendGuard } from '../ai/spendGuard.js'
-import type { AiAdapter, AiStructuredRequest } from '../ai/types.js'
+import type { AiAdapter, AiStructuredRequest, AiTextStreamRequest } from '../ai/types.js'
 
 const PRIMARY_FIELD = 'apiKey'
 
@@ -177,6 +177,24 @@ class FakeAiAdapter implements AiAdapter {
       }
     }
     throw new Error('Fake adapter has no matching structured response fixture')
+  }
+
+  async generateTextStream(
+    request: AiTextStreamRequest,
+    onDelta: (delta: string) => void
+  ): Promise<void> {
+    const estimate = this.guard.assertAllowed({
+      connectionId: request.connectionId,
+      kind: request.kind,
+      messages: request.messages,
+      estimatedInputTokens: request.estimatedInputTokens,
+      expensiveSendAcknowledged: request.expensiveSendAcknowledged,
+    })
+    const text = 'Fake streaming advisory reply for e2e. Use /review before committing.'
+    for (const word of text.split(' ')) {
+      onDelta(`${word} `)
+    }
+    this.guard.record(estimate)
   }
 
   estimateUsage(request: AiUsageEstimateRequest): Promise<AiUsageEstimate> {

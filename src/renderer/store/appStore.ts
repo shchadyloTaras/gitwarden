@@ -26,6 +26,8 @@ interface AppState {
   inspectorOpen: boolean
   /** Active tab inside the right panel. */
   rightPanelTab: RightPanelTab
+  /** Incremented when the user invokes the chat focus shortcut (Cmd/Ctrl+L). */
+  chatFocusNonce: number
 
   navigate: (screen: NavScreen) => void
   setActiveRepo: (repo: RepositoryRecord | null) => void
@@ -35,6 +37,8 @@ interface AppState {
   setRightPanelTab: (tab: RightPanelTab) => void
   /** Open the right panel on a specific tab (used by the header chat affordance). */
   openRightPanel: (tab: RightPanelTab) => void
+  /** Focus the chat composer (used by Cmd/Ctrl+L). */
+  requestChatFocus: () => void
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -44,6 +48,7 @@ export const useAppStore = create<AppState>((set) => ({
   safetyBadge: 'safe',
   inspectorOpen: true,
   rightPanelTab: 'context',
+  chatFocusNonce: 0,
 
   navigate: (screen) => set({ activeScreen: screen }),
   setActiveRepo: (repo) => set({ activeRepo: repo, currentBranch: null }),
@@ -52,4 +57,5 @@ export const useAppStore = create<AppState>((set) => ({
   toggleInspector: () => set((s) => ({ inspectorOpen: !s.inspectorOpen })),
   setRightPanelTab: (tab) => set({ rightPanelTab: tab }),
   openRightPanel: (tab) => set({ inspectorOpen: true, rightPanelTab: tab }),
+  requestChatFocus: () => set((s) => ({ chatFocusNonce: s.chatFocusNonce + 1 })),
 }))

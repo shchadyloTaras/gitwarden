@@ -26,7 +26,7 @@ export class FetchHttpClient implements HttpClient {
       body,
       signal: request.signal,
     })
-    return { status: res.status, json: await readJson(res) }
+    return readResponse(res)
   }
 
   async postForm(
@@ -42,18 +42,26 @@ export class FetchHttpClient implements HttpClient {
       },
       body: new URLSearchParams(body).toString(),
     })
-    return { status: res.status, json: await readJson(res) }
+    return readResponse(res)
   }
 
   async get(url: string, headers: Record<string, string> = {}): Promise<HttpResponse> {
     const res = await this.fetchImpl(url, { method: 'GET', headers })
-    return { status: res.status, json: await readJson(res) }
+    return readResponse(res)
   }
 }
 
-/** Parse a JSON body defensively; a non-JSON/empty body becomes `undefined`. */
-async function readJson(res: Response): Promise<unknown> {
+/**
+ * Read a response into the typed shape. The raw text is retained as `bodyText`
+ * so error paths can surface a non-JSON/empty body; `json` stays `undefined`
+ * when the body is not parseable JSON (callers validate with Zod downstream).
+ */
+async function readResponse(res: Response): Promise<HttpResponse> {
   const text = await res.text()
+  return { status: res.status, json: parseJsonOrUndefined(text), bodyText: text || undefined }
+}
+
+function parseJsonOrUndefined(text: string): unknown {
   if (!text) return undefined
   try {
     return JSON.parse(text)

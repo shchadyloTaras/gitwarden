@@ -42,7 +42,7 @@ test.describe('Onboarding walkthrough', () => {
 
       await openTourFromSettings(win)
       await expectTitle(win, 'Welcome to GitWarden')
-      await expect(win.getByTestId('onboarding-progress')).toHaveText('1 of 10')
+      await expect(win.getByTestId('onboarding-progress')).toHaveText('1 of 12')
 
       await win.getByTestId('onboarding-next').click()
       await expectTitle(win, 'Global header')
@@ -101,6 +101,15 @@ test.describe('Onboarding walkthrough', () => {
       await win.getByTestId('onboarding-next').click()
       await expectTitle(win, 'Use Safety Center')
       await expect(win.getByTestId('screen-safety-center')).toBeVisible()
+
+      await win.getByTestId('onboarding-next').click()
+      await expectTitle(win, 'Ask GitWarden AI')
+      await expect(win.getByTestId('right-panel')).toBeVisible()
+      await expect(win.getByTestId('right-panel-tab-chat')).toHaveAttribute('aria-selected', 'true')
+
+      await win.getByTestId('onboarding-next').click()
+      await expectTitle(win, 'Connect an AI provider')
+      await expect(win.getByTestId('screen-settings')).toBeVisible()
 
       await win.getByTestId('onboarding-next').click()
       await expectTitle(win, 'Replay any time')

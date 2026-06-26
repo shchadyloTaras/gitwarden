@@ -25,11 +25,25 @@ export interface AiStructuredRequest<T> {
   expensiveSendAcknowledged?: boolean
 }
 
+/** Request shape for plain-text streaming completions (advisory chat). */
+export interface AiTextStreamRequest {
+  requestId: string
+  connectionId: string
+  kind: AiRequestKind
+  messages: AiMessage[]
+  model?: string
+  metadata?: Record<string, unknown>
+  estimatedInputTokens?: number
+  expensiveSendAcknowledged?: boolean
+}
+
 /** Main-process adapter contract. Renderer never talks to providers directly. */
 export interface AiAdapter {
   testConnection(connectionId: string): Promise<AiConnectionTestResult>
   listModels(connectionId: string): Promise<AiModelInfo[]>
   generateStructured<T>(request: AiStructuredRequest<T>): Promise<T>
+  /** Stream plain-text tokens. Implementations may throw when unsupported. */
+  generateTextStream(request: AiTextStreamRequest, onDelta: (delta: string) => void): Promise<void>
   estimateUsage(request: AiUsageEstimateRequest): Promise<AiUsageEstimate>
   cancel(requestId: string): Promise<void>
 }

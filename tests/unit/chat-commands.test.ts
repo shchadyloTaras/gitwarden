@@ -2,8 +2,10 @@ import { describe, it, expect } from 'vitest'
 import {
   CHAT_COMMANDS,
   chatHelpText,
+  filterSlashCommands,
   isNetworkedChatCommand,
   parseChatInput,
+  parseExplainTarget,
 } from '../../src/core/ai/chatCommands'
 
 describe('parseChatInput', () => {
@@ -14,6 +16,7 @@ describe('parseChatInput', () => {
     expect(parseChatInput('/history').kind).toBe('history')
     expect(parseChatInput('/repo-brief').kind).toBe('repo-brief')
     expect(parseChatInput('/propose add a README').kind).toBe('propose')
+    expect(parseChatInput('/explain IDENTITY_UNSET').kind).toBe('explain')
     expect(parseChatInput('/help').kind).toBe('help')
   })
 
@@ -50,5 +53,37 @@ describe('chatHelpText', () => {
     for (const spec of CHAT_COMMANDS) {
       expect(help).toContain(spec.command)
     }
+  })
+})
+
+describe('parseExplainTarget', () => {
+  it('recognizes safety codes', () => {
+    expect(parseExplainTarget('IDENTITY_UNSET')).toEqual({
+      kind: 'safety-code',
+      safetyCode: 'IDENTITY_UNSET',
+    })
+  })
+
+  it('treats pasted output as tool output', () => {
+    expect(parseExplainTarget('npm ERR! test failed')).toEqual({
+      kind: 'tool-output',
+      output: 'npm ERR! test failed',
+    })
+  })
+
+  it('returns null for empty args', () => {
+    expect(parseExplainTarget('   ')).toBeNull()
+  })
+})
+
+describe('filterSlashCommands', () => {
+  it('returns matches while typing a slash token', () => {
+    expect(filterSlashCommands('/com').map((c) => c.command)).toEqual(['/commit'])
+    expect(filterSlashCommands('/').length).toBe(CHAT_COMMANDS.length)
+  })
+
+  it('returns empty once args are present or input is free text', () => {
+    expect(filterSlashCommands('/commit staged')).toEqual([])
+    expect(filterSlashCommands('hello')).toEqual([])
   })
 })

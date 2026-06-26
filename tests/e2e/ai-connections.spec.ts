@@ -78,9 +78,8 @@ test.describe('AI Connections (injected fake credential store)', () => {
     expect(await aiEnabledSetting(win)).toBe(true)
 
     // ── pick a model from the provider's live list ──────────────────────────────
-    const select = win.getByTestId('ai-model-select')
-    await expect(select).toBeVisible({ timeout: 10000 })
-    await select.selectOption('openrouter/fake-fast')
+    await win.getByTestId('ai-model-select').click()
+    await win.getByTestId('ai-model-select-option-openrouter/fake-fast').click()
     await win.getByTestId('ai-save-changes').click()
     await expect(win.getByTestId('ai-saved-msg')).toBeVisible()
     const savedModel = await win.evaluate(async () => {

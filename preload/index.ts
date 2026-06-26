@@ -40,6 +40,7 @@ import type {
   AiAgenticProposal,
   AiChatTurn,
   AiChatResponse,
+  AiChatStreamEvent,
   CustomHttpMapping,
 } from '../src/core/ai/types.js'
 import type { AiPreparedContext } from '../src/core/ai/context.js'
@@ -99,6 +100,7 @@ export interface GitHubPushStatus {
 }
 
 const GITHUB_AUTH_EVENT_CHANNEL = 'github:authEvent'
+const AI_CHAT_STREAM_EVENT_CHANNEL = 'ai:chatStreamEvent'
 
 function invoke<T>(channel: string, payload?: unknown): Promise<IpcResult<T>> {
   return ipcRenderer.invoke(channel, payload) as Promise<IpcResult<T>>
@@ -322,8 +324,23 @@ export const api = {
       repositoryId: string
       message: string
       history?: AiChatTurn[]
+      selectedUnstagedPaths?: string[]
+      requestId?: string
       expensiveSendAcknowledged?: boolean
     }): Promise<IpcResult<AiChatResponse>> => invoke('ai:chat', input),
+    chatStream: (input: {
+      repositoryId: string
+      message: string
+      history?: AiChatTurn[]
+      selectedUnstagedPaths?: string[]
+      requestId: string
+      expensiveSendAcknowledged?: boolean
+    }): Promise<IpcResult<AiChatResponse>> => invoke('ai:chatStream', input),
+    onChatStreamEvent: (callback: (event: AiChatStreamEvent) => void): (() => void) => {
+      const listener = (_e: IpcRendererEvent, payload: AiChatStreamEvent): void => callback(payload)
+      ipcRenderer.on(AI_CHAT_STREAM_EVENT_CHANNEL, listener)
+      return () => ipcRenderer.removeListener(AI_CHAT_STREAM_EVENT_CHANNEL, listener)
+    },
   },
   pushBrief: {
     buildDeterministic: (input: {

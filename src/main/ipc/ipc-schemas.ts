@@ -293,8 +293,28 @@ export const AiChatPayload = z.object({
   repositoryId: z.string().min(1),
   message: z.string().min(1),
   history: z.array(AiChatTurnSchema).optional(),
+  selectedUnstagedPaths: z.array(z.string().min(1)).optional(),
+  requestId: z.string().min(1).optional(),
   expensiveSendAcknowledged: z.boolean().optional(),
 })
+
+export const AiChatStreamEventSchema = z.discriminatedUnion('type', [
+  z.object({
+    requestId: z.string().min(1),
+    type: z.literal('delta'),
+    delta: z.string(),
+  }),
+  z.object({
+    requestId: z.string().min(1),
+    type: z.literal('done'),
+    suggestedCommands: z.array(z.string()).optional(),
+  }),
+  z.object({
+    requestId: z.string().min(1),
+    type: z.literal('error'),
+    error: z.string().min(1),
+  }),
+])
 
 export const AiAgenticExecutePayload = z.object({
   repositoryId: z.string().min(1),

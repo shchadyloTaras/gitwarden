@@ -9,6 +9,7 @@ import {
   type AiPreparedContext,
   type AiRawContext,
 } from '../../core/ai/context.js'
+import { providerJsonSchemaForKind } from '../../core/ai/providerSchemas.js'
 import { isAiSendAllowed } from '../../core/ai/precedence.js'
 import { safetyCheckService } from '../../core/safety/SafetyCheckService.js'
 import type { RepositoryRecord } from '../../core/types.js'
@@ -52,6 +53,8 @@ export interface AiContextBuildInput {
   failureGitCode?: string
   failureUserMessage?: string
   failureToolOutput?: string
+  /** Client-supplied id so the renderer can cancel an in-flight send. */
+  requestId?: string
 }
 
 export interface AiContextBuilderDeps {
@@ -174,14 +177,18 @@ export class AiContextBuilder {
       )
       .map((file) => file.path)
     const selectedUnstagedPaths = unique(input.selectedUnstagedPaths ?? [])
-    const includeDiffs =
+    const includeStagedDiffs =
       input.kind !== 'repo-brief' && input.kind !== 'failure-explain' && input.kind !== 'chat'
+    const includeAttachedDiffs =
+      selectedUnstagedPaths.length > 0 &&
+      input.kind !== 'repo-brief' &&
+      input.kind !== 'failure-explain'
 
     const [stagedDiffs, selectedUnstagedDiffs, allowlistedFiles] = await Promise.all([
-      includeDiffs
+      includeStagedDiffs
         ? this.collectDiffs(repository.localPath, stagedPaths, true)
         : Promise.resolve([]),
-      includeDiffs
+      includeAttachedDiffs
         ? this.collectDiffs(repository.localPath, selectedUnstagedPaths, false)
         : Promise.resolve([]),
       input.kind === 'repo-brief' && this.deps.repoBrief
@@ -218,7 +225,7 @@ export class AiContextBuilder {
     }
 
     return prepareAiContext({
-      requestId: this.requestId(),
+      requestId: input.requestId ?? this.requestId(),
       connectionId: connection.id,
       kind: input.kind,
       destinationHost: destinationHostForConnection(connection),
@@ -274,7 +281,7 @@ export async function sendPreparedContextForTest<T>(
     kind: preview.kind,
     messages: createAiContextMessages(preview),
     responseSchema,
-    responseSchemaJson: zodToMinimalJsonSchema(responseSchema),
+    responseSchemaJson: providerJsonSchemaForKind(preview.kind),
     metadata: {
       destinationHost: preview.destinationHost,
       redactionCount: preview.redactions.count,
@@ -329,11 +336,4 @@ function disabledReason(
 
 function unique(values: string[]): string[] {
   return Array.from(new Set(values.filter((value) => value.trim().length > 0))).sort()
-}
-
-function zodToMinimalJsonSchema(schema: z.ZodType<unknown>): unknown {
-  return {
-    type: 'object',
-    description: schema.description ?? 'GitWarden structured response',
-  }
 }

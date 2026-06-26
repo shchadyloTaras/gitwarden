@@ -126,7 +126,9 @@ test.describe('AI Chat panel', () => {
     await win.getByTestId('header-ai-chat').click()
     await expect(win.getByTestId('ai-chat-input')).toBeVisible({ timeout: 10000 })
 
-    await win.getByTestId('ai-chat-command-commit').click()
+    const input = win.getByTestId('ai-chat-input')
+    await input.fill('/commit')
+    await win.getByTestId('ai-chat-send').click()
 
     const messages = win.getByTestId('ai-chat-message')
     await expect(messages.last()).toContainText('feat(ai): add fake structured output', {
