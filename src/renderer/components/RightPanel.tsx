@@ -62,7 +62,7 @@ export default function RightPanel({ width }: { width: number }): React.ReactEle
                   ? '2px solid var(--gw-accent, #6366f1)'
                   : '2px solid transparent',
                 color: selected ? 'var(--gw-text, #f4f4f5)' : 'var(--gw-text-muted, #a1a1aa)',
-                fontSize: 12,
+                fontSize: 14,
                 fontWeight: selected ? 600 : 400,
                 cursor: 'pointer',
               }}

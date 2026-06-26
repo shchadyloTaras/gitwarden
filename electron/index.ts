@@ -176,6 +176,9 @@ app.whenReady().then(async () => {
 
   const profiles = new ProfileService(profilesStore)
   const repositories = new RepositoryService(reposStore)
+  // Heal dangling repo→profile assignments left by older builds that deleted a profile
+  // without cascading; otherwise such a repo is stuck on a phantom "profile mismatch".
+  await repositories.pruneAssignments((await profiles.list()).map((p) => p.id))
   const settings = new SettingsService(settingsStore)
   const github = new GitHubAuthCoordinator(buildGitHubAuthDeps(profiles, userDataPath))
   const git = new GitService(gitRunner)

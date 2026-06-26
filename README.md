@@ -10,12 +10,16 @@ Juggling multiple GitHub identities locally is error-prone: the right email but 
 
 ## Status
 
-Early development — built in phases. See:
+Built in phases. The MVP (Phases 0–20), GitHub OAuth (21–27), and the AI advisory + chat layer
+(28–39, 52–55a) are complete; packaging/release (40–45) and the landing site (46–51) are planned.
+See the [progress log](docs/progress-log.md) for the per-phase checklist and history.
 
-- **Plan:** [`docs/plans/gitwarden-plan.md`](docs/plans/gitwarden-plan.md)
-- **Phase prompts:** [`docs/prompts/phase-prompts.md`](docs/prompts/phase-prompts.md)
-- **GitHub OAuth plan:** [`docs/plans/github-oauth-plan.md`](docs/plans/github-oauth-plan.md)
-- **GitHub OAuth prompts:** [`docs/prompts/github-oauth-prompts.md`](docs/prompts/github-oauth-prompts.md)
+- **Core plan:** [`docs/plans/gitwarden-plan.md`](docs/plans/gitwarden-plan.md) · prompts: [`docs/prompts/phase-prompts.md`](docs/prompts/phase-prompts.md)
+- **GitHub OAuth:** [`docs/plans/github-oauth-plan.md`](docs/plans/github-oauth-plan.md) · prompts: [`docs/prompts/github-oauth-prompts.md`](docs/prompts/github-oauth-prompts.md)
+- **AI Connections:** [`docs/plans/ai-integration-plan.md`](docs/plans/ai-integration-plan.md) · prompts: [`docs/prompts/ai-integration-prompts.md`](docs/prompts/ai-integration-prompts.md)
+- **AI Chat Redesign:** [`docs/plans/ai-chat-redesign-plan.md`](docs/plans/ai-chat-redesign-plan.md)
+- **Distribution & Release:** [`docs/plans/distribution-release-plan.md`](docs/plans/distribution-release-plan.md) · **Landing Page:** [`docs/plans/landing-page-plan.md`](docs/plans/landing-page-plan.md)
+- **Decisions & security:** [`DECISIONS.md`](DECISIONS.md), [`SECURITY.md`](SECURITY.md)
 - **Contributor/agent guides:** [`CLAUDE.md`](CLAUDE.md), [`AGENTS.md`](AGENTS.md)
 - **Status & progress log:** [`docs/progress-log.md`](docs/progress-log.md)
 

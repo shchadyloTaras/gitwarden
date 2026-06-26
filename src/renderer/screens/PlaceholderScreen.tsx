@@ -22,7 +22,7 @@ export function PlaceholderScreen({ title, description }: Props): React.ReactEle
       <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--gw-text-muted, #a1a1aa)' }}>
         {title}
       </div>
-      <div style={{ fontSize: 13 }}>{description}</div>
+      <div style={{ fontSize: 14 }}>{description}</div>
     </div>
   )
 }

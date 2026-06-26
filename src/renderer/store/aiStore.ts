@@ -347,7 +347,8 @@ export const useAiStore = create<AiState>((set, get) => ({
       throw new Error(result.error)
     }
     // Keep only the masked metadata the main process returned — never the secret.
-    set({ credentialMeta: result.data })
+    // Drop cached models so the next fetch/list uses the newly stored key.
+    set({ credentialMeta: result.data, models: [], testResult: null })
     // A stored credential is the consent: AI turns on automatically (no separate
     // toggle). Saving a key means "use it" — the per-send redaction still applies.
     if (!get().aiEnabled) {
@@ -362,7 +363,7 @@ export const useAiStore = create<AiState>((set, get) => ({
       set({ error: result.error })
       throw new Error(result.error)
     }
-    set({ credentialMeta: null })
+    set({ credentialMeta: null, models: [], testResult: null })
   },
 
   async setAiEnabled(enabled) {

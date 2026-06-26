@@ -209,14 +209,18 @@ export default function ProfilesScreen(): React.ReactElement {
     }
   }
 
-  async function handleSetActive() {
-    if (!selectedId) return
+  async function handleSetActiveById(id: string) {
     setSuccessMessage(null)
     try {
-      await setActiveProfile(selectedId)
+      await setActiveProfile(id)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     }
+  }
+
+  async function handleSetActive() {
+    if (!selectedId) return
+    await handleSetActiveById(selectedId)
   }
 
   // On a successful GitHub link, auto-fill identity (displayName only if still empty)
@@ -301,7 +305,7 @@ export default function ProfilesScreen(): React.ReactElement {
             <div
               style={{
                 padding: '12px 12px 8px',
-                fontSize: 11,
+                fontSize: 14,
                 fontWeight: 700,
                 letterSpacing: '0.06em',
                 color: 'var(--gw-text-dim, #52525b)',
@@ -315,7 +319,7 @@ export default function ProfilesScreen(): React.ReactElement {
                 <div
                   style={{
                     padding: '12px',
-                    fontSize: 12,
+                    fontSize: 14,
                     color: 'var(--gw-text-dim, #52525b)',
                     fontStyle: 'italic',
                   }}
@@ -323,54 +327,101 @@ export default function ProfilesScreen(): React.ReactElement {
                   No profiles yet
                 </div>
               )}
-              {profiles.map((p) => (
-                <button
-                  key={p.id}
-                  data-testid="profile-item"
-                  onClick={() => selectProfile(p)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    width: '100%',
-                    padding: '8px 12px',
-                    background: selectedId === p.id ? 'var(--gw-surface2, #27272a)' : 'transparent',
-                    border: 'none',
-                    borderBottom: '1px solid var(--gw-border, #27272a)',
-                    color: 'var(--gw-text, #f4f4f5)',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    fontSize: 13,
-                  }}
-                >
+              {profiles.map((p) => {
+                const isActiveRow = p.id === activeProfileId
+                return (
                   <div
+                    key={p.id}
+                    data-testid="profile-item"
                     style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: '50%',
-                      background: profileColor(p.id),
-                      flexShrink: 0,
-                    }}
-                  />
-                  <span
-                    style={{
-                      flex: 1,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      width: '100%',
+                      background:
+                        selectedId === p.id ? 'var(--gw-surface2, #27272a)' : 'transparent',
+                      borderBottom: '1px solid var(--gw-border, #27272a)',
                     }}
                   >
-                    {p.displayName}
-                  </span>
-                  {p.id === activeProfileId && (
-                    <span
-                      style={{ fontSize: 10, color: 'var(--gw-success, #4ade80)', fontWeight: 600 }}
+                    <button
+                      type="button"
+                      onClick={() => selectProfile(p)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        flex: 1,
+                        minWidth: 0,
+                        padding: '8px 12px',
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--gw-text, #f4f4f5)',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontSize: 14,
+                      }}
                     >
-                      Active
-                    </span>
-                  )}
-                </button>
-              ))}
+                      <div
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          background: profileColor(p.id),
+                          flexShrink: 0,
+                        }}
+                      />
+                      <span
+                        style={{
+                          flex: 1,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {p.displayName}
+                      </span>
+                    </button>
+                    {isActiveRow ? (
+                      <span
+                        data-testid="profile-active-badge"
+                        style={{
+                          fontSize: 14,
+                          color: 'var(--gw-success, #4ade80)',
+                          fontWeight: 600,
+                          paddingRight: 12,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {STR.PROFILE_ACTIVE}
+                      </span>
+                    ) : (
+                      profiles.length > 1 && (
+                        <button
+                          type="button"
+                          data-testid="profile-row-set-active-btn"
+                          onClick={() => {
+                            void handleSetActiveById(p.id)
+                          }}
+                          style={{
+                            marginRight: 8,
+                            padding: '4px 10px',
+                            background: 'var(--gw-surface3, #3f3f46)',
+                            border: 'none',
+                            borderRadius: 4,
+                            color: 'var(--gw-text, #f4f4f5)',
+                            cursor: 'pointer',
+                            fontSize: 13,
+                            fontWeight: 600,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {STR.PROFILE_SET_ACTIVE}
+                        </button>
+                      )
+                    )}
+                  </div>
+                )
+              })}
             </div>
 
             <div style={{ padding: '8px 12px', borderTop: '1px solid var(--gw-border, #27272a)' }}>
@@ -385,7 +436,7 @@ export default function ProfilesScreen(): React.ReactElement {
                   borderRadius: 4,
                   color: 'var(--gw-text, #f4f4f5)',
                   cursor: 'pointer',
-                  fontSize: 12,
+                  fontSize: 14,
                   fontWeight: 600,
                 }}
               >
@@ -404,7 +455,7 @@ export default function ProfilesScreen(): React.ReactElement {
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: 'var(--gw-text-dim, #52525b)',
-                  fontSize: 13,
+                  fontSize: 14,
                 }}
               >
                 Select a profile or create a new one.
@@ -488,73 +539,91 @@ export default function ProfilesScreen(): React.ReactElement {
                           borderRadius: 4,
                           color: 'var(--gw-text, #e4e4e7)',
                           cursor: saving ? 'wait' : 'pointer',
-                          fontSize: 12,
+                          fontSize: 14,
                           fontWeight: 600,
                         }}
                       >
                         {STR.GITHUB_CONNECT_BTN}
                       </button>
                       <div
-                        style={{ fontSize: 11, color: 'var(--gw-text-dim, #52525b)', marginTop: 6 }}
+                        style={{ fontSize: 14, color: 'var(--gw-text-dim, #52525b)', marginTop: 6 }}
                       >
                         {STR.GITHUB_CONNECT_NEW_HINT}
                       </div>
                     </div>
                   ) : linkedGitHub ? (
-                    <div data-testid="github-linked-badge" style={linkedBadgeStyle}>
-                      <img
-                        src={avatarUrlFor(linkedGitHub.accountId)}
-                        alt=""
-                        width={28}
-                        height={28}
-                        style={{
-                          borderRadius: '50%',
-                          flexShrink: 0,
-                          background: 'var(--gw-surface2, #27272a)',
-                        }}
-                        onError={(e) => {
-                          e.currentTarget.style.visibility = 'hidden'
-                        }}
-                      />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div
-                          data-testid="github-linked-login"
+                    <div
+                      data-testid="github-linked-badge"
+                      style={{
+                        ...linkedBadgeStyle,
+                        flexDirection: 'column',
+                        alignItems: 'stretch',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                        <img
+                          src={avatarUrlFor(linkedGitHub.accountId)}
+                          alt=""
+                          width={28}
+                          height={28}
                           style={{
-                            fontSize: 13,
-                            fontWeight: 600,
-                            color: 'var(--gw-text, #f4f4f5)',
+                            borderRadius: '50%',
+                            flexShrink: 0,
+                            background: 'var(--gw-surface2, #27272a)',
+                          }}
+                          onError={(e) => {
+                            e.currentTarget.style.visibility = 'hidden'
+                          }}
+                        />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div
+                            data-testid="github-linked-login"
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 600,
+                              color: 'var(--gw-text, #f4f4f5)',
+                            }}
+                          >
+                            {STR.GITHUB_LINKED_AS(linkedGitHub.login)}
+                          </div>
+                          <div style={{ fontSize: 14, color: 'var(--gw-text-faint, #71717a)' }}>
+                            {STR.GITHUB_LINKED_CONNECTED_AT(linkedGitHub.connectedAt)}
+                          </div>
+                        </div>
+                        {!confirmDisconnect && (
+                          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                            <button
+                              type="button"
+                              data-testid="github-reconnect-btn"
+                              onClick={() => setConnecting(true)}
+                              style={ghSecondaryBtn}
+                            >
+                              {STR.GITHUB_RECONNECT_BTN}
+                            </button>
+                            <button
+                              type="button"
+                              data-testid="github-disconnect-btn"
+                              onClick={() => setConfirmDisconnect(true)}
+                              style={{ ...ghSecondaryBtn, color: 'var(--gw-danger, #f87171)' }}
+                            >
+                              {STR.GITHUB_DISCONNECT_BTN}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      {confirmDisconnect && (
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'flex-end',
+                            gap: 8,
+                            flexWrap: 'wrap',
+                            paddingTop: 8,
+                            borderTop: '1px solid var(--gw-border-subtle, #3f3f46)',
                           }}
                         >
-                          {STR.GITHUB_LINKED_AS(linkedGitHub.login)}
-                        </div>
-                        <div style={{ fontSize: 11, color: 'var(--gw-text-faint, #71717a)' }}>
-                          {STR.GITHUB_LINKED_CONNECTED_AT(linkedGitHub.connectedAt)}
-                        </div>
-                      </div>
-                      {!confirmDisconnect ? (
-                        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                          <button
-                            type="button"
-                            data-testid="github-reconnect-btn"
-                            onClick={() => setConnecting(true)}
-                            style={ghSecondaryBtn}
-                          >
-                            {STR.GITHUB_RECONNECT_BTN}
-                          </button>
-                          <button
-                            type="button"
-                            data-testid="github-disconnect-btn"
-                            onClick={() => setConfirmDisconnect(true)}
-                            style={{ ...ghSecondaryBtn, color: 'var(--gw-danger, #f87171)' }}
-                          >
-                            {STR.GITHUB_DISCONNECT_BTN}
-                          </button>
-                        </div>
-                      ) : (
-                        <div
-                          style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}
-                        >
-                          <span style={{ fontSize: 11, color: 'var(--gw-text-muted, #a1a1aa)' }}>
+                          <span style={{ fontSize: 14, color: 'var(--gw-text-muted, #a1a1aa)' }}>
                             {STR.GITHUB_DISCONNECT_CONFIRM_PROMPT}
                           </span>
                           <button
@@ -597,14 +666,14 @@ export default function ProfilesScreen(): React.ReactElement {
                           borderRadius: 4,
                           color: 'var(--gw-text, #e4e4e7)',
                           cursor: 'pointer',
-                          fontSize: 12,
+                          fontSize: 14,
                           fontWeight: 600,
                         }}
                       >
                         {STR.GITHUB_CONNECT_BTN}
                       </button>
                       <div
-                        style={{ fontSize: 11, color: 'var(--gw-text-dim, #52525b)', marginTop: 6 }}
+                        style={{ fontSize: 14, color: 'var(--gw-text-dim, #52525b)', marginTop: 6 }}
                       >
                         {STR.GITHUB_CONNECT_HINT}
                       </div>
@@ -613,7 +682,7 @@ export default function ProfilesScreen(): React.ReactElement {
                 </Field>
 
                 <Field label="Authentication">
-                  <div style={{ display: 'flex', gap: 16, fontSize: 13 }}>
+                  <div style={{ display: 'flex', gap: 16, fontSize: 14 }}>
                     <label
                       style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'default' }}
                     >
@@ -643,7 +712,7 @@ export default function ProfilesScreen(): React.ReactElement {
                     placeholder="e.g. github-personal"
                     style={inputStyle}
                   />
-                  <div style={{ fontSize: 11, color: 'var(--gw-text-dim, #52525b)', marginTop: 4 }}>
+                  <div style={{ fontSize: 14, color: 'var(--gw-text-dim, #52525b)', marginTop: 4 }}>
                     Matches the Host entry in ~/.ssh/config
                   </div>
                 </Field>
@@ -673,7 +742,7 @@ export default function ProfilesScreen(): React.ReactElement {
                         borderRadius: 4,
                         color: 'var(--gw-text, #f4f4f5)',
                         cursor: 'pointer',
-                        fontSize: 12,
+                        fontSize: 14,
                       }}
                     >
                       Add
@@ -690,7 +759,7 @@ export default function ProfilesScreen(): React.ReactElement {
                         background: 'var(--gw-surface2, #27272a)',
                         borderRadius: 4,
                         marginTop: 4,
-                        fontSize: 12,
+                        fontSize: 14,
                         fontFamily: 'monospace',
                         color: 'var(--gw-text-muted, #a1a1aa)',
                       }}
@@ -717,7 +786,7 @@ export default function ProfilesScreen(): React.ReactElement {
 
                 {error && (
                   <div
-                    style={{ fontSize: 12, color: 'var(--gw-danger, #f87171)', padding: '6px 0' }}
+                    style={{ fontSize: 14, color: 'var(--gw-danger, #f87171)', padding: '6px 0' }}
                   >
                     {error}
                   </div>
@@ -728,7 +797,7 @@ export default function ProfilesScreen(): React.ReactElement {
                     data-testid="profile-saved-msg"
                     role="status"
                     aria-live="polite"
-                    style={{ fontSize: 12, color: 'var(--gw-success, #4ade80)', padding: '6px 0' }}
+                    style={{ fontSize: 14, color: 'var(--gw-success, #4ade80)', padding: '6px 0' }}
                   >
                     {successMessage}
                   </div>
@@ -739,7 +808,7 @@ export default function ProfilesScreen(): React.ReactElement {
                     data-testid="profile-warning-msg"
                     role="status"
                     aria-live="polite"
-                    style={{ fontSize: 12, color: 'var(--gw-warning, #fbbf24)', padding: '6px 0' }}
+                    style={{ fontSize: 14, color: 'var(--gw-warning, #fbbf24)', padding: '6px 0' }}
                   >
                     {warning}
                   </div>
@@ -764,7 +833,7 @@ export default function ProfilesScreen(): React.ReactElement {
                         borderRadius: 4,
                         color: isActive ? 'var(--gw-success, #4ade80)' : 'var(--gw-text, #f4f4f5)',
                         cursor: isActive ? 'default' : 'pointer',
-                        fontSize: 12,
+                        fontSize: 14,
                         fontWeight: 600,
                       }}
                     >
@@ -783,7 +852,7 @@ export default function ProfilesScreen(): React.ReactElement {
                       borderRadius: 4,
                       color: 'var(--gw-on-solid, #fff)',
                       cursor: saving ? 'wait' : 'pointer',
-                      fontSize: 12,
+                      fontSize: 14,
                       fontWeight: 600,
                     }}
                   >
@@ -804,7 +873,7 @@ export default function ProfilesScreen(): React.ReactElement {
                         borderRadius: 4,
                         color: 'var(--gw-danger, #f87171)',
                         cursor: 'pointer',
-                        fontSize: 12,
+                        fontSize: 14,
                       }}
                     >
                       Delete
@@ -815,7 +884,7 @@ export default function ProfilesScreen(): React.ReactElement {
                     <div
                       style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}
                     >
-                      <span style={{ fontSize: 12, color: 'var(--gw-text-muted, #a1a1aa)' }}>
+                      <span style={{ fontSize: 14, color: 'var(--gw-text-muted, #a1a1aa)' }}>
                         Delete &quot;{selectedProfile?.displayName}&quot;?
                       </span>
                       <button
@@ -828,7 +897,7 @@ export default function ProfilesScreen(): React.ReactElement {
                           borderRadius: 4,
                           color: 'var(--gw-text-muted, #a1a1aa)',
                           cursor: 'pointer',
-                          fontSize: 12,
+                          fontSize: 14,
                         }}
                       >
                         Cancel
@@ -847,7 +916,7 @@ export default function ProfilesScreen(): React.ReactElement {
                           borderRadius: 4,
                           color: 'var(--gw-on-solid, #fff)',
                           cursor: saving ? 'wait' : 'pointer',
-                          fontSize: 12,
+                          fontSize: 14,
                           fontWeight: 600,
                         }}
                       >
@@ -880,7 +949,7 @@ const inputStyle: React.CSSProperties = {
   border: '1px solid var(--gw-border-subtle, #3f3f46)',
   borderRadius: 4,
   color: 'var(--gw-text, #f4f4f5)',
-  fontSize: 13,
+  fontSize: 14,
   boxSizing: 'border-box',
 }
 
@@ -901,7 +970,7 @@ const ghSecondaryBtn: React.CSSProperties = {
   borderRadius: 4,
   color: 'var(--gw-text-muted, #a1a1aa)',
   cursor: 'pointer',
-  fontSize: 11,
+  fontSize: 14,
 }
 
 function Field({
@@ -915,7 +984,7 @@ function Field({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <label
         style={{
-          fontSize: 11,
+          fontSize: 14,
           fontWeight: 600,
           color: 'var(--gw-text-faint, #71717a)',
           letterSpacing: '0.04em',

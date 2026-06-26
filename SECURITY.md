@@ -119,11 +119,17 @@ party.** These rules are **non-negotiable** like the rules above.
     always wins. A repo opted out of AI blocks context assembly entirely. The AI is advisory:
     no blocker, gate, or Git mutation may depend on model output.
 
-17. **Preview before send — payload _and_ destination host.** Default privacy mode is
-    `preview-each`: before a sensitive request the user sees the exact **post-redaction** payload
-    and the **destination host**. `preview-first-run` (structure-only, first run) is a conscious
-    downgrade the user must opt into. The host is shown because that is where the data actually
-    goes — see rule 20.
+17. **Send gate — redaction + explicit acknowledgement (revised in Phase 55a).** Originally the
+    default privacy mode was `preview-each`: a per-send dialog showed the exact **post-redaction**
+    payload and **destination host** before each sensitive request. The AI Chat Redesign
+    (Phase 55a) **removed that inline preview→confirm gate** from the chat UI as a user-accepted
+    trade-off. The shipped send gate is now: redaction always runs server-side before send (rule 18),
+    and networked chat commands require an explicit acknowledgement (`expensiveSendAcknowledged`,
+    set on an intentional command click/Enter). The `AiPrivacyMode` field (`off` | `preview-each` |
+    `preview-first-run`) and the destination host are still in the model (rule 20) should a preview
+    surface be reintroduced, but **no visual post-redaction preview is shown in the current chat
+    flow.** Consequence: redaction (best-effort, not a guarantee) is the primary safeguard on the
+    send path — see rule 18.
 
 18. **Prompt redaction runs on the full context, before chunking.** Known token / private-key /
     GitHub-token / env-secret / credential-URL shapes are stripped from the **whole** context
@@ -164,3 +170,12 @@ party.** These rules are **non-negotiable** like the rules above.
     user acceptance (`user-accepted`) before sends on the default path. Local (loopback)
     connections are presented as the safest. No prompt/response logging by default; any future
     diagnostic logging must be redacted and opt-in.
+
+23. **Chat free-text and `/explain` pasted content are context — same redaction, same gate.**
+    Free-text chat messages, `@mention`-selected paths, and `/explain` arguments (a `SafetyCode`
+    token, or **pasted tool / build output**) all become AI context and pass through the **same**
+    redaction ruleset (`src/core/ai/redaction.ts`, rule 18) before leaving the machine. A pasted
+    log or stack trace is a new free-text input path — users must treat it like any other content
+    they send, since redaction is conservative and best-effort, not a guarantee. Streaming chat
+    (`ai:chatStreamEvent`) is response-direction only and never bypasses request-side redaction;
+    it carries plain assistant prose, not structured outputs.

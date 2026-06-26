@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import type { RepositoryRecord } from '../../core/types'
 import { useRepositoriesStore } from '../store/repositoriesStore'
 import { useProfilesStore } from '../store/profilesStore'
@@ -153,7 +153,7 @@ export default function RepositoriesScreen(): React.ReactElement {
             <div
               style={{
                 padding: '12px 12px 8px',
-                fontSize: 11,
+                fontSize: 14,
                 fontWeight: 700,
                 letterSpacing: '0.06em',
                 color: 'var(--gw-text-dim, #52525b)',
@@ -167,7 +167,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                 <div
                   style={{
                     padding: 12,
-                    fontSize: 12,
+                    fontSize: 14,
                     color: 'var(--gw-text-dim, #52525b)',
                     fontStyle: 'italic',
                   }}
@@ -204,14 +204,14 @@ export default function RepositoriesScreen(): React.ReactElement {
                         <span
                           data-testid="repo-item-mismatch"
                           title="Profile mismatch"
-                          style={{ color: 'var(--gw-warning, #fbbf24)', fontSize: 10 }}
+                          style={{ color: 'var(--gw-warning, #fbbf24)', fontSize: 14 }}
                         >
                           ⚠
                         </span>
                       )}
                       <span
                         style={{
-                          fontSize: 13,
+                          fontSize: 14,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -222,7 +222,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                     </div>
                     <div
                       style={{
-                        fontSize: 10,
+                        fontSize: 14,
                         color: 'var(--gw-text-dim, #52525b)',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -248,7 +248,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                   borderRadius: 4,
                   color: 'var(--gw-text, #f4f4f5)',
                   cursor: 'pointer',
-                  fontSize: 12,
+                  fontSize: 14,
                   fontWeight: 600,
                 }}
               >
@@ -267,7 +267,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: 'var(--gw-text-dim, #52525b)',
-                  fontSize: 13,
+                  fontSize: 14,
                 }}
               >
                 Select a repository or add one.
@@ -309,7 +309,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                         borderRadius: 4,
                         color: 'var(--gw-text, #f4f4f5)',
                         cursor: 'pointer',
-                        fontSize: 12,
+                        fontSize: 14,
                       }}
                     >
                       Browse
@@ -320,7 +320,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                 {error && (
                   <div
                     data-testid="repo-error"
-                    style={{ fontSize: 12, color: 'var(--gw-danger, #f87171)' }}
+                    style={{ fontSize: 14, color: 'var(--gw-danger, #f87171)' }}
                   >
                     {error}
                   </div>
@@ -340,7 +340,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                       borderRadius: 4,
                       color: 'var(--gw-on-solid, #fff)',
                       cursor: saving ? 'wait' : 'pointer',
-                      fontSize: 12,
+                      fontSize: 14,
                       fontWeight: 600,
                     }}
                   >
@@ -356,7 +356,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                       borderRadius: 4,
                       color: 'var(--gw-text-muted, #a1a1aa)',
                       cursor: 'pointer',
-                      fontSize: 12,
+                      fontSize: 14,
                     }}
                   >
                     Cancel
@@ -375,7 +375,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                       background: 'var(--gw-warning-bg, #422006)',
                       border: '1px solid var(--gw-warning-border, #78350f)',
                       borderRadius: 6,
-                      fontSize: 12,
+                      fontSize: 14,
                       color: 'var(--gw-warning, #fbbf24)',
                       lineHeight: 1.5,
                     }}
@@ -398,18 +398,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                   Repository
                 </h2>
 
-                <Field label="Path">
-                  <div
-                    style={{
-                      ...inputStyle,
-                      color: 'var(--gw-text-faint, #71717a)',
-                      fontFamily: 'monospace',
-                      userSelect: 'text',
-                    }}
-                  >
-                    {selectedRepo.localPath}
-                  </div>
-                </Field>
+                <RepositoryPathField path={selectedRepo.localPath} />
 
                 <Field label="Name">
                   <input
@@ -457,7 +446,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                 {error && (
                   <div
                     data-testid="repo-error"
-                    style={{ fontSize: 12, color: 'var(--gw-danger, #f87171)' }}
+                    style={{ fontSize: 14, color: 'var(--gw-danger, #f87171)' }}
                   >
                     {error}
                   </div>
@@ -468,13 +457,13 @@ export default function RepositoriesScreen(): React.ReactElement {
                     data-testid="repo-saved-msg"
                     role="status"
                     aria-live="polite"
-                    style={{ fontSize: 12, color: 'var(--gw-success, #4ade80)' }}
+                    style={{ fontSize: 14, color: 'var(--gw-success, #4ade80)' }}
                   >
                     {successMessage}
                   </div>
                 )}
 
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
                   <button
                     data-testid="repo-save-btn"
                     onClick={() => {
@@ -482,80 +471,91 @@ export default function RepositoriesScreen(): React.ReactElement {
                     }}
                     disabled={saving}
                     style={{
-                      padding: '6px 18px',
+                      width: '100%',
+                      padding: '8px 14px',
                       background: 'var(--gw-primary, #2563eb)',
                       border: 'none',
                       borderRadius: 4,
                       color: 'var(--gw-on-solid, #fff)',
                       cursor: saving ? 'wait' : 'pointer',
-                      fontSize: 12,
+                      fontSize: 14,
                       fontWeight: 600,
                     }}
                   >
                     {saving ? 'Saving…' : 'Save'}
                   </button>
 
-                  {!confirmRemove && (
+                  {!confirmRemove ? (
                     <button
                       data-testid="repo-remove-btn"
                       onClick={() => setConfirmRemove(true)}
                       disabled={saving}
                       style={{
-                        marginLeft: 'auto',
-                        padding: '6px 14px',
+                        width: '100%',
+                        padding: '8px 14px',
                         background: 'none',
-                        border: '1px solid var(--gw-surface3, #3f3f46)',
+                        border: '1px solid var(--gw-danger-border, #7f1d1d)',
                         borderRadius: 4,
                         color: 'var(--gw-danger, #f87171)',
-                        cursor: 'pointer',
-                        fontSize: 12,
+                        cursor: saving ? 'not-allowed' : 'pointer',
+                        fontSize: 14,
                       }}
                     >
                       Remove from App
                     </button>
-                  )}
-
-                  {confirmRemove && (
+                  ) : (
                     <div
-                      style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: 4,
+                        border: '1px solid var(--gw-border-subtle, #3f3f46)',
+                        background: 'var(--gw-surface2, #27272a)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 8,
+                      }}
                     >
-                      <span style={{ fontSize: 12, color: 'var(--gw-text-muted, #a1a1aa)' }}>
-                        Remove &ldquo;{selectedRepo.name}&rdquo;?
+                      <span style={{ fontSize: 14, color: 'var(--gw-text-muted, #a1a1aa)' }}>
+                        Remove &ldquo;{selectedRepo.name}&rdquo; from GitWarden?
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => setConfirmRemove(false)}
-                        style={{
-                          padding: '4px 10px',
-                          background: 'none',
-                          border: '1px solid var(--gw-surface3, #3f3f46)',
-                          borderRadius: 4,
-                          color: 'var(--gw-text-muted, #a1a1aa)',
-                          cursor: 'pointer',
-                          fontSize: 12,
-                        }}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        data-testid="repo-remove-confirm-btn"
-                        onClick={() => {
-                          void handleRemove()
-                        }}
-                        disabled={saving}
-                        style={{
-                          padding: '4px 10px',
-                          background: 'var(--gw-danger-solid, #dc2626)',
-                          border: 'none',
-                          borderRadius: 4,
-                          color: 'var(--gw-on-solid, #fff)',
-                          cursor: saving ? 'wait' : 'pointer',
-                          fontSize: 12,
-                          fontWeight: 600,
-                        }}
-                      >
-                        Remove
-                      </button>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmRemove(false)}
+                          style={{
+                            flex: 1,
+                            padding: '6px 10px',
+                            background: 'none',
+                            border: '1px solid var(--gw-surface3, #3f3f46)',
+                            borderRadius: 4,
+                            color: 'var(--gw-text-muted, #a1a1aa)',
+                            cursor: 'pointer',
+                            fontSize: 14,
+                          }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          data-testid="repo-remove-confirm-btn"
+                          onClick={() => {
+                            void handleRemove()
+                          }}
+                          disabled={saving}
+                          style={{
+                            flex: 1,
+                            padding: '6px 10px',
+                            background: 'var(--gw-danger-solid, #dc2626)',
+                            border: 'none',
+                            borderRadius: 4,
+                            color: 'var(--gw-on-solid, #fff)',
+                            cursor: saving ? 'wait' : 'pointer',
+                            fontSize: 14,
+                            fontWeight: 600,
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -575,8 +575,113 @@ const inputStyle: React.CSSProperties = {
   border: '1px solid var(--gw-border-subtle, #3f3f46)',
   borderRadius: 4,
   color: 'var(--gw-text, #f4f4f5)',
-  fontSize: 13,
+  fontSize: 14,
   boxSizing: 'border-box',
+}
+
+function splitLocalPath(path: string): { directory: string; name: string } {
+  const trimmed = path.replace(/[/\\]+$/, '')
+  const lastSlash = Math.max(trimmed.lastIndexOf('/'), trimmed.lastIndexOf('\\'))
+  if (lastSlash < 0) return { directory: '', name: trimmed }
+  return {
+    directory: trimmed.slice(0, lastSlash + 1),
+    name: trimmed.slice(lastSlash + 1),
+  }
+}
+
+function RepositoryPathField({ path }: { path: string }): React.ReactElement {
+  const [copied, setCopied] = useState(false)
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { directory, name } = splitLocalPath(path)
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
+    }
+  }, [])
+
+  async function handleCopy(): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(path)
+      setCopied(true)
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
+      copyTimerRef.current = setTimeout(() => setCopied(false), 1500)
+    } catch {
+      // Clipboard can reject when the window is not focused.
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <span
+          style={{
+            fontSize: 14,
+            fontWeight: 600,
+            color: 'var(--gw-text-faint, #71717a)',
+            letterSpacing: '0.04em',
+          }}
+        >
+          PATH
+        </span>
+        <button
+          type="button"
+          data-testid="repo-path-copy-btn"
+          onClick={() => {
+            void handleCopy()
+          }}
+          aria-label={STR.REPOSITORY_PATH_COPY}
+          style={{
+            padding: '2px 8px',
+            background: 'none',
+            border: 'none',
+            color: copied ? 'var(--gw-success, #4ade80)' : 'var(--gw-info, #60a5fa)',
+            cursor: 'pointer',
+            fontSize: 14,
+            flexShrink: 0,
+          }}
+        >
+          {copied ? STR.REPOSITORY_PATH_COPIED : STR.REPOSITORY_PATH_COPY}
+        </button>
+      </div>
+      <div
+        data-testid="repo-form-path"
+        title={path}
+        style={{
+          ...inputStyle,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+          padding: '8px 10px',
+        }}
+      >
+        {directory ? (
+          <span
+            style={{
+              fontFamily: 'monospace',
+              fontSize: 12,
+              lineHeight: 1.4,
+              color: 'var(--gw-text-dim, #52525b)',
+              overflowWrap: 'anywhere',
+            }}
+          >
+            {directory}
+          </span>
+        ) : null}
+        <span
+          style={{
+            fontFamily: 'monospace',
+            fontSize: 14,
+            fontWeight: 600,
+            color: 'var(--gw-text-muted, #a1a1aa)',
+            overflowWrap: 'anywhere',
+          }}
+        >
+          {name}
+        </span>
+      </div>
+    </div>
+  )
 }
 
 function Field({
@@ -590,7 +695,7 @@ function Field({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <label
         style={{
-          fontSize: 11,
+          fontSize: 14,
           fontWeight: 600,
           color: 'var(--gw-text-faint, #71717a)',
           letterSpacing: '0.04em',

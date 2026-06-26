@@ -8,6 +8,14 @@ export interface IRepositoryService {
   create(input: Omit<RepositoryRecord, 'id'>): Promise<RepositoryRecord>
   update(id: string, patch: Partial<Omit<RepositoryRecord, 'id'>>): Promise<RepositoryRecord>
   delete(id: string): Promise<void>
+  /**
+   * Clear `assignedProfileId` on any repository whose assigned profile is not in
+   * `validProfileIds`. Used after a profile is deleted (and at startup) so a repo never
+   * points at a ghost profile — a dangling id otherwise blocks commit/push with a
+   * phantom "profile mismatch" and the Safety Center shows no way to recover. Returns
+   * the records that changed.
+   */
+  pruneAssignments(validProfileIds: Iterable<string>): Promise<RepositoryRecord[]>
 }
 
 export class RepositoryService implements IRepositoryService {
@@ -47,5 +55,20 @@ export class RepositoryService implements IRepositoryService {
     const filtered = data.repositories.filter((r) => r.id !== id)
     if (filtered.length === data.repositories.length) throw new Error(`Repository not found: ${id}`)
     await this.store.write({ repositories: filtered })
+  }
+
+  async pruneAssignments(validProfileIds: Iterable<string>): Promise<RepositoryRecord[]> {
+    const valid = new Set(validProfileIds)
+    const data = await this.store.read()
+    const changed: RepositoryRecord[] = []
+    const repositories = data.repositories.map((repo) => {
+      if (repo.assignedProfileId === undefined || valid.has(repo.assignedProfileId)) return repo
+      const next: RepositoryRecord = { ...repo }
+      delete next.assignedProfileId
+      changed.push(next)
+      return next
+    })
+    if (changed.length > 0) await this.store.write({ repositories })
+    return changed
   }
 }

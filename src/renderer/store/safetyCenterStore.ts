@@ -44,11 +44,19 @@ export const useSafetyCenterStore = create<SafetyCenterState>((set) => ({
 
   async load(repoPath, repository, activeProfile, profiles) {
     const assignedProfile = profiles.find((p) => p.id === repository.assignedProfileId) ?? null
+    // A stored assignedProfileId that no longer resolves to a profile (e.g. the profile
+    // was deleted) is a dangling reference. Treat the repo as unassigned so the engine
+    // reports an honest "no assigned profile" and the UI offers the reassign action,
+    // instead of a dead-end phantom "mismatch" with no way to recover.
+    const effectiveRepository: RepositoryRecord =
+      repository.assignedProfileId && !assignedProfile
+        ? { ...repository, assignedProfileId: undefined }
+        : repository
     set({
       loading: true,
       error: null,
       repoPath,
-      repository,
+      repository: effectiveRepository,
       activeProfile,
       assignedProfile,
       identity: null,
@@ -70,7 +78,7 @@ export const useSafetyCenterStore = create<SafetyCenterState>((set) => ({
 
       const identityCheck = identity
         ? safetyCheckService.checkRepositoryIdentity({
-            repository,
+            repository: effectiveRepository,
             activeProfile: activeProfile ?? undefined,
             identity,
           })
@@ -78,7 +86,7 @@ export const useSafetyCenterStore = create<SafetyCenterState>((set) => ({
 
       const pushCheck = identity
         ? safetyCheckService.checkPush({
-            repository,
+            repository: effectiveRepository,
             activeProfile: activeProfile ?? undefined,
             identity,
             remotes,

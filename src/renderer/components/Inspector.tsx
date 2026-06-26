@@ -14,7 +14,7 @@ export default function Inspector(): React.ReactElement {
       style={{
         height: '100%',
         padding: '12px',
-        fontSize: 12,
+        fontSize: 14,
         color: 'var(--gw-text-muted, #a1a1aa)',
         overflowY: 'auto',
         boxSizing: 'border-box',
@@ -23,7 +23,7 @@ export default function Inspector(): React.ReactElement {
       <div
         style={{
           fontWeight: 600,
-          fontSize: 11,
+          fontSize: 14,
           letterSpacing: '0.06em',
           color: 'var(--gw-text-dim, #52525b)',
           marginBottom: 10,
@@ -58,7 +58,7 @@ export default function Inspector(): React.ReactElement {
 
       <Section label="Repository">
         {activeRepo ? (
-          <span style={{ color: 'var(--gw-text, #f4f4f5)', fontFamily: 'monospace', fontSize: 11 }}>
+          <span style={{ color: 'var(--gw-text, #f4f4f5)', fontFamily: 'monospace', fontSize: 14 }}>
             {activeRepo.name}
           </span>
         ) : (
@@ -107,7 +107,7 @@ function Section({
     <div style={{ marginBottom: 14 }}>
       <div
         style={{
-          fontSize: 10,
+          fontSize: 14,
           fontWeight: 700,
           color: 'var(--gw-text-dim, #52525b)',
           letterSpacing: '0.06em',

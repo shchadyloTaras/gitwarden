@@ -98,11 +98,14 @@ feature; they extend, and never weaken, the deterministic Safety Engine.
     repo's content can be sent, and the safest setting dominates.
 - **Zero-retention / unknown-retention is a conscious downgrade.** GitWarden surfaces a
   connection's retention state (`zero-retention` | `unknown` | `user-accepted`). An endpoint that
-  cannot attest zero-retention requires the user to explicitly accept the downgrade. Default
-  privacy mode is `preview-each` (the user sees the exact post-redaction payload **and**
-  destination host before each sensitive send); `preview-first-run` is a conscious downgrade.
+  cannot attest zero-retention requires the user to explicitly accept the downgrade.
   - _Rationale:_ sending a diff can mean sending source to a third party; the retention posture
     and the actual destination must be visible and opt-in, not buried.
+  - ⚠️ **Updated by Phase 55a (see below).** The `AiPrivacyMode` field (`off` | `preview-each` |
+    `preview-first-run`) still exists in the connection model, but the **inline per-send
+    preview→confirm gate was removed from the chat UI** in the AI Chat Redesign. The shipped
+    privacy floor is now redaction + an explicit send acknowledgement, not the visual payload
+    preview — see the Phase 55a decision at the end of this section.
 - **`localOnly` is derived from the resolved host, not the kind.** Any connection whose base URL
   resolves to loopback (`localhost` / `127.0.0.1` / `[::1]`) is surfaced as the most private
   choice — including an `openai-compatible` connection pointed at LM Studio / vLLM / llama.cpp,
@@ -130,3 +133,56 @@ feature; they extend, and never weaken, the deterministic Safety Engine.
   renderer after save. (See SECURITY.md §16–§20.)
   - _Rationale:_ keeping the destination non-secret is what lets the send preview show the host;
     keeping the credential out of the record is what keeps it out of logs, exports, and the renderer.
+
+### 6a. AI Chat Redesign & simplification (Phases 52–55a + post-plan hardening)
+
+Source: `docs/plans/ai-chat-redesign-plan.md` and the post-plan log entries in `docs/progress-log.md`.
+These refine — and in one case relax — the §6 decisions; they never weaken the advisory-only or
+deterministic-safety invariants.
+
+- **One chat surface replaces the per-capability panels.** The six AI panels (push-brief,
+  history, repo-onboarding, failure-explain, safety-explain, agentic-proposal) were retired
+  (Phase 55) in favour of a single chat panel driven by slash-commands (`/commit`, `/review`,
+  `/push-brief`, `/history`, `/repo-brief`, `/propose`, `/explain`, `/help`). The underlying
+  capability IPC/store methods are retained — the chat now invokes them. Deterministic safety
+  reporting (`SafetyIssueRow`) was kept AI-free.
+  - _Rationale:_ one conversational entry point is easier to reason about than six panels, while
+    the deterministic Safety Engine stays entirely independent of the AI layer.
+- **Paste-key-and-go: a stored key is the consent (Phase 55a).** Settings → AI was reduced to
+  token → live model list → pick → Save; saving a credential auto-enables AI. The separate
+  "Enable AI" toggle, per-repo override UI, Advanced disclosure, and built-in templates / export
+  were removed from the UI. The backend precedence (`isAiSendAllowed`) and `RepositoryRecord.aiOverride`
+  field remain as no-ops for forward compatibility.
+  - _Rationale:_ near-zero setup for the common case; the conscious act is now "store a key + send",
+    which the user does explicitly.
+  - ⚠️ _Trade-off (user-accepted):_ this **supersedes the §6 "Save and Enable are two deliberate
+    steps" decision** for the shipped UI — a saved key is now both. The privacy consent is the
+    explicit send, not a separate enable step.
+- **The inline send-preview gate was removed; the privacy floor is redaction + explicit
+  acknowledgement (Phase 55a).** The chat no longer shows a per-send `preview-each`
+  payload→confirm dialog. Slash-commands and free-text send immediately; networked chat commands
+  pass `expensiveSendAcknowledged: true` on explicit click/Enter, and redaction (DECISIONS.md §6
+  "one redaction ruleset", SECURITY.md §18) still runs server-side before every send.
+  - _Rationale:_ the redesign optimizes for "paste key and chat"; the user accepted reducing the
+    visible-payload gate to the redaction + acknowledgement floor.
+  - ⚠️ _Trade-off (user-accepted):_ source can leave the machine without a visual post-redaction
+    preview. Redaction remains best-effort, not a guarantee. The `AiPrivacyMode` model field is
+    retained should a preview surface be reintroduced.
+- **Streaming chat is plain-prose only.** `AiChatAssistant.chatStream` streams free-text replies
+  over the `ai:chatStreamEvent` channel; structured (schema-bound) capabilities keep the
+  non-streaming request path. Streaming is response-direction and does not bypass request-side
+  redaction.
+  - _Rationale:_ live tokens improve chat UX, but structured outputs must be parsed/validated whole
+    and the redaction gate is on the outbound request, so streaming changes neither.
+- **`/explain` accepts pasted tool output — treated as ordinary context.** `/explain` classifies
+  its argument as a known `SafetyCode` token (explained from deterministic copy) or as **pasted
+  tool/build output**, which is routed through the same redaction ruleset as any diff context
+  before send. `@mention` / path-filtering selects which repo paths join the context.
+  - _Rationale:_ pasted output is a new free-text input path; reusing the single redaction ruleset
+    keeps "what we strip before sending" identical everywhere, with no parallel table to drift.
+- **Structured output uses one schema source with a compatibility fallback chain.** All structured
+  assistants derive their JSON schema from `providerJsonSchemaForKind` (`src/core/ai/providerSchemas.ts`);
+  the OpenAI-compatible adapter degrades gracefully on HTTP 400 — strict `json_schema` → non-strict
+  → `json_object` → plain completion.
+  - _Rationale:_ one schema source prevents per-assistant drift; the fallback lets models without
+    strict structured-output (e.g. Gemma) still return parseable JSON instead of hard-failing.

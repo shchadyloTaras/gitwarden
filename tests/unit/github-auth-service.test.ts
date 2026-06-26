@@ -83,6 +83,52 @@ class FakeHttp implements HttpClient {
   }
 }
 
+/**
+ * Like FakeHttp, but token replies are full HttpResponse objects (so a test can drive
+ * non-2xx statuses and unparseable bodies) or Errors (to simulate a thrown request).
+ */
+class ResponseHttp implements HttpClient {
+  readonly calls: RecordedCall[] = []
+  private readonly tokenReplies: Array<HttpResponse | Error>
+
+  constructor(
+    private readonly deviceReply: unknown,
+    tokenReplies: Array<HttpResponse | Error> = []
+  ) {
+    this.tokenReplies = [...tokenReplies]
+  }
+
+  async postForm(
+    url: string,
+    body: Record<string, string>,
+    headers?: Record<string, string>
+  ): Promise<HttpResponse> {
+    this.calls.push({ url, body, headers })
+    if (url === GITHUB_DEVICE_CODE_URL) {
+      return { status: 200, json: this.deviceReply }
+    }
+    if (url === GITHUB_ACCESS_TOKEN_URL) {
+      const next = this.tokenReplies.shift()
+      if (next === undefined) throw new Error('ResponseHttp: token replies exhausted')
+      if (next instanceof Error) throw next
+      return next
+    }
+    throw new Error(`unexpected POST url: ${url}`)
+  }
+
+  async request(): Promise<HttpResponse> {
+    throw new Error('request() not used by GitHubAuthService')
+  }
+
+  async get(): Promise<HttpResponse> {
+    throw new Error('get() not used by GitHubAuthService')
+  }
+
+  tokenCalls(): RecordedCall[] {
+    return this.calls.filter((c) => c.url === GITHUB_ACCESS_TOKEN_URL)
+  }
+}
+
 /** A Sleeper that records the ms it was asked to wait and resolves instantly. */
 function recordingSleeper(): { calls: number[]; sleep: Sleeper } {
   const calls: number[] = []
@@ -90,6 +136,16 @@ function recordingSleeper(): { calls: number[]; sleep: Sleeper } {
     calls.push(ms)
   }
   return { calls, sleep }
+}
+
+/** A clock that returns each scripted value in turn, then sticks on the last one. */
+function scriptedClock(values: number[]): () => number {
+  let i = 0
+  return () => {
+    const v = values[Math.min(i, values.length - 1)]
+    i += 1
+    return v
+  }
 }
 
 function makeService(
@@ -242,14 +298,79 @@ describe('GitHubAuthService.pollForToken', () => {
     })
   })
 
-  it('rejects with a network error when the HTTP client throws', async () => {
-    const http = new FakeHttp(DEVICE_CODE_RESPONSE, [new Error('socket hang up')])
-    const service = await startedService(http)
+  it('keeps polling through a transient network failure instead of aborting the flow', async () => {
+    // A dropped request mid-flow (Wi-Fi flap, sleep/wake, momentary GitHub outage) must
+    // NOT end the flow and force the user to restart sign-in — it should retry.
+    const http = new FakeHttp(DEVICE_CODE_RESPONSE, [
+      new Error('socket hang up'),
+      { access_token: 'gho_after_blip', scope: 'read:user', token_type: 'bearer' },
+    ])
+    const { calls, sleep } = recordingSleeper()
+    const service = await startedService(http, sleep)
+
+    const result = await service.pollForToken(new AbortController().signal)
+
+    expect(result.accessToken).toBe('gho_after_blip')
+    expect(http.tokenCalls()).toHaveLength(2) // the failed poll, then the success
+    expect(calls).toEqual([5000]) // backed off one interval rather than aborting
+  })
+
+  it('keeps polling through a transient non-2xx response', async () => {
+    // GitHub answers the poll with HTTP 200 even for pending; a 5xx / rate-limit page is
+    // a transient hiccup, not a terminal failure.
+    const http = new ResponseHttp(DEVICE_CODE_RESPONSE, [
+      { status: 502, json: undefined, bodyText: 'Bad Gateway' },
+      {
+        status: 200,
+        json: { access_token: 'gho_after_502', scope: 'read:user', token_type: 'bearer' },
+      },
+    ])
+    const { calls, sleep } = recordingSleeper()
+    const service = await startedService(http, sleep)
+
+    const result = await service.pollForToken(new AbortController().signal)
+
+    expect(result.accessToken).toBe('gho_after_502')
+    expect(http.tokenCalls()).toHaveLength(2)
+    expect(calls).toEqual([5000])
+  })
+
+  it('keeps polling through a transient unparseable body', async () => {
+    const http = new ResponseHttp(DEVICE_CODE_RESPONSE, [
+      { status: 200, json: undefined, bodyText: '<html>rate limited</html>' },
+      {
+        status: 200,
+        json: { access_token: 'gho_after_garbage', scope: 'read:user', token_type: 'bearer' },
+      },
+    ])
+    const { calls, sleep } = recordingSleeper()
+    const service = await startedService(http, sleep)
+
+    const result = await service.pollForToken(new AbortController().signal)
+
+    expect(result.accessToken).toBe('gho_after_garbage')
+    expect(http.tokenCalls()).toHaveLength(2)
+    expect(calls).toEqual([5000])
+  })
+
+  it('gives up with expiredToken once the device-code lifetime elapses during an outage', async () => {
+    // A sustained outage means GitHub never gets to return expired_token; the deadline
+    // derived from `expires_in` bounds the loop so it cannot poll forever.
+    const http = new ResponseHttp(DEVICE_CODE_RESPONSE, [
+      new Error('offline'),
+      new Error('offline'),
+    ])
+    // t=0 when the deadline is computed; the next check is already past the 900s lifetime.
+    const clock = scriptedClock([0, 900_000])
+    const { sleep } = recordingSleeper()
+    const service = new GitHubAuthService(http, CLIENT_ID, sleep, silentLogger, clock)
+    await service.requestDeviceCode(['read:user'])
 
     await expect(service.pollForToken(new AbortController().signal)).rejects.toMatchObject({
       name: 'GitHubAuthError',
-      code: 'network',
+      code: 'expiredToken',
     })
+    expect(http.tokenCalls()).toHaveLength(1) // one failed poll, then the deadline tripped
   })
 
   it('rejects with unknown for an unrecognized error code', async () => {

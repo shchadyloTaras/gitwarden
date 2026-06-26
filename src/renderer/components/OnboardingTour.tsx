@@ -313,7 +313,7 @@ export default function OnboardingTour({
           data-testid="onboarding-progress"
           style={{
             color: 'var(--gw-text-faint, #71717a)',
-            fontSize: 11,
+            fontSize: 14,
             fontWeight: 700,
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
@@ -336,7 +336,7 @@ export default function OnboardingTour({
           style={{
             margin: '0 0 18px',
             color: 'var(--gw-text-muted, #a1a1aa)',
-            fontSize: 13,
+            fontSize: 14,
             lineHeight: 1.55,
           }}
         >
@@ -352,7 +352,7 @@ export default function OnboardingTour({
               border: 'none',
               color: 'var(--gw-text-faint, #71717a)',
               cursor: 'pointer',
-              fontSize: 12,
+              fontSize: 14,
               padding: '6px 0',
             }}
           >
@@ -372,7 +372,7 @@ export default function OnboardingTour({
               borderRadius: 4,
               color: isFirst ? 'var(--gw-text-dim, #52525b)' : 'var(--gw-text-muted, #a1a1aa)',
               cursor: isFirst ? 'default' : 'pointer',
-              fontSize: 12,
+              fontSize: 14,
             }}
           >
             {STR.ONBOARDING_BACK}
@@ -392,7 +392,7 @@ export default function OnboardingTour({
               borderRadius: 4,
               color: 'var(--gw-on-solid, #fff)',
               cursor: 'pointer',
-              fontSize: 12,
+              fontSize: 14,
               fontWeight: 700,
             }}
           >

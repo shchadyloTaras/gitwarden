@@ -22,7 +22,7 @@ const SELECT_STYLE: React.CSSProperties = {
   background: 'transparent',
   border: 'none',
   color: 'var(--gw-text, #f4f4f5)',
-  fontSize: 13,
+  fontSize: 14,
   cursor: 'pointer',
   padding: '2px 4px',
   borderRadius: 4,
@@ -83,7 +83,7 @@ export default function GlobalHeader(): React.ReactElement {
       {/* Branch picker */}
       {localBranches.length > 0 && (
         <>
-          <span style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: 12 }}>on</span>
+          <span style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: 14 }}>on</span>
           <Dropdown
             testId="header-branch-select"
             ariaLabel="Current branch"
@@ -93,7 +93,7 @@ export default function GlobalHeader(): React.ReactElement {
             onChange={(name) => void doSwitch(name)}
             triggerStyle={{
               ...SELECT_STYLE,
-              fontSize: 12,
+              fontSize: 14,
               background: 'var(--gw-surface2, #27272a)',
               padding: '2px 6px',
               maxWidth: 140,
@@ -105,11 +105,11 @@ export default function GlobalHeader(): React.ReactElement {
       {/* Fallback: show branch text when branches not loaded yet */}
       {localBranches.length === 0 && currentBranch && (
         <>
-          <span style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: 12 }}>on</span>
+          <span style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: 14 }}>on</span>
           <span
             data-testid="header-branch"
             style={{
-              fontSize: 12,
+              fontSize: 14,
               fontFamily: 'monospace',
               background: 'var(--gw-surface2, #27272a)',
               padding: '2px 6px',
@@ -128,7 +128,7 @@ export default function GlobalHeader(): React.ReactElement {
         data-testid="header-safety-badge"
         style={{
           ...BADGE_STYLE[safetyBadge],
-          fontSize: 11,
+          fontSize: 14,
           fontWeight: 600,
           padding: '2px 8px',
           borderRadius: 4,
@@ -152,7 +152,7 @@ export default function GlobalHeader(): React.ReactElement {
               flexShrink: 0,
             }}
           />
-          <span style={{ fontSize: 13, color: 'var(--gw-text, #f4f4f5)' }}>
+          <span style={{ fontSize: 14, color: 'var(--gw-text, #f4f4f5)' }}>
             {activeProfile.displayName}
           </span>
         </div>
@@ -170,7 +170,7 @@ export default function GlobalHeader(): React.ReactElement {
           color: 'var(--gw-text-muted, #a1a1aa)',
           cursor: 'pointer',
           padding: '2px 8px',
-          fontSize: 12,
+          fontSize: 14,
           fontWeight: 600,
         }}
       >
@@ -187,7 +187,7 @@ export default function GlobalHeader(): React.ReactElement {
           color: 'var(--gw-text-muted, #a1a1aa)',
           cursor: 'pointer',
           padding: '2px 6px',
-          fontSize: 12,
+          fontSize: 14,
         }}
       >
         ⓘ

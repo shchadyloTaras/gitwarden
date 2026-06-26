@@ -135,14 +135,14 @@ export default function RemoteScreen(): React.ReactElement {
 
       {loading && (
         <div
-          style={{ color: 'var(--gw-text-faint, #71717a)', fontSize: '13px', marginBottom: '16px' }}
+          style={{ color: 'var(--gw-text-faint, #71717a)', fontSize: '14px', marginBottom: '16px' }}
         >
           Loading…
         </div>
       )}
 
       {!loading && !repository && !activeRepo && (
-        <div style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: '13px' }}>
+        <div style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: '14px' }}>
           Add a repository to get started.
         </div>
       )}
@@ -154,7 +154,7 @@ export default function RemoteScreen(): React.ReactElement {
             <div
               style={{
                 marginBottom: '16px',
-                fontSize: '13px',
+                fontSize: '14px',
                 color: 'var(--gw-text-muted, #a1a1aa)',
               }}
             >
@@ -173,7 +173,7 @@ export default function RemoteScreen(): React.ReactElement {
             <div
               style={{
                 color: 'var(--gw-text-dim, #52525b)',
-                fontSize: '13px',
+                fontSize: '14px',
                 marginBottom: '16px',
               }}
             >
@@ -183,7 +183,7 @@ export default function RemoteScreen(): React.ReactElement {
             <div style={{ marginBottom: '16px' }}>
               <div
                 style={{
-                  fontSize: '12px',
+                  fontSize: '14px',
                   color: 'var(--gw-text-faint, #71717a)',
                   marginBottom: '8px',
                 }}
@@ -214,7 +214,7 @@ export default function RemoteScreen(): React.ReactElement {
                       <span
                         style={{
                           fontFamily: 'monospace',
-                          fontSize: '13px',
+                          fontSize: '14px',
                           color: 'var(--gw-text, #f4f4f5)',
                           fontWeight: 600,
                         }}
@@ -225,7 +225,7 @@ export default function RemoteScreen(): React.ReactElement {
                         style={{
                           marginLeft: '10px',
                           fontFamily: 'monospace',
-                          fontSize: '12px',
+                          fontSize: '14px',
                           color: 'var(--gw-text-dim, #52525b)',
                         }}
                       >
@@ -235,7 +235,7 @@ export default function RemoteScreen(): React.ReactElement {
                         <span
                           style={{
                             marginLeft: '8px',
-                            fontSize: '11px',
+                            fontSize: '14px',
                             color: 'var(--gw-text-faint, #71717a)',
                             background: 'var(--gw-surface2, #27272a)',
                             padding: '1px 6px',
@@ -260,7 +260,7 @@ export default function RemoteScreen(): React.ReactElement {
                           border: '1px solid var(--gw-surface3, #3f3f46)',
                           borderRadius: '4px',
                           padding: '5px 10px',
-                          fontSize: '12px',
+                          fontSize: '14px',
                           cursor: fetchLoading === remote.name ? 'wait' : 'pointer',
                         }}
                       >
@@ -280,7 +280,7 @@ export default function RemoteScreen(): React.ReactElement {
                             border: '1px solid var(--gw-surface3, #3f3f46)',
                             borderRadius: '4px',
                             padding: '5px 10px',
-                            fontSize: '12px',
+                            fontSize: '14px',
                             cursor: pullLoading === remote.name ? 'wait' : 'pointer',
                           }}
                         >
@@ -299,7 +299,7 @@ export default function RemoteScreen(): React.ReactElement {
                             border: 'none',
                             borderRadius: '4px',
                             padding: '5px 10px',
-                            fontSize: '12px',
+                            fontSize: '14px',
                             cursor: pushLoading ? 'wait' : 'pointer',
                           }}
                         >
@@ -322,7 +322,7 @@ export default function RemoteScreen(): React.ReactElement {
                 background: 'var(--gw-success-bg, #052e16)',
                 border: '1px solid var(--gw-success-border, #2d4a2d)',
                 borderRadius: '4px',
-                fontSize: '13px',
+                fontSize: '14px',
                 color: 'var(--gw-success, #4ade80)',
                 marginBottom: '12px',
               }}
@@ -335,7 +335,7 @@ export default function RemoteScreen(): React.ReactElement {
           {error && (
             <div
               data-testid="remote-error"
-              style={{ color: 'var(--gw-danger, #f87171)', fontSize: '13px', marginBottom: '12px' }}
+              style={{ color: 'var(--gw-danger, #f87171)', fontSize: '14px', marginBottom: '12px' }}
             >
               {error}
             </div>
@@ -381,7 +381,7 @@ export default function RemoteScreen(): React.ReactElement {
                 borderRadius: '4px',
                 padding: '12px',
                 marginBottom: '16px',
-                fontSize: '12px',
+                fontSize: '14px',
                 lineHeight: 1.8,
               }}
             >
@@ -447,7 +447,7 @@ export default function RemoteScreen(): React.ReactElement {
                   background: 'var(--gw-success-bg, #052e16)',
                   border: '1px solid var(--gw-success-border, #2d4a2d)',
                   borderRadius: '4px',
-                  fontSize: '13px',
+                  fontSize: '14px',
                   color: 'var(--gw-success, #4ade80)',
                   marginBottom: '16px',
                 }}
@@ -467,7 +467,7 @@ export default function RemoteScreen(): React.ReactElement {
                   border: '1px solid var(--gw-border-strong, #52525b)',
                   borderRadius: '4px',
                   padding: '7px 16px',
-                  fontSize: '13px',
+                  fontSize: '14px',
                   cursor: 'pointer',
                 }}
               >
@@ -489,7 +489,7 @@ export default function RemoteScreen(): React.ReactElement {
                   border: 'none',
                   borderRadius: '4px',
                   padding: '7px 16px',
-                  fontSize: '13px',
+                  fontSize: '14px',
                   cursor:
                     pushSafetyResult?.canPush && !pushStatusPending ? 'pointer' : 'not-allowed',
                 }}

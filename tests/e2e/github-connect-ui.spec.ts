@@ -76,6 +76,9 @@ test.describe('Connect GitHub UI (injected fake service)', () => {
     await expect(win.getByTestId('github-connect-modal')).toBeVisible()
     await expect(win.getByTestId('github-connect-user-code')).toHaveText('WDJB-MJHT')
 
+    // A Copy button sits beside the code so the user can paste it on github.com.
+    await expect(win.getByTestId('github-connect-copy')).toBeVisible()
+
     // The fake poller authorizes after one interval.
     await expect(win.getByTestId('github-connect-success')).toBeVisible({ timeout: 10000 })
     await win.getByTestId('github-connect-done').click()

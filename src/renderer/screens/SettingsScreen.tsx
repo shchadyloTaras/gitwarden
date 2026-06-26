@@ -23,7 +23,7 @@ const CARD: React.CSSProperties = {
 }
 
 const CARD_TITLE: React.CSSProperties = {
-  fontSize: 13,
+  fontSize: 14,
   fontWeight: 600,
   marginBottom: 14,
   color: 'var(--gw-text, #f4f4f5)',
@@ -31,7 +31,7 @@ const CARD_TITLE: React.CSSProperties = {
 
 const LABEL: React.CSSProperties = {
   display: 'block',
-  fontSize: 12,
+  fontSize: 14,
   fontWeight: 600,
   letterSpacing: '0.05em',
   color: 'var(--gw-text-muted, #a1a1aa)',
@@ -43,7 +43,7 @@ const INPUT: React.CSSProperties = {
   border: '1px solid var(--gw-border-subtle, #3f3f46)',
   borderRadius: 4,
   color: 'var(--gw-text, #f4f4f5)',
-  fontSize: 13,
+  fontSize: 14,
   padding: '6px 10px',
   flex: 1,
   minWidth: 0,
@@ -72,7 +72,7 @@ function AppearancePicker({
           style={{
             padding: '6px 16px',
             borderRadius: 4,
-            fontSize: 13,
+            fontSize: 14,
             cursor: 'pointer',
             border:
               value === m.id
@@ -194,7 +194,7 @@ export default function SettingsScreen(): React.ReactElement {
       {loading && (
         <div
           data-testid="settings-loading"
-          style={{ color: 'var(--gw-text-faint, #71717a)', fontSize: 13 }}
+          style={{ color: 'var(--gw-text-faint, #71717a)', fontSize: 14 }}
         >
           {STR.LOADING}
         </div>
@@ -229,7 +229,7 @@ export default function SettingsScreen(): React.ReactElement {
                       ? '2px solid var(--gw-accent, #6366f1)'
                       : '2px solid transparent',
                     color: selected ? 'var(--gw-text, #f4f4f5)' : 'var(--gw-text-muted, #a1a1aa)',
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: selected ? 600 : 400,
                     cursor: 'pointer',
                     marginBottom: -1,
@@ -252,7 +252,7 @@ export default function SettingsScreen(): React.ReactElement {
                   style={{
                     marginTop: 10,
                     marginBottom: 0,
-                    fontSize: 12,
+                    fontSize: 14,
                     color: 'var(--gw-text-faint, #71717a)',
                   }}
                 >
@@ -284,7 +284,7 @@ export default function SettingsScreen(): React.ReactElement {
                       border: '1px solid var(--gw-surface3, #3f3f46)',
                       borderRadius: 4,
                       color: 'var(--gw-text-muted, #a1a1aa)',
-                      fontSize: 12,
+                      fontSize: 14,
                       cursor: 'pointer',
                       flexShrink: 0,
                     }}
@@ -305,7 +305,7 @@ export default function SettingsScreen(): React.ReactElement {
                         border: '1px solid var(--gw-surface3, #3f3f46)',
                         borderRadius: 4,
                         color: 'var(--gw-text-faint, #71717a)',
-                        fontSize: 12,
+                        fontSize: 14,
                         cursor: 'pointer',
                         flexShrink: 0,
                       }}
@@ -315,7 +315,7 @@ export default function SettingsScreen(): React.ReactElement {
                   )}
                 </div>
 
-                <p style={{ margin: 0, fontSize: 12, color: 'var(--gw-text-faint, #71717a)' }}>
+                <p style={{ margin: 0, fontSize: 14, color: 'var(--gw-text-faint, #71717a)' }}>
                   {STR.SETTINGS_DEFAULT_FOLDER_HINT}
                 </p>
               </div>
@@ -349,7 +349,7 @@ export default function SettingsScreen(): React.ReactElement {
                       border: '1px solid var(--gw-surface3, #3f3f46)',
                       borderRadius: 4,
                       color: 'var(--gw-text-muted, #a1a1aa)',
-                      fontSize: 12,
+                      fontSize: 14,
                       cursor: localGitPath.trim() ? 'pointer' : 'not-allowed',
                       flexShrink: 0,
                       opacity: !localGitPath.trim() ? 0.4 : 1,
@@ -373,7 +373,7 @@ export default function SettingsScreen(): React.ReactElement {
                         border: '1px solid var(--gw-surface3, #3f3f46)',
                         borderRadius: 4,
                         color: 'var(--gw-text-faint, #71717a)',
-                        fontSize: 12,
+                        fontSize: 14,
                         cursor: 'pointer',
                         flexShrink: 0,
                       }}
@@ -388,7 +388,7 @@ export default function SettingsScreen(): React.ReactElement {
                   <div
                     data-testid={validateStatus.ok ? 'settings-git-valid' : 'settings-git-invalid'}
                     style={{
-                      fontSize: 12,
+                      fontSize: 14,
                       color: validateStatus.ok
                         ? 'var(--gw-success, #4ade80)'
                         : 'var(--gw-danger, #f87171)',
@@ -401,7 +401,7 @@ export default function SettingsScreen(): React.ReactElement {
                   </div>
                 )}
 
-                <p style={{ margin: 0, fontSize: 12, color: 'var(--gw-text-faint, #71717a)' }}>
+                <p style={{ margin: 0, fontSize: 14, color: 'var(--gw-text-faint, #71717a)' }}>
                   {STR.SETTINGS_GIT_PATH_HINT}
                 </p>
               </div>
@@ -426,7 +426,7 @@ export default function SettingsScreen(): React.ReactElement {
                   style={{
                     marginTop: 0,
                     marginBottom: 12,
-                    fontSize: 12,
+                    fontSize: 14,
                     color: 'var(--gw-text-faint, #71717a)',
                   }}
                 >
@@ -442,7 +442,7 @@ export default function SettingsScreen(): React.ReactElement {
                     borderRadius: 4,
                     color: 'var(--gw-text, #f4f4f5)',
                     cursor: 'pointer',
-                    fontSize: 12,
+                    fontSize: 14,
                     fontWeight: 600,
                   }}
                 >
@@ -469,7 +469,7 @@ export default function SettingsScreen(): React.ReactElement {
                     color: dirty ? 'var(--gw-on-solid, #fff)' : 'var(--gw-text-dim, #52525b)',
                     border: 'none',
                     borderRadius: 4,
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: 600,
                     cursor: dirty ? 'pointer' : 'not-allowed',
                   }}
@@ -481,7 +481,7 @@ export default function SettingsScreen(): React.ReactElement {
               {saved && (
                 <span
                   data-testid="settings-saved-msg"
-                  style={{ fontSize: 13, color: 'var(--gw-success, #4ade80)' }}
+                  style={{ fontSize: 14, color: 'var(--gw-success, #4ade80)' }}
                 >
                   {STR.SETTINGS_SAVED}
                 </span>
@@ -490,7 +490,7 @@ export default function SettingsScreen(): React.ReactElement {
               {saveError && (
                 <span
                   data-testid="settings-save-error"
-                  style={{ fontSize: 13, color: 'var(--gw-danger, #f87171)' }}
+                  style={{ fontSize: 14, color: 'var(--gw-danger, #f87171)' }}
                 >
                   {saveError}
                 </span>

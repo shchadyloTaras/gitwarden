@@ -48,6 +48,17 @@ export interface IGitHubAuthService {
 /** Injectable wait seam — defaults to a real timer; honors the AbortSignal. */
 export type Sleeper = (ms: number, signal: AbortSignal) => Promise<void>
 
+/** Injectable monotonic-ish clock (ms) for the device-code expiry deadline. */
+export type Clock = () => number
+
+/** Outcome of interpreting one poll of the access-token endpoint. */
+type PollOutcome =
+  | { kind: 'token'; result: DeviceTokenResult }
+  | { kind: 'pending' }
+  | { kind: 'slowDown'; intervalSec: number | undefined }
+  /** A transient hiccup (network blip, non-2xx, unparseable body) — keep polling. */
+  | { kind: 'transient' }
+
 /** Resolves after `ms`, or rejects promptly with an AbortError if `signal` fires. */
 export function abortableDelay(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise<void>((resolve, reject) => {
@@ -70,6 +81,7 @@ export function abortableDelay(ms: number, signal: AbortSignal): Promise<void> {
 interface PendingDeviceFlow {
   deviceCode: string
   intervalSec: number
+  expiresInSec: number
 }
 
 export class GitHubAuthService implements IGitHubAuthService {
@@ -80,7 +92,8 @@ export class GitHubAuthService implements IGitHubAuthService {
     private readonly http: HttpClient,
     private readonly clientId: string = GITHUB_CLIENT_ID,
     private readonly sleep: Sleeper = abortableDelay,
-    private readonly logger: Logger = createLogger('GitHubAuthService')
+    private readonly logger: Logger = createLogger('GitHubAuthService'),
+    private readonly now: Clock = () => Date.now()
   ) {}
 
   async requestDeviceCode(scopes: string[]): Promise<GitHubDeviceCode> {
@@ -95,7 +108,11 @@ export class GitHubAuthService implements IGitHubAuthService {
 
     const parsed = this.parse(GitHubDeviceCodeResponseSchema, res.json, 'device code response')
     // device_code is retained in main for polling; only the user-facing fields cross to the renderer.
-    this.pending = { deviceCode: parsed.device_code, intervalSec: parsed.interval }
+    this.pending = {
+      deviceCode: parsed.device_code,
+      intervalSec: parsed.interval,
+      expiresInSec: parsed.expires_in,
+    }
     this.logger.info('Requested GitHub device code', {
       userCode: parsed.user_code,
       verificationUri: parsed.verification_uri,
@@ -115,58 +132,102 @@ export class GitHubAuthService implements IGitHubAuthService {
       throw new GitHubAuthError('unknown', 'pollForToken called before requestDeviceCode.')
     }
     let intervalSec = pending.intervalSec
+    // The device code is only valid for `expires_in`. Bound the loop by that deadline so
+    // a sustained outage — where GitHub never gets a chance to return `expired_token` —
+    // can't poll forever.
+    const deadline = this.now() + pending.expiresInSec * 1000
 
     for (;;) {
       this.throwIfAborted(signal)
 
-      let res: HttpResponse
-      try {
-        res = await this.http.postForm(
-          GITHUB_ACCESS_TOKEN_URL,
-          {
-            client_id: this.clientId,
-            device_code: pending.deviceCode,
-            grant_type: GITHUB_DEVICE_GRANT_TYPE,
-          },
-          JSON_HEADERS
-        )
-      } catch (error) {
-        // A transient connection failure is surfaced as a terminal `network` error;
-        // the caller can restart the flow. The device_code is left intact for retry.
-        throw new GitHubAuthError('network', `Token poll request failed: ${errorMessage(error)}`)
-      }
+      const outcome = await this.pollOnce(pending.deviceCode)
 
-      const parsed = this.parse(GitHubAccessTokenResponseSchema, res.json, 'token response')
-
-      if ('access_token' in parsed) {
+      if (outcome.kind === 'token') {
         this.pending = undefined
         this.logger.info('GitHub authorization succeeded')
-        return { accessToken: parsed.access_token, scopes: parseScopes(parsed.scope) }
+        return outcome.result
       }
+      if (outcome.kind === 'slowDown') {
+        // GitHub returns the new minimum interval; fall back to +5s per RFC 8628.
+        intervalSec = outcome.intervalSec ?? intervalSec + SLOW_DOWN_INCREMENT_SEC
+        this.logger.debug('GitHub asked to slow down', { intervalSec })
+      }
+      // 'pending', 'slowDown', and 'transient' all just keep polling — a transient hiccup
+      // (network blip, non-2xx, unparseable body) must NOT abandon the flow and force the
+      // user to restart sign-in.
 
-      switch (parsed.error) {
-        case 'authorization_pending':
-          break // keep polling at the current interval
-        case 'slow_down':
-          // GitHub returns the new minimum interval; fall back to +5s per RFC 8628.
-          intervalSec = parsed.interval ?? intervalSec + SLOW_DOWN_INCREMENT_SEC
-          this.logger.debug('GitHub asked to slow down', { intervalSec })
-          break
-        case 'access_denied':
-          this.pending = undefined
-          throw new GitHubAuthError('accessDenied', 'The user denied the authorization request.')
-        case 'expired_token':
-          this.pending = undefined
-          throw new GitHubAuthError(
-            'expiredToken',
-            'The device code expired before the user authorized.'
-          )
-        default:
-          this.pending = undefined
-          throw new GitHubAuthError('unknown', `Unexpected authorization error: ${parsed.error}`)
+      if (this.now() >= deadline) {
+        this.pending = undefined
+        throw new GitHubAuthError(
+          'expiredToken',
+          'The device code expired before authorization completed.'
+        )
       }
 
       await this.sleep(intervalSec * 1000, signal)
+    }
+  }
+
+  /**
+   * Poll the access-token endpoint once and classify the result. Genuine terminal
+   * states (`access_denied`, `expired_token`, an unrecognized error) throw a typed
+   * GitHubAuthError; everything transient is reported so the caller keeps polling.
+   */
+  private async pollOnce(deviceCode: string): Promise<PollOutcome> {
+    let res: HttpResponse
+    try {
+      res = await this.http.postForm(
+        GITHUB_ACCESS_TOKEN_URL,
+        {
+          client_id: this.clientId,
+          device_code: deviceCode,
+          grant_type: GITHUB_DEVICE_GRANT_TYPE,
+        },
+        JSON_HEADERS
+      )
+    } catch (error) {
+      this.logger.debug('Token poll request failed; will retry', { error: errorMessage(error) })
+      return { kind: 'transient' }
+    }
+
+    // GitHub answers the poll with HTTP 200 even for pending/slow_down. A non-2xx
+    // (rate limit, 5xx) or an unparseable body is a transient hiccup, not a reason to
+    // abandon the flow.
+    if (!isOk(res)) {
+      this.logger.debug('Token poll returned a non-2xx status; will retry', { status: res.status })
+      return { kind: 'transient' }
+    }
+    const parsed = GitHubAccessTokenResponseSchema.safeParse(res.json)
+    if (!parsed.success) {
+      this.logger.debug('Token poll returned an unparseable body; will retry')
+      return { kind: 'transient' }
+    }
+    const data = parsed.data
+
+    if ('access_token' in data) {
+      return {
+        kind: 'token',
+        result: { accessToken: data.access_token, scopes: parseScopes(data.scope) },
+      }
+    }
+
+    switch (data.error) {
+      case 'authorization_pending':
+        return { kind: 'pending' }
+      case 'slow_down':
+        return { kind: 'slowDown', intervalSec: data.interval }
+      case 'access_denied':
+        this.pending = undefined
+        throw new GitHubAuthError('accessDenied', 'The user denied the authorization request.')
+      case 'expired_token':
+        this.pending = undefined
+        throw new GitHubAuthError(
+          'expiredToken',
+          'The device code expired before the user authorized.'
+        )
+      default:
+        this.pending = undefined
+        throw new GitHubAuthError('unknown', `Unexpected authorization error: ${data.error}`)
     }
   }
 

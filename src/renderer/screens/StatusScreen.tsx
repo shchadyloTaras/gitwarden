@@ -49,7 +49,7 @@ function StatusBadge({ kind }: { kind: string }): React.ReactElement {
   return (
     <span
       style={{
-        fontSize: 10,
+        fontSize: 14,
         fontWeight: 700,
         fontFamily: 'monospace',
         color: KIND_COLOR[kind] ?? 'var(--gw-text-muted, #a1a1aa)',
@@ -113,7 +113,7 @@ function FileRow({
           alignItems: 'center',
           gap: 8,
           padding: '5px 12px',
-          fontSize: 12,
+          fontSize: 14,
           cursor: 'pointer',
           background: selected ? 'var(--gw-surface2, #27272a)' : 'transparent',
         }}
@@ -146,7 +146,7 @@ function FileRow({
             borderRadius: 3,
             color: 'var(--gw-text, #f4f4f5)',
             cursor: 'pointer',
-            fontSize: 11,
+            fontSize: 14,
             fontWeight: 600,
           }}
         >
@@ -169,7 +169,7 @@ function FileRow({
                 ? 'var(--gw-danger, #f87171)'
                 : 'var(--gw-text-muted, #a1a1aa)',
               cursor: 'pointer',
-              fontSize: 11,
+              fontSize: 14,
             }}
           >
             {extraAction.label}
@@ -179,7 +179,7 @@ function FileRow({
           <>
             <span
               style={{
-                fontSize: 11,
+                fontSize: 14,
                 color: isIrreversible ? 'var(--gw-warning, #fbbf24)' : 'var(--gw-danger, #f87171)',
               }}
             >
@@ -203,7 +203,7 @@ function FileRow({
                 borderRadius: 3,
                 color: 'var(--gw-danger, #f87171)',
                 cursor: 'pointer',
-                fontSize: 11,
+                fontSize: 14,
                 fontWeight: 600,
               }}
             >
@@ -223,7 +223,7 @@ function FileRow({
                 borderRadius: 3,
                 color: 'var(--gw-text-muted, #a1a1aa)',
                 cursor: 'pointer',
-                fontSize: 11,
+                fontSize: 14,
               }}
             >
               {isIrreversible ? STR.DELETE_UNTRACKED_CANCEL_BTN : STR.DISCARD_TRACKED_CANCEL_BTN}
@@ -239,7 +239,7 @@ function FileRow({
             padding: '6px 12px',
             background: 'var(--gw-warning-bg, #422006)',
             borderTop: '1px solid var(--gw-warning-border, #78350f)',
-            fontSize: 11,
+            fontSize: 14,
             color: 'var(--gw-warning, #fbbf24)',
           }}
         >
@@ -253,7 +253,7 @@ function FileRow({
             padding: '6px 12px',
             background: 'var(--gw-surface2, #27272a)',
             borderTop: '1px solid var(--gw-border, #27272a)',
-            fontSize: 11,
+            fontSize: 14,
             color: 'var(--gw-text-muted, #a1a1aa)',
           }}
         >
@@ -290,7 +290,7 @@ function SectionHeader({
     >
       <span
         style={{
-          fontSize: 11,
+          fontSize: 14,
           fontWeight: 700,
           letterSpacing: '0.06em',
           color: 'var(--gw-text-faint, #71717a)',
@@ -298,7 +298,7 @@ function SectionHeader({
       >
         {title}
       </span>
-      <span style={{ fontSize: 11, color: 'var(--gw-text-dim, #52525b)' }}>({count})</span>
+      <span style={{ fontSize: 14, color: 'var(--gw-text-dim, #52525b)' }}>({count})</span>
       <div style={{ flex: 1 }} />
       {count > 0 && (
         <button
@@ -311,7 +311,7 @@ function SectionHeader({
             borderRadius: 3,
             color: 'var(--gw-text-muted, #a1a1aa)',
             cursor: 'pointer',
-            fontSize: 11,
+            fontSize: 14,
           }}
         >
           {bulkLabel}
@@ -348,7 +348,7 @@ function DiffLine({ line }: { line: string }): React.ReactElement {
         background: bg,
         padding: '0 12px',
         fontFamily: 'monospace',
-        fontSize: 11,
+        fontSize: 14,
         whiteSpace: 'pre',
         lineHeight: '18px',
       }}
@@ -385,7 +385,7 @@ function DiffPanel({
           alignItems: 'center',
           justifyContent: 'center',
           color: 'var(--gw-text-dim, #52525b)',
-          fontSize: 13,
+          fontSize: 14,
         }}
       >
         Select a file to view its diff.
@@ -412,7 +412,7 @@ function DiffPanel({
         <span
           style={{
             fontFamily: 'monospace',
-            fontSize: 11,
+            fontSize: 14,
             color: 'var(--gw-text-muted, #a1a1aa)',
             flex: 1,
             overflow: 'hidden',
@@ -435,7 +435,7 @@ function DiffPanel({
                 borderRadius: 3,
                 color: canViewStaged ? 'var(--gw-text, #f4f4f5)' : 'var(--gw-text-dim, #52525b)',
                 cursor: canViewStaged ? 'pointer' : 'default',
-                fontSize: 11,
+                fontSize: 14,
                 fontWeight: diffMode === 'staged' ? 700 : 400,
               }}
             >
@@ -452,7 +452,7 @@ function DiffPanel({
                 borderRadius: 3,
                 color: canViewUnstaged ? 'var(--gw-text, #f4f4f5)' : 'var(--gw-text-dim, #52525b)',
                 cursor: canViewUnstaged ? 'pointer' : 'default',
-                fontSize: 11,
+                fontSize: 14,
                 fontWeight: diffMode === 'unstaged' ? 700 : 400,
               }}
             >
@@ -465,17 +465,17 @@ function DiffPanel({
       {/* Diff content */}
       <div style={{ flex: 1, overflow: 'auto' }}>
         {loading && (
-          <div style={{ padding: 16, color: 'var(--gw-text-faint, #71717a)', fontSize: 12 }}>
+          <div style={{ padding: 16, color: 'var(--gw-text-faint, #71717a)', fontSize: 14 }}>
             Loading diff…
           </div>
         )}
         {!loading && isUntracked && (
-          <div style={{ padding: 16, color: 'var(--gw-text-dim, #52525b)', fontSize: 12 }}>
+          <div style={{ padding: 16, color: 'var(--gw-text-dim, #52525b)', fontSize: 14 }}>
             Untracked file — no diff available.
           </div>
         )}
         {!loading && !isUntracked && diff !== null && diff.length === 0 && (
-          <div style={{ padding: 16, color: 'var(--gw-text-dim, #52525b)', fontSize: 12 }}>
+          <div style={{ padding: 16, color: 'var(--gw-text-dim, #52525b)', fontSize: 14 }}>
             No diff in this view.
           </div>
         )}
@@ -610,7 +610,7 @@ export default function StatusScreen(): React.ReactElement {
               borderRadius: 4,
               color: 'var(--gw-text-muted, #a1a1aa)',
               cursor: loading ? 'wait' : 'pointer',
-              fontSize: 11,
+              fontSize: 14,
             }}
           >
             {loading ? 'Loading…' : 'Refresh'}
@@ -628,7 +628,7 @@ export default function StatusScreen(): React.ReactElement {
               alignItems: 'center',
               justifyContent: 'center',
               color: 'var(--gw-text-dim, #52525b)',
-              fontSize: 13,
+              fontSize: 14,
             }}
           >
             Add a repository to get started.
@@ -660,7 +660,7 @@ export default function StatusScreen(): React.ReactElement {
                 {loading && !status && (
                   <div
                     data-testid="status-loading"
-                    style={{ padding: 24, color: 'var(--gw-text-faint, #71717a)', fontSize: 13 }}
+                    style={{ padding: 24, color: 'var(--gw-text-faint, #71717a)', fontSize: 14 }}
                   >
                     Loading…
                   </div>
@@ -671,7 +671,7 @@ export default function StatusScreen(): React.ReactElement {
                     data-testid="status-error"
                     style={{
                       padding: '10px 12px',
-                      fontSize: 12,
+                      fontSize: 14,
                       color: 'var(--gw-danger, #f87171)',
                     }}
                   >
@@ -694,7 +694,7 @@ export default function StatusScreen(): React.ReactElement {
                           <div
                             style={{
                               padding: '8px 12px',
-                              fontSize: 12,
+                              fontSize: 14,
                               color: 'var(--gw-text-dim, #52525b)',
                             }}
                           >
@@ -730,7 +730,7 @@ export default function StatusScreen(): React.ReactElement {
                           <div
                             style={{
                               padding: '8px 12px',
-                              fontSize: 12,
+                              fontSize: 14,
                               color: 'var(--gw-text-dim, #52525b)',
                             }}
                           >
@@ -777,7 +777,7 @@ export default function StatusScreen(): React.ReactElement {
                           <div
                             style={{
                               padding: '8px 12px',
-                              fontSize: 12,
+                              fontSize: 14,
                               color: 'var(--gw-text-dim, #52525b)',
                             }}
                           >

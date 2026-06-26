@@ -9,7 +9,7 @@ import type { SafetyIssue } from '../../core/types'
 function ScopeLabel({ scope }: { scope: string | undefined }): React.ReactElement {
   if (!scope) return <span style={{ color: 'var(--gw-text-dim, #52525b)' }}>—</span>
   const color = scope === 'local' ? 'var(--gw-success, #4ade80)' : 'var(--gw-warning, #fbbf24)'
-  return <span style={{ color, fontSize: '11px', marginLeft: '6px' }}>({scope})</span>
+  return <span style={{ color, fontSize: '14px', marginLeft: '6px' }}>({scope})</span>
 }
 
 function Verdict({ ok, testId }: { ok: boolean; testId: string }): React.ReactElement {
@@ -19,7 +19,7 @@ function Verdict({ ok, testId }: { ok: boolean; testId: string }): React.ReactEl
       style={{
         fontWeight: 600,
         color: ok ? 'var(--gw-success, #4ade80)' : 'var(--gw-danger, #f87171)',
-        fontSize: '13px',
+        fontSize: '14px',
       }}
     >
       {ok ? '✓ Yes' : '✗ No'}
@@ -47,7 +47,7 @@ const CARD_HEADER: React.CSSProperties = {
   padding: '8px 12px',
   background: 'var(--gw-bg, #09090b)',
   borderBottom: '1px solid var(--gw-border, #27272a)',
-  fontSize: '11px',
+  fontSize: '14px',
   fontWeight: 600,
   color: 'var(--gw-text-faint, #71717a)',
   textTransform: 'uppercase',
@@ -60,7 +60,7 @@ const CARD_ROW: React.CSSProperties = {
   justifyContent: 'space-between',
   alignItems: 'center',
   borderBottom: '1px solid var(--gw-surface, #18181b)',
-  fontSize: '13px',
+  fontSize: '14px',
 }
 
 const LABEL: React.CSSProperties = {
@@ -149,20 +149,20 @@ export default function SafetyCenterScreen(): React.ReactElement {
 
       {loading && (
         <div
-          style={{ color: 'var(--gw-text-faint, #71717a)', fontSize: '13px', marginBottom: '16px' }}
+          style={{ color: 'var(--gw-text-faint, #71717a)', fontSize: '14px', marginBottom: '16px' }}
         >
           Loading…
         </div>
       )}
 
       {error && (
-        <div style={{ color: 'var(--gw-danger, #f87171)', fontSize: '13px', marginBottom: '16px' }}>
+        <div style={{ color: 'var(--gw-danger, #f87171)', fontSize: '14px', marginBottom: '16px' }}>
           {error}
         </div>
       )}
 
       {!loading && !repository && !activeRepo && (
-        <div style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: '13px' }}>
+        <div style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: '14px' }}>
           Add a repository to run the identity audit.
         </div>
       )}
@@ -205,7 +205,7 @@ export default function SafetyCenterScreen(): React.ReactElement {
                 style={{
                   padding: '7px 12px',
                   background: 'var(--gw-danger-bg, #450a0a)',
-                  fontSize: '12px',
+                  fontSize: '14px',
                   color: 'var(--gw-danger, #f87171)',
                 }}
               >
@@ -231,7 +231,7 @@ export default function SafetyCenterScreen(): React.ReactElement {
                     border: 'none',
                     borderRadius: '4px',
                     padding: '6px 12px',
-                    fontSize: '12px',
+                    fontSize: '14px',
                     cursor: assigning ? 'wait' : 'pointer',
                   }}
                 >
@@ -241,7 +241,7 @@ export default function SafetyCenterScreen(): React.ReactElement {
                   <div
                     style={{
                       marginTop: '6px',
-                      fontSize: '12px',
+                      fontSize: '14px',
                       color: 'var(--gw-danger, #f87171)',
                     }}
                   >
@@ -256,7 +256,7 @@ export default function SafetyCenterScreen(): React.ReactElement {
                 style={{
                   padding: '7px 12px',
                   background: 'var(--gw-warning-bg, #422006)',
-                  fontSize: '12px',
+                  fontSize: '14px',
                   color: 'var(--gw-warning, #fbbf24)',
                 }}
               >
@@ -292,7 +292,7 @@ export default function SafetyCenterScreen(): React.ReactElement {
                 style={{
                   padding: '7px 12px',
                   background: 'var(--gw-warning-bg, #422006)',
-                  fontSize: '12px',
+                  fontSize: '14px',
                   color: 'var(--gw-warning, #fbbf24)',
                 }}
               >
@@ -317,14 +317,14 @@ export default function SafetyCenterScreen(): React.ReactElement {
               </span>
             </div>
             {remotes.length === 0 ? (
-              <div style={{ ...CARD_ROW, color: 'var(--gw-text-dim, #52525b)', fontSize: '13px' }}>
+              <div style={{ ...CARD_ROW, color: 'var(--gw-text-dim, #52525b)', fontSize: '14px' }}>
                 No remotes configured
               </div>
             ) : (
               remotes.map((r) => (
                 <div key={r.name} style={CARD_ROW}>
                   <span style={LABEL}>{r.name}</span>
-                  <span style={{ ...VALUE, fontSize: '12px' }}>
+                  <span style={{ ...VALUE, fontSize: '14px' }}>
                     <span
                       data-testid={`safety-remote-host-${r.name}`}
                       style={{ color: 'var(--gw-purple, #a78bfa)' }}
@@ -370,7 +370,7 @@ export default function SafetyCenterScreen(): React.ReactElement {
                 background: 'var(--gw-success-bg, #052e16)',
                 border: '1px solid var(--gw-success-border, #2d4a2d)',
                 borderRadius: '6px',
-                fontSize: '13px',
+                fontSize: '14px',
                 color: 'var(--gw-success, #4ade80)',
               }}
             >

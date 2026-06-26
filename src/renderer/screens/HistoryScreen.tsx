@@ -10,7 +10,7 @@ const ROW: React.CSSProperties = {
   gap: 12,
   padding: '7px 16px',
   borderBottom: '1px solid var(--gw-border, #27272a)',
-  fontSize: 13,
+  fontSize: 14,
 }
 
 export default function HistoryScreen(): React.ReactElement {
@@ -45,7 +45,7 @@ export default function HistoryScreen(): React.ReactElement {
       >
         <span style={{ fontWeight: 600, fontSize: 14 }}>{STR.NAV_HISTORY}</span>
         {activeRepo && !loading && (
-          <span style={{ fontSize: 12, color: 'var(--gw-text-faint, #71717a)' }}>
+          <span style={{ fontSize: 14, color: 'var(--gw-text-faint, #71717a)' }}>
             {commits.length} commits loaded
           </span>
         )}
@@ -55,12 +55,12 @@ export default function HistoryScreen(): React.ReactElement {
       {!activeRepo ? (
         <div
           data-testid="history-empty"
-          style={{ padding: 24, color: 'var(--gw-text-faint, #71717a)', fontSize: 13 }}
+          style={{ padding: 24, color: 'var(--gw-text-faint, #71717a)', fontSize: 14 }}
         >
           Add a repository to get started.
         </div>
       ) : loading ? (
-        <div style={{ padding: 24, color: 'var(--gw-text-faint, #71717a)', fontSize: 13 }}>
+        <div style={{ padding: 24, color: 'var(--gw-text-faint, #71717a)', fontSize: 14 }}>
           Loading…
         </div>
       ) : (
@@ -74,7 +74,7 @@ export default function HistoryScreen(): React.ReactElement {
                 background: 'var(--gw-danger-bg, #450a0a)',
                 border: '1px solid var(--gw-danger-solid, #dc2626)',
                 borderRadius: 4,
-                fontSize: 13,
+                fontSize: 14,
                 color: 'var(--gw-danger, #f87171)',
               }}
             >
@@ -83,7 +83,7 @@ export default function HistoryScreen(): React.ReactElement {
           )}
 
           {commits.length === 0 && !error && (
-            <div style={{ padding: 24, color: 'var(--gw-text-faint, #71717a)', fontSize: 13 }}>
+            <div style={{ padding: 24, color: 'var(--gw-text-faint, #71717a)', fontSize: 14 }}>
               No commits found in this repository.
             </div>
           )}
@@ -93,7 +93,7 @@ export default function HistoryScreen(): React.ReactElement {
             <div
               style={{
                 ...ROW,
-                fontSize: 11,
+                fontSize: 14,
                 color: 'var(--gw-text-dim, #52525b)',
                 borderBottom: '1px solid var(--gw-surface3, #3f3f46)',
                 background: 'var(--gw-surface, #18181b)',
@@ -115,7 +115,7 @@ export default function HistoryScreen(): React.ReactElement {
                 <span
                   style={{
                     fontFamily: 'monospace',
-                    fontSize: 12,
+                    fontSize: 14,
                     color: 'var(--gw-accent, #6366f1)',
                     flexShrink: 0,
                   }}
@@ -139,7 +139,7 @@ export default function HistoryScreen(): React.ReactElement {
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
                     color: 'var(--gw-text-muted, #a1a1aa)',
-                    fontSize: 12,
+                    fontSize: 14,
                   }}
                   title={c.authorEmail}
                 >
@@ -148,7 +148,7 @@ export default function HistoryScreen(): React.ReactElement {
                 <span
                   style={{
                     color: 'var(--gw-text-faint, #71717a)',
-                    fontSize: 12,
+                    fontSize: 14,
                     whiteSpace: 'nowrap',
                   }}
                 >
@@ -166,7 +166,7 @@ export default function HistoryScreen(): React.ReactElement {
                 disabled={loadingMore}
                 onClick={() => void loadMore()}
                 style={{
-                  fontSize: 13,
+                  fontSize: 14,
                   padding: '6px 16px',
                   borderRadius: 4,
                   border: '1px solid var(--gw-surface3, #3f3f46)',

@@ -31,6 +31,8 @@ export const STR = {
   NO_REPO_SELECTED: 'Select a repository to continue.',
 
   // ── Profiles screen ───────────────────────────────────────────────────────
+  PROFILE_ACTIVE: 'Active',
+  PROFILE_SET_ACTIVE: 'Set Active',
   PROFILE_CREATED: 'Profile created.',
   PROFILE_SAVED: 'Profile saved.',
   PROFILE_DISPLAYNAME_REQUIRED: 'Enter a display name to connect a GitHub account.',
@@ -38,6 +40,8 @@ export const STR = {
 
   // ── Repositories screen ───────────────────────────────────────────────────
   REPOSITORY_SAVED: 'Repository saved.',
+  REPOSITORY_PATH_COPY: 'Copy path',
+  REPOSITORY_PATH_COPIED: 'Copied',
 
   // ── Settings screen ────────────────────────────────────────────────────────
   SETTINGS_TITLE: 'Settings',
@@ -150,6 +154,9 @@ export const STR = {
   GITHUB_MODAL_ENTER_CODE: 'Enter this code at github.com/login/device:',
   GITHUB_MODAL_WAITING: 'Waiting for you to authorize on GitHub…',
   GITHUB_MODAL_OPEN_BTN: 'Open GitHub',
+  GITHUB_MODAL_COPY_BTN: 'Copy',
+  GITHUB_MODAL_COPIED: 'Copied!',
+  GITHUB_MODAL_COPY_CODE_LABEL: 'Copy device code',
   GITHUB_MODAL_CANCEL_BTN: 'Cancel',
   GITHUB_MODAL_CLOSE_BTN: 'Close',
   GITHUB_MODAL_SUCCESS_TITLE: 'Connected',
@@ -197,9 +204,10 @@ export const STR = {
   AI_BASEURL_HINT_LOCAL: 'Confirm the local server port (LM Studio defaults to 1234).',
   AI_MODEL_LABEL: 'Model',
   AI_MODEL_PLACEHOLDER: 'e.g. anthropic/claude-3.5-sonnet',
-  AI_MODEL_HINT: 'Fetching models is the connection test. Local servers show all returned models.',
-  AI_MODELS_FETCH: 'Fetch models',
+  AI_MODEL_HINT:
+    'The model list loads automatically when you save a key. Local servers show all returned models.',
   AI_MODELS_FETCHING: 'Fetching models…',
+  AI_MODELS_LOADING: 'Loading models…',
   AI_MODELS_READY: (count: number) => `${count} model${count === 1 ? '' : 's'} available.`,
   AI_MODELS_ERROR: 'Could not fetch models for this connection.',
   DROPDOWN_SEARCH_PLACEHOLDER: 'Search models…',
@@ -210,7 +218,9 @@ export const STR = {
   AI_CRED_LABEL: 'Stored credential',
   AI_CRED_MASKED: (preview: string) => `Key: ${preview}`,
   AI_CRED_NONE: 'No credential stored for this connection yet.',
-  AI_CRED_DELETE: 'Remove credential',
+  AI_CRED_CHANGE: 'Change key',
+  AI_CRED_SAVE_KEY: 'Save key',
+  AI_FETCH_NEEDS_KEY: 'Save an API key to load models.',
   AI_CONN_DELETE_BTN: 'Delete connection',
   AI_CONN_DELETE_CONFIRM: 'Delete this connection and its credential?',
   AI_PREVIEW_HOST: (host: string) => `Destination: ${host}`,

@@ -24,7 +24,7 @@ export default function SafetyIssueRow({
         padding: '8px 12px',
         background: isBlocker ? 'var(--gw-danger-bg, #450a0a)' : 'var(--gw-warning-bg, #422006)',
         borderBottom: '1px solid var(--gw-border, #27272a)',
-        fontSize: '13px',
+        fontSize: '14px',
         color: isBlocker ? 'var(--gw-danger, #f87171)' : 'var(--gw-warning, #fbbf24)',
         display: 'flex',
         alignItems: 'flex-start',

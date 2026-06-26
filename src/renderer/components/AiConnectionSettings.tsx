@@ -1,7 +1,12 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { useAiStore } from '../store/aiStore'
 import { requiresBaseUrlEntry } from '../../core/ai/detection'
-import type { AiConnection, AiConnectionKind, AiProviderDetection } from '../../core/ai/types'
+import type {
+  AiConnection,
+  AiConnectionKind,
+  AiModelInfo,
+  AiProviderDetection,
+} from '../../core/ai/types'
 import Dropdown from './Dropdown'
 import { modelDropdownOptions } from './aiModelOptions'
 import { STR } from '../strings'
@@ -222,22 +227,24 @@ function SetupForm(): React.ReactElement {
 }
 
 /**
- * Step 2 — the active connection: pick a model (from the provider's live list),
- * manage the stored key, save, or delete. No separate enable toggle — a saved
- * key is the consent.
+ * Active connection card — manage the stored key, pick a model, save. Saving (or
+ * changing) the key auto-loads the provider's model list; there is no manual fetch.
+ * Delete stays in a separate danger zone at the bottom.
  */
 function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElement {
   const credentialMeta = useAiStore((s) => s.credentialMeta)
   const updateConnection = useAiStore((s) => s.updateConnection)
   const deleteConnection = useAiStore((s) => s.deleteConnection)
   const saveCredential = useAiStore((s) => s.saveCredential)
-  const deleteCredential = useAiStore((s) => s.deleteCredential)
   const listModels = useAiStore((s) => s.listModels)
   const testConnection = useAiStore((s) => s.testConnection)
   const models = useAiStore((s) => s.models)
 
   const [model, setModel] = useState(conn.defaultModel ?? '')
   const [credKey, setCredKey] = useState('')
+  const [editingCredential, setEditingCredential] = useState(false)
+  const [credSaving, setCredSaving] = useState(false)
+  const [credError, setCredError] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [saved, setSaved] = useState(false)
   const [modelsLoading, setModelsLoading] = useState(false)
@@ -245,13 +252,69 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
 
   useEffect(() => {
     setModel(conn.defaultModel ?? '')
-    setModelStatus(null)
   }, [conn.id, conn.defaultModel])
 
-  // Load the model list once so the dropdown is populated from the provider API.
+  const applyModelSelection = useCallback(
+    (fetched: AiModelInfo[]) => {
+      setModel((current) => {
+        const selected = current.trim()
+        if (selected && fetched.some((entry) => entry.id === selected)) return selected
+        const saved = conn.defaultModel ?? ''
+        if (saved && fetched.some((entry) => entry.id === saved)) return saved
+        return fetched[0]?.id ?? ''
+      })
+      setSaved(false)
+    },
+    [conn.defaultModel]
+  )
+
+  const refreshModels = useCallback(async (): Promise<boolean> => {
+    if (!useAiStore.getState().credentialMeta) {
+      setModelStatus(null)
+      return false
+    }
+
+    const result = await testConnection(conn.id)
+    if (result) {
+      setModelStatus(STR.AI_MODELS_READY(result.models.length))
+      applyModelSelection(result.models)
+      return true
+    }
+
+    const fetched = await listModels(conn.id)
+    if (fetched.length > 0) {
+      setModelStatus(STR.AI_MODELS_READY(fetched.length))
+      applyModelSelection(fetched)
+      return true
+    }
+
+    setModelStatus(useAiStore.getState().error ?? STR.AI_MODELS_ERROR)
+    return false
+  }, [applyModelSelection, conn.id, listModels, testConnection])
+
+  // Auto-load models whenever a credential is saved or restored (Change key → Save included).
+  // Keyed on updatedAt, not the credentialMeta object: load() rebuilds that object after many
+  // actions (e.g. saving the model default) with an unchanged updatedAt, and we don't want those
+  // to re-fetch models — only an actual credential change should.
   useEffect(() => {
-    if (credentialMeta && models.length === 0) void listModels(conn.id)
-  }, [conn.id, credentialMeta, models.length, listModels])
+    if (!credentialMeta) {
+      setModelStatus(null)
+      return
+    }
+
+    let cancelled = false
+    setModelsLoading(true)
+    setModelStatus(null)
+
+    void refreshModels().finally(() => {
+      if (!cancelled) setModelsLoading(false)
+    })
+
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on updatedAt (see above)
+  }, [credentialMeta?.updatedAt, refreshModels])
 
   const dirty = (model.trim() || '') !== (conn.defaultModel ?? '')
 
@@ -260,31 +323,136 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
     setSaved(true)
   }
 
-  async function handleFetchModels(): Promise<void> {
-    setModelsLoading(true)
-    setModelStatus(null)
+  // Saving a (new) key updates credentialMeta.updatedAt, which the auto-load
+  // effect above watches — so the model list refreshes on its own. No manual fetch.
+  async function handleSaveCredential(): Promise<void> {
+    const key = credKey.trim()
+    if (!key) return
+
+    setCredSaving(true)
+    setCredError(null)
     try {
-      const result = await testConnection(conn.id)
-      const fetched = result?.models ?? (await listModels(conn.id))
-      if (fetched[0] && model.trim().length === 0) setModel(fetched[0].id)
-      setModelStatus(result ? STR.AI_MODELS_READY(fetched.length) : STR.AI_MODELS_ERROR)
+      await saveCredential(conn.id, `${titleCaseKind(conn.kind)} key`, { apiKey: key })
+      setCredKey('')
+      setEditingCredential(false)
+    } catch (err) {
+      setCredError(err instanceof Error ? err.message : STR.AI_SAVE_ERROR)
     } finally {
-      setModelsLoading(false)
+      setCredSaving(false)
     }
+  }
+
+  function handleStartCredentialEdit(): void {
+    setEditingCredential(true)
+    setCredKey('')
+    setCredError(null)
+    setModelStatus(null)
+  }
+
+  function handleCancelCredentialEdit(): void {
+    setEditingCredential(false)
+    setCredKey('')
+    setCredError(null)
   }
 
   return (
     <div style={CARD} data-testid="ai-connection-card">
       <div style={SECTION_TITLE}>{STR.AI_SECTION_LABEL}</div>
 
-      <div style={{ fontSize: 12, color: 'var(--gw-text-faint, #71717a)', marginBottom: 12 }}>
+      <div style={{ fontSize: 12, color: 'var(--gw-text-faint, #71717a)', marginBottom: 16 }}>
         {titleCaseKind(conn.kind)}
         {conn.baseUrl ? ` · ${conn.baseUrl}` : ''}
       </div>
 
-      <div style={{ marginTop: 4 }}>
+      {/* Credential first — a stored key is required before the model list can load. */}
+      <div>
+        <label style={LABEL}>{STR.AI_CRED_LABEL}</label>
+        {credentialMeta && !editingCredential ? (
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+            <code
+              data-testid="ai-cred-masked"
+              style={{ fontSize: 13, color: 'var(--gw-text, #f4f4f5)' }}
+            >
+              {STR.AI_CRED_MASKED(credentialMeta.maskedPreview)}
+            </code>
+            <button
+              data-testid="ai-cred-change"
+              onClick={handleStartCredentialEdit}
+              style={SUBTLE_BTN}
+            >
+              {STR.AI_CRED_CHANGE}
+            </button>
+          </div>
+        ) : (
+          <div>
+            {!credentialMeta && (
+              <p data-testid="ai-cred-none" style={{ ...HINT, marginTop: 0 }}>
+                {STR.AI_CRED_NONE}
+              </p>
+            )}
+            <div style={{ display: 'flex', gap: 8, marginTop: credentialMeta ? 0 : 8 }}>
+              <input
+                data-testid="ai-cred-key-input"
+                type="password"
+                value={credKey}
+                onChange={(e) => {
+                  setCredKey(e.target.value)
+                  setCredError(null)
+                }}
+                placeholder={STR.AI_KEY_PLACEHOLDER}
+                style={INPUT}
+              />
+              <button
+                data-testid="ai-cred-save"
+                disabled={credKey.trim().length === 0 || credSaving}
+                onClick={() => void handleSaveCredential()}
+                style={{
+                  ...SUBTLE_BTN,
+                  flexShrink: 0,
+                  opacity: credKey.trim().length === 0 || credSaving ? 0.5 : 1,
+                  cursor: credKey.trim().length === 0 || credSaving ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {credSaving ? STR.AI_MODELS_FETCHING : STR.AI_CRED_SAVE_KEY}
+              </button>
+              {credentialMeta && (
+                <button
+                  data-testid="ai-cred-cancel"
+                  onClick={handleCancelCredentialEdit}
+                  style={{ ...SUBTLE_BTN, flexShrink: 0 }}
+                >
+                  {STR.BTN_CANCEL}
+                </button>
+              )}
+            </div>
+            {credError && (
+              <p
+                data-testid="ai-cred-error"
+                style={{ ...HINT, color: 'var(--gw-danger, #f87171)' }}
+              >
+                {credError}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Model — the list auto-loads from the provider whenever a key is saved. */}
+      <div
+        style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--gw-border, #27272a)' }}
+      >
         <label style={LABEL}>{STR.AI_MODEL_LABEL}</label>
-        {models.length > 0 ? (
+        <p style={{ ...HINT, marginTop: 0, marginBottom: 10 }}>{STR.AI_MODEL_HINT}</p>
+        {modelStatus && (
+          <p data-testid="ai-model-status" style={{ ...HINT, marginTop: 0, marginBottom: 10 }}>
+            {modelStatus}
+          </p>
+        )}
+        {modelsLoading && models.length === 0 ? (
+          <p data-testid="ai-models-loading" style={HINT}>
+            {STR.AI_MODELS_LOADING}
+          </p>
+        ) : models.length > 0 ? (
           <Dropdown
             testId="ai-model-select"
             ariaLabel={STR.AI_MODEL_LABEL}
@@ -301,6 +469,10 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
             }}
             triggerStyle={{ ...INPUT, fontFamily: 'inherit' }}
           />
+        ) : !credentialMeta ? (
+          <p data-testid="ai-models-needs-key" style={HINT}>
+            {STR.AI_FETCH_NEEDS_KEY}
+          </p>
         ) : (
           <input
             data-testid="ai-edit-model-input"
@@ -314,100 +486,28 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
             style={INPUT}
           />
         )}
-        <div style={{ marginTop: 8, display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
           <button
-            data-testid="ai-fetch-models"
-            onClick={() => void handleFetchModels()}
-            disabled={modelsLoading}
+            data-testid="ai-save-changes"
+            disabled={!dirty}
+            onClick={() => void handleSaveChanges()}
             style={{
-              ...SUBTLE_BTN,
-              opacity: modelsLoading ? 0.6 : 1,
-              cursor: modelsLoading ? 'not-allowed' : 'pointer',
+              ...PRIMARY_BTN,
+              opacity: dirty ? 1 : 0.5,
+              cursor: dirty ? 'pointer' : 'not-allowed',
             }}
           >
-            {modelsLoading ? STR.AI_MODELS_FETCHING : STR.AI_MODELS_FETCH}
+            {STR.BTN_SAVE}
           </button>
-          {modelStatus && (
-            <span data-testid="ai-model-status" style={HINT}>
-              {modelStatus}
+          {saved && (
+            <span
+              data-testid="ai-saved-msg"
+              style={{ fontSize: 13, color: 'var(--gw-success, #4ade80)' }}
+            >
+              {STR.AI_SAVED}
             </span>
           )}
         </div>
-      </div>
-
-      <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button
-          data-testid="ai-save-changes"
-          disabled={!dirty}
-          onClick={() => void handleSaveChanges()}
-          style={{
-            ...PRIMARY_BTN,
-            opacity: dirty ? 1 : 0.5,
-            cursor: dirty ? 'pointer' : 'not-allowed',
-          }}
-        >
-          {STR.BTN_SAVE}
-        </button>
-        {saved && (
-          <span
-            data-testid="ai-saved-msg"
-            style={{ fontSize: 13, color: 'var(--gw-success, #4ade80)' }}
-          >
-            {STR.AI_SAVED}
-          </span>
-        )}
-      </div>
-
-      {/* Credential — masked display only; the raw secret never returns from main. */}
-      <div
-        style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--gw-border, #27272a)' }}
-      >
-        <label style={LABEL}>{STR.AI_CRED_LABEL}</label>
-        {credentialMeta ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <code
-              data-testid="ai-cred-masked"
-              style={{ fontSize: 13, color: 'var(--gw-text, #f4f4f5)' }}
-            >
-              {STR.AI_CRED_MASKED(credentialMeta.maskedPreview)}
-            </code>
-            <button
-              data-testid="ai-cred-delete"
-              onClick={() => void deleteCredential(conn.id)}
-              style={SUBTLE_BTN}
-            >
-              {STR.AI_CRED_DELETE}
-            </button>
-          </div>
-        ) : (
-          <div>
-            <p data-testid="ai-cred-none" style={{ ...HINT, marginTop: 0 }}>
-              {STR.AI_CRED_NONE}
-            </p>
-            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              <input
-                data-testid="ai-cred-key-input"
-                type="password"
-                value={credKey}
-                onChange={(e) => setCredKey(e.target.value)}
-                placeholder={STR.AI_KEY_PLACEHOLDER}
-                style={INPUT}
-              />
-              <button
-                data-testid="ai-cred-save"
-                disabled={credKey.trim().length === 0}
-                onClick={() => {
-                  void saveCredential(conn.id, `${titleCaseKind(conn.kind)} key`, {
-                    apiKey: credKey.trim(),
-                  }).then(() => setCredKey(''))
-                }}
-                style={{ ...SUBTLE_BTN, flexShrink: 0 }}
-              >
-                {STR.BTN_SAVE}
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Delete the connection (and its credential). */}

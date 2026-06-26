@@ -126,14 +126,14 @@ export default function CommitScreen(): React.ReactElement {
 
       {loading && (
         <div
-          style={{ color: 'var(--gw-text-faint, #71717a)', fontSize: '13px', marginBottom: '16px' }}
+          style={{ color: 'var(--gw-text-faint, #71717a)', fontSize: '14px', marginBottom: '16px' }}
         >
           Loading…
         </div>
       )}
 
       {!loading && !repository && !activeRepo && (
-        <div style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: '13px' }}>
+        <div style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: '14px' }}>
           Add a repository to get started.
         </div>
       )}
@@ -144,7 +144,7 @@ export default function CommitScreen(): React.ReactElement {
           <div style={{ marginBottom: '16px' }}>
             <div
               style={{
-                fontSize: '12px',
+                fontSize: '14px',
                 color: 'var(--gw-text-faint, #71717a)',
                 marginBottom: '6px',
               }}
@@ -158,7 +158,7 @@ export default function CommitScreen(): React.ReactElement {
                 border: '1px solid var(--gw-border, #27272a)',
                 borderRadius: '4px',
                 padding: stagedFiles.length ? '8px' : '10px 12px',
-                fontSize: '13px',
+                fontSize: '14px',
                 maxHeight: '120px',
                 overflowY: 'auto',
               }}
@@ -191,7 +191,7 @@ export default function CommitScreen(): React.ReactElement {
             >
               <label
                 style={{
-                  fontSize: '12px',
+                  fontSize: '14px',
                   color: 'var(--gw-text-faint, #71717a)',
                 }}
               >
@@ -209,7 +209,7 @@ export default function CommitScreen(): React.ReactElement {
                     border: '1px solid var(--gw-surface3, #3f3f46)',
                     borderRadius: '4px',
                     padding: '4px 10px',
-                    fontSize: '12px',
+                    fontSize: '14px',
                     cursor: draftLoading ? 'wait' : 'pointer',
                   }}
                 >
@@ -222,15 +222,16 @@ export default function CommitScreen(): React.ReactElement {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Describe your changes…"
-              rows={4}
+              rows={10}
               style={{
                 width: '100%',
+                minHeight: '200px',
                 padding: '8px',
                 background: 'var(--gw-input-bg, #09090b)',
                 border: '1px solid var(--gw-border-subtle, #3f3f46)',
                 borderRadius: '4px',
                 color: 'var(--gw-text, #f4f4f5)',
-                fontSize: '13px',
+                fontSize: '14px',
                 resize: 'vertical',
                 fontFamily: 'inherit',
                 boxSizing: 'border-box',
@@ -243,7 +244,7 @@ export default function CommitScreen(): React.ReactElement {
                 style={{
                   marginTop: '8px',
                   color: 'var(--gw-danger, #f87171)',
-                  fontSize: 12,
+                  fontSize: 14,
                 }}
               >
                 {assistantError}
@@ -270,7 +271,7 @@ export default function CommitScreen(): React.ReactElement {
                     padding: '8px 12px',
                     background: 'var(--gw-danger-bg, #450a0a)',
                     borderBottom: '1px solid var(--gw-danger-border, #991b1b)',
-                    fontSize: '13px',
+                    fontSize: '14px',
                     color: 'var(--gw-danger, #f87171)',
                     display: 'flex',
                     alignItems: 'flex-start',
@@ -289,7 +290,7 @@ export default function CommitScreen(): React.ReactElement {
                     padding: '8px 12px',
                     background: 'var(--gw-warning-bg, #422006)',
                     borderBottom: '1px solid var(--gw-warning-border, #78350f)',
-                    fontSize: '13px',
+                    fontSize: '14px',
                     color: 'var(--gw-warning, #fbbf24)',
                     display: 'flex',
                     alignItems: 'flex-start',
@@ -321,7 +322,7 @@ export default function CommitScreen(): React.ReactElement {
                       border: 'none',
                       borderRadius: '4px',
                       padding: '6px 12px',
-                      fontSize: '12px',
+                      fontSize: '14px',
                       cursor: identityLoading ? 'wait' : 'pointer',
                     }}
                   >
@@ -332,7 +333,7 @@ export default function CommitScreen(): React.ReactElement {
                   <div
                     style={{
                       marginTop: '4px',
-                      fontSize: '11px',
+                      fontSize: '14px',
                       color: 'var(--gw-text-dim, #52525b)',
                     }}
                   >
@@ -346,7 +347,7 @@ export default function CommitScreen(): React.ReactElement {
           {/* Commit error */}
           {error && (
             <div
-              style={{ color: 'var(--gw-danger, #f87171)', fontSize: '13px', marginBottom: '12px' }}
+              style={{ color: 'var(--gw-danger, #f87171)', fontSize: '14px', marginBottom: '12px' }}
             >
               {error}
             </div>
@@ -361,7 +362,7 @@ export default function CommitScreen(): React.ReactElement {
                 background: 'var(--gw-success-bg, #052e16)',
                 border: '1px solid var(--gw-success-border, #2d4a2d)',
                 borderRadius: '4px',
-                fontSize: '13px',
+                fontSize: '14px',
                 color: 'var(--gw-success, #4ade80)',
                 marginBottom: '16px',
               }}
@@ -396,7 +397,7 @@ export default function CommitScreen(): React.ReactElement {
                   border: 'none',
                   borderRadius: '4px',
                   padding: '8px 20px',
-                  fontSize: '13px',
+                  fontSize: '14px',
                   cursor: safetyResult?.canCommit ? 'pointer' : 'not-allowed',
                 }}
               >

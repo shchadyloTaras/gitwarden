@@ -164,7 +164,11 @@ export function registerIpcHandlers(services: Services): void {
   ipcMain.handle('profiles:delete', (_e, raw: unknown) =>
     wrap(async () => {
       const { id } = ProfileDeletePayload.parse(raw)
-      return services.profiles.delete(id)
+      await services.profiles.delete(id)
+      // Cascade: clear this profile from any repo it was assigned to, so the repo isn't
+      // left pointing at a ghost id (which would block it with a phantom mismatch).
+      const remaining = await services.profiles.list()
+      await services.repositories.pruneAssignments(remaining.map((p) => p.id))
     })
   )
 

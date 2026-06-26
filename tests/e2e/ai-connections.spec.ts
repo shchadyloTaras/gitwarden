@@ -149,12 +149,12 @@ test.describe('AI Connections (injected fake credential store)', () => {
     expect(probe.connJson).not.toContain('sk-or-v1-secret')
   })
 
-  test('refresh models uses the fake adapter', async () => {
+  test('models auto-load from the fake adapter after the key is saved', async () => {
     await win.getByTestId('ai-key-input').fill('sk-or-v1-e2e-models0000000000000')
     await win.getByTestId('ai-save-connection').click()
     await expect(win.getByTestId('ai-connection-card')).toBeVisible()
 
-    await win.getByTestId('ai-fetch-models').click()
+    // No manual "Fetch models" step — saving the key auto-loads the list.
     await expect(win.getByTestId('ai-model-status')).toContainText('models available')
     await expect(win.getByTestId('ai-model-select')).toBeVisible()
 
@@ -167,5 +167,31 @@ test.describe('AI Connections (injected fake credential store)', () => {
       return models.ok ? models.data.map((m) => m.id) : []
     })
     expect(modelIds).toContain('openrouter/fake-recommended')
+  })
+
+  test('Change key reloads the model list; the retired controls are gone', async () => {
+    // Save an initial OpenRouter key; the model list auto-loads.
+    await win.getByTestId('ai-key-input').fill('sk-or-v1-e2e-firstkey0000000aaaa')
+    await win.getByTestId('ai-save-connection').click()
+    await expect(win.getByTestId('ai-connection-card')).toBeVisible()
+    await expect(win.getByTestId('ai-model-status')).toContainText('models available')
+
+    const masked = win.getByTestId('ai-cred-masked')
+    await expect(masked).toContainText('aaaa') // masked preview reveals the last 4 chars
+
+    // The simplified card no longer offers a manual fetch or a remove-credential action.
+    await expect(win.getByTestId('ai-fetch-models')).toHaveCount(0)
+    await expect(win.getByTestId('ai-cred-delete')).toHaveCount(0)
+
+    // Change the key — the model list must refresh on its own, with no Fetch step.
+    await win.getByTestId('ai-cred-change').click()
+    await win.getByTestId('ai-cred-key-input').fill('sk-or-v1-e2e-secondkey000000bbbb')
+    await win.getByTestId('ai-cred-save').click()
+
+    // Masked preview reflects the new key, and the model list reloaded automatically.
+    await expect(masked).toContainText('bbbb')
+    await expect(masked).not.toContainText('aaaa')
+    await expect(win.getByTestId('ai-model-status')).toContainText('models available')
+    await expect(win.getByTestId('ai-model-select')).toBeVisible()
   })
 })

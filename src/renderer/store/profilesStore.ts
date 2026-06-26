@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { Profile } from '../../core/types'
+import { useRepositoriesStore } from './repositoriesStore'
 
 const COLORS = ['#4ade80', '#60a5fa', '#f472b6', '#fb923c', '#a78bfa', '#34d399']
 
@@ -64,6 +65,9 @@ export const useProfilesStore = create<ProfilesState>((set) => ({
       profiles: s.profiles.filter((p) => p.id !== id),
       activeProfileId: s.activeProfileId === id ? null : s.activeProfileId,
     }))
+    // Main cleared this profile's repo assignments; pull the fresh repos so the UI
+    // doesn't keep showing the repo as assigned to the now-deleted profile.
+    await useRepositoriesStore.getState().load()
   },
 
   async setActiveProfile(profileId) {

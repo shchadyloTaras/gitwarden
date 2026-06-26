@@ -77,6 +77,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] Phase 53 — Chat State & Slash-Command Router
 - [x] Phase 54 — Tabbed Right Panel, Chat UI & Inline Registration
 - [x] Phase 55 — Panel Retirement & Cleanup
+- [x] Phase 55a — AI Settings simplification (paste-key-and-go; ad-hoc, post-plan)
+
+> Post-plan AI chat hardening (streaming, `/explain`, structured-output standardization, and the
+> slash-command / safety / schema fixes) ships as dated `feat`/`Fix` entries in the log below
+> rather than numbered phases — they were not in the AI Chat Redesign plan.
 
 ## Progress Log
 
@@ -525,3 +530,14 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Fixed: Slash-commands (`/review`, `/push-brief`, `/history`, `/repo-brief`, `/propose`, `/commit`) were sending placeholder `{ type: 'object', description: … }` schemas that OpenAI-compatible APIs reject under strict `json_schema` mode (HTTP 400). All request kinds now use full provider JSON schemas in `src/core/ai/providerSchemas.ts`.
 - Fixed: `OpenAICompatibleAdapter` retries structured sends on HTTP 400 — strict `json_schema` → non-strict → `json_object` → plain completion — so models like Gemma that lack strict structured-output still return parseable JSON.
 - Files: `providerSchemas.ts`, all structured assistants, `builtInAdapters.ts`; tests `provider-schemas.test.ts`, `ai-adapters.test.ts`.
+
+### 2026-06-26 — feat(ai): Streaming chat, `/explain` command & structured-output standardization
+
+> Same commit as the "provider JSON schemas" fix above (`feat(ai): Enhance AI chat capabilities and structured output support`); logged separately so the feature scope isn't buried under the HTTP 400 fix line.
+
+- Built (streaming): `AiChatAssistant.chatStream` streams assistant text in real time. New `ai:chatStream` IPC handle plus an `ai:chatStreamEvent` push channel (`webContents.send`) deliver incremental tokens to the renderer; `AiChatPanel` renders the growing bubble live and `aiChatStore` accumulates deltas. Adapter layer gained text-stream request validation + streaming response handling (`adapterUtils.ts`, `builtInAdapters.ts`, `CustomHttpAdapter.ts`, `FetchHttpClient`/`HttpClient` request seam). Streaming carries plain assistant prose only — structured (schema-bound) capabilities still use the non-streaming path.
+- Built (`/explain`): new chat command that explains either a `SafetyCode` token or **pasted tool / build output**. `src/core/ai/chatCommands.ts` adds the `explain` kind + arg classifier (`safety-code` vs `tool-output`) and `isNetworkedChatCommand`; `src/core/ai/chatContext.ts` adds path-filtering + `@mention` parsing for context selection. Pasted content is routed through the same redaction ruleset as any other context before send.
+- Built (structured output): manual per-assistant JSON schemas replaced by one centralized `providerJsonSchemaForKind` in `src/core/ai/providerSchemas.ts`, consumed by every structured assistant (`AiCommitAssistant`, `AiChangeReviewAssistant`, `AiPushBriefAssistant`, `AiHistorySummaryAssistant`, `AiRepoBriefAssistant`, `AiSafetyCopilotAssistant`, `AiFailureExplainerAssistant`, `AiAgenticAssistant`). Adapter error extraction surfaces detailed provider error messages.
+- Built (UI polish): `AiChatPanel` rewrite (streaming bubbles, command UX), custom `Dropdown` rewrite (keyboard nav / theming), `aiChat.css` + `theme.css` additions, `aiModelOptions.ts` model-option helpers, onboarding tour copy updates.
+- Files: `src/core/ai/{chatCommands,chatContext,providerSchemas,outputs,types}.ts`; `src/main/ai/*` (chat assistant + all structured assistants + `adapterUtils`/`builtInAdapters`/`AiAdapterRegistry`/`CustomHttpAdapter`/`types`); `src/main/ipc/{ipc-handlers,ipc-schemas}.ts`; `src/main/services/{FetchHttpClient,HttpClient}.ts`; `preload/index.ts`; `src/renderer/{App.tsx, components/AiChatPanel.tsx, components/AiConnectionSettings.tsx, components/Dropdown.tsx, components/OnboardingTour.tsx, components/aiChat.css, components/aiModelOptions.ts, store/aiChatStore.ts, store/appStore.ts, strings.ts, theme.css, types/window.d.ts}`; tests `chat-commands.test.ts`, `ai-chat-assistant.test.ts`, `ai-chat-store*.test.ts`, `ai-adapters.test.ts`, `ai-model-options.test.ts`, `ai-context-builder.test.ts`, e2e `ai-chat-panel`/`ai-connections`/`onboarding`.
+- Notes / follow-ups: streaming is for free-text chat only; redaction and the advisory-only invariant are unchanged. `/explain` pasted-output is a new free-text input path — covered by the shared redaction ruleset but, like all redaction, best-effort (see SECURITY.md §17–§18, DECISIONS.md §6).

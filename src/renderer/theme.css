@@ -1,4 +1,4 @@
-/* GitWarden design tokens — dark-first, full light override via [data-theme="light"] */
+/* GitWarden design tokens — dark-first; light theme matches Cursor Light v0.0.2 */
 
 :root {
   color-scheme: dark;
@@ -45,53 +45,94 @@
   --gw-hover-bg: rgba(255, 255, 255, 0.06);
   --gw-button-hover-filter: brightness(1.22);
   --gw-button-active-filter: brightness(0.88);
+  --gw-font-size: 14px;
 }
 
+/* Cursor Light v0.0.2 — editor #FCFCFC, chrome #F3F3F3, ink #141414, accent #3C7CAB */
 :root[data-theme='light'] {
   color-scheme: light;
-  --gw-bg: #f8fafc;
-  --gw-surface: #ffffff;
-  --gw-surface2: #f1f5f9;
-  --gw-surface3: #e2e8f0;
-  --gw-input-bg: #ffffff;
-  --gw-text: #0f172a;
-  --gw-text-muted: #334155;
-  --gw-text-faint: #475569;
-  --gw-text-dim: #64748b;
-  --gw-on-solid: #ffffff;
-  --gw-border: #e2e8f0;
-  --gw-border-subtle: #cbd5e1;
-  --gw-border-strong: #94a3b8;
-  --gw-accent: #4338ca;
-  --gw-accent-text: #3730a3;
-  --gw-accent-soft: #eef2ff;
-  --gw-accent-ring: rgba(67, 56, 202, 0.24);
-  --gw-primary: #2563eb;
-  --gw-primary-hover: #1d4ed8;
-  --gw-primary-disabled-bg: #e2e8f0;
-  --gw-primary-disabled-text: #64748b;
-  --gw-info: #1d4ed8;
-  --gw-purple: #7c3aed;
-  --gw-teal: #0f766e;
-  --gw-success: #166534;
-  --gw-success-solid: #15803d;
-  --gw-success-bg: #f0fdf4;
-  --gw-success-border: #86efac;
-  --gw-danger: #b91c1c;
-  --gw-danger-solid: #dc2626;
-  --gw-danger-bg: #fef2f2;
-  --gw-danger-border: #fca5a5;
-  --gw-warning: #92400e;
-  --gw-warning-solid: #92400e;
-  --gw-warning-bg: #fffbeb;
-  --gw-warning-border: #f59e0b;
-  --gw-code-muted: #475569;
-  --gw-overlay: rgba(15, 23, 42, 0.42);
-  --gw-shadow: rgba(15, 23, 42, 0.14);
-  --gw-shadow-strong: rgba(15, 23, 42, 0.2);
-  --gw-hover-bg: rgba(15, 23, 42, 0.05);
-  --gw-button-hover-filter: brightness(0.97);
-  --gw-button-active-filter: brightness(0.92);
+  --gw-bg: #fcfcfc;
+  --gw-surface: #f3f3f3;
+  --gw-surface2: #ededed;
+  --gw-surface3: #e4e4e4;
+  --gw-input-bg: #fcfcfc;
+  --gw-text: #141414;
+  --gw-text-muted: #141414bd;
+  --gw-text-faint: #14141499;
+  --gw-text-dim: #1414145e;
+  --gw-on-solid: #fcfcfc;
+  --gw-border: rgba(20, 20, 20, 0.08);
+  --gw-border-subtle: rgba(20, 20, 20, 0.11);
+  --gw-border-strong: rgba(20, 20, 20, 0.15);
+  --gw-accent: #3c7cab;
+  --gw-accent-text: #055180;
+  --gw-accent-soft: rgba(20, 20, 20, 0.07);
+  --gw-accent-ring: rgba(60, 124, 171, 0.28);
+  --gw-primary: #3c7cab;
+  --gw-primary-hover: #055180;
+  --gw-primary-disabled-bg: rgba(20, 20, 20, 0.12);
+  --gw-primary-disabled-text: rgba(20, 20, 20, 0.55);
+  --gw-info: #6299c3;
+  --gw-purple: #9e94d5;
+  --gw-teal: #6f9ba6;
+  --gw-success: #1f8a65;
+  --gw-success-solid: #1f8a65;
+  --gw-success-bg: rgba(31, 138, 101, 0.12);
+  --gw-success-border: rgba(31, 138, 101, 0.35);
+  --gw-danger: #cf2d56;
+  --gw-danger-solid: #cf2d56;
+  --gw-danger-bg: rgba(207, 45, 86, 0.08);
+  --gw-danger-border: #e75e78;
+  --gw-warning: #c08532;
+  --gw-warning-solid: #db704b;
+  --gw-warning-bg: #f0dac1;
+  --gw-warning-border: #c08532;
+  --gw-code-muted: #6f9ba6;
+  --gw-overlay: rgba(20, 20, 20, 0.42);
+  --gw-shadow: rgba(20, 20, 20, 0.07);
+  --gw-shadow-strong: rgba(20, 20, 20, 0.12);
+  --gw-hover-bg: rgba(20, 20, 20, 0.07);
+  --gw-button-hover-filter: none;
+  --gw-button-active-filter: none;
+}
+
+/* Light theme: Cursor-style subtle hovers — no accent ring on every button */
+:root[data-theme='light'] button:hover:not(:disabled) {
+  filter: none;
+  box-shadow: none;
+}
+
+:root[data-theme='light'] button:active:not(:disabled) {
+  filter: none;
+  box-shadow: none;
+  transform: none;
+}
+
+:root[data-theme='light'] button.gw-dd-trigger:hover:not(:disabled) {
+  background: var(--gw-hover-bg);
+}
+
+:root[data-theme='light'] .gw-chat-composer {
+  box-shadow: none;
+}
+
+:root[data-theme='light'] .gw-chat-composer:focus-within {
+  border-color: var(--gw-border-strong);
+  box-shadow: 0 0 0 1px var(--gw-accent-ring);
+}
+
+:root[data-theme='light'] .gw-chat-message--user {
+  background: var(--gw-surface2);
+  border-color: var(--gw-border-subtle);
+}
+
+:root[data-theme='light'] .gw-chat-icon-btn--send {
+  background: var(--gw-text);
+  color: var(--gw-on-solid);
+}
+
+:root[data-theme='light'] .gw-chat-icon-btn--send:not(:disabled):hover {
+  background: #000000;
 }
 
 *,
@@ -106,6 +147,7 @@ body {
   background: var(--gw-bg);
   color: var(--gw-text);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: var(--gw-font-size);
 }
 
 :where(
@@ -251,7 +293,7 @@ textarea::placeholder {
 /* ── Custom dropdown (replaces native <select> so the option list matches the
    dark theme — the native macOS popup cannot be styled via CSS) ───────────── */
 button.gw-dd-trigger {
-  font-size: 13px;
+  font-size: var(--gw-font-size);
 }
 /* Keep dropdown triggers subtle — override the bold global button-hover ring. */
 button.gw-dd-trigger:hover:not(:disabled) {
@@ -271,7 +313,7 @@ button.gw-dd-trigger:active:not(:disabled) {
   padding: 6px 10px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--gw-font-size);
   color: var(--gw-text, #e4e4e7);
 }
 .gw-dd-check {

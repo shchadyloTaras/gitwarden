@@ -27,6 +27,8 @@ export default function ConnectGitHubModal({
   const [errorCode, setErrorCode] = useState<GitHubAuthErrorCode | undefined>(undefined)
   const [deviceCode, setDeviceCode] = useState<GitHubDeviceCode | null>(null)
   const [authorizedLogin, setAuthorizedLogin] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Keep the latest callback without re-subscribing the event listener.
   const onAuthorizedRef = useRef(onAuthorized)
   onAuthorizedRef.current = onAuthorized
@@ -96,8 +98,27 @@ export default function ConnectGitHubModal({
     }
   }, [profileId])
 
+  // Clear any pending "Copied!" reset timer when the modal unmounts.
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
+    }
+  }, [])
+
   function handleOpenGitHub(): void {
     if (deviceCode) void window.api.shell.openExternal(deviceCode.verificationUri)
+  }
+
+  async function handleCopyCode(): Promise<void> {
+    if (!deviceCode) return
+    try {
+      await navigator.clipboard.writeText(deviceCode.userCode)
+      setCopied(true)
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
+      copyTimerRef.current = setTimeout(() => setCopied(false), 1500)
+    } catch {
+      // Clipboard write can reject if the document isn't focused; fail silently.
+    }
   }
 
   function handleCancel(): void {
@@ -139,8 +160,19 @@ export default function ConnectGitHubModal({
         {status === 'awaitingUser' && deviceCode && (
           <div data-testid="github-connect-status">
             <p style={bodyStyle}>{STR.GITHUB_MODAL_ENTER_CODE}</p>
-            <div data-testid="github-connect-user-code" style={codeStyle}>
-              {deviceCode.userCode}
+            <div style={codeRowStyle}>
+              <div data-testid="github-connect-user-code" style={codeStyle}>
+                {deviceCode.userCode}
+              </div>
+              <button
+                type="button"
+                data-testid="github-connect-copy"
+                onClick={handleCopyCode}
+                aria-label={STR.GITHUB_MODAL_COPY_CODE_LABEL}
+                style={copyBtn}
+              >
+                {copied ? STR.GITHUB_MODAL_COPIED : STR.GITHUB_MODAL_COPY_BTN}
+              </button>
             </div>
             <p style={{ ...bodyStyle, marginTop: 12 }}>{STR.GITHUB_MODAL_WAITING}</p>
           </div>
@@ -265,12 +297,20 @@ const titleStyle: React.CSSProperties = {
 const bodyStyle: React.CSSProperties = {
   margin: 0,
   color: 'var(--gw-text-muted, #a1a1aa)',
-  fontSize: 13,
+  fontSize: 14,
   lineHeight: 1.55,
 }
 
+const codeRowStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'stretch',
+  gap: 8,
+  marginTop: 12,
+}
+
 const codeStyle: React.CSSProperties = {
-  margin: '12px 0 0',
+  flex: 1,
+  margin: 0,
   padding: '12px 0',
   textAlign: 'center',
   fontFamily: 'monospace',
@@ -280,6 +320,18 @@ const codeStyle: React.CSSProperties = {
   color: 'var(--gw-text, #f4f4f5)',
   background: 'var(--gw-surface2, #27272a)',
   borderRadius: 6,
+}
+
+const copyBtn: React.CSSProperties = {
+  flexShrink: 0,
+  padding: '0 16px',
+  background: 'var(--gw-surface2, #27272a)',
+  border: '1px solid var(--gw-border-subtle, #3f3f46)',
+  borderRadius: 6,
+  color: 'var(--gw-text, #f4f4f5)',
+  cursor: 'pointer',
+  fontSize: 14,
+  fontWeight: 700,
 }
 
 const actionsStyle: React.CSSProperties = {
@@ -296,7 +348,7 @@ const primaryBtn: React.CSSProperties = {
   borderRadius: 4,
   color: 'var(--gw-on-solid, #fff)',
   cursor: 'pointer',
-  fontSize: 12,
+  fontSize: 14,
   fontWeight: 700,
 }
 
@@ -307,5 +359,5 @@ const secondaryBtn: React.CSSProperties = {
   borderRadius: 4,
   color: 'var(--gw-text-muted, #a1a1aa)',
   cursor: 'pointer',
-  fontSize: 12,
+  fontSize: 14,
 }

@@ -404,7 +404,7 @@ export default function Dropdown({
                     border: '1px solid var(--gw-border-subtle, #3f3f46)',
                     borderRadius: 4,
                     color: 'var(--gw-text, #f4f4f5)',
-                    fontSize: 13,
+                    fontSize: 14,
                     padding: '6px 10px',
                     fontFamily: monospace ? 'monospace' : 'inherit',
                   }}
@@ -416,7 +416,7 @@ export default function Dropdown({
                 style={{
                   padding: '6px 10px',
                   color: 'var(--gw-text-faint, #71717a)',
-                  fontSize: 13,
+                  fontSize: 14,
                 }}
               >
                 No options
@@ -428,7 +428,7 @@ export default function Dropdown({
                 style={{
                   padding: '6px 10px',
                   color: 'var(--gw-text-faint, #71717a)',
-                  fontSize: 13,
+                  fontSize: 14,
                 }}
               >
                 {noMatchesLabel}

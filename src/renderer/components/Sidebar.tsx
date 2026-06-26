@@ -58,7 +58,7 @@ export default function Sidebar({ width }: { width: number }): React.ReactElemen
               <div
                 style={{
                   padding: '10px 12px 2px',
-                  fontSize: 10,
+                  fontSize: 14,
                   fontWeight: 700,
                   letterSpacing: '0.08em',
                   color: 'var(--gw-text-dim, #52525b)',
@@ -84,7 +84,7 @@ export default function Sidebar({ width }: { width: number }): React.ReactElemen
                   activeScreen === item.screen
                     ? 'var(--gw-text, #f4f4f5)'
                     : 'var(--gw-text-muted, #a1a1aa)',
-                fontSize: 13,
+                fontSize: 14,
                 textAlign: 'left',
                 fontFamily: 'inherit',
                 minWidth: 0,
