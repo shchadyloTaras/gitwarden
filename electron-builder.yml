@@ -1,26 +1,36 @@
 appId: com.gitwarden.app
 productName: GitWarden
+asar: true
 directories:
   buildResources: resources
   output: dist
 files:
   - out/**/*
   - package.json
-extraResources:
-  - from: resources/icon.png
-    to: icon.png
+publish:
+  provider: github
+  owner: shchadyloTaras
+  repo: gitwarden
+  releaseType: draft
 mac:
   category: public.app-category.developer-tools
   icon: resources/icon.icns
   target:
     - target: dmg
       arch: [x64, arm64]
+  artifactName: ${productName}-${version}-${arch}.${ext}
+dmg:
+  title: GitWarden
+win:
+  icon: resources/icon.png
+  target:
+    - target: nsis
+  artifactName: ${productName}-Setup-${version}.${ext}
 linux:
   icon: resources/icon.png
   target:
     - target: AppImage
     - target: deb
-win:
-  icon: resources/icon.png
-  target:
-    - target: nsis
+  artifactName: ${productName}-${version}.${ext}
+deb:
+  artifactName: ${name}_${version}_${arch}.${ext}

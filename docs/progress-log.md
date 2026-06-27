@@ -55,7 +55,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 
 ### Distribution & Release feature (plan: `docs/plans/distribution-release-plan.md`, prompts: `docs/prompts/distribution-release-prompts.md`)
 
-- [ ] Phase 40 — Packaging Foundations & Local `dist`
+- [x] Phase 40 — Packaging Foundations & Local `dist`
 - [ ] Phase 41 — App Identity: Icons, Metadata & Installer UX
 - [ ] Phase 42 — Release Workflow (GitHub Actions, unsigned matrix)
 - [ ] Phase 43 — Code Signing & Notarization (optional; gated on certificates)
@@ -125,7 +125,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | AI Chat Redesign       | 52–55a    | ✅ complete                  |
 | Generative UI Blocks   | 60–62     | ✅ complete                  |
 | Client Branch Access   | 56–59     | ✅ complete                  |
-| Distribution & Release | 40–45     | ⬜ not started               |
+| Distribution & Release | 40–45     | 🟡 Phase 40 done, 41–45 open |
 | Landing Page           | 46–51     | ⬜ not started               |
 | Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-5 done, DX-6 open |
 
@@ -756,3 +756,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: Vitest **594 passed** (unchanged — all logic already tested in Phases 56–58). Playwright e2e **3 passed** (new `tests/e2e/push-policy.spec.ts`): allowed branch on feature/taras/fix shows "Allowed" verdict and Confirm Push enabled; `main` shows "Blocked" verdict + `PROTECTED_BRANCH_PUSH` issue + Confirm Push disabled; wrong-org remote triggers `REMOTE_OWNER_MISMATCH` + Confirm Push disabled. `npm run lint` clean (ESLint + Prettier). `npx tsc --noEmit` clean on both tsconfigs. Core purity reviewer: PASS — no `src/core/` changes.
 - Exit criteria: ✅ met — Playwright 3/3 against local fixture repos (offline, no network, local bare remote as push target): allowed branch → Safe verdict, Confirm enabled; `main` (blocked) → Blocked verdict, Confirm disabled; wrong remote owner → `REMOTE_OWNER_MISMATCH`, Confirm disabled. `npx tsc --noEmit` clean. No new hard-coded user-facing strings.
 - Notes / follow-ups: Phase 59 is the **feature-complete stop point** for Client Branch Access (Phases 56–59). The full feature — push-policy type system, glob matching, remote-owner parsing, push-target resolution, safety engine, persistence, IPC wiring, and all four UI surfaces — is now complete and tested end-to-end. Next available tracks: Distribution & Release (40–45) or Landing Page (46–51) per AGENTS.md build order.
+
+### 2026-06-27 — Phase 40: Packaging Foundations & Local `dist`
+
+- Built: `dist` and `dist:dir` npm scripts; `package.json` metadata (author, license, repository, homepage); finalized `electron-builder.yml` with `asar: true`, per-OS `artifactName` templates (plan §3), and GitHub draft-release `publish` block.
+- Files: updated `package.json` (scripts + metadata), `electron-builder.yml` (asar, artifactName, publish block); prettier-fixed `AGENTS.md`; updated `docs/progress-log.md`.
+- Tests: Vitest **594 passed** (no source changes). `npm run lint` clean (ESLint + Prettier). `npm run dist:dir` produced `dist/mac-arm64/GitWarden.app`. `npm run dist` produced `dist/GitWarden-0.1.0-arm64.dmg` + `dist/GitWarden-0.1.0-x64.dmg`, both named per plan §3.
+- Exit criteria: ✅ met — `npm run dist` produces `GitWarden-0.1.0-{arm64,x64}.dmg` in `dist/`; `npm run dist:dir` produces runnable unpacked build; unsigned build succeeds without secrets (signing warning expected per Path A); `package.json` metadata complete; `dist/` gitignored. ⚠️ Manual GUI launch verification (open .dmg → drag → launch) is a human prerequisite per plan Appendix A — CI cannot verify sandbox-restricted GUI launch.
+- Notes / follow-ups: `deb.artifactName` overrides `linux.artifactName` for the `.deb` target so AppImage uses `${productName}-${version}.${ext}` and deb uses `${name}_${version}_${arch}.${ext}`. The `publish` block is harmless locally (default `--publish never`); it is consumed in Phase 42.

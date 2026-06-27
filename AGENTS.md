@@ -87,6 +87,26 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - `git add -A` (the `.gitignore` already excludes `node_modules/`, build output, coverage, secrets).
 - **Do not push automatically** — pushing to `origin/main` happens only when the user asks. Intermediate WIP commits within a phase are fine; squash is optional.
 
+## SDD documentation track
+
+After completing any `sdd:*` command, append an entry to `docs/progress-log.md` under a `## Documentation` section (create it if absent) with this format:
+
+```
+### <command> — <date>
+- Output: <file(s) created or updated>
+- Summary: <one line describing what was captured>
+```
+
+Example:
+
+```
+### sdd:survey gitwarden — 2026-06-27
+- Output: docs/architecture-map.md
+- Summary: Brownfield scan — mapped Electron+React architecture, module layout, and conventions.
+```
+
+This keeps SDD documentation work visible alongside phase progress in the same log.
+
 ## Reference docs
 
 - **Full plan:** `docs/plans/gitwarden-plan.md` · **Phase prompts:** `docs/prompts/phase-prompts.md`

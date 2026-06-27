@@ -3,6 +3,16 @@
   "version": "0.1.0",
   "description": "Safe multi-account Git GUI focused on identity safety",
   "main": "out/main/index.js",
+  "author": {
+    "name": "Taras Shchadylo",
+    "email": "marketing@eleken.co"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shchadyloTaras/gitwarden"
+  },
+  "homepage": "https://github.com/shchadyloTaras/gitwarden",
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
@@ -12,7 +22,9 @@
     "lint": "eslint . --ext .ts,.tsx && prettier --check .",
     "test:tooling": "bash tests/tooling/guardrails.test.sh",
     "eval": "vitest run tests/evals/ --reporter=verbose",
-    "pack": "npx repomix"
+    "pack": "npx repomix",
+    "dist": "electron-vite build && electron-builder",
+    "dist:dir": "electron-vite build && electron-builder --dir"
   },
   "devDependencies": {
     "@playwright/test": "^1.44.0",
