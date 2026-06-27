@@ -65,7 +65,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 ### Landing Page & Download Site feature (plan: `docs/plans/landing-page-plan.md`, prompts: `docs/prompts/landing-page-prompts.md`)
 
 - [x] Phase 46 — Site Foundations & Toolchain
-- [ ] Phase 47 — Release Metadata & Latest-Binary Resolution
+- [x] Phase 47 — Release Metadata & Latest-Binary Resolution
 - [ ] Phase 48 — Download Experience & OS Detection
 - [ ] Phase 49 — Product Messaging & Marketing UI
 - [ ] Phase 50 — SEO, Accessibility, Analytics & Performance
@@ -126,7 +126,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | Generative UI Blocks   | 60–62     | ✅ complete                                                   |
 | Client Branch Access   | 56–59     | ✅ complete                                                   |
 | Distribution & Release | 40–45     | 🟡 Phases 40–42, 45 done; 43–44 open (gated on signing certs) |
-| Landing Page           | 46–51     | 🟡 Phase 46 done; 47–51 open                                  |
+| Landing Page           | 46–51     | 🟡 Phases 46–47 done; 48–51 open                              |
 | Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-5 done, DX-6 open                                  |
 
 ## Progress Log
@@ -796,6 +796,14 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: landing — `astro build` ✅, `astro check` 0 errors / 0 warnings / 0 hints, `tsc --noEmit` clean, `eslint` + `prettier --check` clean, Vitest 0 tests (`--passWithNoTests`, isolated to `src/**`); live `npm run dev` smoke = HTTP 200 serving the placeholder. App regression check — Vitest **594/594 passed** (65 files), app lint clean.
 - Exit criteria: ✅ met — `npm run dev` serves the placeholder at `localhost:4321`; `npm run build` outputs `landing/dist/`; lint + `astro check` + `tsc --noEmit` clean; `landing/` does not alter or depend on the Electron app's `package.json`/lockfile; repo coordinates + copy live in single modules.
 - Notes / follow-ups: Removed the create-astro template `AGENTS.md`/`CLAUDE.md` artifacts so the root `AGENTS.md` stays the single source of agent instructions. Plan to use vanilla `<script>` islands for Phase 48 interactivity — `@astrojs/react` deferred unless needed. `npm audit` reports 5 moderate transitive-dep advisories (non-blocking; same posture as the app). The pure resolver + fetch wrapper land in Phase 47.
+
+### 2026-06-27 — Phase 47: Release Metadata & Latest-Binary Resolution
+
+- Built: Pure resolver (`src/lib/resolveTargets.ts`) — turns a GitHub Release payload (or `null`) + a visitor OS into `{ primary, secondary, all, releaseUrl, version }`, matching the Appendix A asset-name patterns and excluding `latest*.yml` / `*.blockmap` sidecars; imports only `config.ts` constants + types (no fetch, no framework). Thin impure fetch wrapper (`src/lib/fetchRelease.ts`) around `releases/latest` returning `Release | null` (never throws; excludes draft/prerelease; injectable `fetchImpl` so tests run offline). Shared types in `src/lib/types.ts`; fixtures in `src/lib/__fixtures__/latestRelease.ts` (Appendix D payload + draft/prerelease/empty variants).
+- Files: added `landing/src/lib/types.ts`, `resolveTargets.ts`, `fetchRelease.ts`, `__fixtures__/latestRelease.ts`, `resolveTargets.test.ts`, `fetchRelease.test.ts`.
+- Tests: landing Vitest **24/24 passed** (2 files) — full per-OS matrix, target-field/grouping, sidecar exclusion, null/empty fallback, fetch wrapper (draft/prerelease/404/403/network-throw/malformed-JSON), and the Appendix A ↔ Distribution §3 contract; all offline (mock `fetch`). `tsc --noEmit`, `astro check` (0/0/0), `eslint` + `prettier`, and `astro build` all clean.
+- Exit criteria: ✅ met — resolver is pure + tsc clean; the full matrix is covered with no real network call; the asset-name contract is asserted by test; every code path yields a valid versioned `browser_download_url` or the Releases-page fallback (never `undefined`/throw to the UI).
+- Notes / follow-ups: Labels (e.g. "macOS · Apple Silicon (arm64)") are technical descriptors the resolver emits for the all-downloads panel; marketing button copy stays in `copy.ts` (Phase 48). `version` is the raw `tag_name` ("v0.1.0"); Phase 48 hides the version label in the degraded/no-release state. Phase 48 wires OS detection + the smart hero button onto this resolver.
 
 ## Documentation
 
