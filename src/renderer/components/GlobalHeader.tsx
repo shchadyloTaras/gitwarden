@@ -1,21 +1,33 @@
 import React, { useEffect } from 'react'
-import { useAppStore, SafetyBadge } from '../store/appStore'
+import { useAppStore } from '../store/appStore'
 import { useProfilesStore, profileColor } from '../store/profilesStore'
 import { useRepositoriesStore } from '../store/repositoriesStore'
 import { useBranchStore } from '../store/branchStore'
+import { useHeaderGuardStore } from '../store/headerGuardStore'
+import type { HeaderGuardState } from '../../core/safety/headerGuard'
 import Dropdown from './Dropdown'
+import Logo from './Logo'
 import { STR } from '../strings'
 
-const BADGE_STYLE: Record<SafetyBadge, React.CSSProperties> = {
-  safe: { background: 'var(--gw-success-solid, #16a34a)', color: 'var(--gw-on-solid, #fff)' },
-  warning: { background: 'var(--gw-warning-solid, #ca8a04)', color: 'var(--gw-on-solid, #fff)' },
-  blocked: { background: 'var(--gw-danger-solid, #dc2626)', color: 'var(--gw-on-solid, #fff)' },
+const GUARD_LABEL: Record<HeaderGuardState, string> = {
+  ready: STR.GUARD_READY,
+  review: STR.GUARD_REVIEW,
+  blocked: STR.GUARD_BLOCKED,
+  checking: STR.GUARD_CHECKING,
+  'not-checked': STR.GUARD_NOT_CHECKED,
 }
 
-const BADGE_LABEL: Record<SafetyBadge, string> = {
-  safe: 'Safe',
-  warning: 'Warning',
-  blocked: 'Blocked',
+const NEUTRAL_GUARD_STYLE: React.CSSProperties = {
+  background: 'var(--gw-surface3, #3f3f46)',
+  color: 'var(--gw-text-muted, #a1a1aa)',
+}
+
+const GUARD_STYLE: Record<HeaderGuardState, React.CSSProperties> = {
+  ready: { background: 'var(--gw-success-solid, #16a34a)', color: 'var(--gw-on-solid, #fff)' },
+  review: { background: 'var(--gw-warning-solid, #ca8a04)', color: 'var(--gw-on-solid, #fff)' },
+  blocked: { background: 'var(--gw-danger-solid, #dc2626)', color: 'var(--gw-on-solid, #fff)' },
+  checking: NEUTRAL_GUARD_STYLE,
+  'not-checked': NEUTRAL_GUARD_STYLE,
 }
 
 const SELECT_STYLE: React.CSSProperties = {
@@ -29,14 +41,36 @@ const SELECT_STYLE: React.CSSProperties = {
   maxWidth: 180,
 }
 
+const HEADER_ACTION_BUTTON_STYLE: React.CSSProperties = {
+  width: 40,
+  height: 32,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'none',
+  border: '1px solid var(--gw-surface3, #3f3f46)',
+  borderRadius: 4,
+  color: 'var(--gw-text-muted, #a1a1aa)',
+  cursor: 'pointer',
+  padding: 0,
+  fontSize: 14,
+  lineHeight: 1,
+  flexShrink: 0,
+}
+
 export default function GlobalHeader(): React.ReactElement {
-  const { activeRepo, currentBranch, safetyBadge, toggleInspector, openRightPanel, setActiveRepo } =
+  const { activeRepo, currentBranch, toggleInspector, openRightPanel, setActiveRepo, navigate } =
     useAppStore()
   const repos = useRepositoriesStore((s) => s.repos)
   const profiles = useProfilesStore((s) => s.profiles)
   const activeProfileId = useProfilesStore((s) => s.activeProfileId)
   const activeProfile = profiles.find((p) => p.id === activeProfileId) ?? null
   const { branches, load: loadBranches, doSwitch } = useBranchStore()
+
+  const guardState = useHeaderGuardStore((s) => s.state)
+  const guardIssueCount = useHeaderGuardStore((s) => s.issueCount)
+  const refreshGuard = useHeaderGuardStore((s) => s.refresh)
+  const resetGuard = useHeaderGuardStore((s) => s.reset)
 
   // Load branches whenever the active repo changes
   useEffect(() => {
@@ -45,7 +79,26 @@ export default function GlobalHeader(): React.ReactElement {
     }
   }, [activeRepo, loadBranches])
 
+  // The header is always mounted, so this effect gives the guard app-wide live updates on
+  // every repo/profile change — mirrors SafetyCenterScreen's load effect.
+  useEffect(() => {
+    if (activeRepo) {
+      void refreshGuard(activeRepo.localPath, activeRepo, activeProfile, profiles)
+    } else {
+      resetGuard()
+    }
+  }, [activeRepo, activeProfile, profiles, refreshGuard, resetGuard])
+
   const localBranches = branches.filter((b) => !b.isRemote)
+
+  // aria-label carries the state, the issue count, and where a click goes (count is dynamic,
+  // so it is composed here rather than stored). The leading "Guard · " prefix is dropped so
+  // the spoken state reads naturally, e.g. "Guard status: Blocked, 2 issues. Open Safety Center."
+  const guardStateWord = GUARD_LABEL[guardState].replace('Guard · ', '')
+  const guardDestination = activeRepo ? STR.GUARD_OPEN_SAFETY_CENTER : STR.GUARD_OPEN_REPOSITORIES
+  const guardAriaLabel = `Guard status: ${guardStateWord}, ${guardIssueCount} issue${
+    guardIssueCount === 1 ? '' : 's'
+  }. ${guardDestination}.`
 
   return (
     <header
@@ -63,8 +116,19 @@ export default function GlobalHeader(): React.ReactElement {
         userSelect: 'none',
       }}
     >
-      <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: '-0.02em', marginRight: 8 }}>
-        GitWarden
+      <span
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 7,
+          fontWeight: 700,
+          fontSize: 14,
+          letterSpacing: '-0.02em',
+          marginRight: 8,
+        }}
+      >
+        <Logo size={20} />
+        {STR.APP_TITLE}
       </span>
 
       <div style={{ width: 1, height: 20, background: 'var(--gw-surface3, #3f3f46)' }} />
@@ -124,20 +188,25 @@ export default function GlobalHeader(): React.ReactElement {
 
       <div style={{ flex: 1 }} />
 
-      <span
-        data-testid="header-safety-badge"
+      <button
+        data-testid="header-guard-badge"
+        aria-label={guardAriaLabel}
+        onClick={() => navigate(activeRepo ? 'safety-center' : 'repositories')}
         style={{
-          ...BADGE_STYLE[safetyBadge],
+          ...GUARD_STYLE[guardState],
           fontSize: 14,
           fontWeight: 600,
           padding: '2px 8px',
           borderRadius: 4,
           letterSpacing: '0.03em',
-          textTransform: 'uppercase',
+          border: 'none',
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+          lineHeight: 1.4,
         }}
       >
-        {BADGE_LABEL[safetyBadge]}
-      </span>
+        {GUARD_LABEL[guardState]}
+      </button>
 
       <div style={{ width: 1, height: 20, background: 'var(--gw-surface3, #3f3f46)' }} />
 
@@ -163,14 +232,8 @@ export default function GlobalHeader(): React.ReactElement {
         aria-label={STR.CHAT_OPEN_LABEL}
         onClick={() => openRightPanel('chat')}
         style={{
+          ...HEADER_ACTION_BUTTON_STYLE,
           marginLeft: 4,
-          background: 'none',
-          border: '1px solid var(--gw-surface3, #3f3f46)',
-          borderRadius: 4,
-          color: 'var(--gw-text-muted, #a1a1aa)',
-          cursor: 'pointer',
-          padding: '2px 8px',
-          fontSize: 14,
           fontWeight: 600,
         }}
       >
@@ -180,15 +243,7 @@ export default function GlobalHeader(): React.ReactElement {
       <button
         aria-label="Toggle inspector"
         onClick={toggleInspector}
-        style={{
-          background: 'none',
-          border: '1px solid var(--gw-surface3, #3f3f46)',
-          borderRadius: 4,
-          color: 'var(--gw-text-muted, #a1a1aa)',
-          cursor: 'pointer',
-          padding: '2px 6px',
-          fontSize: 14,
-        }}
+        style={HEADER_ACTION_BUTTON_STYLE}
       >
         ⓘ
       </button>

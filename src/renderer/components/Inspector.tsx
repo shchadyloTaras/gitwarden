@@ -1,9 +1,32 @@
 import React from 'react'
 import { useAppStore } from '../store/appStore'
 import { useProfilesStore, profileColor } from '../store/profilesStore'
+import { useHeaderGuardStore } from '../store/headerGuardStore'
+import type { HeaderGuardState } from '../../core/safety/headerGuard'
+import { STR } from '../strings'
+
+// Same state→colour mapping as the header GuardBadge, at lower visual weight (softer text
+// colours rather than solid fills). The header owns the refresh effect; the Inspector only
+// reads the resulting state — single source of truth.
+const GUARD_LABEL: Record<HeaderGuardState, string> = {
+  ready: STR.GUARD_READY,
+  review: STR.GUARD_REVIEW,
+  blocked: STR.GUARD_BLOCKED,
+  checking: STR.GUARD_CHECKING,
+  'not-checked': STR.GUARD_NOT_CHECKED,
+}
+
+const GUARD_TEXT_COLOR: Record<HeaderGuardState, string> = {
+  ready: 'var(--gw-success, #4ade80)',
+  review: 'var(--gw-warning, #fbbf24)',
+  blocked: 'var(--gw-danger, #f87171)',
+  checking: 'var(--gw-text-muted, #a1a1aa)',
+  'not-checked': 'var(--gw-text-muted, #a1a1aa)',
+}
 
 export default function Inspector(): React.ReactElement {
-  const { activeRepo, currentBranch, safetyBadge } = useAppStore()
+  const { activeRepo, currentBranch } = useAppStore()
+  const guardState = useHeaderGuardStore((s) => s.state)
   const profiles = useProfilesStore((s) => s.profiles)
   const activeProfileId = useProfilesStore((s) => s.activeProfileId)
   const activeProfile = profiles.find((p) => p.id === activeProfileId) ?? null
@@ -76,20 +99,16 @@ export default function Inspector(): React.ReactElement {
         )}
       </Section>
 
-      <Section label="Safety">
+      <Section label="Guard">
         <span
+          data-testid="inspector-guard-state"
           style={{
-            color:
-              safetyBadge === 'safe'
-                ? 'var(--gw-success, #4ade80)'
-                : safetyBadge === 'warning'
-                  ? 'var(--gw-warning, #fbbf24)'
-                  : 'var(--gw-danger, #f87171)',
-            fontWeight: 600,
-            textTransform: 'capitalize',
+            color: GUARD_TEXT_COLOR[guardState],
+            fontWeight: 500,
+            fontSize: 13,
           }}
         >
-          {safetyBadge}
+          {GUARD_LABEL[guardState].replace('Guard · ', '')}
         </span>
       </Section>
     </div>

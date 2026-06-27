@@ -1,14 +1,24 @@
-// Centralised user-facing strings for GitWarden UI.
+// Centralised user-facing strings for Git Warden UI.
 // Safety-engine messages live in src/core/safety/safetyMessages.ts (pure module).
 
 export const STR = {
   // ── App shell ──────────────────────────────────────────────────────────────
-  APP_TITLE: 'GitWarden',
+  APP_TITLE: 'Git Warden',
   LEFT_PANEL_RESIZE_LABEL: 'Resize navigation panel',
   RIGHT_PANEL_RESIZE_LABEL: 'Resize context panel',
   REPOSITORIES_SPLIT_RESIZE_LABEL: 'Resize repository list',
   PROFILES_SPLIT_RESIZE_LABEL: 'Resize profile list',
   STATUS_SPLIT_RESIZE_LABEL: 'Resize changes list',
+
+  // ── Header guard badge ─────────────────────────────────────────────────────
+  // Reports repo/profile/Git-identity alignment only — never commit/push safety.
+  GUARD_READY: 'Guard · Ready',
+  GUARD_REVIEW: 'Guard · Review',
+  GUARD_BLOCKED: 'Guard · Blocked',
+  GUARD_CHECKING: 'Guard · Checking',
+  GUARD_NOT_CHECKED: 'Guard · Not checked',
+  GUARD_OPEN_SAFETY_CENTER: 'Open Safety Center',
+  GUARD_OPEN_REPOSITORIES: 'Open Repositories',
 
   // ── Navigation ─────────────────────────────────────────────────────────────
   NAV_REPOSITORIES: 'Repositories',
@@ -54,12 +64,12 @@ export const STR = {
   SETTINGS_APPEARANCE_LIGHT: 'Light',
   SETTINGS_APPEARANCE_DARK: 'Dark',
   SETTINGS_APPEARANCE_HINT:
-    'Controls whether GitWarden uses a light or dark colour scheme. System follows your OS setting.',
+    'Controls whether Git Warden uses a light or dark colour scheme. System follows your OS setting.',
   SETTINGS_GIT_PATH_LABEL: 'Custom Git Path',
   SETTINGS_GIT_PATH_INPUT_LABEL: 'Path to git binary',
   SETTINGS_GIT_PATH_PLACEHOLDER: 'e.g. /usr/local/bin/git',
   SETTINGS_GIT_PATH_HINT:
-    'Leave blank to auto-detect from PATH. Custom paths are used the next time GitWarden starts.',
+    'Leave blank to auto-detect from PATH. Custom paths are used the next time Git Warden starts.',
   SETTINGS_GIT_PATH_VALIDATE: 'Validate',
   SETTINGS_GIT_PATH_VALIDATING: 'Validating…',
   SETTINGS_GIT_PATH_CLEAR: 'Clear',
@@ -85,9 +95,9 @@ export const STR = {
   ONBOARDING_BACK: 'Back',
   ONBOARDING_NEXT: 'Next',
   ONBOARDING_FINISH: 'Finish',
-  ONBOARDING_STEP_WELCOME_TITLE: 'Welcome to GitWarden',
+  ONBOARDING_STEP_WELCOME_TITLE: 'Welcome to Git Warden',
   ONBOARDING_STEP_WELCOME_BODY:
-    'GitWarden keeps daily Git work tied to the right profile. This quick tour points out profiles, repositories, safety checks, Git actions, and the AI assistant.',
+    'Git Warden keeps daily Git work tied to the right profile. This quick tour points out profiles, repositories, safety checks, Git actions, and the AI assistant.',
   ONBOARDING_STEP_HEADER_TITLE: 'Global header',
   ONBOARDING_STEP_HEADER_BODY:
     'Pick the active repository and branch, watch the safety badge, see your profile, and open AI chat from here while you work.',
@@ -99,7 +109,7 @@ export const STR = {
     'Profiles hold your Git author name, email, GitHub username, SSH alias, and allowed remote hosts. Connect GitHub on a profile to auto-fill identity and verify pushes.',
   ONBOARDING_STEP_REPOS_TITLE: 'Add repositories',
   ONBOARDING_STEP_REPOS_BODY:
-    'Add an existing local repository, then assign it to exactly one profile so GitWarden can catch identity mixups.',
+    'Add an existing local repository, then assign it to exactly one profile so Git Warden can catch identity mixups.',
   ONBOARDING_STEP_STATUS_TITLE: 'Review and stage changes',
   ONBOARDING_STEP_STATUS_BODY:
     'Status separates staged, unstaged, and untracked files. Pick a repository, inspect the diff, then stage only what belongs in the next commit.',
@@ -112,7 +122,7 @@ export const STR = {
   ONBOARDING_STEP_SAFETY_TITLE: 'Use Safety Center',
   ONBOARDING_STEP_SAFETY_BODY:
     'Safety Center audits identity, remote host, branch, and profile assignment in one place. Its verdict matches the commit and push gates.',
-  ONBOARDING_STEP_AI_CHAT_TITLE: 'Ask GitWarden AI',
+  ONBOARDING_STEP_AI_CHAT_TITLE: 'Ask Git Warden AI',
   ONBOARDING_STEP_AI_CHAT_BODY:
     'Open AI chat for repo-aware help: ask questions, run slash-commands like /commit or /review, and get push briefs or failure explanations. Paste an API key inline or configure providers in Settings.',
   ONBOARDING_STEP_AI_SETTINGS_TITLE: 'Connect an AI provider',
@@ -194,7 +204,7 @@ export const STR = {
     'Paste an API key to set up a single AI connection. Nothing is sent until you separately enable AI.',
   AI_KEY_INPUT_LABEL: 'API key',
   AI_KEY_PLACEHOLDER: 'sk-…  ·  sk-or-…  ·  sk-ant-…  ·  gsk_…',
-  AI_KEY_DETECT_HINT: 'GitWarden detects the provider from the key prefix.',
+  AI_KEY_DETECT_HINT: 'Git Warden detects the provider from the key prefix.',
   AI_DETECTED_PROVIDER: (kind: string, confidence: string) =>
     `Detected: ${kind} (${confidence} confidence)`,
   AI_DETECTED_UNKNOWN: 'Unrecognized key — configure this under Advanced.',
@@ -262,13 +272,13 @@ export const STR = {
   CHAT_COMMANDS_TITLE: 'Commands',
   CHAT_THINKING: 'Thinking…',
   CHAT_YOU: 'You',
-  CHAT_ASSISTANT: 'GitWarden AI',
+  CHAT_ASSISTANT: 'Git Warden AI',
   CHAT_PROPOSAL_APPLY: 'Apply edits',
   CHAT_PROPOSAL_APPLIED: 'Edits applied',
   CHAT_SUGGESTED: 'Suggested',
   CHAT_SETUP_TITLE: 'Connect an AI provider',
   CHAT_SETUP_HINT:
-    'Paste an API key to set up a connection. GitWarden detects the provider and stores the key encrypted on this machine.',
+    'Paste an API key to set up a connection. Git Warden detects the provider and stores the key encrypted on this machine.',
   CHAT_SETUP_OPEN_SETTINGS: 'Advanced setup in Settings',
   CHAT_MODEL_LABEL: 'Model',
   CHAT_CAPABILITY_STRUCTURED_PARSE_ERROR:

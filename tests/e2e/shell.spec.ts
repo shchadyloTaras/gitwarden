@@ -83,14 +83,17 @@ async function dragHandle(win: Page, testId: string, deltaX: number): Promise<vo
 }
 
 test.describe('App shell & navigation', () => {
-  test('global header shows repo selector and safety badge', async () => {
+  test('global header shows repo selector and guard badge', async () => {
     const app = await launchApp()
     try {
       const win = await app.firstWindow()
       await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
       await expect(win.getByTestId('header-repo-select')).toBeVisible()
-      await expect(win.getByTestId('header-safety-badge')).toHaveText('Safe')
+      const guard = win.getByTestId('header-guard-badge')
+      await expect(guard).toBeVisible()
+      // The badge is honest now — it never reads the old static "Safe"/"SAFE".
+      await expect(guard).not.toHaveText(/safe/i)
     } finally {
       await app.close()
     }
