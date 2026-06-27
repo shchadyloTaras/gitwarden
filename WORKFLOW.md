@@ -7,6 +7,10 @@ locked content below it. The DX prompt for that step includes this as an explici
 
 **Current level:** `DX-0 — Clean orientation`
 
+> Derived view. This line and the `🔒`/`✅` section markers below mirror the **Agentic DX** row in
+> `docs/progress-log.md`'s Feature Track Status table — itself derived from the Phase Checklist.
+> Keep them in sync; if they disagree, `docs/progress-log.md` wins.
+
 ---
 
 ## ✅ Baseline — available right now
@@ -22,7 +26,7 @@ npm run dev        # Electron + Vite renderer hot-reload
 ```bash
 npx tsc -p tsconfig.node.json --noEmit   # ALWAYS — the one most often forgotten
 npx tsc -p tsconfig.web.json --noEmit
-npm test                                  # Vitest — 503 unit/integration
+npm test                                  # Vitest — unit + integration (live count is in the latest progress-log entry)
 npm run lint                              # ESLint + Prettier
 npm run e2e                               # Playwright Electron (builds first)
 ```
@@ -39,8 +43,10 @@ All five must be green. Commit only on green. Never push automatically.
 
 1. Run the five-command gate above.
 2. Append entry to `docs/progress-log.md` Progress Log (newest last).
-3. Tick the phase in the Phase Checklist.
-4. Commit: `git add -A && git commit -m "Phase N: <name>" -m "<summary>" -m "Co-Authored-By: Claude <noreply@anthropic.com>"`
+3. Tick the phase in the Phase Checklist, then re-derive the Feature Track Status table row.
+4. Commit — **only after steps 2–3.** Verify the Progress Log entry for this phase exists and its
+   box is ticked; if not, go back to step 2 — **a commit without the log entry is not allowed.**
+   Then: `git add -A && git commit -m "Phase N: <name>" -m "<summary>" -m "Co-Authored-By: Claude <noreply@anthropic.com>"`
 5. Do **not** push — push is always manual and explicit.
 
 ### Know the project state
@@ -80,7 +86,7 @@ No spelunking through 62 checkboxes.
 
 ### Hand off to another agent (Codex, new session)
 
-`AGENTS.md` now has the complete map — full build order through Phase 62 + DX track.
+`AGENTS.md` now has the complete map — the full build order across all tracks + the DX track.
 Paste it (or the whole file) as context. No verbal briefing needed.
 
 ---
@@ -143,7 +149,7 @@ outputs Goal / Tasks / Exit criteria. If the previous phase isn't ✅, it refuse
 ```
 
 Runs all checks in order, stops on first failure, reports ✅/❌ per step.
-**Both tsc projects** are always checked — this is what caught the 57 hidden errors.
+**Both tsc projects** are always checked — the node project has historically hidden a batch of errors the web project alone did not surface.
 
 #### Write the progress log entry
 

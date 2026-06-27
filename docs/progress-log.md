@@ -96,7 +96,26 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] Phase 61 — Commit Draft card
 - [x] Phase 62 — Free-text model-chosen blocks (Level 2)
 
+### Agentic DX track (plan: `docs/plans/agentic-dx-plan.md`, prompts: `docs/prompts/dx-execution-prompts.md`)
+
+> Not product phases — a separate developer-experience track (steps DX-0…DX-6, no global phase
+> counter). Tracked here so the Phase Checklist stays the single source for the "Agentic DX" row of
+> the Feature Track Status table and for WORKFLOW.md's "Current level".
+
+- [x] DX-0 — Docs reconciliation
+- [ ] DX-1 — Executable guardrails (hooks + `settings.json`)
+- [ ] DX-2 — Slash commands
+- [ ] DX-3 — Subagent reviewers
+- [ ] DX-4 — AI evals
+- [ ] DX-5 — Agent-agnostic shareability
+- [ ] DX-6 — Optional / à la carte
+
 ## Feature Track Status
+
+> **Derived view — not a source of truth.** Every row is a roll-up of the Phase Checklist above:
+> a track is ✅ only when **all** its phases are `[x]`, ⬜ when **none** are, 🟡 otherwise (note which
+> are done/open). When you tick a checklist box you MUST re-derive the affected row here in the same
+> edit; if a row ever disagrees with the checklist, the checklist wins.
 
 | Track                  | Phases    | Status                       |
 | ---------------------- | --------- | ---------------------------- |
@@ -612,8 +631,8 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Built: Docs-only orientation step. Tracked WORKFLOW.md and dx-execution-prompts.md; extended AGENTS.md build order through Phase 62 + DX track (DX-0→DX-6); added 7 missing plan/prompt references to AGENTS.md Reference docs §; added Feature Track Status table to progress-log.md; fixed header-guard-badge-plan.md status to ✅ implemented; set WORKFLOW.md DX-0 section to active (🔒→✅, block uncommented).
 - Files: `AGENTS.md`, `WORKFLOW.md` (new), `docs/plans/agentic-dx-plan.md` (prettier), `docs/plans/header-guard-badge-plan.md`, `docs/progress-log.md`, `docs/prompts/dx-execution-prompts.md` (new).
 - Tests: n/a (docs-only). `npm run lint` clean; both tsc projects clean.
-- Exit criteria: ✅ met — all 10 plans + prompts in AGENTS.md; build order shows Phase 61 at HEAD; status table present; header-guard-badge status corrected; lint clean; no untracked files.
-- Notes / follow-ups: Next: DX-1 — Executable guardrails (`.claude/settings.json` allowlist + PreToolUse hooks + test:tooling suite).
+- Exit criteria: ✅ met — all 10 plans + prompts in AGENTS.md; build order matches the Phase Checklist (HEAD = Phase 62); status table present; header-guard-badge status corrected; lint clean; no untracked files.
+- Notes / follow-ups: Follow-up in same session — hardened the docs against the two process slips this step exposed (commit-before-log; transcribed stale status): single-source-of-truth + reconciliation rules, hard log-before-commit gate on every commit path, DX track added to the Phase Checklist, and stale literals (incl. wrong header-guard hash 233a08e→f37c7ee) corrected. Next: DX-1 — Executable guardrails (`.claude/settings.json` allowlist + PreToolUse hooks incl. a commit-needs-log backstop + test:tooling suite).
 
 ### 2026-06-27 — Phase 62: Generative UI Blocks — Free-text model-chosen blocks (Level 2)
 
@@ -622,3 +641,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: Vitest **513 passed** (+7: 4 parser fail-closed + 3 assistant `suggestBlock`). `npx tsc --noEmit` clean on `tsconfig.web.json` AND `tsconfig.node.json`; ESLint + Prettier clean on touched files. E2E added (free-text send → streamed reply → `ai-chat-commit-card` upgrade) but **not run here** (no display) — run `npm run e2e tests/e2e/ai-chat-panel.spec.ts` locally.
 - Exit criteria: ✅ met — free-text can yield an allowlisted, Zod-validated card; fail-closed (review/null/garbage → no block, streamed text untouched); closed allowlist holds; advisory-only / no-new-authority unchanged.
 - Notes / follow-ups: **Generative UI Blocks feature (Phases 60–62) is complete.** Cost trade-off accepted: the post-stream pass is one extra structured call per free-text message; it can later be gated (e.g. skip when the reply is clearly non-actionable) if cost matters. Broadening free-text cards beyond `commit-draft` would need the relevant data in chat context (e.g. diffs) — out of scope here.
+
+### 2026-06-27 — Fix: Harden agent docs against commit-before-log and stale-status drift
+
+- Built: Docs-only hardening, prompted by two process slips DX-0 exposed (committed before writing the Progress Log entry; transcribed a stale status value). Root causes were (1) the log update was documented but not a hard commit gate, and (2) completion state was duplicated across several docs with no single source. Fixes: declared the **Phase Checklist** the single source of truth for completion and every other view (Feature Track Status table, AGENTS.md build order, WORKFLOW.md "Current level", plan `Status:` headers) an explicitly **derived view** with a reconciliation rule; made "Progress Log entry written" a **hard precondition of `git commit`** on every documented commit path (AGENTS.md Operating workflow / DoD / Git workflow, WORKFLOW.md "Close a phase", the DX footer + every per-step closeout, and the `/commit-phase` + `/log-phase` specs); added a **Agentic DX track** subsection to the Phase Checklist so the DX row has a real anchor; de-staled the copy-paste DX prompts (derive-don't-transcribe rule, `<derive>` placeholders, illustrative-only labels). Corrected live-wrong literals found by an adversarial review: AGENTS.md build order treated Phase 62 as unbuilt → `60→62`; WORKFLOW.md test count `503` → unpinned; **header-guard-badge-plan.md commit `233a08e` (an orphan on a backup branch) → `f37c7ee` (the commit actually on main)**. Reworded the proposed DX-1 commit-needs-log hook to a check that is actually implementable (staged-tree includes `docs/progress-log.md`).
+- Files: `AGENTS.md`, `WORKFLOW.md`, `docs/progress-log.md`, `docs/prompts/dx-execution-prompts.md`, `docs/plans/genui-blocks-plan.md`, `docs/plans/header-guard-badge-plan.md`.
+- Tests: n/a (docs-only). `npm run lint` clean; cross-doc consistency check confirms all completion-state views agree. Verified `f37c7ee` is an ancestor of HEAD and `233a08e` is not (it lives only on `backup/before-jun23-author-rewrite-20260627`).
+- Exit criteria: ✅ met — every commit path orders the log entry before the commit; every derived view carries a reconciliation rule and agrees with the checklist; no stale Phase-61-as-HEAD literals remain.
+- Notes / follow-ups: Doc-level gates are honour-system; the **mechanical** backstop (a PreToolUse hook that blocks a phase commit lacking a staged `docs/progress-log.md`) lands in **DX-1** and is now specified there. An adversarial pass correctly noted the prose gate is not self-enforcing until that hook ships.

@@ -22,6 +22,9 @@ push automatically**.
 **Phase numbering.** The global counter is shared across features. Phases 56–59 are reserved by the
 Client Branch Access feature, so this feature starts at **Phase 60**:
 
+> The ✅/_(shipped)_ markers below are a derived convenience view; the authoritative completion state
+> is the Phase Checklist in `docs/progress-log.md`. If they disagree, the checklist wins.
+
 - **Phase 60 — GenUI Block Contracts, Store & Review Findings card** ✅ _(shipped)_
 - **Phase 61 — Commit Draft card** ✅ _(shipped)_
 - **Phase 62 — Free-text model-chosen blocks (Level 2)** ✅ _(shipped)_

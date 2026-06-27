@@ -9,6 +9,7 @@ Shared instructions for AI coding agents working on this repo. Claude Code loads
 - **Claude Code:** `CLAUDE.md` should contain only `@AGENTS.md`.
 - **Before working:** read the full plan in `docs/plans/gitwarden-plan.md`.
 - **Status & history:** the Phase Checklist and per-phase Progress Log live in `docs/progress-log.md`. Keep them out of tool-specific instruction files; update the progress log at the end of each phase.
+- **Single source of truth for completion:** the **Phase Checklist** in `docs/progress-log.md` is authoritative for "what is done." Every other place that restates completion — the Feature Track Status table, the Build order below, WORKFLOW.md's "Current level", and any `Status:` header in `docs/plans/` — is a **derived view**. When you tick a checklist box you MUST re-derive the affected views in the same change; if a view ever disagrees with the checklist, the checklist wins.
 - **Commit trailers:** use the current agent's identity in the `Co-Authored-By` trailer. Claude Code uses `Co-Authored-By: Claude <noreply@anthropic.com>`.
 - **Planning:** for large or cross-cutting changes, propose the approach before editing when the agent/tool supports a planning mode.
 - **Never push** unless explicitly asked; commits stay local by default.
@@ -66,22 +67,22 @@ npm run build    # electron-builder package
 3. **Implement** following the Architecture rules above.
 4. **Verify** by running the phase's tests (`npm test` / `npm run e2e`). A phase is not done until its Exit-criteria tests are green.
 5. **Log progress** — append an entry to the Progress Log in `docs/progress-log.md` and tick the phase in its Phase Checklist.
-6. **Commit** all changes once exit criteria are met: `git add -A && git commit -m "Phase N: <name>"` with a one-line body and your agent's `Co-Authored-By: … <noreply@anthropic.com>` trailer. Commit only on green; **do not push** unless the user explicitly asks.
+6. **Commit** — only after step 5. **Hard gate:** before staging, confirm a Progress Log entry for _this_ phase exists in `docs/progress-log.md` and its checklist box is ticked. If either is missing, STOP and do step 5 first — **do not commit without the log entry.** Then `git add -A && git commit -m "Phase N: <name>"` with a one-line body and your agent's `Co-Authored-By: … <noreply@anthropic.com>` trailer. Commit only on green; **do not push** unless the user explicitly asks.
 7. **Stop and report** the test output honestly. If tests fail or a step was skipped, say so.
 
 ## Build order (dependency-driven)
 
-`0→…→20` (MVP) → `21→27` (GitHub OAuth) → `28→39` (AI Connections) → `52→55a` (AI Chat) → `60→61` (GenUI Blocks) | unbuilt: `40→45` (Distribution) → `46→51` (Landing) → `56→59` (Client Branch Access) → `62` (GenUI Level 2) | DX track: `DX-0→DX-6` (agentic-dx-plan.md)
+`0→…→20` (MVP) → `21→27` (GitHub OAuth) → `28→39` (AI Connections) → `52→55a` (AI Chat) → `60→62` (GenUI Blocks) | unbuilt: `40→45` (Distribution) → `46→51` (Landing) → `56→59` (Client Branch Access) | DX track: `DX-0→DX-6` (agentic-dx-plan.md)
 
-Logic and infra are built and fully tested before any UI, so the engine is verified headlessly first. Full status: `docs/progress-log.md`.
+Logic and infra are built and fully tested before any UI, so the engine is verified headlessly first. The built/unbuilt split above is a **derived view** of the Phase Checklist in `docs/progress-log.md` (authoritative) — re-derive it whenever a phase flips to `[x]`; do not hand-pin completion here. Full status: `docs/progress-log.md`.
 
 ## Definition of Done (per phase)
 
-Compiles with no TS/ESLint errors in touched files · phase Exit criteria met · logic phases have passing Vitest · UI phases have passing Playwright · new user-facing strings externalized · destructive/remote actions confirmed · **`docs/progress-log.md` updated and all changes committed** as `Phase N: <name>` (commit only on green; push stays manual).
+Compiles with no TS/ESLint errors in touched files · phase Exit criteria met · logic phases have passing Vitest · UI phases have passing Playwright · new user-facing strings externalized · destructive/remote actions confirmed · **Progress Log entry for this phase written and its checklist box ticked _before_ committing** · all changes _then_ committed as `Phase N: <name>` (commit only on green; push stays manual).
 
 ## Git workflow
 
-- **One commit per phase**, made only after the phase's exit criteria are green and the `docs/progress-log.md` entry is written (so the doc update is part of the commit).
+- **One commit per phase.** Do **not** run `git commit` until the phase's exit criteria are green **and** the `docs/progress-log.md` entry is written and its checklist box ticked — verify both first, so the doc update is part of the commit.
 - Message convention: subject `Phase N: <name>`, a one-line body, and the `Co-Authored-By: <Agent> <noreply@anthropic.com>` trailer.
 - `git add -A` (the `.gitignore` already excludes `node_modules/`, build output, coverage, secrets).
 - **Do not push automatically** — pushing to `origin/main` happens only when the user asks. Intermediate WIP commits within a phase are fine; squash is optional.

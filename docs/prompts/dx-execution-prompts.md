@@ -10,8 +10,14 @@ Each prompt is self-contained and ends with a DX-track progress footer.
 3. After each step, read the **"How you work after this"** section to understand your new workflow.
 4. The product backlog (Phases 56–62, 40–51) resumes after Step DX-4 at minimum.
 
-**Gate rule:** each step is done only when its exit criteria pass, `docs/progress-log.md` is updated,
-and the single commit is made. Never push automatically.
+**Gate rule:** each step is done only when its exit criteria pass, the `docs/progress-log.md` entry is
+written, **and then** the single commit is made — in that order. The Progress Log entry is a hard
+precondition of the commit, never an afterthought. Never push automatically.
+
+**Derive, don't transcribe:** any status value, HEAD phase, test count, or commit hash shown literally
+in a prompt below is **illustrative only** and may be stale by the time you run it. Always recompute it
+from the authoritative source (the Phase Checklist in `docs/progress-log.md` for completion state) at
+execution time — copying a literal from a prompt is how stale state gets re-injected.
 
 ---
 
@@ -20,16 +26,21 @@ and the single commit is made. Never push automatically.
 Every prompt below ends with this block:
 
 ```
-When this step's exit criteria are met:
-1. Append an entry to the "## Progress Log" section of docs/progress-log.md under a
-   "### DX Track" subsection (create it if it doesn't exist; newest last):
-   #### <today's date> — DX-N: <step name>
+When this step's exit criteria are met, close out IN THIS ORDER:
+
+1. GATE — write the Progress Log entry FIRST. The commit in step 2 is BLOCKED until this entry
+   exists. Append a new entry at the BOTTOM of the "## Progress Log" section (newest last), matching
+   the existing flat heading style exactly — derive the format from recent entries; do NOT invent a
+   "### DX Track" subsection:
+   ### <today's date> — DX-N: <step name>
    - Built: <what was added>
    - Files: <files added/changed>
    - Tests: <guardrail test result if applicable>
    - Exit criteria: ✅ met  (or ⚠️ partial — explain what's left)
    - Notes / follow-ups: <anything worth knowing>
-2. Commit ALL changes for this step (only if exit criteria are met):
+   Then re-derive the "Agentic DX" row of the Feature Track Status table from the Phase Checklist.
+2. Commit ALL changes — ONLY after step 1's Progress Log entry is written AND exit criteria are met.
+   If the step-1 entry is missing, STOP and write it before committing — never commit without it.
    git add -A
    git commit -m "DX-N: <step name>" -m "<one-line summary>" -m "Co-Authored-By: Claude <noreply@anthropic.com>"
    Do NOT push — pushing stays manual unless explicitly asked.
@@ -41,8 +52,9 @@ When this step's exit criteria are met:
 ## Step DX-0 — Docs reconciliation (Stage 1, prerequisite for everything)
 
 **Problem it solves:** working tree has uncommitted changes, `AGENTS.md` build-order stops at Phase 39
-while HEAD is Phase 61, 7 plans are unregistered, and `agentic-dx-plan.md` is untracked and
-unformatted. Every subsequent step gates on a clean, honest tree.
+(far behind the real HEAD — derive the actual HEAD from the Phase Checklist), 7 plans are
+unregistered, and `agentic-dx-plan.md` is untracked and unformatted. Every subsequent step gates on a
+clean, honest tree.
 
 **Touches:** only `docs/` and `AGENTS.md`. Zero runtime code changes.
 
@@ -66,11 +78,14 @@ Tasks (do all in one commit):
    so the untracked file is tracked and formatted.
 
 2. Update AGENTS.md "Build order" §:
-   The current line stops at "→ 39 deferred (agentic, allowlist-only)" — extend it to show all
-   feature tracks through Phase 62:
+   The current line stops at "→ 39 deferred (agentic, allowlist-only)" — extend it to cover every
+   feature track. DERIVE the built-vs-unbuilt split from the Phase Checklist in docs/progress-log.md
+   (a track is "built" only when ALL its phases are [x]); do NOT copy the example below verbatim.
+   Add a one-line note below the line stating the split is a derived view of the Phase Checklist
+   (authoritative). Illustrative shape only — reconcile every segment against the checklist first:
    `0→…→20 (MVP) → 21→27 (GitHub OAuth) → 28→39 (AI Connections) → 52→55a (AI Chat) →
-   60→61 (GenUI Blocks) | unbuilt: 40→45 (Distribution) → 46→51 (Landing) → 56→59 (Client
-   Branch Access) → 62 (GenUI Level 2) | DX track: DX-0→DX-6 (agentic-dx-plan.md)`
+   60→62 (GenUI Blocks) | unbuilt: 40→45 (Distribution) → 46→51 (Landing) → 56→59 (Client
+   Branch Access) | DX track: DX-0→DX-6 (agentic-dx-plan.md)`
 
 3. Update AGENTS.md "Reference docs" § — add the 7 missing plans:
    - docs/plans/distribution-release-plan.md + docs/prompts/distribution-release-prompts.md
@@ -81,22 +96,30 @@ Tasks (do all in one commit):
    - docs/plans/header-guard-badge-plan.md + docs/prompts/header-guard-badge-prompts.md
    - docs/plans/agentic-dx-plan.md + docs/prompts/dx-execution-prompts.md
 
-4. In docs/progress-log.md, add a feature-track status table after the Phase Checklist but before
-   the Progress Log section. Format:
+4. In docs/progress-log.md, add a Feature Track Status table after the Phase Checklist but before
+   the Progress Log section. Use the column layout below, but DERIVE every Status cell by rolling up
+   the Phase Checklist immediately above — ✅ if all a track's phases are [x], ⬜ if none, 🟡 otherwise
+   (note which are done/open). Do NOT copy status values from this prompt; the Phase Checklist is the
+   only authoritative source for completion. Add a "Derived view" reconciliation note above the table.
+   Illustrative shape only — recompute every Status cell against the live checklist:
    | Track | Phases | Status |
    |---|---|---|
-   | MVP Core | 0–20 | ✅ complete |
-   | GitHub OAuth | 21–27 | ✅ complete |
-   | AI Connections | 28–39 | ✅ complete |
-   | AI Chat Redesign | 52–55a | ✅ complete |
-   | Generative UI Blocks | 60–62 | 🟡 60–61 done, 62 open |
-   | Client Branch Access | 56–59 | ⬜ not started |
-   | Distribution & Release | 40–45 | ⬜ not started |
-   | Landing Page | 46–51 | ⬜ not started |
-   | Agentic DX | DX-0–DX-6 | ⬜ not started |
+   | MVP Core | 0–20 | <derive> |
+   | GitHub OAuth | 21–27 | <derive> |
+   | AI Connections | 28–39 | <derive> |
+   | AI Chat Redesign | 52–55a | <derive> |
+   | Generative UI Blocks | 60–62 | <derive> |
+   | Client Branch Access | 56–59 | <derive> |
+   | Distribution & Release | 40–45 | <derive> |
+   | Landing Page | 46–51 | <derive> |
+   | Agentic DX | DX-0–DX-6 | <derive> |
 
 5. Fix docs/plans/header-guard-badge-plan.md status header:
-   Change "Status: proposed" → "Status: ✅ implemented (commit 233a08e)"
+   Change "Status: proposed" → "Status: ✅ implemented" and append the implementing commit's short
+   hash. Find it with `git log --oneline --grep='header guard' -i` (HEAD only — NOT --all, which can
+   surface orphaned commits on backup branches) and confirm it is reachable from HEAD with
+   `git merge-base --is-ancestor <hash> HEAD` before writing. Do not copy an example hash blindly —
+   a plain `git rev-parse` can succeed on a commit that is not on main.
 
 6. Verify nothing else is out of place:
    - Run `git status` — after git add steps above, only AGENTS.md and tracked plan files should remain
@@ -106,7 +129,8 @@ Tasks (do all in one commit):
 Exit criteria:
 - `git status` shows no untracked files and no stray modifications
 - All 10 plans + their prompts referenced in AGENTS.md
-- AGENTS.md build-order shows Phase 61 at HEAD
+- AGENTS.md build-order matches the Phase Checklist (every all-[x] track is in the built run, none in
+  "unbuilt") — re-derive the current HEAD from the checklist; do not assume a fixed phase number
 - Status table present in progress-log.md
 - header-guard-badge-plan.md status corrected
 - npm run lint clean
@@ -116,7 +140,9 @@ Update WORKFLOW.md:
 - Change the DX-0 section header from "🔒 DX-0" → "✅ DX-0"
 - Uncomment the block inside the DX-0 section (remove the <!-- and --> lines)
 
-Then run the standard DX-track progress footer (commit as "DX-0: Docs reconciliation").
+Then close out per the standard DX-track progress footer above: WRITE the Progress Log entry in
+docs/progress-log.md FIRST — the commit is blocked until it exists — then commit as
+"DX-0: Docs reconciliation", then report honestly. Never push.
 ```
 
 ---
@@ -182,6 +208,15 @@ Tasks:
       - PostToolUse on Edit|Write|MultiEdit: run .claude/hooks/execfile-guard.sh
         (if content adds execFile/exec/spawn and path is NOT under src/main/git/ and NOT a test file,
          warn citing AGENTS.md rule #2; fail-open on own error)
+      - RECOMMENDED PreToolUse on Bash matching `git commit`: run .claude/hooks/commit-needs-log.sh
+        — the mechanical backstop for the doc-level commit gate (the gap that caused the DX-0 miss).
+        A PreToolUse hook cannot read the pending commit message, so check the STAGED TREE instead:
+        if `git diff --cached --name-only` does NOT include docs/progress-log.md, exit 2 citing
+        "write the Progress Log entry and stage it before committing". This enforces "every phase
+        commit includes a log update" across ALL commit paths regardless of which command commits.
+        Fail-open on own error (exit 0). Allow a bypass for explicitly non-phase commits (e.g. an env
+        var like GITWARDEN_SKIP_LOG_GATE=1) so WIP/fixup commits aren't blocked. If you add it, add a
+        guardrail-test bullet and an exit-criterion; if you defer it, note the deferral in the log.
 
 2. Create .claude/hooks/no-global-git-config.sh — reads stdin JSON, extracts the command string,
    checks for "config --global" or "config --system", exits 2 with a rule-citing message if found,
@@ -223,7 +258,9 @@ Update WORKFLOW.md:
 - Change "🔒 DX-1" → "✅ DX-1"
 - Uncomment the DX-1 block (remove the <!-- and --> lines)
 
-Then run the standard DX-track progress footer (commit as "DX-1: Executable guardrails").
+Then close out per the standard DX-track progress footer above: write the Progress Log entry FIRST
+(the commit is blocked until it exists), then commit as "DX-1: Executable guardrails", then report.
+Never push.
 ```
 
 ---
@@ -290,12 +327,16 @@ Final summary: GATE PASS (all green) or GATE FAIL (list what failed).
 
 ### .claude/commands/commit-phase.md
 
-description: "Commit exactly 'Phase N: <name>' with the project trailer. Refuses on red tests. Never pushes."
+description: "Commit exactly 'Phase N: <name>' with the project trailer. Refuses on red tests or a missing Progress Log entry. Never pushes."
 argument-hint: "<N> <phase name...>"
-allowed-tools: Bash(npm test), Bash(git add*), Bash(git commit*), Bash(git status)
+allowed-tools: Bash(npm test), Bash(git add*), Bash(git commit*), Bash(git status), Read, Bash(grep*)
 
 Body:
 1. Run npm test — if any test fails, STOP and report "REFUSED: tests are red. Fix tests first."
+1b. GATE — grep docs/progress-log.md for a Progress Log entry whose heading matches this step
+    (`Phase $N:` for product phases, `DX-$N:` for DX steps) AND confirm its checklist box is ticked
+    (`[x] Phase $N` or `[x] DX-$N`). If either is missing, STOP and report "REFUSED: no Progress Log
+    entry for $N. Run /log-phase first." Do not stage.
 2. Run git add -A
 3. Commit with:
    subject: "Phase $N: <rest of $ARGUMENTS>"
@@ -303,6 +344,9 @@ Body:
    trailer: "Co-Authored-By: Claude <noreply@anthropic.com>"
 4. Report the full commit hash and subject.
 5. Do NOT run git push under any circumstances.
+
+(DX-1 backstop: once a commit-gate hook ships, a PreToolUse hook on `git commit` enforces this
+across ALL commit paths regardless of which command or agent runs the commit — see DX-1.)
 
 ---
 
@@ -340,8 +384,10 @@ Body:
 2. Append a new entry under "## Progress Log" (newest last) following the exact format of recent entries.
    The entry must include: Built, Files, Tests (exact numbers), Exit criteria (✅ or ⚠️), Notes.
 3. Find Phase <N>'s checkbox in the Phase Checklist and change `[ ]` to `[x]`.
-4. Do NOT commit — the commit is a separate step (use /commit-phase).
-5. Report what was appended and what checkbox was ticked.
+4. Re-derive the affected row of the Feature Track Status table from the checklist (a track is ✅ only
+   when all its phases are `[x]`, ⬜ when none, 🟡 otherwise) so the derived view stays in sync.
+5. Do NOT commit — the commit is a separate step (use /commit-phase).
+6. Report what was appended, what checkbox was ticked, and the status-table row re-derived.
 
 ---
 
@@ -363,7 +409,9 @@ Update WORKFLOW.md:
 - Change "🔒 DX-2" → "✅ DX-2"
 - Uncomment the DX-2 block (remove the <!-- and --> lines)
 
-Then run the standard DX-track progress footer (commit as "DX-2: Slash commands").
+Then close out per the standard DX-track progress footer above: write the Progress Log entry FIRST
+(the commit is blocked until it exists), then commit as "DX-2: Slash commands", then report.
+Never push.
 ```
 
 ---
@@ -478,7 +526,9 @@ Update WORKFLOW.md:
 - Change "🔒 DX-3" → "✅ DX-3"
 - Uncomment the DX-3 block (remove the <!-- and --> lines)
 
-Then run the standard DX-track progress footer (commit as "DX-3: Subagent reviewers").
+Then close out per the standard DX-track progress footer above: write the Progress Log entry FIRST
+(the commit is blocked until it exists), then commit as "DX-3: Subagent reviewers", then report.
+Never push.
 ```
 
 ---
@@ -577,7 +627,8 @@ Update WORKFLOW.md:
 - Change "🔒 DX-4" → "✅ DX-4"
 - Uncomment the DX-4 block (remove the <!-- and --> lines)
 
-Then run the standard DX-track progress footer (commit as "DX-4: AI evals").
+Then close out per the standard DX-track progress footer above: write the Progress Log entry FIRST
+(the commit is blocked until it exists), then commit as "DX-4: AI evals", then report. Never push.
 ```
 
 ---
@@ -673,7 +724,8 @@ Update WORKFLOW.md:
 - Change "🔒 DX-5" → "✅ DX-5"
 - Uncomment the DX-5 block (remove the <!-- and --> lines)
 
-Then run the standard DX-track progress footer (commit as "DX-5: Shareability").
+Then close out per the standard DX-track progress footer above: write the Progress Log entry FIRST
+(the commit is blocked until it exists), then commit as "DX-5: Shareability", then report. Never push.
 ```
 
 ---
@@ -742,6 +794,10 @@ Then follow the standard phase workflow.
 
 ### Prompt: Phase 62 — Free-text GenUI (requires DX-4 first)
 
+> Retained as a template only — Phase 62 already shipped (it is `[x]` in the Phase Checklist; the
+> DX-4-before-62 gate below was the intended order but 62 landed ahead of the DX track). Check the
+> Phase Checklist before running any backlog prompt and skip phases already `[x]`.
+
 ```
 Work in the GitWarden repository at /Users/tarasshchadylo/Documents/agents-project/git-visual.
 
@@ -750,7 +806,8 @@ Before doing anything, read:
 - docs/plans/genui-blocks-plan.md §Phase 62
 - docs/prompts/genui-blocks-prompts.md
 - tests/evals/ — confirm npm run eval passes (DX-4 exit criteria)
-- docs/progress-log.md (confirm Phase 61 and DX-4 are ✅)
+- docs/progress-log.md (confirm the prerequisite phases and DX-4 are ✅ in the Phase Checklist —
+  derive from it, do not assume a fixed phase number)
 
 Run /new-phase 62 to confirm the gate and get the implementation brief.
 Then follow the standard phase workflow.
