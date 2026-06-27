@@ -69,7 +69,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] Phase 48 — Download Experience & OS Detection
 - [x] Phase 49 — Product Messaging & Marketing UI
 - [ ] Phase 50 — SEO, Accessibility, Analytics & Performance _(offline parts landed; Lighthouse ≥95 + OG validation pending — human/CI)_
-- [ ] Phase 51 — Deployment, CI & Release Integration
+- [ ] Phase 51 — Deployment, CI & Release Integration _(offline parts landed; Vercel deploy + secrets + live verify pending — human)_
 
 ### AI Chat Redesign feature (plan: `docs/plans/ai-chat-redesign-plan.md`)
 
@@ -126,7 +126,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | Generative UI Blocks   | 60–62     | ✅ complete                                                   |
 | Client Branch Access   | 56–59     | ✅ complete                                                   |
 | Distribution & Release | 40–45     | 🟡 Phases 40–42, 45 done; 43–44 open (gated on signing certs) |
-| Landing Page           | 46–51     | 🟡 46–49 done; 50 offline parts done (Lighthouse/OG pending); 51 open |
+| Landing Page           | 46–51     | 🟡 46–49 done; 50–51 offline parts done; live deploy + Lighthouse/OG pending (human) |
 | Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-5 done, DX-6 open                                  |
 
 ## Progress Log
@@ -828,6 +828,14 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: landing Vitest **32/32**; Playwright **20/20** (7 new SEO/a11y — robots + sitemap served, OG/canonical/Twitter meta, valid JSON-LD, analytics default-off, skip-link first focusable, keyboard reaches download + theme toggle; plus the axe WCAG A/AA smoke). `tsc --noEmit`, `astro check` (0/0/0), `eslint` + `prettier`, fixture build clean; dist verified to contain robots.txt, sitemap-index.xml, og-image.svg, canonical, og:image, JSON-LD, skip-link, and NO analytics script by default.
 - Exit criteria: ⚠️ PARTIAL — every offline-codeable criterion met + verified (sitemap.xml + robots.txt served; OG/Twitter + JSON-LD present; cookieless analytics default-off; automated a11y scan reports no critical/serious + keyboard reaches interactive elements). **Left for a human/CI run** (cannot be done in this sandbox): (1) measured **Lighthouse (mobile) ≥ 95** on Performance/Accessibility/Best-Practices/SEO; (2) **OG/Twitter preview render validation** on the social platforms; (3) swap the **SVG OG image for a raster PNG/JPG** for full social compatibility. Checklist box left unticked until these complete.
 - Notes / follow-ups: Optional `/changelog` page skipped (would cross the isolated `landing/` boundary to read repo-root `CHANGELOG.md`). Run Lighthouse against the Vercel preview from Phase 51 (e.g. `npx lighthouse <url> --form-factor=mobile`) or wire Lighthouse-CI. OG raster generation tracked alongside the screenshot follow-up.
+
+### 2026-06-27 — Phase 51: Deployment, CI & Release Integration (offline parts; ⚠️ partial)
+
+- Built: Landing CI workflow (`.github/workflows/landing-ci.yml`) — `landing/`-scoped, path-filtered, fully offline (`npm ci` → lint → `astro check` → `tsc` → Vitest → build → Playwright e2e); kept separate from the app's release matrix. Release → landing refresh: added a guarded `refresh-landing` job to `.github/workflows/release.yml` that POSTs the Vercel deploy hook (secret `VERCEL_DEPLOY_HOOK_URL`) on publish and no-ops when the secret is absent (never fails a release). `README.md` Download section now points at the live site first. `astro.config.mjs` already uses static output + the `site` URL; the Phase 48 client self-heal fetch is the runtime freshness layer.
+- Files: added `.github/workflows/landing-ci.yml`; updated `.github/workflows/release.yml` (refresh-landing job), `README.md` (Download → live site).
+- Tests: both workflow YAMLs validated (parse OK; release jobs = guard / build / refresh-landing; landing-ci `verify` job carries the full offline gate). App Vitest **594/594** (no app regression); the landing gate is unchanged and green from Phase 50.
+- Exit criteria: ⚠️ PARTIAL — all offline-codeable parts done (landing CI gate; release deploy-hook wiring; README link; static output + client self-heal). **Human-only steps remaining** (require your Vercel/GitHub accounts — HARD RULE 4): (1) create the Vercel project with **Root Directory = `landing/`** and connect the repo (push-to-deploy + PR previews); (2) create a **Vercel deploy hook** and add it as the **`VERCEL_DEPLOY_HOOK_URL`** repo secret; (3) optional **custom domain** + update `site` in `astro.config.mjs`; (4) **cut a real release** and verify the live download buttons resolve per OS plus the offline-fallback. Checklist box left unticked until the site is live + verified.
+- Notes / follow-ups: No `@astrojs/vercel` adapter needed (static output is sufficient). The landing-ci e2e step installs Chromium with `--with-deps`. The manual launch-verification checklist lives at the end of `docs/prompts/landing-page-prompts.md`.
 
 ## Documentation
 

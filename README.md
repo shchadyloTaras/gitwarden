@@ -9,7 +9,9 @@ Built around **profiles** (e.g. Personal / Work / Client). Each repository is as
 
 ## Download
 
-Download the latest release from the [GitHub Releases page](https://github.com/shchadyloTaras/gitwarden/releases/latest).
+**Easiest:** the [download site](https://gitwarden.vercel.app) detects your OS and links the right installer in one click.
+
+Prefer to choose yourself? Grab it from the [GitHub Releases page](https://github.com/shchadyloTaras/gitwarden/releases/latest):
 
 | Platform                  | File                        | Install                                                   |
 | ------------------------- | --------------------------- | --------------------------------------------------------- |
