@@ -98,17 +98,17 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 
 ## Feature Track Status
 
-| Track                  | Phases    | Status                 |
-| ---------------------- | --------- | ---------------------- |
-| MVP Core               | 0–20      | ✅ complete            |
-| GitHub OAuth           | 21–27     | ✅ complete            |
-| AI Connections         | 28–39     | ✅ complete            |
-| AI Chat Redesign       | 52–55a    | ✅ complete            |
-| Generative UI Blocks   | 60–62     | 🟡 60–61 done, 62 open |
-| Client Branch Access   | 56–59     | ⬜ not started         |
-| Distribution & Release | 40–45     | ⬜ not started         |
-| Landing Page           | 46–51     | ⬜ not started         |
-| Agentic DX             | DX-0–DX-6 | ⬜ not started         |
+| Track                  | Phases    | Status                       |
+| ---------------------- | --------- | ---------------------------- |
+| MVP Core               | 0–20      | ✅ complete                  |
+| GitHub OAuth           | 21–27     | ✅ complete                  |
+| AI Connections         | 28–39     | ✅ complete                  |
+| AI Chat Redesign       | 52–55a    | ✅ complete                  |
+| Generative UI Blocks   | 60–62     | ✅ complete                  |
+| Client Branch Access   | 56–59     | ⬜ not started               |
+| Distribution & Release | 40–45     | ⬜ not started               |
+| Landing Page           | 46–51     | ⬜ not started               |
+| Agentic DX             | DX-0–DX-6 | 🟡 DX-0 done, DX-1–DX-6 open |
 
 ## Progress Log
 
