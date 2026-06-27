@@ -22,6 +22,9 @@ npm-debug.log*
 pnpm-debug.log*
 yarn-error.log*
 
+# Repomix bundle
+gitwarden-context.txt
+
 # Env / secrets
 .env
 .env.*

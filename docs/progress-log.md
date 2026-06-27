@@ -107,7 +107,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] DX-2 — Slash commands
 - [x] DX-3 — Subagent reviewers
 - [x] DX-4 — AI evals
-- [ ] DX-5 — Agent-agnostic shareability
+- [x] DX-5 — Agent-agnostic shareability
 - [ ] DX-6 — Optional / à la carte
 
 ## Feature Track Status
@@ -117,17 +117,17 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 > are done/open). When you tick a checklist box you MUST re-derive the affected row here in the same
 > edit; if a row ever disagrees with the checklist, the checklist wins.
 
-| Track                  | Phases    | Status                            |
-| ---------------------- | --------- | --------------------------------- |
-| MVP Core               | 0–20      | ✅ complete                       |
-| GitHub OAuth           | 21–27     | ✅ complete                       |
-| AI Connections         | 28–39     | ✅ complete                       |
-| AI Chat Redesign       | 52–55a    | ✅ complete                       |
-| Generative UI Blocks   | 60–62     | ✅ complete                       |
-| Client Branch Access   | 56–59     | ⬜ not started                    |
-| Distribution & Release | 40–45     | ⬜ not started                    |
-| Landing Page           | 46–51     | ⬜ not started                    |
-| Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-4 done, DX-5–DX-6 open |
+| Track                  | Phases    | Status                       |
+| ---------------------- | --------- | ---------------------------- |
+| MVP Core               | 0–20      | ✅ complete                  |
+| GitHub OAuth           | 21–27     | ✅ complete                  |
+| AI Connections         | 28–39     | ✅ complete                  |
+| AI Chat Redesign       | 52–55a    | ✅ complete                  |
+| Generative UI Blocks   | 60–62     | ✅ complete                  |
+| Client Branch Access   | 56–59     | ⬜ not started               |
+| Distribution & Release | 40–45     | ⬜ not started               |
+| Landing Page           | 46–51     | ⬜ not started               |
+| Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-5 done, DX-6 open |
 
 ## Progress Log
 
@@ -681,3 +681,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: `npm run eval` → **5/5 passed** (smart-commit-basic, smart-commit-specific, safety-copilot-profile-mismatch, change-review-bug, change-review-clean). `npm run lint` clean. Both tsc projects clean. No `src/` changes.
 - Exit criteria: ✅ met — `npm run eval` runs offline without network access and reports per-case pass/fail; PROFILE_MISMATCH Safety Copilot case passes (code === PROFILE_MISMATCH, suggestedAction in allowlist); false-positive case passes (0 findings); adding a new case is a single file in `tests/evals/fixtures/`; lint + both tsc clean.
 - Notes / follow-ups: The eval runner uses a two-track design — offline mode validates `cannedResponse` through the assistant Zod schema and runs quality checks; live mode (`GITWARDEN_EVAL_LIVE=1`) is stubbed for future wiring to the real adapter. Safety Copilot evals use `buildDeterministicSafetyExplanation` directly (no adapter needed for the deterministic path). Quality checks are structural/regex — not exact strings — so they remain valid for both the offline canned responses and future live AI output. Next: DX-5 — Agent-agnostic shareability.
+
+### 2026-06-27 — DX-5: Shareability
+
+- Built: `repomix.config.json` (pack the repo to a single XML bundle, excluding node_modules/out/dist/tsbuildinfo/lockfiles/secrets); `CONTRIBUTING.md` (under 100 lines — project description, prerequisites, five commands, six-step phase workflow referencing `/verify-phase` + `/commit-phase`, three non-negotiables, how to pack); `gitwarden-context.txt` added to `.gitignore`; `WORKFLOW.md` DX-5 section unlocked.
+- Files added: `repomix.config.json`, `CONTRIBUTING.md`; modified `.gitignore` (gitwarden-context.txt), `WORKFLOW.md` (DX-5 unlocked, "Current level" updated, DX-5 block uncommented), `docs/progress-log.md`.
+- Tests: `npm run pack` → produced `gitwarden-context.txt` (no node_modules/, no \*.tsbuildinfo, no secrets; size reasonable). `npm run lint` → clean. No `src/` changes.
+- Exit criteria: ✅ met — `npm run pack` produces `gitwarden-context.txt` without node_modules or secrets; `CONTRIBUTING.md` exists and is under 100 lines; links to AGENTS.md rather than duplicating it; lint clean.
+- Notes / follow-ups: `gitwarden-context.txt` is gitignored so the bundle is never accidentally committed. `npm run pack` was already wired in DX-1; `repomix.config.json` gives it the correct exclusion list. Next: DX-6 — Optional / à la carte.

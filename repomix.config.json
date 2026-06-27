@@ -1,0 +1,18 @@
+{
+  "output": { "filePath": "gitwarden-context.txt", "style": "xml" },
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "node_modules/**",
+      "out/**",
+      "dist/**",
+      "*.tsbuildinfo",
+      "package-lock.json",
+      "gitwarden-context.txt",
+      "**/*.key",
+      "**/*.pem",
+      "**/.env*"
+    ]
+  }
+}

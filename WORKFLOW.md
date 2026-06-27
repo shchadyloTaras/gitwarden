@@ -5,7 +5,7 @@ Living reference. Starts at Baseline, grows one section per completed DX step.
 **How to update:** when a DX step completes, change its `🔒` to `✅` and uncomment the
 locked content below it. The DX prompt for that step includes this as an explicit task.
 
-**Current level:** `DX-4 — Measured AI quality`
+**Current level:** `DX-5 — Agent-agnostic`
 
 > Derived view. This line and the `🔒`/`✅` section markers below mirror the **Agentic DX** row in
 > `docs/progress-log.md`'s Feature Track Status table — itself derived from the Phase Checklist.
@@ -272,12 +272,11 @@ then implement, then eval passes — in that order.
 
 ---
 
-## 🔒 DX-5 — Agent-agnostic
+## ✅ DX-5 — Agent-agnostic
 
 > Unlocks after: `DX-5: Shareability` commit lands.
 > Update: change `🔒` → `✅`, uncomment the block below, update "Current level" at the top.
 
-<!--
 ### Pack the repo for any AI tool
 
 ```bash
@@ -297,7 +296,6 @@ Paste `gitwarden-context.txt` into any AI tool for full project context without 
 
 `CONTRIBUTING.md` — prerequisites, five commands, phase workflow, three non-negotiables,
 how to pack the repo. Under 100 lines. Read time: 5 minutes.
--->
 
 ---
 
