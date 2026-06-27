@@ -788,3 +788,10 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: Vitest **594 passed** (no source changes). `npm run lint` clean (ESLint + Prettier).
 - Exit criteria: ✅ met — maintainer can follow `docs/release-checklist.md` end-to-end to cut a release without referring to anyone; `README.md` Download section lists per-OS artifacts, install steps, and unsigned-path warning workaround; `CHANGELOG.md` exists and reflects `v0.1.0`; tag ↔ version ↔ release notes are consistent.
 - Notes / follow-ups: Phases 43 (Code Signing) and 44 (Auto-Update) remain open, gated on the maintainer obtaining Apple Developer Program membership and a Windows code-signing certificate. The recommended cut (Phases 40–42 + 45) is now complete — a maintainer can push `v0.1.0` and receive a real, downloadable draft GitHub Release with five installers.
+
+## Documentation
+
+### landing-page plan + prompts updated — 2026-06-27
+
+- Output: `docs/plans/landing-page-plan.md`, `docs/prompts/landing-page-prompts.md`
+- Summary: Updated to reflect decided stack (Astro + TS + Tailwind, `landing/` folder, Vercel) and OS detection strategy (macOS arm64 primary + Intel secondary, Windows exe, Linux AppImage + deb secondary, unknown → GitHub Releases fallback). Replaced all Next.js / `site/` references.
