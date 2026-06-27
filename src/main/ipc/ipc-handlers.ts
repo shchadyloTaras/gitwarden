@@ -725,7 +725,15 @@ export function registerIpcHandlers(services: Services): void {
       const input = AiChatPayload.parse(raw)
       const requestId = input.requestId ?? crypto.randomUUID()
       const sender = event.sender
-      const emit = (payload: Omit<z.infer<typeof AiChatStreamEventSchema>, 'requestId'>): void => {
+      // Distribute Omit over each member of the discriminated union so every variant keeps
+      // its own fields — a plain Omit<union, K> collapses to the shared keys (just `type`).
+      type StreamEventPayload =
+        z.infer<typeof AiChatStreamEventSchema> extends infer E
+          ? E extends unknown
+            ? Omit<E, 'requestId'>
+            : never
+          : never
+      const emit = (payload: StreamEventPayload): void => {
         sender.send(
           AI_CHAT_STREAM_EVENT_CHANNEL,
           AiChatStreamEventSchema.parse({ requestId, ...payload })

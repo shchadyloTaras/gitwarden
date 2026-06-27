@@ -155,7 +155,7 @@ function makeService(
   return new GitHubAuthService(http, CLIENT_ID, sleep, silentLogger)
 }
 
-async function startedService(http: FakeHttp, sleep?: Sleeper): Promise<GitHubAuthService> {
+async function startedService(http: HttpClient, sleep?: Sleeper): Promise<GitHubAuthService> {
   const service = makeService(http, sleep)
   await service.requestDeviceCode(['read:user', 'user:email'])
   return service

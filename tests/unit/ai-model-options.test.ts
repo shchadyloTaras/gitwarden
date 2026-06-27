@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { AiModelInfo } from '../../core/ai/types'
+import type { AiModelInfo } from '../../src/core/ai/types'
 import {
   modelDropdownOptions,
   modelOptionLabel,

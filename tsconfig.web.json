@@ -11,5 +11,11 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["src/renderer/**/*", "src/core/**/*"]
+  "include": [
+    "src/renderer/**/*",
+    "src/core/**/*",
+    "tests/unit/ai-chat-store.test.ts",
+    "tests/unit/ai-model-options.test.ts",
+    "tests/unit/app-store-profile-sync.test.ts"
+  ]
 }

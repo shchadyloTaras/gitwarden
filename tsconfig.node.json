@@ -20,5 +20,10 @@
     "electron.vite.config.ts",
     "vitest.config.ts",
     "playwright.config.ts"
+  ],
+  "exclude": [
+    "tests/unit/ai-chat-store.test.ts",
+    "tests/unit/ai-model-options.test.ts",
+    "tests/unit/app-store-profile-sync.test.ts"
   ]
 }

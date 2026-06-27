@@ -151,7 +151,9 @@ export function usageInputFromStructured<T>(
   }
 }
 
-export function usageInputFromTextStream(request: AiTextStreamRequest): AiUsageEstimateRequestInput {
+export function usageInputFromTextStream(
+  request: AiTextStreamRequest
+): AiUsageEstimateRequestInput {
   return {
     connectionId: request.connectionId,
     kind: request.kind,
@@ -303,6 +305,9 @@ export async function streamOpenAiChatCompletions(
 
   const decoder = new TextDecoder()
   let buffer = ''
+  // Intentional read-until-exhausted loop: the stream ends via `done` (or an inner `[DONE]`
+  // sentinel), not a loop condition.
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const { done, value } = await reader.read()
     if (done) break

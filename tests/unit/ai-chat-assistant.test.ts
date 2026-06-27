@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AiChatAssistant } from '../../src/main/ai/AiChatAssistant'
+import type { AiAdapter } from '../../src/main/ai/types'
+import type { AiContextBuilder } from '../../src/main/ai/AiContextBuilder'
 
 describe('AiChatAssistant', () => {
   const preview = {

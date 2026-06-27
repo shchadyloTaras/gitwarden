@@ -164,8 +164,10 @@ test.describe('GitHub HTTPS-token push safety (injected fake service)', () => {
     await setupLinkedProfile(win, 'mallory')
     await openPushSheet(win)
 
-    await expect(win.getByTestId('remote-push-blocker')).toBeVisible()
-    await expect(win.getByTestId('remote-push-blocker')).toContainText('different account')
+    await expect(win.getByTestId('remote-push-issue-GITHUB_ACCOUNT_MISMATCH')).toBeVisible()
+    await expect(win.getByTestId('remote-push-issue-GITHUB_ACCOUNT_MISMATCH')).toContainText(
+      'different account'
+    )
     await expect(win.getByTestId('remote-push-github-line')).toContainText('does NOT match')
     await expect(win.getByTestId('remote-push-confirm-btn')).toBeDisabled()
   })

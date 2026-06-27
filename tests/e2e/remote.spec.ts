@@ -133,8 +133,10 @@ test.describe('Remote Operations', () => {
     await expect(win.getByTestId('remote-push-sheet')).toBeVisible({ timeout: 5000 })
 
     // REMOTE_HOST_MISMATCH blocker must be visible
-    await expect(win.getByTestId('remote-push-blocker')).toBeVisible()
-    await expect(win.getByTestId('remote-push-blocker')).toContainText('remote host does not match')
+    await expect(win.getByTestId('remote-push-issue-REMOTE_HOST_MISMATCH')).toBeVisible()
+    await expect(win.getByTestId('remote-push-issue-REMOTE_HOST_MISMATCH')).toContainText(
+      'remote host does not match'
+    )
 
     // Confirm Push button must be disabled
     await expect(win.getByTestId('remote-push-confirm-btn')).toBeDisabled()

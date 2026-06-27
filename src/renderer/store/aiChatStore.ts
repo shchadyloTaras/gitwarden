@@ -131,7 +131,7 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
         await runStreamingChat(parsed, get, set, options?.contextPaths)
         return
       }
-      const message = await runCapability(parsed, get)
+      const message = await runCapability(parsed)
       appendMessage(set, message)
     } catch (err) {
       const raw = err instanceof Error ? err.message : String(err)
@@ -223,7 +223,9 @@ async function runStreamingChat(
   set({ activeRequestId: requestId })
 
   const currentMessage = parsed.args || parsed.raw
-  const priorMessages = get().messages.filter((m) => m.id !== assistantId).slice(0, -1)
+  const priorMessages = get()
+    .messages.filter((m) => m.id !== assistantId)
+    .slice(0, -1)
   const selectedUnstagedPaths = normalizeContextPaths(contextPaths ?? [])
 
   let settled = false
@@ -266,8 +268,7 @@ async function runStreamingChat(
       repositoryId: repo.id,
       message: currentMessage,
       history: buildHistory(priorMessages),
-      selectedUnstagedPaths:
-        selectedUnstagedPaths.length > 0 ? selectedUnstagedPaths : undefined,
+      selectedUnstagedPaths: selectedUnstagedPaths.length > 0 ? selectedUnstagedPaths : undefined,
       requestId,
       ...EXPENSIVE_SEND_ACK,
     })
@@ -305,10 +306,7 @@ function buildHistory(messages: ChatMessage[]): AiChatTurn[] {
     .map((m) => ({ role: m.role, content: m.content }))
 }
 
-async function runCapability(
-  parsed: ParsedChatCommand,
-  get: () => AiChatState
-): Promise<Omit<ChatMessage, 'id'>> {
+async function runCapability(parsed: ParsedChatCommand): Promise<Omit<ChatMessage, 'id'>> {
   const app = useAppStore.getState()
   const ai = useAiStore.getState()
   const repo = app.activeRepo
