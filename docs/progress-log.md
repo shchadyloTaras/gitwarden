@@ -68,7 +68,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] Phase 47 — Release Metadata & Latest-Binary Resolution
 - [x] Phase 48 — Download Experience & OS Detection
 - [x] Phase 49 — Product Messaging & Marketing UI
-- [ ] Phase 50 — SEO, Accessibility, Analytics & Performance
+- [ ] Phase 50 — SEO, Accessibility, Analytics & Performance _(offline parts landed; Lighthouse ≥95 + OG validation pending — human/CI)_
 - [ ] Phase 51 — Deployment, CI & Release Integration
 
 ### AI Chat Redesign feature (plan: `docs/plans/ai-chat-redesign-plan.md`)
@@ -126,7 +126,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | Generative UI Blocks   | 60–62     | ✅ complete                                                   |
 | Client Branch Access   | 56–59     | ✅ complete                                                   |
 | Distribution & Release | 40–45     | 🟡 Phases 40–42, 45 done; 43–44 open (gated on signing certs) |
-| Landing Page           | 46–51     | 🟡 Phases 46–49 done; 50–51 open                              |
+| Landing Page           | 46–51     | 🟡 46–49 done; 50 offline parts done (Lighthouse/OG pending); 51 open |
 | Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-5 done, DX-6 open                                  |
 
 ## Progress Log
@@ -820,6 +820,14 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: landing Vitest **32/32**; Playwright **13/13** (6 home + 7 marketing — all sections present, footer version badge, screenshots alt + lazy, FAQ expand + `#downloads` cross-link, OS light preference, theme toggle persists, no horizontal overflow at 375px, plus the axe WCAG A/AA smoke on the full page). `tsc --noEmit`, `astro check` (0/0/0), `eslint` + `prettier` clean. Hero + screenshots visually confirmed in the preview.
 - Exit criteria: ✅ met — the full page renders responsively (mobile → desktop) in both light and dark with no layout breakage (no-overflow + computed-bg e2e); all copy comes from the single content module (no hardcoded strings in components); screenshots render with alt text + lazy loading; the page reads clearly to a non-technical visitor (jargon-light primary path).
 - Notes / follow-ups: Screenshots are branded SVG placeholders — real app captures are a tracked follow-up. Section order is a persuasion funnel (Hero → Why → Features → Screenshots → Downloads → Install → FAQ), not the §4 table order. A repo-root `.claude/launch.json` (landing-preview) was created for the visual check and left untracked (not committed). Phase 50 owns the full a11y audit + SEO/OG + Lighthouse; Phase 51 owns the Vercel deploy + release hook.
+
+### 2026-06-27 — Phase 50: SEO, Accessibility, Analytics & Performance (offline parts; ⚠️ partial)
+
+- Built: SEO — canonical link, full Open Graph + Twitter card meta, theme-color, a branded OG image (SVG placeholder), `@astrojs/sitemap` (emits `sitemap-index.xml` + `sitemap-0.xml`), `public/robots.txt` (→ sitemap), and SoftwareApplication + WebSite JSON-LD. Accessibility — skip-to-content link (first focusable), semantic landmarks, focus-visible, AA contrast, `prefers-reduced-motion`. Analytics — cookieless Plausible gated on `PUBLIC_PLAUSIBLE_DOMAIN` (default-off, no PII; `.env.example` documents it). Performance — system-font stack (no web fonts), tiny SVG imagery (lazy), minimal vanilla-JS islands.
+- Files: added `landing/public/robots.txt`, `landing/public/og-image.svg`, `landing/.env.example`, `landing/tests/e2e/seo.spec.ts`; updated `astro.config.mjs` (sitemap integration), `Base.astro` (SEO head + skip-link + analytics), `index.astro` (JSON-LD), `content/copy.ts` (skip-link string), `styles/global.css` (skip-link), `package.json` (@astrojs/sitemap).
+- Tests: landing Vitest **32/32**; Playwright **20/20** (7 new SEO/a11y — robots + sitemap served, OG/canonical/Twitter meta, valid JSON-LD, analytics default-off, skip-link first focusable, keyboard reaches download + theme toggle; plus the axe WCAG A/AA smoke). `tsc --noEmit`, `astro check` (0/0/0), `eslint` + `prettier`, fixture build clean; dist verified to contain robots.txt, sitemap-index.xml, og-image.svg, canonical, og:image, JSON-LD, skip-link, and NO analytics script by default.
+- Exit criteria: ⚠️ PARTIAL — every offline-codeable criterion met + verified (sitemap.xml + robots.txt served; OG/Twitter + JSON-LD present; cookieless analytics default-off; automated a11y scan reports no critical/serious + keyboard reaches interactive elements). **Left for a human/CI run** (cannot be done in this sandbox): (1) measured **Lighthouse (mobile) ≥ 95** on Performance/Accessibility/Best-Practices/SEO; (2) **OG/Twitter preview render validation** on the social platforms; (3) swap the **SVG OG image for a raster PNG/JPG** for full social compatibility. Checklist box left unticked until these complete.
+- Notes / follow-ups: Optional `/changelog` page skipped (would cross the isolated `landing/` boundary to read repo-root `CHANGELOG.md`). Run Lighthouse against the Vercel preview from Phase 51 (e.g. `npx lighthouse <url> --form-factor=mobile`) or wire Lighthouse-CI. OG raster generation tracked alongside the screenshot follow-up.
 
 ## Documentation
 

@@ -5,9 +5,21 @@ import { copy } from '../content/copy'
 interface Props {
   title?: string
   description?: string
+  image?: string
 }
 
-const { title = copy.meta.title, description = copy.meta.description } = Astro.props
+const {
+  title = copy.meta.title,
+  description = copy.meta.description,
+  image = '/og-image.svg',
+} = Astro.props
+
+const canonical = new URL(Astro.url.pathname, Astro.site)
+const ogImage = new URL(image, Astro.site)
+
+// Cookieless analytics is OFF unless PUBLIC_PLAUSIBLE_DOMAIN is set (plan §5: default-off,
+// no PII). When unset, no analytics script is emitted at all.
+const plausibleDomain = import.meta.env.PUBLIC_PLAUSIBLE_DOMAIN
 ---
 
 <!doctype html>
@@ -18,8 +30,29 @@ const { title = copy.meta.title, description = copy.meta.description } = Astro.p
     <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
+
     <title>{title}</title>
     <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="theme-color" content="#09090b" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={copy.productName} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:type" content="image/svg+xml" />
+    <meta property="og:image:alt" content={`${copy.productName} — ${copy.tagline}`} />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
     <script is:inline>
       // Apply the saved theme before paint to avoid a flash. Default (no attribute) follows the
       // OS preference via CSS prefers-color-scheme.
@@ -30,8 +63,20 @@ const { title = copy.meta.title, description = copy.meta.description } = Astro.p
         /* ignore */
       }
     </script>
+
+    {
+      plausibleDomain && (
+        <script
+          is:inline
+          defer
+          data-domain={plausibleDomain}
+          src="https://plausible.io/js/script.js"
+        />
+      )
+    }
   </head>
   <body class="min-h-screen bg-gw-bg text-gw-text antialiased">
+    <a href="#top" class="skip-link">{copy.nav.skipToContent}</a>
     <slot />
   </body>
 </html>

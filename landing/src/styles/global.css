@@ -100,6 +100,22 @@ summary:focus-visible {
   border-radius: 4px;
 }
 
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -3.5rem;
+  z-index: 20;
+  background: var(--color-gw-primary-strong);
+  color: var(--color-gw-on-primary);
+  padding: 0.6rem 1rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  transition: top 0.15s ease;
+}
+.skip-link:focus {
+  top: 0.5rem;
+}
+
 .page {
   max-width: 64rem;
   margin: 0 auto;

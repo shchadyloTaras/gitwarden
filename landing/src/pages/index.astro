@@ -9,6 +9,8 @@ import AllDownloads from '../components/AllDownloads.astro'
 import InstallSteps from '../components/InstallSteps.astro'
 import Faq from '../components/Faq.astro'
 import Footer from '../components/Footer.astro'
+import { copy } from '../content/copy'
+import { REPO_URL, RELEASES_URL, LICENSE_URL } from '../lib/config'
 import { getReleaseForBuild } from '../lib/getRelease'
 import { resolveTargets } from '../lib/resolveTargets'
 
@@ -16,6 +18,28 @@ import { resolveTargets } from '../lib/resolveTargets'
 // in DownloadHero enhances per detected OS. The all-downloads panel uses the full `all` map.
 const release = await getReleaseForBuild()
 const resolved = resolveTargets(release, 'unknown')
+
+// JSON-LD structured data (plan §5).
+const siteUrl = Astro.site?.toString() ?? REPO_URL
+const softwareLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: copy.productName,
+  applicationCategory: 'DeveloperApplication',
+  operatingSystem: 'macOS, Windows, Linux',
+  description: copy.meta.description,
+  url: siteUrl,
+  downloadUrl: RELEASES_URL,
+  license: LICENSE_URL,
+  isAccessibleForFree: true,
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+}
+const websiteLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: copy.productName,
+  url: siteUrl,
+}
 ---
 
 <Base>
@@ -30,4 +54,7 @@ const resolved = resolveTargets(release, 'unknown')
     <Faq />
   </main>
   <Footer resolved={resolved} />
+
+  <script type="application/ld+json" is:inline set:html={JSON.stringify(softwareLd)} />
+  <script type="application/ld+json" is:inline set:html={JSON.stringify(websiteLd)} />
 </Base>

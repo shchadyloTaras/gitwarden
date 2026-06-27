@@ -79,6 +79,7 @@ export const copy = {
     ],
     github: 'GitHub',
     themeToggleLabel: 'Toggle light and dark theme',
+    skipToContent: 'Skip to content',
   },
 
   why: {

@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="GitWarden — never commit with the wrong account again" font-family="ui-sans-serif, system-ui, sans-serif">
+  <!-- Branded Open Graph card (placeholder — a raster PNG/JPG is the tracked follow-up). -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#09090b" />
+      <stop offset="1" stop-color="#18181b" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <rect x="1" y="1" width="1198" height="628" fill="none" stroke="#27272a" stroke-width="2" />
+
+  <!-- Shield + check mark -->
+  <g transform="translate(96, 150)">
+    <path
+      d="M70 0 L140 26 V96 C140 150 108 186 70 200 C32 186 0 150 0 96 V26 Z"
+      fill="#1e1b4b"
+      stroke="#6366f1"
+      stroke-width="3"
+    />
+    <path
+      d="M38 100 L62 126 L106 70"
+      fill="none"
+      stroke="#4ade80"
+      stroke-width="12"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </g>
+
+  <text x="300" y="190" font-size="40" fill="#a5b4fc" font-weight="600" letter-spacing="6">
+    GITWARDEN
+  </text>
+  <text x="300" y="290" font-size="76" fill="#f4f4f5" font-weight="800">Never commit with the</text>
+  <text x="300" y="372" font-size="76" fill="#f4f4f5" font-weight="800">wrong account again.</text>
+  <text x="300" y="446" font-size="34" fill="#a1a1aa">
+    Safe multi-account Git for the desktop.
+  </text>
+
+  <text x="96" y="560" font-size="30" fill="#71717a">
+    macOS · Windows · Linux · Free &amp; open source
+  </text>
+</svg>
