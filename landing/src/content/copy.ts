@@ -76,6 +76,7 @@ export const copy = {
       { label: 'Features', href: '#features' },
       { label: 'Download', href: '#downloads' },
       { label: 'FAQ', href: '#faq' },
+      { label: 'Docs', href: '/docs' },
     ],
     github: 'GitHub',
     themeToggleLabel: 'Toggle light and dark theme',
