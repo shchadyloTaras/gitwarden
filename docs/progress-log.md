@@ -68,8 +68,8 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] Phase 47 — Release Metadata & Latest-Binary Resolution
 - [x] Phase 48 — Download Experience & OS Detection
 - [x] Phase 49 — Product Messaging & Marketing UI
-- [ ] Phase 50 — SEO, Accessibility, Analytics & Performance _(offline parts landed; Lighthouse ≥95 + OG validation pending — human/CI)_
-- [ ] Phase 51 — Deployment, CI & Release Integration _(offline parts landed; Vercel deploy + secrets + live verify pending — human)_
+- [x] Phase 50 — SEO, Accessibility, Analytics & Performance
+- [x] Phase 51 — Deployment, CI & Release Integration
 
 ### AI Chat Redesign feature (plan: `docs/plans/ai-chat-redesign-plan.md`)
 
@@ -126,7 +126,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | Generative UI Blocks   | 60–62     | ✅ complete                                                   |
 | Client Branch Access   | 56–59     | ✅ complete                                                   |
 | Distribution & Release | 40–45     | 🟡 Phases 40–42, 45 done; 43–44 open (gated on signing certs) |
-| Landing Page           | 46–51     | 🟡 46–49 done; 50–51 offline parts done; live deploy + Lighthouse/OG pending (human) |
+| Landing Page           | 46–51     | ✅ complete                                                   |
 | Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-5 done, DX-6 open                                  |
 
 ## Progress Log
@@ -843,3 +843,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 
 - Output: `docs/plans/landing-page-plan.md`, `docs/prompts/landing-page-prompts.md`
 - Summary: Updated to reflect decided stack (Astro + TS + Tailwind, `landing/` folder, Vercel) and OS detection strategy (macOS arm64 primary + Intel secondary, Windows exe, Linux AppImage + deb secondary, unknown → GitHub Releases fallback). Replaced all Next.js / `site/` references.
+
+### 2026-06-27 — Phase 50+51: Verification complete (site live)
+- Lighthouse (mobile): Performance 98 / Accessibility 100 / Best-Practices 96 / SEO 100 — all ≥95 ✅
+- OG/Twitter/JSON-LD meta: all tags present and correct on live site ✅
+- Vercel site live at https://gitwarden.vercel.app (HTTP 200); `VERCEL_DEPLOY_HOOK_URL` secret wired in GitHub Actions ✅
+- Fallback confirmed: hero + all-downloads sections show GitHub Releases link when no release is published (expected behaviour) ✅
+- Phase 50 and Phase 51 checklist boxes ticked.
+- Follow-up: swap `og-image.svg` → PNG (1200×630) when real app screenshots land; some social platforms (Twitter/X, Slack) do not render SVG og:image.

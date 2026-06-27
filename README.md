@@ -37,7 +37,7 @@ Juggling multiple GitHub identities locally is error-prone: the right email but 
 
 ## Status
 
-Built in phases. MVP (0–20), GitHub OAuth (21–27), AI advisory + chat (28–39, 52–55a), Client Branch Access (56–59), and Distribution & Release (40–42, 45) are complete. Landing Page (46–51) is planned. See the [progress log](docs/progress-log.md) for the per-phase checklist and history.
+Built in phases. MVP (0–20), GitHub OAuth (21–27), AI advisory + chat (28–39, 52–55a), Client Branch Access (56–59), Distribution & Release (40–42, 45), and Landing Page (46–51) are complete. See the [progress log](docs/progress-log.md) for the per-phase checklist and history.
 
 - **Core plan:** [`docs/plans/gitwarden-plan.md`](docs/plans/gitwarden-plan.md) · prompts: [`docs/prompts/phase-prompts.md`](docs/prompts/phase-prompts.md)
 - **GitHub OAuth:** [`docs/plans/github-oauth-plan.md`](docs/plans/github-oauth-plan.md) · prompts: [`docs/prompts/github-oauth-prompts.md`](docs/prompts/github-oauth-prompts.md)
