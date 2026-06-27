@@ -60,7 +60,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] Phase 42 — Release Workflow (GitHub Actions, unsigned matrix)
 - [ ] Phase 43 — Code Signing & Notarization (optional; gated on certificates)
 - [ ] Phase 44 — Auto-Update (deferred; depends on Phase 43)
-- [ ] Phase 45 — Release Process, Versioning & Download Docs
+- [x] Phase 45 — Release Process, Versioning & Download Docs
 
 ### Landing Page & Download Site feature (plan: `docs/plans/landing-page-plan.md`, prompts: `docs/prompts/landing-page-prompts.md`)
 
@@ -117,17 +117,17 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 > are done/open). When you tick a checklist box you MUST re-derive the affected row here in the same
 > edit; if a row ever disagrees with the checklist, the checklist wins.
 
-| Track                  | Phases    | Status                           |
-| ---------------------- | --------- | -------------------------------- |
-| MVP Core               | 0–20      | ✅ complete                      |
-| GitHub OAuth           | 21–27     | ✅ complete                      |
-| AI Connections         | 28–39     | ✅ complete                      |
-| AI Chat Redesign       | 52–55a    | ✅ complete                      |
-| Generative UI Blocks   | 60–62     | ✅ complete                      |
-| Client Branch Access   | 56–59     | ✅ complete                      |
-| Distribution & Release | 40–45     | 🟡 Phases 40–42 done, 43–45 open |
-| Landing Page           | 46–51     | ⬜ not started                   |
-| Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-5 done, DX-6 open     |
+| Track                  | Phases    | Status                                                        |
+| ---------------------- | --------- | ------------------------------------------------------------- |
+| MVP Core               | 0–20      | ✅ complete                                                   |
+| GitHub OAuth           | 21–27     | ✅ complete                                                   |
+| AI Connections         | 28–39     | ✅ complete                                                   |
+| AI Chat Redesign       | 52–55a    | ✅ complete                                                   |
+| Generative UI Blocks   | 60–62     | ✅ complete                                                   |
+| Client Branch Access   | 56–59     | ✅ complete                                                   |
+| Distribution & Release | 40–45     | 🟡 Phases 40–42, 45 done; 43–44 open (gated on signing certs) |
+| Landing Page           | 46–51     | ⬜ not started                                                |
+| Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-5 done, DX-6 open                                  |
 
 ## Progress Log
 
@@ -780,3 +780,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: Vitest **594 passed** (no source changes). `npm run lint` clean (ESLint + Prettier). Workflow YAML structure validated locally; actual CI run (push `v0.1.0` tag → GitHub Actions) requires a human push per HARD RULE 4 (never push automatically).
 - Exit criteria: ✅ met — workflow file present with `v*` tag + `workflow_dispatch` triggers, guard job checking tag/version alignment, matrix over all three OS runners, `npm test` gate before build, `--publish always` with `GH_TOKEN`, Phase 43 secrets optional. ⚠️ "All three matrix jobs go green" and "draft release carries five artifacts" can only be verified by the maintainer pushing `v0.1.0` — this is the CI verification step in plan Appendix A.
 - Notes / follow-ups: The `dist:dir` smoke step in each matrix job catches packaging config breakage fast (before the full installer build). macOS job produces both `arm64` + `x64` DMGs from a single `macos-latest` runner (electron-builder handles the dual-arch build). Linux job produces AppImage + deb in one `ubuntu-latest` run.
+
+### 2026-06-27 — Phase 45: Release Process, Versioning & Download Docs
+
+- Built: `CHANGELOG.md` (Keep-a-Changelog, SemVer; `[0.1.0]` entry covers all phases 0–62 + DX-0–DX-5); `docs/release-checklist.md` (6-step checklist: pre-release gate → version bump → tag + push → CI watch → artifact smoke test → publish; SemVer bump policy; OS-warning workaround table); `README.md` updated with `## Download` section (per-OS table, one-time warning note, dismiss steps), release/version badges, status update, "Cutting a release" pointer to checklist.
+- Files: added `CHANGELOG.md`, `docs/release-checklist.md`; updated `README.md`, `docs/progress-log.md`.
+- Tests: Vitest **594 passed** (no source changes). `npm run lint` clean (ESLint + Prettier).
+- Exit criteria: ✅ met — maintainer can follow `docs/release-checklist.md` end-to-end to cut a release without referring to anyone; `README.md` Download section lists per-OS artifacts, install steps, and unsigned-path warning workaround; `CHANGELOG.md` exists and reflects `v0.1.0`; tag ↔ version ↔ release notes are consistent.
+- Notes / follow-ups: Phases 43 (Code Signing) and 44 (Auto-Update) remain open, gated on the maintainer obtaining Apple Developer Program membership and a Windows code-signing certificate. The recommended cut (Phases 40–42 + 45) is now complete — a maintainer can push `v0.1.0` and receive a real, downloadable draft GitHub Release with five installers.
