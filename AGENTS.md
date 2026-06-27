@@ -2,6 +2,17 @@
 
 Shared instructions for AI coding agents working on this repo. Claude Code loads this via `@AGENTS.md` in `CLAUDE.md`; other agents (e.g. Codex) read it directly. Read this and `docs/plans/gitwarden-plan.md` before working.
 
+## Agent instruction files
+
+`AGENTS.md` is the shared source of truth for coding-agent instructions in this repo. Keep tool-specific instruction files thin and point them here instead of duplicating project rules.
+
+- **Claude Code:** `CLAUDE.md` should contain only `@AGENTS.md`.
+- **Before working:** read the full plan in `docs/plans/gitwarden-plan.md`.
+- **Status & history:** the Phase Checklist and per-phase Progress Log live in `docs/progress-log.md`. Keep them out of tool-specific instruction files; update the progress log at the end of each phase.
+- **Commit trailers:** use the current agent's identity in the `Co-Authored-By` trailer. Claude Code uses `Co-Authored-By: Claude <noreply@anthropic.com>`.
+- **Planning:** for large or cross-cutting changes, propose the approach before editing when the agent/tool supports a planning mode.
+- **Never push** unless explicitly asked; commits stay local by default.
+
 ## Project
 
 **GitWarden** — a cross-platform desktop Git GUI focused on **safe multi-account GitHub usage**: prevent committing/pushing with the wrong profile, author name, email, SSH key, or repository. Built around **profiles** (Personal/Work/Client); each repo is assigned to exactly one profile, and the app surfaces identity safety before every commit/push.
@@ -40,6 +51,14 @@ npm run build    # electron-builder package
 - Never log secrets. Destructive/remote actions stay behind confirmation; irreversible ones (`git clean`) get a distinct stronger warning.
 - Build **logic-first**: core + git + safety ship with green tests before any UI.
 
+## What not to do
+
+- Don't put business logic in React components or in the git wrapper — it belongs in `src/core/`.
+- Don't add features outside the current phase's scope (see plan §9 Non-goals).
+- Don't change global git config — only `--local`.
+- Tests must run **offline**: create real git repos in a temp dir as fixtures; use a local bare repo as the "remote" for push e2e.
+- Don't skip the `docs/progress-log.md` update; the log is how state survives across sessions.
+
 ## Operating workflow (per phase)
 
 1. **Read** the matching prompt in `docs/prompts/phase-prompts.md` (or `docs/prompts/github-oauth-prompts.md` for the OAuth feature, or `docs/prompts/ai-integration-prompts.md` for the AI Connections feature), the plan's phase section, and the relevant Appendix in the plan.
@@ -66,25 +85,6 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - Message convention: subject `Phase N: <name>`, a one-line body, and the `Co-Authored-By: <Agent> <noreply@anthropic.com>` trailer.
 - `git add -A` (the `.gitignore` already excludes `node_modules/`, build output, coverage, secrets).
 - **Do not push automatically** — pushing to `origin/main` happens only when the user asks. Intermediate WIP commits within a phase are fine; squash is optional.
-
-## Agent instruction files
-
-`AGENTS.md` is the shared source of truth for coding-agent instructions in this repo. Keep tool-specific instruction files thin and point them here instead of duplicating project rules.
-
-- **Claude Code:** `CLAUDE.md` should contain only `@AGENTS.md`.
-- **Before working:** read the full plan in `docs/plans/gitwarden-plan.md`.
-- **Status & history:** the Phase Checklist and per-phase Progress Log live in `docs/progress-log.md`. Keep them out of tool-specific instruction files; update the progress log at the end of each phase.
-- **Commit trailers:** use the current agent's identity in the `Co-Authored-By` trailer. Claude Code uses `Co-Authored-By: Claude <noreply@anthropic.com>`.
-- **Planning:** for large or cross-cutting changes, propose the approach before editing when the agent/tool supports a planning mode.
-- **Never push** unless explicitly asked; commits stay local by default.
-
-## What not to do
-
-- Don't put business logic in React components or in the git wrapper — it belongs in `src/core/`.
-- Don't add features outside the current phase's scope (see plan §9 Non-goals).
-- Don't change global git config — only `--local`.
-- Tests must run **offline**: create real git repos in a temp dir as fixtures; use a local bare repo as the "remote" for push e2e.
-- Don't skip the `docs/progress-log.md` update; the log is how state survives across sessions.
 
 ## Reference docs
 
