@@ -5,7 +5,10 @@ import { REPO_URL } from '../lib/config'
 
 <header class="site-header">
   <div class="header-inner">
-    <a class="brand" href="#top">{copy.productName}</a>
+    <a class="brand" href="#top">
+      <img src="/favicon.svg" alt="" aria-hidden="true" width="28" height="28" />
+      {copy.productName}
+    </a>
     <nav class="header-nav" aria-label="Primary">
       {copy.nav.links.map((l) => <a href={l.href}>{l.label}</a>)}
       <a href={REPO_URL} rel="noopener" target="_blank">{copy.nav.github}</a>
