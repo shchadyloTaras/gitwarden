@@ -8,7 +8,6 @@ Each prompt is self-contained and ends with a DX-track progress footer.
 1. Complete each step in order — each unlocks a new way of working with the project.
 2. Do not start a step until the previous one's exit criteria are ✅.
 3. After each step, read the **"How you work after this"** section to understand your new workflow.
-4. The product backlog (Phases 56–62, 40–51) resumes after Step DX-4 at minimum.
 
 **Gate rule:** each step is done only when its exit criteria pass, the `docs/progress-log.md` entry is
 written, **and then** the single commit is made — in that order. The Progress Log entry is a hard
@@ -555,10 +554,10 @@ whole point.
 
 ## Step DX-4 — AI evals (`tests/evals/`)
 
-**Problem it solves:** Smart Commit, Change Review, Safety Copilot, and the new GenUI chat cards are
+**Problem it solves:** Smart Commit, Change Review, Safety Copilot, and the GenUI chat cards are
 fully built — but quality is assumed, not measured. There are no evals. This is the biggest modern gap.
-**Gate rule:** DX-4 must be done before Phase 62 (free-text model-chosen GenUI) is started, because
-Phase 62 opens a new free-text AI surface with no baseline.
+**Gate rule:** do DX-4 before adding any new free-text AI surface, so AI quality has a measured
+baseline before it can regress.
 
 **Touches:** adds `tests/evals/` and `npm run eval`. Zero changes to `src/`.
 
@@ -643,16 +642,14 @@ New working pattern — add this to your gate before any AI-touching phase:
 
 ```
 /verify-phase    ← tsc + vitest + lint
-npm run eval     ← AI quality check (add this for phases 28–62 and DX-4+)
+npm run eval     ← AI quality check (add this for any AI-touching phase)
 ```
 
-And when adding a new AI capability (e.g. Phase 62 free-text GenUI):
+And when adding a new AI capability:
 
 1. Add a golden fixture for the new capability first.
 2. Implement.
 3. `npm run eval` must pass before `/commit-phase`.
-
-**Product backlog unblocked:** after DX-4, Phase 62 is safe to start.
 
 ---
 
@@ -753,65 +750,8 @@ Do any of these independently. None are required. Do not batch them.
 | **Architecture diagram**           | When a new agent/human is confused by core↔main↔preload↔renderer boundaries | Ask Claude to produce `docs/architecture.md` with an ASCII or Mermaid diagram of the 4 layers and their crossing rules |
 | **project-factory onboard**        | When starting a genuinely new feature (not retroactively)                   | `/project-factory:onboard` on the new feature's plan — do NOT run across existing 61 phases                            |
 | **Split DECISIONS.md → ADR files** | When the monolith starts hurting navigation (likely > 20 decisions)         | Ask Claude to split each decision to `docs/adr/NNNN-*.md` MADR format, one commit                                      |
-| **GenUI north-star refs**          | Before Phase 62                                                             | Add Vercel AI SDK generative-UI + Google A2UI links to genui-blocks-plan.md as named anchors                           |
+| **GenUI north-star refs**          | When extending the GenUI chat blocks                                        | Add Vercel AI SDK generative-UI + Google A2UI links to genui-blocks-plan.md as named anchors                           |
 | **.mcp.json code-graph**           | If codebase navigation is costing real time in sessions                     | Add project-scoped MCP only when the pain is demonstrated, not speculatively                                           |
-
----
-
-## Product backlog (resumes after DX-4 minimum)
-
-Recommended order — business decision is yours, this is the rationale:
-
-### Prompt: Client Branch Access (Phases 56–59)
-
-```
-Work in the GitWarden repository at /Users/tarasshchadylo/Documents/agents-project/git-visual.
-
-Before doing anything, read:
-- AGENTS.md
-- docs/plans/client-branch-access-plan.md
-- docs/prompts/client-branch-access-prompts.md
-- docs/progress-log.md (confirm Phases 0–55a and DX-0–DX-4 are ✅)
-
-Run /new-phase 56 to confirm the gate, read the plan section, and get the implementation brief.
-Then follow the standard phase workflow.
-```
-
-### Prompt: Distribution & Release (Phases 40–45)
-
-```
-Work in the GitWarden repository at /Users/tarasshchadylo/Documents/agents-project/git-visual.
-
-Before doing anything, read:
-- AGENTS.md
-- docs/plans/distribution-release-plan.md
-- docs/prompts/distribution-release-prompts.md
-- docs/progress-log.md (confirm all prerequisite phases ✅)
-
-Run /new-phase 40 to confirm the gate and get the implementation brief.
-Then follow the standard phase workflow.
-```
-
-### Prompt: Phase 62 — Free-text GenUI (requires DX-4 first)
-
-> Retained as a template only — Phase 62 already shipped (it is `[x]` in the Phase Checklist; the
-> DX-4-before-62 gate below was the intended order but 62 landed ahead of the DX track). Check the
-> Phase Checklist before running any backlog prompt and skip phases already `[x]`.
-
-```
-Work in the GitWarden repository at /Users/tarasshchadylo/Documents/agents-project/git-visual.
-
-Before doing anything, read:
-- AGENTS.md
-- docs/plans/genui-blocks-plan.md §Phase 62
-- docs/prompts/genui-blocks-prompts.md
-- tests/evals/ — confirm npm run eval passes (DX-4 exit criteria)
-- docs/progress-log.md (confirm the prerequisite phases and DX-4 are ✅ in the Phase Checklist —
-  derive from it, do not assume a fixed phase number)
-
-Run /new-phase 62 to confirm the gate and get the implementation brief.
-Then follow the standard phase workflow.
-```
 
 ---
 
