@@ -30,12 +30,22 @@ test.describe('all-downloads panel (works without OS detection)', () => {
 })
 
 test.describe('smart hero button (client OS detection)', () => {
-  test('detects the runner OS (macOS) → primary arm64 + Intel secondary + version', async ({
-    page,
-  }) => {
+  // Emulate macOS deterministically instead of relying on the runner OS. Playwright's
+  // `Desktop Chrome` device hardcodes a Windows UA, and detectOs() probes
+  // userAgentData.platform + navigator.platform + navigator.userAgent — so on the ubuntu CI
+  // runner the page detects Windows (no "mac" anywhere, "win" from the device UA wins before
+  // "linux"), not the macOS we want to assert. A macOS userAgent makes detection return macOS
+  // on any host, since detectOs() matches "mac" before "win"/"linux".
+  test.use({
+    userAgent:
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  })
+
+  test('emulating macOS → primary arm64 + Intel secondary + version', async ({ page }) => {
     await page.goto('/')
     const primary = page.getByTestId('hero-primary')
     await expect(primary).toBeVisible()
+    await expect(primary).toHaveAttribute('data-os', 'macOS')
     await expect(primary).toHaveAttribute('href', /arm64\.dmg$/)
     await expect(page.getByTestId('hero-secondary')).toBeVisible()
     await expect(page.getByTestId('hero-version')).toContainText('v0.1.0')
