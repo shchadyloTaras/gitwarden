@@ -1,6 +1,6 @@
 # Plan — Replace static SAFE badge with a live header guard
 
-**Status:** proposed
+**Status:** ✅ implemented (commit 233a08e)
 **Type:** fix / improvement (not a numbered phase)
 **Suggested commit:** `Fix: Replace static SAFE badge with live header guard`
 

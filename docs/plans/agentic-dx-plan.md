@@ -23,7 +23,7 @@ product phase. It follows the same house discipline as every other plan here:
 - a step is done only when its exit criteria pass and `docs/progress-log.md` is updated;
 - **one commit per step**, with the agent's `Co-Authored-By` trailer; **never push automatically**.
 
-Steps DX-1…DX-3 are the high-value core (executable guardrails). DX-4 closes the biggest *modern*
+Steps DX-1…DX-3 are the high-value core (executable guardrails). DX-4 closes the biggest _modern_
 gap (AI evals). DX-5 is shareability. DX-6 is optional / heavier. Do them in order; each is
 independently shippable, so you can stop after any step.
 
@@ -38,27 +38,27 @@ work), and every guardrail ships with a test proving it fires.
 
 What this repo already does well (keep it):
 
-| Asset | State | Best-practice it already satisfies |
-| --- | --- | --- |
-| `CLAUDE.md` = `@AGENTS.md` | ✅ | single thin entry; cross-tool standard |
-| `AGENTS.md` (95 lines) | ✅ | lean, right-altitude, under the ~200-line memory target |
-| `progress-log.md` split out | ✅ | context kept out of the always-loaded files (cited in `progress-log.md:3`) |
-| `DECISIONS.md` / `SECURITY.md` | ✅ | ADR + threat model exist |
-| per-feature `plans/` + `prompts/` | ✅ | spec-before-code, phase gates, exit criteria |
+| Asset                             | State | Best-practice it already satisfies                                         |
+| --------------------------------- | ----- | -------------------------------------------------------------------------- |
+| `CLAUDE.md` = `@AGENTS.md`        | ✅    | single thin entry; cross-tool standard                                     |
+| `AGENTS.md` (95 lines)            | ✅    | lean, right-altitude, under the ~200-line memory target                    |
+| `progress-log.md` split out       | ✅    | context kept out of the always-loaded files (cited in `progress-log.md:3`) |
+| `DECISIONS.md` / `SECURITY.md`    | ✅    | ADR + threat model exist                                                   |
+| per-feature `plans/` + `prompts/` | ✅    | spec-before-code, phase gates, exit criteria                               |
 
 The gap — the whole opportunity of this plan:
 
-| Missing | Consequence | Closed by |
-| --- | --- | --- |
-| `.claude/` is **empty** | invariants are prose only; nothing enforces them | DX-1, DX-2, DX-3 |
-| no hooks | core-purity / no-`--global` / `GitRunner`-only rules rely on memory | DX-1 |
-| no slash commands | per-phase workflow + commit convention retyped each time | DX-2 |
-| no project subagents | review is ad-hoc; no `maker ≠ checker` for the invariants | DX-3 |
-| **zero evals** on AI features | Smart Commit / Safety Copilot quality is unmeasured | DX-4 |
-| no `repomix` / `CONTRIBUTING` | hard to hand the repo to another tool or a human | DX-5 |
-| `project-factory` + `sdd` plugins installed but **not wired into this repo** (no `.claude/`, no `openspec/`) | governance tooling sits unused | DX-6 |
+| Missing                                                                                                      | Consequence                                                         | Closed by        |
+| ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- | ---------------- |
+| `.claude/` is **empty**                                                                                      | invariants are prose only; nothing enforces them                    | DX-1, DX-2, DX-3 |
+| no hooks                                                                                                     | core-purity / no-`--global` / `GitRunner`-only rules rely on memory | DX-1             |
+| no slash commands                                                                                            | per-phase workflow + commit convention retyped each time            | DX-2             |
+| no project subagents                                                                                         | review is ad-hoc; no `maker ≠ checker` for the invariants           | DX-3             |
+| **zero evals** on AI features                                                                                | Smart Commit / Safety Copilot quality is unmeasured                 | DX-4             |
+| no `repomix` / `CONTRIBUTING`                                                                                | hard to hand the repo to another tool or a human                    | DX-5             |
+| `project-factory` + `sdd` plugins installed but **not wired into this repo** (no `.claude/`, no `openspec/`) | governance tooling sits unused                                      | DX-6             |
 
-> The thesis: your strongest *documentation* improvement is not more prose — it is making the
+> The thesis: your strongest _documentation_ improvement is not more prose — it is making the
 > unbreakable rules **executable**, so an agent (or a tired you at midnight) literally cannot ship a
 > violation.
 
@@ -66,24 +66,24 @@ The gap — the whole opportunity of this plan:
 
 ## 2. Source → Principle → Action
 
-Distilled from the reference set (full links in §7). Frameworks for building agent *backends*
+Distilled from the reference set (full links in §7). Frameworks for building agent _backends_
 (LangChain/LangGraph, CrewAI, AutoGen/AG2, hermes-agent, nanoclaw, `openai-agents-python`) are
 **deliberately excluded** — they are irrelevant to an Electron Git GUI; see §6.
 
-| Source(s) | Portable principle | Action in this repo |
-| --- | --- | --- |
-| Anthropic *Effective context engineering* | finite context; right altitude; just-in-time retrieval; sub-agents for long horizons | keep `AGENTS.md` lean; push detail into commands/agents loaded on demand (DX-2, DX-3) |
-| Claude Code *best practices* & docs | `CLAUDE.md` + **hooks + slash commands + subagents + permissions + MCP** | DX-1, DX-2, DX-3, DX-6 |
-| koldovsky *agentic greenfield* + `project-factory` | gated agentic SDLC; **maker ≠ checker**; spec-driven gates | reviewer subagents (DX-3); optional onboarding (DX-6) |
-| OpenAI *prompt/agents guidance* (GPT-5.5) | control eagerness; tool preambles; **evals as a first-class artifact** | eval harness (DX-4); tighten command prompts (DX-2) |
-| Karpathy *software 3.0* gist | the spec is the source of truth; small reversible diffs; human in the loop | keep specs/plans canonical; commands enforce phase-sized commits (DX-2) |
-| steipete *shipping at inference speed* | tight verify loops; auto-verification; parallel agents | `/verify-phase` (DX-2); fast offline hooks (DX-1) |
-| arena.ai, kaggle *new SDLC*, uncertainty-architecture | benchmark AI output; treat quality as measured, not assumed | AI evals + golden set (DX-4) |
-| `repomix`, AGENTS.md standard | agent-agnostic packing of the repo as context | `repomix.config.json` (DX-5) |
-| MCP / `modelcontextprotocol`, CodeGraphContext | standard tool protocol; code-graph navigation | optional `.mcp.json` (DX-6) |
-| Vercel *react-best-practices* skill, OpenAI skills | reusable **Skills** as portable capability docs | optionally vendor a project skill (DX-6) |
-| Vercel **AI SDK**, **A2UI**, genui.com | controlled / declarative Generative UI patterns | already captured in `genui-blocks-plan.md`; add explicit north-star refs (DX-6) |
-| excalidraw | a single architecture diagram beats paragraphs | optional `docs/architecture.excalidraw` / PNG (DX-6) |
+| Source(s)                                             | Portable principle                                                                   | Action in this repo                                                                   |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| Anthropic _Effective context engineering_             | finite context; right altitude; just-in-time retrieval; sub-agents for long horizons | keep `AGENTS.md` lean; push detail into commands/agents loaded on demand (DX-2, DX-3) |
+| Claude Code _best practices_ & docs                   | `CLAUDE.md` + **hooks + slash commands + subagents + permissions + MCP**             | DX-1, DX-2, DX-3, DX-6                                                                |
+| koldovsky _agentic greenfield_ + `project-factory`    | gated agentic SDLC; **maker ≠ checker**; spec-driven gates                           | reviewer subagents (DX-3); optional onboarding (DX-6)                                 |
+| OpenAI _prompt/agents guidance_ (GPT-5.5)             | control eagerness; tool preambles; **evals as a first-class artifact**               | eval harness (DX-4); tighten command prompts (DX-2)                                   |
+| Karpathy _software 3.0_ gist                          | the spec is the source of truth; small reversible diffs; human in the loop           | keep specs/plans canonical; commands enforce phase-sized commits (DX-2)               |
+| steipete _shipping at inference speed_                | tight verify loops; auto-verification; parallel agents                               | `/verify-phase` (DX-2); fast offline hooks (DX-1)                                     |
+| arena.ai, kaggle _new SDLC_, uncertainty-architecture | benchmark AI output; treat quality as measured, not assumed                          | AI evals + golden set (DX-4)                                                          |
+| `repomix`, AGENTS.md standard                         | agent-agnostic packing of the repo as context                                        | `repomix.config.json` (DX-5)                                                          |
+| MCP / `modelcontextprotocol`, CodeGraphContext        | standard tool protocol; code-graph navigation                                        | optional `.mcp.json` (DX-6)                                                           |
+| Vercel _react-best-practices_ skill, OpenAI skills    | reusable **Skills** as portable capability docs                                      | optionally vendor a project skill (DX-6)                                              |
+| Vercel **AI SDK**, **A2UI**, genui.com                | controlled / declarative Generative UI patterns                                      | already captured in `genui-blocks-plan.md`; add explicit north-star refs (DX-6)       |
+| excalidraw                                            | a single architecture diagram beats paragraphs                                       | optional `docs/architecture.excalidraw` / PNG (DX-6)                                  |
 
 Commentary-only links (willrobotstakemyjob, dou/habr threads, model/provider catalogs, OCR papers)
 are background reading, not actionable here.
@@ -97,7 +97,7 @@ These extend `AGENTS.md`; they do not replace it.
 1. **Do not bloat the always-loaded files.** `AGENTS.md` stays lean; detail goes into
    on-demand commands/agents. If `AGENTS.md` grows, move content out, don't pad it.
 2. **Hooks are fast, offline, and fail-open.** A hook must never reach the network, must finish in
-   ~1s, and on its *own* error must exit 0 (never block real work because the guard crashed).
+   ~1s, and on its _own_ error must exit 0 (never block real work because the guard crashed).
 3. **Every guardrail ships with a test that proves it blocks** a known-bad input and **allows** a
    known-good one. A guardrail without a red→green proof is not done.
 4. **Guardrails mirror existing rules; they invent none.** Each hook/agent cites the `AGENTS.md`
@@ -189,7 +189,7 @@ system prompt; invoking `core-purity-reviewer` on a deliberately impure diff ret
 
 ### Step DX-4 — Evals for the AI features
 
-**Goal.** Stop assuming AI quality; measure it. This is the biggest *modern* gap — full AI features
+**Goal.** Stop assuming AI quality; measure it. This is the biggest _modern_ gap — full AI features
 (Smart Commit, Change Review, Safety Copilot) ship with **no evals**.
 
 **Tasks.**
@@ -248,14 +248,14 @@ Pick à la carte; none are required.
 
 ## 5. Sequencing & Effort
 
-| Step | Value | Effort | Note |
-| --- | --- | --- | --- |
-| DX-1 hooks + settings | ★★★ | S–M | the core gap; do first |
-| DX-2 slash commands | ★★★ | S | immediate daily payoff |
-| DX-3 subagent reviewers | ★★☆ | S | `maker ≠ checker` for the invariants |
-| DX-4 AI evals | ★★★ | M | biggest *modern* gap; do before more AI features |
-| DX-5 repomix + CONTRIBUTING | ★★☆ | S | shareability |
-| DX-6 optional | ★☆☆ | varies | à la carte |
+| Step                        | Value | Effort | Note                                             |
+| --------------------------- | ----- | ------ | ------------------------------------------------ |
+| DX-1 hooks + settings       | ★★★   | S–M    | the core gap; do first                           |
+| DX-2 slash commands         | ★★★   | S      | immediate daily payoff                           |
+| DX-3 subagent reviewers     | ★★☆   | S      | `maker ≠ checker` for the invariants             |
+| DX-4 AI evals               | ★★★   | M      | biggest _modern_ gap; do before more AI features |
+| DX-5 repomix + CONTRIBUTING | ★★☆   | S      | shareability                                     |
+| DX-6 optional               | ★☆☆   | varies | à la carte                                       |
 
 Recommended order: **DX-1 → DX-2 → DX-3 → DX-4 → DX-5**, then DX-6 as needed. Each is a single
 commit; update `progress-log.md` (a short "DX track" subsection) per step.
@@ -265,7 +265,7 @@ commit; update `progress-log.md` (a short "DX track" subsection) per step.
 ## 6. Explicitly Out of Scope (do **not** add)
 
 - **Agent-backend frameworks** — LangChain, LangGraph, CrewAI, AutoGen/AG2, hermes-agent, nanoclaw,
-  `openai-agents-python`. They build autonomous agent *services*; GitWarden is an Electron GUI whose
+  `openai-agents-python`. They build autonomous agent _services_; GitWarden is an Electron GUI whose
   AI layer is **advisory and subordinate to the deterministic Safety Engine**. Adding them is cargo
   cult and would violate the AI plan's authority boundary.
 - **Model/provider catalogs** (OpenRouter app lists, qwen-agentworld, antigravity, model zoos) — your
@@ -279,21 +279,21 @@ commit; update `progress-log.md` (a short "DX track" subsection) per step.
 
 Stable sources behind this plan (from the provided set):
 
-- Anthropic — *Effective context engineering for AI agents*:
+- Anthropic — _Effective context engineering for AI agents_:
   <https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents>
-- Claude Code — *Best practices* & docs: <https://code.claude.com/docs/en/best-practices> ·
+- Claude Code — _Best practices_ & docs: <https://code.claude.com/docs/en/best-practices> ·
   hooks / slash commands / subagents / settings under <https://code.claude.com/docs>
-- OpenAI — *Prompt guidance (GPT-5.5)* & *Agents guide*:
+- OpenAI — _Prompt guidance (GPT-5.5)_ & _Agents guide_:
   <https://developers.openai.com/api/docs/guides/prompt-guidance> ·
   <https://developers.openai.com/api/docs/guides/agents>
-- koldovsky — *Agentic Greenfield* course & **project-factory**:
+- koldovsky — _Agentic Greenfield_ course & **project-factory**:
   <https://koldovsky.github.io/2026-fwdays-agentic-greenfield-slidev/> ·
   <https://github.com/koldovsky/project-factory>
 - Karpathy — software-3.0 gist:
   <https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f>
-- steipete — *Shipping at inference speed*:
+- steipete — _Shipping at inference speed_:
   <https://steipete.me/posts/2025/shipping-at-inference-speed>
-- arena.ai <https://arena.ai/> · Kaggle *new SDLC with vibe coding* writeup ·
+- arena.ai <https://arena.ai/> · Kaggle _new SDLC with vibe coding_ writeup ·
   uncertainty-architecture <https://github.com/UncertaintyArchitectureGroup/uncertainty-architecture>
 - repomix <https://repomix.com/> · MCP <https://modelcontextprotocol.io/> ·
   CodeGraphContext <https://github.com/CodeGraphContext/CodeGraphContext>
@@ -316,20 +316,29 @@ Stable sources behind this plan (from the provided set):
 {
   "permissions": {
     "allow": [
-      "Bash(npm run test:*)", "Bash(npm run lint)", "Bash(npm run e2e)",
-      "Bash(npm run build)", "Bash(git status:*)", "Bash(git diff:*)", "Bash(git log:*)"
-    ]
+      "Bash(npm run test:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run e2e)",
+      "Bash(npm run build)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+    ],
   },
   "hooks": {
     "PreToolUse": [
-      { "matcher": "Bash",
-        "hooks": [{ "type": "command", "command": ".claude/hooks/no-global-git-config.sh" }] }
+      {
+        "matcher": "Bash",
+        "hooks": [{ "type": "command", "command": ".claude/hooks/no-global-git-config.sh" }],
+      },
     ],
     "PostToolUse": [
-      { "matcher": "Edit|Write|MultiEdit",
-        "hooks": [{ "type": "command", "command": ".claude/hooks/core-purity.sh" }] }
-    ]
-  }
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [{ "type": "command", "command": ".claude/hooks/core-purity.sh" }],
+      },
+    ],
+  },
 }
 ```
 
@@ -345,6 +354,7 @@ description: Commit the current phase as "Phase N: <name>" with the project trai
 argument-hint: <N> <name...>
 allowed-tools: Bash(git add:*), Bash(git commit:*), Bash(npm run test:*)
 ---
+
 Verify tests are green, then `git add -A` and commit exactly `Phase $1: <name from $ARGUMENTS>`
 with a one-line body and the trailer `Co-Authored-By: Claude <noreply@anthropic.com>`.
 Refuse if tests are red. Do NOT push.
@@ -358,6 +368,7 @@ name: core-purity-reviewer
 description: Reviews a diff to confirm src/core/** stays pure (no child_process/fs/electron/DOM) and injected. Read-only.
 tools: Read, Grep, Glob, Bash
 ---
+
 You enforce AGENTS.md rule #1 (pure core) and #4 (injected services). Given a diff, report any
-forbidden import or impurity in src/core/** as `file:line` findings. You do not edit code.
+forbidden import or impurity in src/core/\*\* as `file:line` findings. You do not edit code.
 ```

@@ -96,6 +96,20 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] Phase 61 — Commit Draft card
 - [x] Phase 62 — Free-text model-chosen blocks (Level 2)
 
+## Feature Track Status
+
+| Track                  | Phases    | Status                 |
+| ---------------------- | --------- | ---------------------- |
+| MVP Core               | 0–20      | ✅ complete            |
+| GitHub OAuth           | 21–27     | ✅ complete            |
+| AI Connections         | 28–39     | ✅ complete            |
+| AI Chat Redesign       | 52–55a    | ✅ complete            |
+| Generative UI Blocks   | 60–62     | 🟡 60–61 done, 62 open |
+| Client Branch Access   | 56–59     | ⬜ not started         |
+| Distribution & Release | 40–45     | ⬜ not started         |
+| Landing Page           | 46–51     | ⬜ not started         |
+| Agentic DX             | DX-0–DX-6 | ⬜ not started         |
+
 ## Progress Log
 
 > Append a new entry at the bottom after each phase. Newest last. Do not rewrite past entries.

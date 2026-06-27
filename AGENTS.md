@@ -71,7 +71,7 @@ npm run build    # electron-builder package
 
 ## Build order (dependency-driven)
 
-`0 → 1 → … → 20` (MVP, complete), then GitHub OAuth `21 → 22 → 23 → 24 → 25 → 26 → 27`, then AI Connections `28 → … → 34` (advisory MVP stop) → `35 → 38` add-ons → `39` deferred (agentic, allowlist-only).
+`0→…→20` (MVP) → `21→27` (GitHub OAuth) → `28→39` (AI Connections) → `52→55a` (AI Chat) → `60→61` (GenUI Blocks) | unbuilt: `40→45` (Distribution) → `46→51` (Landing) → `56→59` (Client Branch Access) → `62` (GenUI Level 2) | DX track: `DX-0→DX-6` (agentic-dx-plan.md)
 
 Logic and infra are built and fully tested before any UI, so the engine is verified headlessly first. Full status: `docs/progress-log.md`.
 
@@ -91,5 +91,12 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - **Full plan:** `docs/plans/gitwarden-plan.md` · **Phase prompts:** `docs/prompts/phase-prompts.md`
 - **GitHub OAuth feature:** `docs/plans/github-oauth-plan.md` + `docs/prompts/github-oauth-prompts.md`
 - **AI Connections feature:** `docs/plans/ai-integration-plan.md` + `docs/prompts/ai-integration-prompts.md`
+- **Distribution & Release:** `docs/plans/distribution-release-plan.md` + `docs/prompts/distribution-release-prompts.md`
+- **Landing Page:** `docs/plans/landing-page-plan.md` + `docs/prompts/landing-page-prompts.md`
+- **AI Chat Redesign:** `docs/plans/ai-chat-redesign-plan.md`
+- **Client Branch Access:** `docs/plans/client-branch-access-plan.md` + `docs/prompts/client-branch-access-prompts.md`
+- **Generative UI Blocks:** `docs/plans/genui-blocks-plan.md` + `docs/prompts/genui-blocks-prompts.md`
+- **Header Guard Badge:** `docs/plans/header-guard-badge-plan.md` + `docs/prompts/header-guard-badge-prompts.md`
+- **Agentic DX:** `docs/plans/agentic-dx-plan.md` + `docs/prompts/dx-execution-prompts.md`
 - **Decisions (ADR):** `DECISIONS.md` · **Security threat model:** `SECURITY.md`
 - **Status, checklist & progress log:** `docs/progress-log.md`
