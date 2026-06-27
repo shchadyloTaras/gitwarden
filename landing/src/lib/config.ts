@@ -31,3 +31,7 @@ export const RELEASES_API_URL = `https://api.github.com/repos/${OWNER}/${REPO}/r
 /** Security policy + license, linked from the footer (Phase 49). */
 export const SECURITY_URL = `${REPO_URL}/blob/main/SECURITY.md`
 export const LICENSE_URL = `${REPO_URL}/blob/main/LICENSE`
+
+/** Public user-support mailbox, linked from the landing footer and docs. */
+export const SUPPORT_EMAIL = 'gitwarden.support@gmail.com'
+export const SUPPORT_MAILTO_URL = `mailto:${SUPPORT_EMAIL}`

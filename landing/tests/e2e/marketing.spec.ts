@@ -19,6 +19,14 @@ test.describe('marketing sections', () => {
     await expect(page.getByTestId('footer-version')).toContainText('v0.1.0')
   })
 
+  test('footer links to user support email', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.getByRole('link', { name: 'Support' })).toHaveAttribute(
+      'href',
+      'mailto:gitwarden.support@gmail.com'
+    )
+  })
+
   test('screenshots have alt text and lazy loading', async ({ page }) => {
     await page.goto('/')
     const imgs = page.locator('[data-testid="screenshots"] img')

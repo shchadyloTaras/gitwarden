@@ -52,4 +52,4 @@ The identity and safety checks work with any Git remote — GitWarden verifies `
 
 ## Something is not working — where do I report it?
 
-Open an issue on the [GitHub repository](https://github.com/shchadyloTaras/gitwarden/issues). Include your OS, the GitWarden version (shown in the app footer), what you expected to happen, and what actually happened.
+Email [gitwarden.support@gmail.com](mailto:gitwarden.support@gmail.com) or open an issue on the [GitHub repository](https://github.com/shchadyloTaras/gitwarden/issues). Include your OS, the GitWarden version (shown in the app footer), what you expected to happen, and what actually happened.

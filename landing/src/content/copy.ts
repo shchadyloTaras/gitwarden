@@ -170,6 +170,7 @@ export const copy = {
     noRelease: 'View releases on GitHub',
     license: 'Open source under the MIT license.',
     links: {
+      support: 'Support',
       github: 'GitHub repository',
       releases: 'Releases',
       security: 'Security policy',

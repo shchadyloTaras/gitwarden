@@ -1,6 +1,12 @@
 ---
 import { copy } from '../content/copy'
-import { REPO_URL, RELEASES_URL, SECURITY_URL, LICENSE_URL } from '../lib/config'
+import {
+  REPO_URL,
+  RELEASES_URL,
+  SECURITY_URL,
+  LICENSE_URL,
+  SUPPORT_MAILTO_URL,
+} from '../lib/config'
 import type { ResolvedTargets } from '../lib/types'
 
 interface Props {
@@ -9,6 +15,7 @@ interface Props {
 
 const { resolved } = Astro.props
 const links = [
+  { label: copy.footer.links.support, href: SUPPORT_MAILTO_URL },
   { label: copy.footer.links.github, href: REPO_URL },
   { label: copy.footer.links.releases, href: RELEASES_URL },
   { label: copy.footer.links.security, href: SECURITY_URL },
@@ -28,7 +35,11 @@ const links = [
     <nav class="footer-links" aria-label="Footer">
       {
         links.map((l) => (
-          <a href={l.href} rel="noopener" target="_blank">
+          <a
+            href={l.href}
+            rel={l.href.startsWith('http') ? 'noopener' : undefined}
+            target={l.href.startsWith('http') ? '_blank' : undefined}
+          >
             {l.label}
           </a>
         ))
