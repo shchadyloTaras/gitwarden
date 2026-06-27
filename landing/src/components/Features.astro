@@ -1,0 +1,17 @@
+---
+import { copy } from '../content/copy'
+---
+
+<section id="features" class="features" data-testid="features">
+  <h2>{copy.features.heading}</h2>
+  <div class="cards">
+    {
+      copy.features.items.map((f) => (
+        <article class="card">
+          <h3>{f.title}</h3>
+          <p>{f.body}</p>
+        </article>
+      ))
+    }
+  </div>
+</section>

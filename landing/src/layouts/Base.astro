@@ -20,6 +20,16 @@ const { title = copy.meta.title, description = copy.meta.description } = Astro.p
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <script is:inline>
+      // Apply the saved theme before paint to avoid a flash. Default (no attribute) follows the
+      // OS preference via CSS prefers-color-scheme.
+      try {
+        const t = localStorage.getItem('gw-theme')
+        if (t) document.documentElement.dataset.theme = t
+      } catch {
+        /* ignore */
+      }
+    </script>
   </head>
   <body class="min-h-screen bg-gw-bg text-gw-text antialiased">
     <slot />

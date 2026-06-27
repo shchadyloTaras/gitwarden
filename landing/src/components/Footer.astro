@@ -1,0 +1,41 @@
+---
+import { copy } from '../content/copy'
+import { REPO_URL, RELEASES_URL, SECURITY_URL, LICENSE_URL } from '../lib/config'
+import type { ResolvedTargets } from '../lib/types'
+
+interface Props {
+  resolved: ResolvedTargets
+}
+
+const { resolved } = Astro.props
+const links = [
+  { label: copy.footer.links.github, href: REPO_URL },
+  { label: copy.footer.links.releases, href: RELEASES_URL },
+  { label: copy.footer.links.security, href: SECURITY_URL },
+  { label: copy.footer.links.license, href: LICENSE_URL },
+]
+---
+
+<footer class="site-footer" data-testid="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <p class="brand">{copy.productName}</p>
+      <p class="muted">{copy.footer.tagline}</p>
+    </div>
+    <nav class="footer-links" aria-label="Footer">
+      {
+        links.map((l) => (
+          <a href={l.href} rel="noopener" target="_blank">
+            {l.label}
+          </a>
+        ))
+      }
+    </nav>
+  </div>
+  <div class="footer-meta">
+    <a class="version-badge" href={resolved.releaseUrl} data-testid="footer-version">
+      {resolved.version ? `${copy.footer.latestPrefix} ${resolved.version}` : copy.footer.noRelease}
+    </a>
+    <span class="muted">{copy.footer.license}</span>
+  </div>
+</footer>

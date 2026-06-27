@@ -1,0 +1,18 @@
+---
+import { copy } from '../content/copy'
+---
+
+<section id="why" class="why" data-testid="why">
+  <h2>{copy.why.heading}</h2>
+  <p class="lead">{copy.why.lead}</p>
+  <div class="cards">
+    {
+      copy.why.points.map((p) => (
+        <article class="card">
+          <h3>{p.title}</h3>
+          <p>{p.body}</p>
+        </article>
+      ))
+    }
+  </div>
+</section>

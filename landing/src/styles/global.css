@@ -3,33 +3,72 @@
 /*
  * GitWarden design tokens — mirror the Electron app's src/renderer/theme.css
  * (plan §2: "Visual consistency with the app … Do not invent a separate color system").
- * Dark-first, matching the app's default. The full light-mode palette, type scale, and
- * design system land in Phase 49; Phase 46 seeded the core brand colors.
+ * Dark-first (the app's default); light mode mirrors the app's data-theme='light' palette.
+ * `--color-gw-link` / `--color-gw-primary-strong` are the WCAG-AA-on-each-background text/fill
+ * shades drawn from the app's accent-text + primary tokens.
  *
- * Tailwind v4 reads these @theme custom properties and generates utilities such as
- * `bg-gw-bg`, `text-gw-text`, `text-gw-accent`.
+ * Tailwind v4 reads these @theme custom properties and generates utilities (bg-gw-bg, …).
  */
 @theme {
   --color-gw-bg: #09090b;
   --color-gw-surface: #18181b;
-  --color-gw-accent: #6366f1;
-  --color-gw-primary: #3b82f6;
+  --color-gw-surface2: #27272a;
   --color-gw-text: #f4f4f5;
   --color-gw-text-muted: #a1a1aa;
+  --color-gw-text-faint: #71717a;
   --color-gw-border: #27272a;
-  /* Accessible-on-dark shades (WCAG AA) for text links + button fills. */
-  --color-gw-link: #818cf8;
+  --color-gw-border-strong: #3f3f46;
+  --color-gw-accent: #6366f1;
+  --color-gw-link: #a5b4fc;
+  --color-gw-primary: #3b82f6;
   --color-gw-primary-strong: #2563eb;
+  --color-gw-on-primary: #ffffff;
 }
 
-/*
- * Functional styling for the Phase 48 download experience. Deliberately modest — the full
- * design system, type scale, and light mode arrive in Phase 49.
- */
+/* Light mode — mirrors src/renderer/theme.css :root[data-theme='light'] (teal accent). */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    color-scheme: light;
+    --color-gw-bg: #ffffff;
+    --color-gw-surface: #f0f0f0;
+    --color-gw-surface2: #e4e4e4;
+    --color-gw-text: #0a0a0a;
+    --color-gw-text-muted: #2b2b2b;
+    --color-gw-text-faint: #4a4a4a;
+    --color-gw-border: #d0d0d0;
+    --color-gw-border-strong: #8a8a8a;
+    --color-gw-accent: #2a6a99;
+    --color-gw-link: #044a72;
+    --color-gw-primary: #2a6a99;
+    --color-gw-primary-strong: #2a6a99;
+    --color-gw-on-primary: #ffffff;
+  }
+}
+:root[data-theme='light'] {
+  color-scheme: light;
+  --color-gw-bg: #ffffff;
+  --color-gw-surface: #f0f0f0;
+  --color-gw-surface2: #e4e4e4;
+  --color-gw-text: #0a0a0a;
+  --color-gw-text-muted: #2b2b2b;
+  --color-gw-text-faint: #4a4a4a;
+  --color-gw-border: #d0d0d0;
+  --color-gw-border-strong: #8a8a8a;
+  --color-gw-accent: #2a6a99;
+  --color-gw-link: #044a72;
+  --color-gw-primary: #2a6a99;
+  --color-gw-primary-strong: #2a6a99;
+  --color-gw-on-primary: #ffffff;
+}
 :root {
   color-scheme: dark;
 }
 
+/* Base */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 4.5rem;
+}
 body {
   font-family:
     ui-sans-serif,
@@ -41,25 +80,86 @@ body {
     Arial,
     sans-serif;
   line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-wrap: break-word;
 }
-
-.page {
-  max-width: 64rem;
-  margin: 0 auto;
-  padding: 0 1.25rem 5rem;
+h1,
+h2,
+h3 {
+  line-height: 1.15;
+  letter-spacing: -0.02em;
 }
-
+a {
+  color: var(--color-gw-link);
+}
 a:focus-visible,
-button:focus-visible {
+button:focus-visible,
+summary:focus-visible {
   outline: 2px solid var(--color-gw-link);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
+.page {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 0 1.25rem 4rem;
+}
+
+/* Header */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--color-gw-bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--color-gw-border);
+}
+.header-inner {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 0.75rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.brand {
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--color-gw-text);
+  text-decoration: none;
+  font-size: 1.05rem;
+}
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+.header-nav a {
+  color: var(--color-gw-text-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.header-nav a:hover {
+  color: var(--color-gw-text);
+}
+.theme-toggle {
+  background: var(--color-gw-surface);
+  color: var(--color-gw-text);
+  border: 1px solid var(--color-gw-border);
+  border-radius: 0.5rem;
+  width: 2rem;
+  height: 2rem;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+}
+
 /* Hero */
 .hero {
   text-align: center;
-  padding: 5rem 0 3rem;
+  padding: 4.5rem 0 3rem;
 }
 .hero .eyebrow {
   color: var(--color-gw-link);
@@ -70,17 +170,15 @@ button:focus-visible {
   margin: 0 0 0.75rem;
 }
 .hero h1 {
-  font-size: clamp(2rem, 5vw, 3rem);
-  line-height: 1.1;
+  font-size: clamp(2.1rem, 5vw, 3.25rem);
   margin: 0 auto 1rem;
-  max-width: 22ch;
+  max-width: 18ch;
   font-weight: 800;
-  letter-spacing: -0.02em;
 }
 .hero .subtitle {
   color: var(--color-gw-text-muted);
-  font-size: 1.125rem;
-  max-width: 44ch;
+  font-size: 1.15rem;
+  max-width: 46ch;
   margin: 0 auto 2rem;
 }
 .cta {
@@ -99,11 +197,12 @@ button:focus-visible {
 .btn-primary {
   display: inline-block;
   background: var(--color-gw-primary-strong);
-  color: #fff;
+  color: var(--color-gw-on-primary);
   font-weight: 600;
-  padding: 0.8rem 1.6rem;
+  padding: 0.85rem 1.7rem;
   border-radius: 0.6rem;
   text-decoration: none;
+  font-size: 1.05rem;
 }
 .btn-primary:hover {
   filter: brightness(1.1);
@@ -122,26 +221,89 @@ button:focus-visible {
 
 /* Sections */
 section {
-  padding: 2.5rem 0;
+  padding: 3rem 0;
   border-top: 1px solid var(--color-gw-border);
+  scroll-margin-top: 4.5rem;
 }
 .hero {
   border-top: none;
 }
-section h2 {
-  font-size: 1.6rem;
+section > h2 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
   font-weight: 700;
   margin: 0 0 0.5rem;
 }
-.subhead {
+.subhead,
+.lead {
   color: var(--color-gw-text-muted);
+}
+.lead {
+  max-width: 60ch;
+  font-size: 1.05rem;
+  margin: 0 0 1.5rem;
+}
+
+/* Cards (Why / Features) */
+.cards {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+  margin-top: 1.5rem;
+}
+.card {
+  background: var(--color-gw-surface);
+  border: 1px solid var(--color-gw-border);
+  border-radius: 0.85rem;
+  padding: 1.4rem;
+}
+.card h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+.card p {
+  margin: 0;
+  color: var(--color-gw-text-muted);
+  font-size: 0.95rem;
+}
+
+/* Screenshots */
+.shots {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
+  margin: 1.5rem 0 1rem;
+}
+.shots figure {
+  margin: 0;
+  min-width: 0;
+}
+.shots img {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.85rem;
+  border: 1px solid var(--color-gw-border);
+  display: block;
+  background: var(--color-gw-surface);
+}
+.shots figcaption {
+  margin-top: 0.6rem;
+  color: var(--color-gw-text-muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+.note {
+  /* text-muted (not faint) to keep AA contrast on both backgrounds */
+  color: var(--color-gw-text-muted);
+  font-size: 0.85rem;
+  font-style: italic;
 }
 
 /* All downloads */
 .groups {
   display: grid;
   gap: 1.25rem;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
   margin: 1.5rem 0;
 }
 .group {
@@ -213,8 +375,116 @@ section h2 {
   flex-direction: column;
   gap: 0.5rem;
 }
-.note {
+
+/* FAQ */
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1.5rem;
+}
+.faq-item {
+  background: var(--color-gw-surface);
+  border: 1px solid var(--color-gw-border);
+  border-radius: 0.75rem;
+  padding: 0.25rem 1.1rem;
+}
+.faq-item summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0.85rem 0;
+  list-style: none;
+}
+.faq-item summary::-webkit-details-marker {
+  display: none;
+}
+.faq-item summary::after {
+  content: '+';
+  float: right;
   color: var(--color-gw-text-muted);
+}
+.faq-item[open] summary::after {
+  content: '−';
+}
+.faq-answer p {
+  margin: 0 0 0.9rem;
+  color: var(--color-gw-text-muted);
+}
+
+/* Footer */
+.site-footer {
+  border-top: 1px solid var(--color-gw-border);
+  background: var(--color-gw-surface);
+}
+.footer-inner,
+.footer-meta {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+}
+.footer-meta {
+  border-top: 1px solid var(--color-gw-border);
+  padding-top: 1rem;
+  padding-bottom: 2rem;
+}
+.footer-inner .brand {
+  font-size: 1rem;
+  margin: 0;
+}
+.muted {
+  color: var(--color-gw-text-muted);
+  font-size: 0.9rem;
+  margin: 0.25rem 0 0;
+}
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+}
+.footer-links a {
+  color: var(--color-gw-text-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.footer-links a:hover {
+  color: var(--color-gw-text);
+}
+.version-badge {
+  display: inline-block;
+  background: var(--color-gw-surface2);
+  border: 1px solid var(--color-gw-border);
+  border-radius: 999px;
+  padding: 0.3rem 0.85rem;
   font-size: 0.85rem;
-  margin-top: 1rem;
+  color: var(--color-gw-text);
+  text-decoration: none;
+}
+
+/* Motion */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  * {
+    transition: none !important;
+  }
+}
+
+/* Small screens */
+@media (max-width: 640px) {
+  .header-nav {
+    gap: 0.85rem;
+  }
+  .header-nav a {
+    display: none;
+  }
+  .header-nav a:last-of-type,
+  .theme-toggle {
+    display: inline-block;
+  }
 }

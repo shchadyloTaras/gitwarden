@@ -67,7 +67,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] Phase 46 — Site Foundations & Toolchain
 - [x] Phase 47 — Release Metadata & Latest-Binary Resolution
 - [x] Phase 48 — Download Experience & OS Detection
-- [ ] Phase 49 — Product Messaging & Marketing UI
+- [x] Phase 49 — Product Messaging & Marketing UI
 - [ ] Phase 50 — SEO, Accessibility, Analytics & Performance
 - [ ] Phase 51 — Deployment, CI & Release Integration
 
@@ -126,7 +126,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | Generative UI Blocks   | 60–62     | ✅ complete                                                   |
 | Client Branch Access   | 56–59     | ✅ complete                                                   |
 | Distribution & Release | 40–45     | 🟡 Phases 40–42, 45 done; 43–44 open (gated on signing certs) |
-| Landing Page           | 46–51     | 🟡 Phases 46–48 done; 49–51 open                              |
+| Landing Page           | 46–51     | 🟡 Phases 46–49 done; 50–51 open                              |
 | Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-5 done, DX-6 open                                  |
 
 ## Progress Log
@@ -812,6 +812,14 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: landing Vitest **32/32 passed** (4 files); Playwright **6/6 passed** (all-downloads grouping + resolved links, macOS hero arm64 + Intel + version, no-JS fallback with panel/install still reachable, install tabs + unsigned note, axe WCAG A/AA smoke = 0 critical/serious). `tsc --noEmit`, `astro check` (0/0/0), `eslint` + `prettier`, and both the fixture and degraded (`RELEASE_MODE=empty`) builds clean; the degraded dist was asserted to render the friendly error + Releases fallback with no primary/asset/broken links.
 - Exit criteria: ✅ met — macOS → arm64 + Intel, Windows → .exe, Linux → AppImage + .deb, unknown / no-JS → GitHub fallback; resolution failure → friendly message + Releases link (no broken link, no throw); all-platforms panel reachable without JS; interactive elements keyboard-accessible; axe smoke passes; Vitest + Playwright cover the resolver, hero, and fallback.
 - Notes / follow-ups: Used vanilla `<script>` islands (no `@astrojs/react`) to stay light. The client self-heal fetch is wired now; Phase 51 adds the release deploy-hook and confirms it live. e2e blocks `api.github.com` to stay offline. Styling is functional-only — the marketing design system, light mode, and remaining sections (Why / Features / Screenshots / FAQ / Footer) land in Phase 49.
+
+### 2026-06-27 — Phase 49: Product Messaging & Marketing UI
+
+- Built: The full §4 marketing page — Header (brand, nav, GitHub, light/dark toggle), refined Hero, Why GitWarden, Features, Screenshots (light + dark app mockups), the Phase 48 downloads + install sections, FAQ (accessible `<details>`; the "which file" answer cross-links `#downloads`), and Footer (repo / releases / security / license links + a live version badge). Full design system in `global.css`: dark + light tokens mirroring the app's `theme.css` (teal light accent), a type scale, responsive mobile-first grids, and `prefers-reduced-motion`. FOUC-free theming via an inline `<head>` script + `prefers-color-scheme` default + a persisted `data-theme` override. All copy lives in `copy.ts` (grounded in the README "Why"/value-prop); URLs stay in `config.ts`.
+- Files: added `landing/src/components/{Header,WhyGitWarden,Features,Screenshots,Faq,Footer}.astro`, `landing/public/screenshots/{app-dark,app-light}.svg`, `landing/tests/e2e/marketing.spec.ts`; updated `index.astro` (compose all sections), `Base.astro` (theme script), `AllDownloads.astro` (`#downloads` anchor), `content/copy.ts`, `styles/global.css`.
+- Tests: landing Vitest **32/32**; Playwright **13/13** (6 home + 7 marketing — all sections present, footer version badge, screenshots alt + lazy, FAQ expand + `#downloads` cross-link, OS light preference, theme toggle persists, no horizontal overflow at 375px, plus the axe WCAG A/AA smoke on the full page). `tsc --noEmit`, `astro check` (0/0/0), `eslint` + `prettier` clean. Hero + screenshots visually confirmed in the preview.
+- Exit criteria: ✅ met — the full page renders responsively (mobile → desktop) in both light and dark with no layout breakage (no-overflow + computed-bg e2e); all copy comes from the single content module (no hardcoded strings in components); screenshots render with alt text + lazy loading; the page reads clearly to a non-technical visitor (jargon-light primary path).
+- Notes / follow-ups: Screenshots are branded SVG placeholders — real app captures are a tracked follow-up. Section order is a persuasion funnel (Hero → Why → Features → Screenshots → Downloads → Install → FAQ), not the §4 table order. A repo-root `.claude/launch.json` (landing-preview) was created for the visual check and left untracked (not committed). Phase 50 owns the full a11y audit + SEO/OG + Lighthouse; Phase 51 owns the Vercel deploy + release hook.
 
 ## Documentation
 

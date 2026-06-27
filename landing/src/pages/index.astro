@@ -1,8 +1,14 @@
 ---
 import Base from '../layouts/Base.astro'
+import Header from '../components/Header.astro'
 import DownloadHero from '../components/DownloadHero.astro'
+import WhyGitWarden from '../components/WhyGitWarden.astro'
+import Features from '../components/Features.astro'
+import Screenshots from '../components/Screenshots.astro'
 import AllDownloads from '../components/AllDownloads.astro'
 import InstallSteps from '../components/InstallSteps.astro'
+import Faq from '../components/Faq.astro'
+import Footer from '../components/Footer.astro'
 import { getReleaseForBuild } from '../lib/getRelease'
 import { resolveTargets } from '../lib/resolveTargets'
 
@@ -13,9 +19,15 @@ const resolved = resolveTargets(release, 'unknown')
 ---
 
 <Base>
-  <main class="page">
+  <Header />
+  <main id="top" class="page">
     <DownloadHero resolved={resolved} release={release} />
+    <WhyGitWarden />
+    <Features />
+    <Screenshots />
     <AllDownloads resolved={resolved} />
     <InstallSteps />
+    <Faq />
   </main>
+  <Footer resolved={resolved} />
 </Base>

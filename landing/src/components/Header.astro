@@ -1,0 +1,42 @@
+---
+import { copy } from '../content/copy'
+import { REPO_URL } from '../lib/config'
+---
+
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="#top">{copy.productName}</a>
+    <nav class="header-nav" aria-label="Primary">
+      {copy.nav.links.map((l) => <a href={l.href}>{l.label}</a>)}
+      <a href={REPO_URL} rel="noopener" target="_blank">{copy.nav.github}</a>
+      <button
+        type="button"
+        class="theme-toggle"
+        data-theme-toggle
+        aria-label={copy.nav.themeToggleLabel}
+        title={copy.nav.themeToggleLabel}
+      >
+        <span aria-hidden="true">◑</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<script>
+  // Theme toggle: flip data-theme on <html> and persist it. Base.astro applies the stored
+  // value before paint to avoid a flash; the default (no data-theme) follows the OS preference.
+  const btn = document.querySelector('[data-theme-toggle]')
+  btn?.addEventListener('click', () => {
+    const root = document.documentElement
+    const current =
+      root.dataset.theme ??
+      (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
+    const next = current === 'dark' ? 'light' : 'dark'
+    root.dataset.theme = next
+    try {
+      localStorage.setItem('gw-theme', next)
+    } catch {
+      /* ignore storage errors (private mode) */
+    }
+  })
+</script>
