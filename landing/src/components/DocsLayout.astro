@@ -1,0 +1,61 @@
+---
+import Base from '../layouts/Base.astro'
+import DocsSidebar from './DocsSidebar.astro'
+
+interface Props {
+  title: string
+  description: string
+  currentSlug?: string
+}
+
+const { title, description, currentSlug } = Astro.props
+const pageTitle = `${title} — GitWarden Docs`
+---
+
+<Base title={pageTitle} description={description}>
+  <div class="docs-layout">
+    <header class="docs-header">
+      <div class="docs-header-inner">
+        <a href="/" class="docs-brand">← GitWarden</a>
+        <span class="docs-section-label">Documentation</span>
+        <button
+          type="button"
+          class="docs-menu-btn"
+          id="docs-menu-btn"
+          aria-label="Toggle navigation menu"
+          aria-expanded="false"
+          aria-controls="docs-sidebar"
+        >
+          <span aria-hidden="true">☰</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="docs-body">
+      <DocsSidebar currentSlug={currentSlug} />
+      <main id="top" class="docs-content">
+        <article class="prose">
+          <slot />
+        </article>
+      </main>
+    </div>
+  </div>
+</Base>
+
+<script>
+  const btn = document.getElementById('docs-menu-btn')
+  const sidebar = document.getElementById('docs-sidebar')
+
+  btn?.addEventListener('click', () => {
+    const isOpen = sidebar?.classList.toggle('is-open') ?? false
+    btn.setAttribute('aria-expanded', String(isOpen))
+  })
+
+  // Close sidebar when a nav link is clicked on mobile
+  sidebar?.querySelectorAll('.docs-nav-link').forEach((link) => {
+    link.addEventListener('click', () => {
+      sidebar.classList.remove('is-open')
+      btn?.setAttribute('aria-expanded', 'false')
+    })
+  })
+</script>

@@ -1,7 +1,37 @@
 // @ts-check
+import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'astro/config'
 import tailwindcss from '@tailwindcss/vite'
 import sitemap from '@astrojs/sitemap'
+
+// Sync the root CHANGELOG.md into src/content/docs/changelog.md so it renders
+// as a static docs page without manually duplicating content.
+const rootDir = fileURLToPath(new URL('..', import.meta.url))
+const landingDir = fileURLToPath(new URL('.', import.meta.url))
+
+function syncChangelog() {
+  const src = resolve(rootDir, 'CHANGELOG.md')
+  const dest = resolve(landingDir, 'src/content/docs/changelog.md')
+  if (!existsSync(src)) return
+  const raw = readFileSync(src, 'utf-8')
+  const body = raw.replace(/^# Changelog\n+/, '')
+  writeFileSync(
+    dest,
+    `---\ntitle: Changelog\ndescription: Full version history for GitWarden.\norder: 9\n---\n\n${body}`,
+    'utf-8'
+  )
+}
+
+// Run at config-load time so the file exists before content collection scan.
+syncChangelog()
+
+/** @type {import('vite').Plugin} */
+const changelogSyncPlugin = {
+  name: 'gitwarden-sync-changelog',
+  buildStart: syncChangelog,
+}
 
 // https://astro.build/config
 export default defineConfig({
@@ -15,6 +45,6 @@ export default defineConfig({
   integrations: [sitemap()],
   vite: {
     // Tailwind v4 is wired as a Vite plugin; tokens live in src/styles/global.css (@theme).
-    plugins: [tailwindcss()],
+    plugins: [tailwindcss(), changelogSyncPlugin],
   },
 })
