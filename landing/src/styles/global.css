@@ -296,6 +296,39 @@ section > h2 {
   font-size: 0.95rem;
   line-height: 1.6;
 }
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.card-top .card-icon {
+  margin-bottom: 0;
+}
+.ai-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-gw-accent);
+  background: color-mix(in srgb, var(--color-gw-accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-gw-accent) 30%, transparent);
+  border-radius: 99px;
+  padding: 0.2rem 0.65rem;
+}
+.card--ai {
+  grid-column: 1 / -1;
+  background: linear-gradient(
+    130deg,
+    color-mix(in srgb, var(--color-gw-accent) 7%, var(--color-gw-surface)),
+    color-mix(in srgb, var(--color-gw-primary) 5%, var(--color-gw-surface))
+  );
+  border-color: color-mix(in srgb, var(--color-gw-accent) 28%, var(--color-gw-border));
+}
+.card--ai:hover {
+  border-color: var(--color-gw-accent);
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--color-gw-accent) 15%, transparent);
+}
 
 /* Screenshots */
 .shots {
