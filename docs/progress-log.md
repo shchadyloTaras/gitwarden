@@ -93,7 +93,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 ### Generative UI Blocks feature (plan: `docs/plans/genui-blocks-plan.md`, prompts: `docs/prompts/genui-blocks-prompts.md`)
 
 - [x] Phase 60 — GenUI Block Contracts, Store & Review Findings card
-- [ ] Phase 61 — Commit Draft card
+- [x] Phase 61 — Commit Draft card
 - [ ] Phase 62 — Free-text model-chosen blocks (Level 2)
 
 ## Progress Log
@@ -584,3 +584,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: Vitest **503 passed** (+4 new in `chat-blocks.test.ts`). `npx tsc --noEmit` clean on `tsconfig.web.json` AND `tsconfig.node.json`; ESLint + Prettier clean on touched files. E2E assertion added to `ai-chat-panel.spec.ts` but **not run here** (no display in this sandbox) — run `npm run e2e tests/e2e/ai-chat-panel.spec.ts` locally.
 - Exit criteria: ✅ met — typed `/review` renders as a native card; block union validates/rejects fail-closed; `src/core/` stays pure; flattened `content` retained as fallback so existing assertions, copy, and a11y are preserved.
 - Notes / follow-ups: Phase numbering — 56–59 are reserved by Client Branch Access, so Generative UI Blocks starts at **60**. Next: Phase 61 `CommitDraftCard` (with Insert action), Phase 62 free-text model-chosen blocks (Level 2; needs a streaming decision).
+
+### 2026-06-27 — Phase 61: Generative UI Blocks — Commit Draft card
+
+- Built: Second GenUI card. `/commit` now carries its `AiCommitDraft` to the chat as a `{ kind: 'commit-draft' }` block rendered as a native `CommitDraftCard` (Conventional / Plain / Summary / optional Body) with an **Insert** action. Insert reuses the EXISTING commit-message path — `useCommitStore.setMessage` with the same `conventional` + body formatting as the inline Commit-screen helper — then navigates to the Commit screen; the user still commits through the Safety Engine. No new IPC / send / git mutation path; `src/core/` stays pure. Reused the existing `AI_COMMIT_DRAFT_*` / `AI_COMMIT_INSERT` strings (no new strings).
+- Files: **new** `src/renderer/components/chatBlocks/CommitDraftCard.tsx`; edited `src/core/ai/chatBlocks.ts` (`commit-draft` union variant + `ChatUiBlockSchema` reusing `AiCommitDraftSchema` + `commitDraftBlock()`), `src/renderer/store/aiChatStore.ts` (commit case attaches the block), `src/renderer/components/chatBlocks/index.tsx` (`ChatBlockView` commit-draft case), `tests/unit/chat-blocks.test.ts` (+3), `tests/e2e/ai-chat-panel.spec.ts` (card + Insert → `commit-message` populated).
+- Tests: Vitest **506 passed** (+3 new in `chat-blocks.test.ts`). `npx tsc --noEmit` clean on `tsconfig.web.json` AND `tsconfig.node.json`; ESLint + Prettier clean on touched files. E2E extended (the `runs /commit …` test asserts `ai-chat-commit-card`, clicks Insert, then asserts the Commit screen opens and `commit-message` holds the draft) but **not run here** (no display in this sandbox) — run `npm run e2e tests/e2e/ai-chat-panel.spec.ts` locally.
+- Exit criteria: ✅ met — `/commit` renders a native card; Insert reuses the existing commit-message path (no new mutate path); block union validates/rejects fail-closed; `src/core/` pure.
+- Notes / follow-ups: Insert relies on `commitStore.load()` NOT resetting `message`, so the draft survives navigation to the Commit screen (verified in the store). Next: Phase 62 free-text model-chosen blocks (Level 2; needs a streaming decision).

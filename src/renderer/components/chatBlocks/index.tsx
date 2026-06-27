@@ -1,6 +1,7 @@
 import React from 'react'
 import type { ChatUiBlock } from '../../../core/ai/chatBlocks'
 import ReviewFindingsCard from './ReviewFindingsCard'
+import CommitDraftCard from './CommitDraftCard'
 
 /**
  * Controlled Generative-UI registry: maps a typed, validated chat block to its
@@ -11,6 +12,8 @@ export function ChatBlockView({ block }: { block: ChatUiBlock }): React.ReactEle
   switch (block.kind) {
     case 'review-findings':
       return <ReviewFindingsCard review={block.review} />
+    case 'commit-draft':
+      return <CommitDraftCard draft={block.draft} />
     default:
       return null
   }

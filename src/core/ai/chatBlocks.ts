@@ -7,15 +7,17 @@
 // Pure — no node/electron/DOM imports (architecture rule). Blocks are plain data.
 
 import { z } from 'zod'
-import type { AiChangeReview } from './types.js'
-import { AiChangeReviewSchema } from './schemas.js'
+import type { AiChangeReview, AiCommitDraft } from './types.js'
+import { AiChangeReviewSchema, AiCommitDraftSchema } from './schemas.js'
 
 /**
- * A typed renderable block carried on an assistant chat message. Starts with the
- * review-findings card; commit-draft / push-brief variants extend this union
+ * A typed renderable block carried on an assistant chat message. A CLOSED
+ * allowlist of known cards; further variants (push-brief, …) extend this union
  * later without changing the renderer contract.
  */
-export type ChatUiBlock = { kind: 'review-findings'; review: AiChangeReview }
+export type ChatUiBlock =
+  | { kind: 'review-findings'; review: AiChangeReview }
+  | { kind: 'commit-draft'; draft: AiCommitDraft }
 
 /** Fail-closed validation for a chat UI block (closed discriminated union). */
 export const ChatUiBlockSchema = z.discriminatedUnion('kind', [
@@ -23,9 +25,18 @@ export const ChatUiBlockSchema = z.discriminatedUnion('kind', [
     kind: z.literal('review-findings'),
     review: AiChangeReviewSchema,
   }),
+  z.object({
+    kind: z.literal('commit-draft'),
+    draft: AiCommitDraftSchema,
+  }),
 ])
 
 /** Build a review-findings block from a parsed change review. */
 export function reviewFindingsBlock(review: AiChangeReview): ChatUiBlock {
   return { kind: 'review-findings', review }
+}
+
+/** Build a commit-draft block from a parsed AI commit draft. */
+export function commitDraftBlock(draft: AiCommitDraft): ChatUiBlock {
+  return { kind: 'commit-draft', draft }
 }

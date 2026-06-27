@@ -10,7 +10,7 @@ import {
 import { normalizeContextPaths } from '../../core/ai/chatContext'
 import { friendlyCapabilityError } from '../../core/ai/capabilityErrors'
 import type { AiAgenticProposal, AiChatTurn } from '../../core/ai/types'
-import { reviewFindingsBlock, type ChatUiBlock } from '../../core/ai/chatBlocks'
+import { reviewFindingsBlock, commitDraftBlock, type ChatUiBlock } from '../../core/ai/chatBlocks'
 import { useAppStore } from './appStore'
 import { useAiStore } from './aiStore'
 import { STR } from '../strings'
@@ -325,6 +325,7 @@ async function runCapability(parsed: ParsedChatCommand): Promise<Omit<ChatMessag
         role: 'assistant',
         kind: 'commit',
         content: `Conventional: ${draft.conventional}\nPlain: ${draft.plain}\n\n${draft.summary}${body}`,
+        block: commitDraftBlock(draft),
       }
     }
     case 'review': {

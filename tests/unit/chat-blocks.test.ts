@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { ChatUiBlockSchema, reviewFindingsBlock } from '../../src/core/ai/chatBlocks'
+import {
+  ChatUiBlockSchema,
+  reviewFindingsBlock,
+  commitDraftBlock,
+} from '../../src/core/ai/chatBlocks'
 
 describe('ChatUiBlockSchema', () => {
   it('accepts a valid review-findings block', () => {
@@ -36,6 +40,30 @@ describe('ChatUiBlockSchema', () => {
         findings: [{ category: 'not-a-category', source: 'ai', confidence: 'medium', why: 'x' }],
       },
     }
+    expect(ChatUiBlockSchema.safeParse(bad).success).toBe(false)
+  })
+
+  it('accepts a valid commit-draft block', () => {
+    const block = commitDraftBlock({
+      conventional: 'feat(ai): add commit draft card',
+      plain: 'Add commit draft card',
+      summary: 'Renders the AI commit draft as a native card.',
+      body: 'Longer explanation.',
+    })
+    expect(ChatUiBlockSchema.parse(block)).toEqual(block)
+  })
+
+  it('accepts a commit-draft block without a body', () => {
+    const block = commitDraftBlock({
+      conventional: 'fix: tidy',
+      plain: 'Tidy',
+      summary: 'Small cleanup.',
+    })
+    expect(ChatUiBlockSchema.safeParse(block).success).toBe(true)
+  })
+
+  it('rejects a malformed commit-draft (missing conventional)', () => {
+    const bad = { kind: 'commit-draft', draft: { plain: 'x', summary: 'y' } }
     expect(ChatUiBlockSchema.safeParse(bad).success).toBe(false)
   })
 })

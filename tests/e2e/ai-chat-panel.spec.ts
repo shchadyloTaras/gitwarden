@@ -134,6 +134,16 @@ test.describe('AI Chat panel', () => {
     await expect(messages.last()).toContainText('feat(ai): add fake structured output', {
       timeout: 10000,
     })
+
+    // The draft renders as a native card with a gated Insert action.
+    await expect(win.getByTestId('ai-chat-commit-card')).toBeVisible()
+    await win.getByTestId('ai-chat-commit-insert').click()
+
+    // Insert reuses the existing commit-message path and opens the Commit screen.
+    await expect(win.getByTestId('screen-commit')).toBeVisible()
+    await expect(win.getByTestId('commit-message')).toHaveValue(
+      /feat\(ai\): add fake structured output/
+    )
   })
 
   test('each networked slash-command renders a result bubble with fake AI', async () => {
