@@ -17,10 +17,11 @@ const groups: OS[] = ['macOS', 'Windows', 'Linux']
 
   <div class="groups">
     {
-      groups.map((os) => (
-        <div class="group" data-testid={`downloads-${os}`}>
-          <h3>{os}</h3>
-          {resolved.all[os].length ? (
+      groups.map((os) => {
+        const hasDl = resolved.all[os].length > 0
+        return hasDl ? (
+          <div class="group" data-testid={`downloads-${os}`}>
+            <h3>{os}</h3>
             <ul>
               {resolved.all[os].map((t) => (
                 <li>
@@ -35,13 +36,19 @@ const groups: OS[] = ['macOS', 'Windows', 'Linux']
                 </li>
               ))}
             </ul>
-          ) : (
-            <p class="empty">
-              <a href={resolved.releaseUrl}>{copy.allDownloads.fallbackRow}</a>
-            </p>
-          )}
-        </div>
-      ))
+          </div>
+        ) : (
+          <a
+            href={resolved.releaseUrl}
+            class="group"
+            data-testid={`downloads-${os}`}
+            rel="noopener"
+          >
+            <h3>{os}</h3>
+            <p class="empty">{copy.allDownloads.fallbackRow}</p>
+          </a>
+        )
+      })
     }
   </div>
 
