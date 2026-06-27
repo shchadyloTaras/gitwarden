@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 // --- GitHub OAuth (Device Authorization Flow) ---
-// Pure boundary schemas; no node/electron/DOM. See docs/plans/github-oauth-plan.md §2 + Appendix A.
+// Pure boundary schemas; no Node.js or browser globals. See docs/plans/github-oauth-plan.md §2 + Appendix A.
 
 /** Granted-scope and identity link persisted on a Profile. The token is NEVER stored here. */
 export const LinkedGitHubAccountSchema = z.object({
@@ -25,6 +25,16 @@ export const ProfileSchema = z.object({
   linkedGitHub: LinkedGitHubAccountSchema.optional(),
 })
 
+export const RepositoryPushPolicySchema = z.object({
+  mode: z.enum(['unrestricted', 'branchScoped']),
+  allowedBranchPatterns: z.array(z.string()),
+  blockedBranchPatterns: z.array(z.string()),
+  expectedRemoteOwner: z.string().optional(),
+  expectedRemoteRepo: z.string().optional(),
+  expectedGitHubActor: z.string().optional(),
+  suggestedBranchPrefix: z.string().optional(),
+})
+
 export const RepositoryRecordSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -37,6 +47,7 @@ export const RepositoryRecordSchema = z.object({
   // Per-repo AI override (most specific in the precedence chain). Absent = inherit.
   aiOverride: z.enum(['enabled', 'disabled']).optional(),
   recommendedConnectionId: z.string().optional(),
+  pushPolicy: RepositoryPushPolicySchema.optional(),
 })
 
 export const AppSettingsSchema = z.object({

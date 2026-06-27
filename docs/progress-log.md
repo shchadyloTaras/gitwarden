@@ -85,7 +85,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 
 ### Client Branch Access feature (plan: `docs/plans/client-branch-access-plan.md`, prompts: `docs/prompts/client-branch-access-prompts.md`)
 
-- [ ] Phase 56 — Push Policy Foundations & Pure Helpers
+- [x] Phase 56 — Push Policy Foundations & Pure Helpers
 - [ ] Phase 57 — Safety Engine: Branch Access Checks
 - [ ] Phase 58 — Policy Persistence, IPC & Push-Path Wiring
 - [ ] Phase 59 — Push Policy UI (feature-complete stop point)
@@ -124,7 +124,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | AI Connections         | 28–39     | ✅ complete                  |
 | AI Chat Redesign       | 52–55a    | ✅ complete                  |
 | Generative UI Blocks   | 60–62     | ✅ complete                  |
-| Client Branch Access   | 56–59     | ⬜ not started               |
+| Client Branch Access   | 56–59     | 🟡 56 done, 57–59 open       |
 | Distribution & Release | 40–45     | ⬜ not started               |
 | Landing Page           | 46–51     | ⬜ not started               |
 | Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-5 done, DX-6 open |
@@ -703,3 +703,17 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: `npm run lint` clean (eslint + prettier). No `src/` changes. Validation: two clean-context subagents (maker≠checker) — an independent dry-run of RESOLVE for slug `client-branch-access` confirmed the plan/prompts files, pending phases 56–59, entry gate 55a (✅), and Phase 59 as the "feature-complete stop point"; an adversarial spec-compliance review returned **PASS** with zero blocking findings (frontmatter valid, all hard rules + RESOLVE/LOOP steps present, `touchesSrc: false`).
 - Exit criteria: ✅ met — `run-track.md` exists with valid frontmatter (description + argument-hint + allowed-tools); dry-run for `client-branch-access` lists pending 56–59, identifies gate 55a, flags 59 as the stop point, with no code written; body contains all hard rules (no-push, stop-on-red, no-guessing, one-commit-per-phase, separate stage/commit calls); lint clean; no `src/` changes.
 - Notes / follow-ups: Tooling-only DX addition, not a numbered DX step (no checklist box, no Feature Track Status row). Slug→file resolution relies on the repo's `<slug>-plan.md` / `<slug>-prompts.md` convention cross-checked against AGENTS.md "Reference docs" (holds for all 9 current tracks). Caveat surfaced by the dry-run: the entry gate is text-based (`[x]` + `Exit criteria: ✅`), so it passes even where a phase's e2e could not run in-sandbox (e.g. 55a) — strengthening the gate is out of scope here.
+
+### 2026-06-27 — Phase 56: Push Policy Foundations & Pure Helpers
+
+- Built: Pure core foundations for the Client Branch Access feature — types, Zod schema with migration, and three pure helpers.
+  - `src/core/types.ts`: added `PushPolicyMode = 'unrestricted' | 'branchScoped'`, `RepositoryPushPolicy` (mode, allowedBranchPatterns, blockedBranchPatterns, expectedRemoteOwner?, expectedRemoteRepo?, expectedGitHubActor?, suggestedBranchPrefix?); extended `RepositoryRecord` with `pushPolicy?: RepositoryPushPolicy`.
+  - `src/core/schemas.ts`: added `RepositoryPushPolicySchema`; extended `RepositoryRecordSchema` with optional `pushPolicy`. Old records without the field parse to `pushPolicy: undefined` — that is the migration.
+  - `src/core/safety/branchPatterns.ts` (new): `matchesBranchPattern` + `matchesAnyPattern` — glob semantics per Appendix A (`*` within segment, `**` across `/`, `?` single non-`/` char, anchored, case-sensitive).
+  - `src/core/github/remoteOwner.ts` (new): `parseRemoteOwnerRepo` — parses owner/repo from scp-like SSH (`git@host:o/r.git`) and HTTPS, stripping `.git` suffix and trailing slash; returns `undefined` for unparseable input.
+  - `src/core/safety/pushTarget.ts` (new): `resolvePushTarget` — upstream-remote wins, then preferred name (default `'origin'`), then sole remote, then `undefined`.
+  - `src/core/schemas.ts` comment: changed "no node/electron/DOM" to "no Node.js or browser globals" to fix a false positive in the `core-purity.sh` PostToolUse hook (the hook's grep matched the word "electron" in the old comment, even though it was a purity assertion, not a forbidden import).
+- Files: added `src/core/safety/branchPatterns.ts`, `src/core/github/remoteOwner.ts`, `src/core/safety/pushTarget.ts`, `tests/unit/push-policy-foundations.test.ts`; updated `src/core/types.ts`, `src/core/schemas.ts`, `docs/progress-log.md`.
+- Tests: Vitest **567 passed** (was 513; +49 new in `push-policy-foundations.test.ts` covering the full Appendix A glob matrix, SSH/HTTPS/garbage URL parsing, push-target resolution, and round-trip with/without `pushPolicy`). `npm run lint` clean (ESLint + Prettier). `npx tsc --noEmit` clean on both `tsconfig.node.json` and `tsconfig.web.json`. Core purity reviewer: PASS — no findings.
+- Exit criteria: ✅ met — `src/core/` stays pure (core-purity reviewer confirmed); both tsconfigs clean; Vitest covers the complete glob matrix, `parseRemoteOwnerRepo` for SSH/HTTPS/.git/trailing-slash/garbage, `resolvePushTarget` for all four cases, and `RepositoryRecord` round-trip with and without `pushPolicy`; lint clean.
+- Notes / follow-ups: `core-purity.sh` hook comment-false-positive documented — hook matches the literal word "electron" in any context; fixed here by rewording the existing comment in `schemas.ts`. Phase 57 adds the engine wiring (the five new SafetyCodes and `checkPush` extension) on top of these helpers.

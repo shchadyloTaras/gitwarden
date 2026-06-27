@@ -65,6 +65,27 @@ export type GitHubAuthErrorCode =
   | 'network'
   | 'unknown'
 
+export type PushPolicyMode = 'unrestricted' | 'branchScoped'
+
+export interface RepositoryPushPolicy {
+  mode: PushPolicyMode
+  /** Glob patterns the current branch MUST match (branchScoped only). */
+  allowedBranchPatterns: string[]
+  /** Glob patterns that are ALWAYS denied — highest precedence, both modes. */
+  blockedBranchPatterns: string[]
+  /** Expected push-target owner (compared against the resolved push remote). */
+  expectedRemoteOwner?: string
+  expectedRemoteRepo?: string
+  /**
+   * Optional per-repo override of the expected GitHub actor. When absent, the actor
+   * defaults to the assigned profile's linkedGitHub.login. Only meaningfully verified
+   * on HTTPS-token pushes; on SSH it is informational.
+   */
+  expectedGitHubActor?: string
+  /** Optional suggested branch prefix shown on the Branches screen. */
+  suggestedBranchPrefix?: string
+}
+
 export interface RepositoryRecord {
   id: string
   name: string
@@ -83,6 +104,8 @@ export interface RepositoryRecord {
   aiOverride?: 'enabled' | 'disabled'
   /** Optional per-repo recommended AI connection (Phase 38). Non-secret pointer only. */
   recommendedConnectionId?: string
+  /** Push policy for client-branch-access enforcement (opt-in, absent = unrestricted). */
+  pushPolicy?: RepositoryPushPolicy
 }
 
 export type ChangeKind =
