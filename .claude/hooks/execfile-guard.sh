@@ -21,6 +21,12 @@ case "$FILE" in
     *src/main/git/*) exit 0 ;;
 esac
 
+# Only scan TypeScript/JavaScript source files — docs/markdown/JSON are never source
+case "$FILE" in
+    *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;;  # fall through to the check
+    *) exit 0 ;;                            # all other file types are safe
+esac
+
 # Allow: test files (they may call execFile to set up real-repo fixtures)
 case "$FILE" in
     *.test.ts|*.test.js|*.spec.ts|*.spec.js) exit 0 ;;

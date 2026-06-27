@@ -5,7 +5,7 @@ Living reference. Starts at Baseline, grows one section per completed DX step.
 **How to update:** when a DX step completes, change its `🔒` to `✅` and uncomment the
 locked content below it. The DX prompt for that step includes this as an explicit task.
 
-**Current level:** `DX-1 — Guardrails active`
+**Current level:** `DX-2 — Phase workflow in four commands`
 
 > Derived view. This line and the `🔒`/`✅` section markers below mirror the **Agentic DX** row in
 > `docs/progress-log.md`'s Feature Track Status table — itself derived from the Phase Checklist.
@@ -124,12 +124,11 @@ hook fire, it caught a real violation — fix the code, not the hook.
 
 ---
 
-## 🔒 DX-2 — Phase workflow in four commands
+## ✅ DX-2 — Phase workflow in four commands
 
 > Unlocks after: `DX-2: Slash commands` commit lands.
 > Update: change `🔒` → `✅`, uncomment the block below, update "Current level" at the top.
 
-<!--
 ### The new phase ritual (replaces the Baseline manual steps)
 
 #### Start a phase
@@ -184,7 +183,6 @@ Runs `npm test` first — refuses if red. Then `git add -A` and commits with the
 
 The five-command Baseline gate still works if you prefer it. `/verify-phase` runs the same
 commands — it's a convenience wrapper, not a replacement of the underlying checks.
--->
 
 ---
 

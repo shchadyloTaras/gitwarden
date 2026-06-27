@@ -104,7 +104,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 
 - [x] DX-0 — Docs reconciliation
 - [x] DX-1 — Executable guardrails (hooks + `settings.json`)
-- [ ] DX-2 — Slash commands
+- [x] DX-2 — Slash commands
 - [ ] DX-3 — Subagent reviewers
 - [ ] DX-4 — AI evals
 - [ ] DX-5 — Agent-agnostic shareability
@@ -117,17 +117,17 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 > are done/open). When you tick a checklist box you MUST re-derive the affected row here in the same
 > edit; if a row ever disagrees with the checklist, the checklist wins.
 
-| Track                  | Phases    | Status                       |
-| ---------------------- | --------- | ---------------------------- |
-| MVP Core               | 0–20      | ✅ complete                  |
-| GitHub OAuth           | 21–27     | ✅ complete                  |
-| AI Connections         | 28–39     | ✅ complete                  |
-| AI Chat Redesign       | 52–55a    | ✅ complete                  |
-| Generative UI Blocks   | 60–62     | ✅ complete                  |
-| Client Branch Access   | 56–59     | ⬜ not started               |
-| Distribution & Release | 40–45     | ⬜ not started               |
-| Landing Page           | 46–51     | ⬜ not started               |
-| Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-1 done, DX-2–DX-6 open |
+| Track                  | Phases    | Status                            |
+| ---------------------- | --------- | --------------------------------- |
+| MVP Core               | 0–20      | ✅ complete                       |
+| GitHub OAuth           | 21–27     | ✅ complete                       |
+| AI Connections         | 28–39     | ✅ complete                       |
+| AI Chat Redesign       | 52–55a    | ✅ complete                       |
+| Generative UI Blocks   | 60–62     | ✅ complete                       |
+| Client Branch Access   | 56–59     | ⬜ not started                    |
+| Distribution & Release | 40–45     | ⬜ not started                    |
+| Landing Page           | 46–51     | ⬜ not started                    |
+| Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-2 done, DX-3–DX-6 open |
 
 ## Progress Log
 
@@ -657,3 +657,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: `npm run test:tooling` → **26/26 passed** (bad payload → exit 2; good payload → exit 0; malformed stdin → exit 0 fail-open for all four hooks). `npm run lint` clean. Both tsc projects clean. No src/ changes.
 - Exit criteria: ✅ met — `.claude/settings.json` valid JSON; all four hook scripts exist and are executable; each hook blocks known-bad (exit 2) and allows known-good (exit 0) and exits 0 on malformed stdin; `npm run test:tooling` green; lint + tsc clean; no src/ changes.
 - Notes / follow-ups: The `commit-needs-log.sh` hook enforces the doc-before-commit gate mechanically: if `docs/progress-log.md` is not staged, `git commit` is blocked. Bypass via `GITWARDEN_SKIP_LOG_GATE=1` for WIP/fixup commits. Hook `if`-field pre-filters reduce hook spawns: no-global-git-config only fires on `git config*`; commit-needs-log only fires on `git commit*`. PostToolUse hooks (core-purity, execfile-guard) read the already-written file; they signal violations after the edit — the agent must undo. Next: DX-2 — Slash commands.
+
+### 2026-06-27 — DX-2: Slash commands
+
+- Built: Four slash commands under `.claude/commands/`: `/verify-phase` (both tsc projects + vitest + lint + optional e2e), `/commit-phase` (gate check + exact subject/trailer + refuse on red tests/missing log entry), `/new-phase` (previous-phase gate + plan/prompt lookup + Goal/Tasks/Exit brief), `/log-phase` (append log entry + tick checklist + re-derive status table row, no commit). Also patched `execfile-guard.sh` to skip non-TypeScript files (false-positive on prose containing `child_process` in docs).
+- Files added: `.claude/commands/verify-phase.md`, `.claude/commands/commit-phase.md`, `.claude/commands/new-phase.md`, `.claude/commands/log-phase.md`; modified `.claude/hooks/execfile-guard.sh` (scope guard to TS/JS files only), `WORKFLOW.md` (DX-2 unlocked).
+- Tests: `npm run test:tooling` → **26/26 passed** (hook fix preserves all existing cases). `npm run lint` clean. Both tsc projects clean. No `src/` changes.
+- Exit criteria: ✅ met — all four command files exist with valid frontmatter; `/verify-phase` runs both tsc projects (steps 1 and 2); `/commit-phase` refuses on missing log entry and red tests, produces exact `Phase N: <name>` subject + trailer; `/new-phase` checks previous phase gate before scaffolding; `/log-phase` writes entry without committing; lint + tsc clean; `WORKFLOW.md` updated.
+- Notes / follow-ups: `execfile-guard.sh` false-positive was a scoping bug — hook was scanning all file types including markdown docs. Fixed by only checking TS/JS extensions; all 26 tooling tests still green. Next: DX-3 — Subagent reviewers.
