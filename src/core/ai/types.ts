@@ -1,6 +1,6 @@
 // AI Connections — pure core domain types (Phase 28).
 //
-// No node/electron/DOM imports. These types define the *contracts* for the
+// No Node.js or browser globals. These types define the *contracts* for the
 // advisory AI layer: connection records, capabilities, provider detection,
 // the declarative Custom HTTP mapping, and the per-feature structured outputs
 // that later phases parse adapter responses into. See
@@ -254,6 +254,8 @@ export type SafetySuggestedAction =
   | 'resolve-conflicts'
   | 'configure-remote'
   | 'review-staged-changes'
+  | 'switch-branch'
+  | 'edit-push-policy'
 
 /** Safety Copilot explanation for one SafetyCode (Phase 34). */
 export interface AiSafetyExplanation {

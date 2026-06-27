@@ -38,6 +38,16 @@ export function explainSafetyIssue(code: SafetyCode): string {
       return 'This profile has no linked GitHub account. Connect GitHub so GitWarden can confirm which account an HTTPS push would use.'
     case 'STAGED_SECRET_DETECTED':
       return 'Staged changes contain content that looks like a secret or credential. Committing would permanently store it in Git history, where it is very hard to remove.'
+    case 'PROTECTED_BRANCH_PUSH':
+      return 'This branch is protected by the push policy for this repository. Direct pushes are blocked to prevent accidental changes to shared or production branches. Open a pull request instead.'
+    case 'BRANCH_NOT_ALLOWED':
+      return "The current branch is not in the allowed list for this repository's push policy. Switch to an allowed branch (or create one with the suggested prefix) before pushing."
+    case 'REMOTE_OWNER_MISMATCH':
+      return 'The push would go to a different repository owner than the push policy expects. Verify you are pushing to the correct remote for this client repository.'
+    case 'REMOTE_REPO_MISMATCH':
+      return 'The push would go to a different repository name than the push policy expects. Verify you are pushing to the correct remote for this client repository.'
+    case 'PUSH_POLICY_INCOMPLETE':
+      return 'The push policy is set to branch-scoped mode but no allowed branch patterns are configured. Add allowed patterns in the repository Push Policy settings before pushing.'
     default: {
       const _exhaustive: never = code
       return String(_exhaustive)
@@ -68,6 +78,11 @@ export const SAFETY_ACTION_BY_CODE: Record<SafetyCode, SafetySuggestedAction> = 
   GITHUB_TOKEN_INVALID: 'reconnect-github',
   GITHUB_NOT_CONNECTED: 'reconnect-github',
   STAGED_SECRET_DETECTED: 'review-staged-changes',
+  PROTECTED_BRANCH_PUSH: 'switch-branch',
+  BRANCH_NOT_ALLOWED: 'switch-branch',
+  REMOTE_OWNER_MISMATCH: 'configure-remote',
+  REMOTE_REPO_MISMATCH: 'configure-remote',
+  PUSH_POLICY_INCOMPLETE: 'edit-push-policy',
 }
 
 const ACTION_HINTS: Record<SafetySuggestedAction, string> = {
@@ -85,4 +100,8 @@ const ACTION_HINTS: Record<SafetySuggestedAction, string> = {
   'configure-remote': 'Open Remote and add or update the remote URL for this repository.',
   'review-staged-changes':
     'On the Commit screen, review the change-review findings and remove or redact secret-like content before committing.',
+  'switch-branch':
+    'On the Branches screen, switch to an allowed branch or create a new one with the suggested prefix.',
+  'edit-push-policy':
+    'Open Repositories, select this repo, and add allowed branch patterns in the Push Policy section.',
 }

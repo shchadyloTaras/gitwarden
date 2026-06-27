@@ -86,7 +86,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 ### Client Branch Access feature (plan: `docs/plans/client-branch-access-plan.md`, prompts: `docs/prompts/client-branch-access-prompts.md`)
 
 - [x] Phase 56 — Push Policy Foundations & Pure Helpers
-- [ ] Phase 57 — Safety Engine: Branch Access Checks
+- [x] Phase 57 — Safety Engine: Branch Access Checks
 - [ ] Phase 58 — Policy Persistence, IPC & Push-Path Wiring
 - [ ] Phase 59 — Push Policy UI (feature-complete stop point)
 
@@ -124,7 +124,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | AI Connections         | 28–39     | ✅ complete                  |
 | AI Chat Redesign       | 52–55a    | ✅ complete                  |
 | Generative UI Blocks   | 60–62     | ✅ complete                  |
-| Client Branch Access   | 56–59     | 🟡 56 done, 57–59 open       |
+| Client Branch Access   | 56–59     | 🟡 56–57 done, 58–59 open    |
 | Distribution & Release | 40–45     | ⬜ not started               |
 | Landing Page           | 46–51     | ⬜ not started               |
 | Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-5 done, DX-6 open |
@@ -717,3 +717,17 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: Vitest **567 passed** (was 513; +49 new in `push-policy-foundations.test.ts` covering the full Appendix A glob matrix, SSH/HTTPS/garbage URL parsing, push-target resolution, and round-trip with/without `pushPolicy`). `npm run lint` clean (ESLint + Prettier). `npx tsc --noEmit` clean on both `tsconfig.node.json` and `tsconfig.web.json`. Core purity reviewer: PASS — no findings.
 - Exit criteria: ✅ met — `src/core/` stays pure (core-purity reviewer confirmed); both tsconfigs clean; Vitest covers the complete glob matrix, `parseRemoteOwnerRepo` for SSH/HTTPS/.git/trailing-slash/garbage, `resolvePushTarget` for all four cases, and `RepositoryRecord` round-trip with and without `pushPolicy`; lint clean.
 - Notes / follow-ups: `core-purity.sh` hook comment-false-positive documented — hook matches the literal word "electron" in any context; fixed here by rewording the existing comment in `schemas.ts`. Phase 57 adds the engine wiring (the five new SafetyCodes and `checkPush` extension) on top of these helpers.
+
+### 2026-06-27 — Phase 57: Safety Engine: Branch Access Checks
+
+- Built: Extended `SafetyCheckService.checkPush` with the five new push-policy issue codes — the heart of the Client Branch Access feature. All logic is pure core, fully unit-tested.
+  - `SafetyCode` union: added `PROTECTED_BRANCH_PUSH`, `BRANCH_NOT_ALLOWED`, `REMOTE_OWNER_MISMATCH`, `REMOTE_REPO_MISMATCH`, `PUSH_POLICY_INCOMPLETE`.
+  - `SafetyCheckService.checkPush`: gained `upstream?: string` parameter (from `GitStatus.upstream`); new `collectPolicyIssues()` helper implements the §4 sequence — owner/repo checked against the resolved push target only (`resolvePushTarget`), blocked patterns wins over allowed (if-elif), `PUSH_POLICY_INCOMPLETE` is a warning-severity safe-deny (the only issue with warning severity that blocks `canPush`, tracked via a `policyDenied` flag).
+  - `safetyMessages.ts`: added severity + message for all five new codes.
+  - `src/core/ai/types.ts`: added `'switch-branch'` and `'edit-push-policy'` to `SafetySuggestedAction`; fixed a "electron"-in-comment false positive for the `core-purity.sh` hook.
+  - `src/core/ai/safetyCopilotMessages.ts`: added deterministic explanations, action mappings, and action hints for all five new codes.
+  - Opt-in guarantee: a repo with `pushPolicy: undefined` OR `mode: 'unrestricted'` with no blocked/owner/repo constraints emits zero new issues.
+- Files: updated `src/core/safety/{SafetyCheckService,safetyMessages}.ts`, `src/core/ai/{types,safetyCopilotMessages}.ts`; added `tests/unit/safety-engine-branch-policy.test.ts`; updated `docs/progress-log.md`.
+- Tests: Vitest **585 passed** (was 567; +18 new in `safety-engine-branch-policy.test.ts`). `npm run lint` clean (ESLint + Prettier). `npx tsc --noEmit` clean on both tsconfigs. Core purity reviewer: PASS — no findings.
+- Exit criteria: ✅ met — allowed branch passes; `main` (blocked) → `PROTECTED_BRANCH_PUSH`; off-scope branch → `BRANCH_NOT_ALLOWED`; wrong owner → `REMOTE_OWNER_MISMATCH`; wrong repo → `REMOTE_REPO_MISMATCH`; empty allowed in `branchScoped` → `PUSH_POLICY_INCOMPLETE` (warning) + push denied; a branch matching both allowed and blocked → blocked wins; regression guard: a repo with no policy yields no policy-specific codes; `npx tsc --noEmit` clean.
+- Notes / follow-ups: The `core-purity.sh` hook false-positive (matching "electron" in purity-assertion comments) also affected `src/core/ai/types.ts` — fixed by rewording. Phase 58 wires the real push target through the store and IPC, and passes `expectedGitHubActor` as the expected login override into the existing `GITHUB_ACCOUNT_MISMATCH` check for HTTPS pushes.

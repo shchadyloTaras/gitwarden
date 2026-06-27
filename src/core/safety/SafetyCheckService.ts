@@ -8,6 +8,9 @@ import type {
   SafetyCheckResult,
 } from '../types.js'
 import { SAFETY_MESSAGES, SAFETY_SEVERITY } from './safetyMessages.js'
+import { matchesAnyPattern } from './branchPatterns.js'
+import { parseRemoteOwnerRepo } from '../github/remoteOwner.js'
+import { resolvePushTarget } from './pushTarget.js'
 
 // ── Issue catalogue ──────────────────────────────────────────────────────────
 
@@ -30,6 +33,12 @@ export type SafetyCode =
   | 'GITHUB_TOKEN_INVALID'
   | 'GITHUB_NOT_CONNECTED'
   | 'STAGED_SECRET_DETECTED'
+  // Push policy (Phase 57). These engage ONLY when repo.pushPolicy is set and non-unrestricted.
+  | 'PROTECTED_BRANCH_PUSH'
+  | 'BRANCH_NOT_ALLOWED'
+  | 'REMOTE_OWNER_MISMATCH'
+  | 'REMOTE_REPO_MISMATCH'
+  | 'PUSH_POLICY_INCOMPLETE'
 
 function makeIssue(code: SafetyCode): SafetyIssue {
   return { code, message: SAFETY_MESSAGES[code], severity: SAFETY_SEVERITY[code] }
@@ -126,6 +135,55 @@ function collectGitHubPushIssues(github: GitHubPushContext): SafetyIssue[] {
   return issues
 }
 
+// ── Push policy checks (Phase 57) ────────────────────────────────────────────
+
+/**
+ * Evaluate the repo's push policy against the resolved push target and current branch.
+ * Returns the issues and a `policyDenied` flag for `PUSH_POLICY_INCOMPLETE` (warning
+ * severity that still blocks push — safe-deny for misconfiguration).
+ *
+ * Opt-in: only called when `pushPolicy` is set and `mode !== 'unrestricted'` (or
+ * `blockedBranchPatterns` is non-empty in unrestricted mode — see §4).
+ */
+function collectPolicyIssues(
+  policy: NonNullable<RepositoryRecord['pushPolicy']>,
+  currentBranch: string,
+  remotes: GitRemote[],
+  upstream: string | undefined
+): { issues: SafetyIssue[]; policyDenied: boolean } {
+  const issues: SafetyIssue[] = []
+  let policyDenied = false
+
+  // Owner/repo — checked against the RESOLVED push target only.
+  const target = resolvePushTarget({ remotes, upstream })
+  if (target && (policy.expectedRemoteOwner || policy.expectedRemoteRepo)) {
+    const parsed = parseRemoteOwnerRepo(target.url)
+    if (parsed) {
+      if (policy.expectedRemoteOwner && parsed.owner !== policy.expectedRemoteOwner) {
+        issues.push(makeIssue('REMOTE_OWNER_MISMATCH'))
+      }
+      if (policy.expectedRemoteRepo && parsed.repo !== policy.expectedRemoteRepo) {
+        issues.push(makeIssue('REMOTE_REPO_MISMATCH'))
+      }
+    }
+  }
+
+  // Branch evaluation — blocked WINS over allowed (check blocked first).
+  if (matchesAnyPattern(currentBranch, policy.blockedBranchPatterns)) {
+    issues.push(makeIssue('PROTECTED_BRANCH_PUSH'))
+  } else if (policy.mode === 'branchScoped') {
+    if (policy.allowedBranchPatterns.length === 0) {
+      // Misconfiguration — safe-deny + nudge.
+      issues.push(makeIssue('PUSH_POLICY_INCOMPLETE'))
+      policyDenied = true
+    } else if (!matchesAnyPattern(currentBranch, policy.allowedBranchPatterns)) {
+      issues.push(makeIssue('BRANCH_NOT_ALLOWED'))
+    }
+  }
+
+  return { issues, policyDenied }
+}
+
 // ── Public API ───────────────────────────────────────────────────────────────
 
 export interface SafetyCheckService {
@@ -149,6 +207,8 @@ export interface SafetyCheckService {
     identity: EffectiveGitIdentity
     remotes: GitRemote[]
     currentBranch?: string
+    /** Upstream tracking ref, e.g. `'origin/main'` from GitStatus.upstream. Used to resolve the push target remote. */
+    upstream?: string
     github?: GitHubPushContext
   }): SafetyCheckResult
 }
@@ -200,6 +260,7 @@ class SafetyCheckServiceImpl implements SafetyCheckService {
     identity: EffectiveGitIdentity
     remotes: GitRemote[]
     currentBranch?: string
+    upstream?: string
     github?: GitHubPushContext
   }): SafetyCheckResult {
     const issues = collectIdentityIssues(input)
@@ -215,7 +276,22 @@ class SafetyCheckServiceImpl implements SafetyCheckService {
 
     if (input.github) issues.push(...collectGitHubPushIssues(input.github))
 
-    return { canCommit: true, canPush: !hasBlocker(issues), issues }
+    // Push policy (opt-in — only runs when pushPolicy is set).
+    // Owner/repo checks apply in both modes; branch checks apply per mode.
+    let policyDenied = false
+    const policy = input.repository.pushPolicy
+    if (policy) {
+      const result = collectPolicyIssues(
+        policy,
+        input.currentBranch ?? '',
+        input.remotes,
+        input.upstream
+      )
+      issues.push(...result.issues)
+      policyDenied = result.policyDenied
+    }
+
+    return { canCommit: true, canPush: !hasBlocker(issues) && !policyDenied, issues }
   }
 }
 

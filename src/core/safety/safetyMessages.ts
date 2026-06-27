@@ -18,6 +18,11 @@ export const SAFETY_SEVERITY: Record<SafetyCode, Severity> = {
   GITHUB_TOKEN_INVALID: 'blocker',
   GITHUB_NOT_CONNECTED: 'warning',
   STAGED_SECRET_DETECTED: 'blocker',
+  PROTECTED_BRANCH_PUSH: 'blocker',
+  BRANCH_NOT_ALLOWED: 'blocker',
+  REMOTE_OWNER_MISMATCH: 'blocker',
+  REMOTE_REPO_MISMATCH: 'blocker',
+  PUSH_POLICY_INCOMPLETE: 'warning',
 }
 
 export const SAFETY_MESSAGES: Record<SafetyCode, string> = {
@@ -44,6 +49,15 @@ export const SAFETY_MESSAGES: Record<SafetyCode, string> = {
     'This profile has no linked GitHub account. Connect GitHub to verify the push account.',
   STAGED_SECRET_DETECTED:
     'Staged changes contain secret-like content. Remove or redact before committing.',
+  PROTECTED_BRANCH_PUSH:
+    'This branch is protected by the push policy. Open a pull request instead of pushing directly.',
+  BRANCH_NOT_ALLOWED: "This branch is not in the allowed list for this repository's push policy.",
+  REMOTE_OWNER_MISMATCH:
+    'The push target repository owner does not match the expected owner in the push policy.',
+  REMOTE_REPO_MISMATCH:
+    'The push target repository name does not match the expected repository in the push policy.',
+  PUSH_POLICY_INCOMPLETE:
+    'The push policy requires specific branches but none are configured. Add allowed branch patterns to enable pushing.',
 }
 
 export function stagedSecretMessage(file?: string): string {
