@@ -1,0 +1,13 @@
+node_modules/
+dist/
+out/
+build/
+release/
+dist_electron/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# Landing site — isolated workspace with its own Prettier config
+landing/

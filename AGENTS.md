@@ -72,9 +72,9 @@ npm run build    # electron-builder package
 
 ## Build order (dependency-driven)
 
-`0→…→20` (MVP) → `21→27` (GitHub OAuth) → `28→39` (AI Connections) → `52→55a` (AI Chat) → `60→62` (GenUI Blocks) | unbuilt: `40→45` (Distribution) → `46→51` (Landing) → `56→59` (Client Branch Access) | DX track: `DX-0→DX-6` (agentic-dx-plan.md)
+`0→…→20` (MVP) → `21→27` (GitHub OAuth) → `28→39` (AI Connections) → `52→55a` (AI Chat) → `56→59` (Client Branch Access) → `60→62` (GenUI Blocks) | partial: `40→45` (Distribution; 43–44 open, gated on signing certs) | unbuilt: `46→51` (Landing) | DX track: `DX-0→DX-6` (DX-6 open, agentic-dx-plan.md)
 
-Logic and infra are built and fully tested before any UI, so the engine is verified headlessly first. The built/unbuilt split above is a **derived view** of the Phase Checklist in `docs/progress-log.md` (authoritative) — re-derive it whenever a phase flips to `[x]`; do not hand-pin completion here. Full status: `docs/progress-log.md`.
+Logic and infra are built and fully tested before any UI, so the engine is verified headlessly first. The built/partial/unbuilt split above is a **derived view** of the Phase Checklist in `docs/progress-log.md` (authoritative) — re-derive it whenever a phase flips to `[x]`; do not hand-pin completion here. Full status: `docs/progress-log.md`.
 
 ## Definition of Done (per phase)
 

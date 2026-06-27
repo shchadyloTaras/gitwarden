@@ -11,6 +11,12 @@ release/
 # Electron-builder
 dist_electron/
 
+# Landing site (Astro — isolated workspace; landing/.gitignore also covers these)
+landing/node_modules/
+landing/dist/
+landing/.astro/
+landing/.vercel/
+
 # Test artifacts
 coverage/
 playwright-report/

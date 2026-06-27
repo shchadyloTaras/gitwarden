@@ -21,5 +21,6 @@ module.exports = {
     'react/react-in-jsx-scope': 'off',
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
   },
-  ignorePatterns: ['out/', 'dist/', 'node_modules/', '*.js', '!*.config.js'],
+  // 'landing/' — the landing site is an isolated workspace with its own ESLint flat config.
+  ignorePatterns: ['out/', 'dist/', 'node_modules/', 'landing/', '*.js', '!*.config.js'],
 }

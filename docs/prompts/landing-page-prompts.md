@@ -32,6 +32,7 @@ Copy-paste prompts to drive the Landing Page & Download Site feature one phase a
 - **Externalize copy.** All user-facing strings live in one `src/content/copy.ts` module.
 - **Accessibility is a gate.** Interactive elements are keyboard-reachable and labeled; the download path works with JavaScript disabled (the all-platforms panel + Releases link are always present).
 - **Honest about the unsigned warning.** Until Distribution Phase 43 signs builds, install steps state the one-time Gatekeeper/SmartScreen workaround plainly.
+- **Visual consistency with the app.** Use the same color tokens as `src/renderer/theme.css` — wire them into the Tailwind theme (a `@theme` block in global CSS on Tailwind v4, the version `astro add tailwind` installs today, or `tailwind.config.*` on v3). Do not invent a separate color system. Key tokens: dark bg `#09090b`, surface `#18181b`, accent `#6366f1` (indigo), primary `#3b82f6` (blue), text `#f4f4f5` / `#0a0a0a` light.
 
 ---
 
@@ -68,7 +69,8 @@ Stack (decided): Astro + TypeScript strict + Tailwind CSS. Location: landing/ in
 Tasks:
 - Scaffold a NEW, self-contained npm project under landing/ (its own package.json + lockfile + node_modules).
   Astro scaffold: npm create astro@latest landing -- --template minimal --typescript strict --no-git
-  Then add Tailwind: npx astro add tailwind (inside landing/).
+  Then add Tailwind: npx astro add tailwind (inside landing/). NOTE: this installs Tailwind v4 — CSS-first config (tokens go in a @theme block in your global stylesheet; there is NO tailwind.config.mjs). Pin Tailwind v3 only if you specifically want a JS config.
+  The minimal template ships no lint/test tooling — add it: ESLint (eslint-plugin-astro + astro-eslint-parser), Prettier (prettier-plugin-astro), Vitest, and @astrojs/check (for `astro check`).
 - Structure:
     landing/src/pages/index.astro        ← home page
     landing/src/components/             ← .astro components
@@ -76,17 +78,17 @@ Tasks:
     landing/src/lib/config.ts           ← repo coordinates + Releases URL constants
     landing/public/                     ← favicon, OG image
     landing/astro.config.mjs
-    landing/tailwind.config.mjs
+    landing/tailwind.config.mjs         ← Tailwind v3 only; v4 (current) uses @theme in CSS — no JS config
     landing/tsconfig.json               ← strict: true
     landing/package.json
-- Scripts in landing/package.json: dev (astro dev), build (astro build), preview (astro preview), lint (eslint + prettier), test (vitest for src/lib/).
+- Scripts in landing/package.json: dev (astro dev), build (astro build), preview (astro preview), check (astro check), lint (eslint + prettier), test (vitest for src/lib/).
 - src/content/copy.ts: export all UI strings (hero title, tagline, download labels, install step text, FAQ, footer). No hardcoded strings in .astro files.
 - src/lib/config.ts: export OWNER = 'shchadyloTaras', REPO = 'gitwarden', RELEASES_URL = 'https://github.com/shchadyloTaras/gitwarden/releases/latest'. The ONLY place these constants live.
 - Render a minimal placeholder home page (product name + tagline from copy.ts) so dev/build are provably green.
 - Add landing/README.md (how to run, build, deploy to Vercel: Root Directory = landing/).
 - Ensure landing/node_modules, landing/dist, landing/.astro, .env* are gitignored (add to root .gitignore if not already present).
 
-Exit criteria: `npm run dev` inside landing/ serves the placeholder at localhost:4321; `npm run build` succeeds and outputs to landing/dist/; `npm run lint` and `tsc --noEmit` clean; the landing/ project does not alter or depend on the Electron app's package.json/lockfile; repo coordinates and copy live in single modules (no hardcoded duplication).
+Exit criteria: `npm run dev` inside landing/ serves the placeholder at localhost:4321; `npm run build` succeeds and outputs to landing/dist/; `npm run lint`, `astro check` (.astro files), and `tsc --noEmit` (src/lib logic) clean; the landing/ project does not alter or depend on the Electron app's package.json/lockfile; repo coordinates and copy live in single modules (no hardcoded duplication).
 
 Then run the standard progress footer.
 ```
@@ -107,8 +109,8 @@ OS routing (decided):
 Tasks:
 - In src/lib/, add a PURE resolver (no fetch, no framework imports):
   - Types: OS = 'macOS' | 'Windows' | 'Linux' | 'unknown'
-  - DownloadTarget: { os: OS, label: string, ext: string, url: string, sizeBytes: number, filename: string }
-  - resolveTargets(release, os: OS) → { primary?: DownloadTarget; secondary?: DownloadTarget; all: Record<OS, DownloadTarget[]>; releaseUrl: string; version: string }
+  - DownloadTarget: { os: OS, arch?: 'arm64' | 'x64' | 'amd64', label: string, ext: string, url: string, sizeBytes: number, filename: string }
+  - resolveTargets(release: Release | null, os: OS) → { primary?: DownloadTarget; secondary?: DownloadTarget; all: Record<OS, DownloadTarget[]>; releaseUrl: string; version: string }
     Matches assets via Appendix A patterns; excludes latest*.yml and *.blockmap sidecars.
   - For macOS: primary = arm64.dmg, secondary = x64.dmg
   - For Linux: primary = .AppImage, secondary = .deb
@@ -124,6 +126,7 @@ Tasks:
   - sidecar files (latest.yml, .blockmap) excluded ✓
   - draft/prerelease excluded by fetch wrapper ✓
   - empty asset list → fallback ✓
+  - null release (fetch failed / 404 — no release published yet) → fallback ✓
   - CONTRACT test: Appendix A patterns match Distribution §3 filenames ✓
 
 Exit criteria: resolver is pure (no network/framework imports) and tsc --noEmit clean; Vitest covers the full matrix against fixtures with NO real network call; the asset-name contract is asserted by test; every code path yields a valid versioned browser_download_url OR the Releases-page fallback — never undefined/throw to the UI.
@@ -158,7 +161,7 @@ Tasks:
   - Linux AppImage: chmod +x GitWarden-*.AppImage && ./GitWarden-*.AppImage
   - Linux deb: sudo apt install ./gitwarden_*.deb
   Structure so these steps are easy to remove/adjust once signing ships.
-- Friendly error state when resolution fails: "Couldn't reach GitHub — see all releases →" (links releaseUrl). All copy from src/content/copy.ts. Add data-testid attributes.
+- Friendly error state when resolution fails: "Couldn't reach GitHub — see all releases →" (links releaseUrl). In this degraded state, hide the version label (no resolved version to show). All copy from src/content/copy.ts. Add data-testid attributes.
 
 Exit criteria:
 - macOS visitor sees arm64.dmg primary + "Intel Mac? Download x64" secondary.
@@ -166,7 +169,7 @@ Exit criteria:
 - Linux sees AppImage primary + .deb secondary.
 - unknown OS / JS off → only the "Find your version on GitHub →" fallback link is shown.
 - Resolution failure → friendly message + Releases page link; no broken link, no thrown error.
-- All-platforms panel reachable without JS; interactive elements keyboard-accessible.
+- All-platforms panel reachable without JS; interactive elements keyboard-accessible; a minimal axe smoke (the core-cut a11y gate) passes on the home route.
 - Vitest covers resolver; test covers hero button states + fallback.
 
 Then run the standard progress footer.
@@ -203,7 +206,7 @@ Then run the standard progress footer.
 Work on Phase 50 (docs/plans/landing-page-plan.md §5 Phase 50). Goal: the site is discoverable, inclusive, measurable, and fast. This is the polish pass after the recommended core cut.
 
 Tasks:
-- SEO: per-page <title>/meta description, Open Graph + Twitter cards with a branded preview image, canonical URL, sitemap.xml, robots.txt, and SoftwareApplication/WebSite JSON-LD structured data (use Astro's <head> slot or astro-seo component).
+- SEO: per-page <title>/meta description, Open Graph + Twitter cards with a branded preview image (design asset — track as a follow-up if not ready, like screenshots), canonical URL, sitemap.xml, robots.txt, and SoftwareApplication/WebSite JSON-LD structured data (use Astro's <head> slot or the astro-seo component).
 - Accessibility: semantic landmarks, focus-visible states, AA color contrast, labeled controls, prefers-reduced-motion respected, skip-to-content link; verify with an automated a11y pass (axe) in Playwright.
 - Analytics (privacy-respecting): a lightweight cookieless option (Vercel Analytics or Plausible) behind a documented env toggle; NO PII, default-off when unconfigured.
 - Performance: optimize images (Astro <Image />), font loading, bundle size; target Lighthouse ≥ 95 Performance/Accessibility/Best-Practices/SEO on a mid-tier mobile profile.
@@ -232,7 +235,7 @@ Tasks:
     Tests stay OFFLINE (mocked GitHub API). Keep separate from the app's release.yml matrix.
 - Custom domain + HTTPS (e.g. gitwarden.app): configure in Vercel when ready; update site:url in astro.config.mjs accordingly.
 - Wire into repo docs: update README.md's Download section to point at the live Vercel URL; add the site to the docs index.
-- Verify the LIVE site resolves the REAL latest release end-to-end: open the deployed URL, confirm the download buttons point at the correct files for macOS / Windows / Linux.
+- Verify the LIVE site resolves the REAL latest release end-to-end: open the deployed URL, confirm the download buttons point at the correct files for macOS / Windows / Linux. (Requires a published release — if v0.1.0 hasn't been cut yet, the buttons correctly show the Releases-page fallback; cut the first release before sign-off.)
 
 Exit criteria: the site is reachable at its Vercel URL over HTTPS; pushing to main redeploys and PRs get preview deploys; publishing a new GitHub Release causes the live download buttons to resolve to the new version (rebuild hook + client-side self-heal) with no manual edit; the landing CI job gates merges (lint + unit + build green, offline); README.md links the live site; production download buttons fetch the correct real installers per OS.
 

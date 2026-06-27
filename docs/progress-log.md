@@ -64,7 +64,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 
 ### Landing Page & Download Site feature (plan: `docs/plans/landing-page-plan.md`, prompts: `docs/prompts/landing-page-prompts.md`)
 
-- [ ] Phase 46 — Site Foundations & Toolchain
+- [x] Phase 46 — Site Foundations & Toolchain
 - [ ] Phase 47 — Release Metadata & Latest-Binary Resolution
 - [ ] Phase 48 — Download Experience & OS Detection
 - [ ] Phase 49 — Product Messaging & Marketing UI
@@ -126,7 +126,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | Generative UI Blocks   | 60–62     | ✅ complete                                                   |
 | Client Branch Access   | 56–59     | ✅ complete                                                   |
 | Distribution & Release | 40–45     | 🟡 Phases 40–42, 45 done; 43–44 open (gated on signing certs) |
-| Landing Page           | 46–51     | ⬜ not started                                                |
+| Landing Page           | 46–51     | 🟡 Phase 46 done; 47–51 open                                  |
 | Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-5 done, DX-6 open                                  |
 
 ## Progress Log
@@ -788,6 +788,14 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: Vitest **594 passed** (no source changes). `npm run lint` clean (ESLint + Prettier).
 - Exit criteria: ✅ met — maintainer can follow `docs/release-checklist.md` end-to-end to cut a release without referring to anyone; `README.md` Download section lists per-OS artifacts, install steps, and unsigned-path warning workaround; `CHANGELOG.md` exists and reflects `v0.1.0`; tag ↔ version ↔ release notes are consistent.
 - Notes / follow-ups: Phases 43 (Code Signing) and 44 (Auto-Update) remain open, gated on the maintainer obtaining Apple Developer Program membership and a Windows code-signing certificate. The recommended cut (Phases 40–42 + 45) is now complete — a maintainer can push `v0.1.0` and receive a real, downloadable draft GitHub Release with five installers.
+
+### 2026-06-27 — Phase 46: Site Foundations & Toolchain
+
+- Built: Isolated `landing/` site — Astro 7 + TypeScript (strict) + Tailwind v4 — with its own `package.json`, lockfile, and `node_modules`. Added the tooling the `minimal` template omits: ESLint 10 flat config (`eslint-plugin-astro` + `typescript-eslint`), Prettier (`prettier-plugin-astro`), Vitest (landing-local `vitest.config.ts`), and `@astrojs/check`. Single-source modules: `src/content/copy.ts` (all UI strings) and `src/lib/config.ts` (repo coordinates + Releases/API URLs). Tailwind `@theme` tokens in `src/styles/global.css` mirror the app's `theme.css` (no separate color system). Placeholder home page renders product name + tagline from copy via a `Base.astro` layout.
+- Files: added `landing/` (`package.json`, `astro.config.mjs`, `tsconfig.json`, `vitest.config.ts`, `eslint.config.js`, `.prettierrc.json`, `.prettierignore`, `.gitignore`, `README.md`, `src/pages/index.astro`, `src/layouts/Base.astro`, `src/styles/global.css`, `src/content/copy.ts`, `src/lib/config.ts`); isolated the app's tooling from `landing/` (root `.eslintrc.cjs` ignore, new root `.prettierignore`, root `.gitignore` block — root `vitest.config.ts` already scoped via `include`). This commit also folds in the pre-existing landing-page plan/prompts + `AGENTS.md` build-order doc refinements.
+- Tests: landing — `astro build` ✅, `astro check` 0 errors / 0 warnings / 0 hints, `tsc --noEmit` clean, `eslint` + `prettier --check` clean, Vitest 0 tests (`--passWithNoTests`, isolated to `src/**`); live `npm run dev` smoke = HTTP 200 serving the placeholder. App regression check — Vitest **594/594 passed** (65 files), app lint clean.
+- Exit criteria: ✅ met — `npm run dev` serves the placeholder at `localhost:4321`; `npm run build` outputs `landing/dist/`; lint + `astro check` + `tsc --noEmit` clean; `landing/` does not alter or depend on the Electron app's `package.json`/lockfile; repo coordinates + copy live in single modules.
+- Notes / follow-ups: Removed the create-astro template `AGENTS.md`/`CLAUDE.md` artifacts so the root `AGENTS.md` stays the single source of agent instructions. Plan to use vanilla `<script>` islands for Phase 48 interactivity — `@astrojs/react` deferred unless needed. `npm audit` reports 5 moderate transitive-dep advisories (non-blocking; same posture as the app). The pure resolver + fetch wrapper land in Phase 47.
 
 ## Documentation
 

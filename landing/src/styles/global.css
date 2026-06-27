@@ -1,0 +1,19 @@
+@import 'tailwindcss';
+
+/*
+ * GitWarden design tokens — mirror the Electron app's src/renderer/theme.css
+ * (plan §2: "Visual consistency with the app … Do not invent a separate color system").
+ * Dark-first, matching the app's default. The full light-mode palette, type scale, and
+ * design system land in Phase 49; Phase 46 seeds only the core brand colors.
+ *
+ * Tailwind v4 reads these @theme custom properties and generates utilities such as
+ * `bg-gw-bg`, `text-gw-text`, `text-gw-accent`.
+ */
+@theme {
+  --color-gw-bg: #09090b;
+  --color-gw-surface: #18181b;
+  --color-gw-accent: #6366f1;
+  --color-gw-primary: #3b82f6;
+  --color-gw-text: #f4f4f5;
+  --color-gw-text-muted: #a1a1aa;
+}
