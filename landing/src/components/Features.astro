@@ -8,6 +8,8 @@ const icons = [
   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`,
   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v3m0 12v3M3 12h3m12 0h3m-15.4-6.4 2.1 2.1m8.5 8.5 2.1 2.1M5.6 18.4l2.1-2.1m8.5-8.5 2.1-2.1"/><circle cx="12" cy="12" r="3"/></svg>`,
 ]
+
+const lastIndex = copy.features.items.length - 1
 ---
 
 <section id="features" class="features" data-testid="features">
@@ -15,8 +17,11 @@ const icons = [
   <div class="cards">
     {
       copy.features.items.map((f, i) => (
-        <article class="card">
-          <span class="card-icon" set:html={icons[i]} />
+        <article class:list={['card', { 'card--ai': i === lastIndex }]}>
+          <div class="card-top">
+            <span class="card-icon" set:html={icons[i]} />
+            {i === lastIndex && <span class="ai-badge">Optional</span>}
+          </div>
           <h3>{f.title}</h3>
           <p>{f.body}</p>
         </article>
