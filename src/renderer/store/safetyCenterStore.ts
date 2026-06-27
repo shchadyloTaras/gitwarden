@@ -75,6 +75,7 @@ export const useSafetyCenterStore = create<SafetyCenterState>((set) => ({
       const identity = identityRes.ok ? identityRes.data : null
       const remotes = remotesRes.ok ? remotesRes.data : []
       const currentBranch = statusRes.ok ? (statusRes.data.branch ?? null) : null
+      const upstream = statusRes.ok ? (statusRes.data.upstream ?? undefined) : undefined
 
       const identityCheck = identity
         ? safetyCheckService.checkRepositoryIdentity({
@@ -91,6 +92,7 @@ export const useSafetyCenterStore = create<SafetyCenterState>((set) => ({
             identity,
             remotes,
             currentBranch: currentBranch ?? undefined,
+            upstream,
           })
         : null
 

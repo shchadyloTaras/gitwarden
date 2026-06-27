@@ -87,7 +87,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 
 - [x] Phase 56 — Push Policy Foundations & Pure Helpers
 - [x] Phase 57 — Safety Engine: Branch Access Checks
-- [ ] Phase 58 — Policy Persistence, IPC & Push-Path Wiring
+- [x] Phase 58 — Policy Persistence, IPC & Push-Path Wiring
 - [ ] Phase 59 — Push Policy UI (feature-complete stop point)
 
 ### Generative UI Blocks feature (plan: `docs/plans/genui-blocks-plan.md`, prompts: `docs/prompts/genui-blocks-prompts.md`)
@@ -124,7 +124,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | AI Connections         | 28–39     | ✅ complete                  |
 | AI Chat Redesign       | 52–55a    | ✅ complete                  |
 | Generative UI Blocks   | 60–62     | ✅ complete                  |
-| Client Branch Access   | 56–59     | 🟡 56–57 done, 58–59 open    |
+| Client Branch Access   | 56–59     | 🟡 56–58 done, 59 open       |
 | Distribution & Release | 40–45     | ⬜ not started               |
 | Landing Page           | 46–51     | ⬜ not started               |
 | Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-5 done, DX-6 open |
@@ -731,3 +731,15 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: Vitest **585 passed** (was 567; +18 new in `safety-engine-branch-policy.test.ts`). `npm run lint` clean (ESLint + Prettier). `npx tsc --noEmit` clean on both tsconfigs. Core purity reviewer: PASS — no findings.
 - Exit criteria: ✅ met — allowed branch passes; `main` (blocked) → `PROTECTED_BRANCH_PUSH`; off-scope branch → `BRANCH_NOT_ALLOWED`; wrong owner → `REMOTE_OWNER_MISMATCH`; wrong repo → `REMOTE_REPO_MISMATCH`; empty allowed in `branchScoped` → `PUSH_POLICY_INCOMPLETE` (warning) + push denied; a branch matching both allowed and blocked → blocked wins; regression guard: a repo with no policy yields no policy-specific codes; `npx tsc --noEmit` clean.
 - Notes / follow-ups: The `core-purity.sh` hook false-positive (matching "electron" in purity-assertion comments) also affected `src/core/ai/types.ts` — fixed by rewording. Phase 58 wires the real push target through the store and IPC, and passes `expectedGitHubActor` as the expected login override into the existing `GITHUB_ACCOUNT_MISMATCH` check for HTTPS pushes.
+
+### 2026-06-27 — Phase 58: Policy Persistence, IPC & Push-Path Wiring
+
+- Built: Wired `pushPolicy` save/load through existing IPC + store, fed the real `upstream` from `GitStatus` into `checkPush`, and added `expectedGitHubActor` override in the push sheet's `GitHubPushContext`.
+  - `src/renderer/store/remoteStore.ts`: added `upstream: string | null` to `RemoteState`; populated from `statusRes.data.upstream` in `load()`.
+  - `src/renderer/store/safetyCenterStore.ts`: extracted `upstream` from `statusRes.data.upstream` and passed it to `safetyCheckService.checkPush()` — the Safety Center now evaluates owner/repo against the actual push remote, not the first remote in the list.
+  - `src/renderer/screens/RemoteScreen.tsx`: destructured `upstream` from `useRemoteStore`; passed `upstream: upstream ?? undefined` into the `pushSafetyResult` memo's `checkPush` call; updated the `githubContext` memo so `repository.pushPolicy?.expectedGitHubActor` overrides `assignedProfile?.linkedGitHub?.login` as `assignedLogin` for HTTPS actor verification (SSH actor stays informational per Appendix C).
+  - `pushPolicy` persistence via storage: already fully functional from Phase 56's `RepositoryRecordSchema` extension — `RepositoryUpdatePayload` already includes `pushPolicy` through `RepositoryRecordSchema.omit({ id: true }).partial()`, so no new IPC channel or handler was needed.
+- Files: updated `src/renderer/store/remoteStore.ts`, `src/renderer/store/safetyCenterStore.ts`, `src/renderer/screens/RemoteScreen.tsx`; added `tests/integration/push-policy-persistence.test.ts`; updated `docs/progress-log.md`.
+- Tests: Vitest **594 passed** (was 585; +9 new in `push-policy-persistence.test.ts`). `npm run lint` clean (ESLint + Prettier). `npx tsc --noEmit` clean on both tsconfigs. Core purity reviewer: PASS — no `src/core/` changes.
+- Exit criteria: ✅ met — `pushPolicy` round-trips through `JsonStore` + `RepositoryService` (save → reload → deep-equal); Zod rejects invalid mode (`INVALID_MODE`), missing required fields, and non-string pattern entries; safety engine uses the resolved upstream remote over origin for owner/repo checks (two-remote fixture); `npx tsc --noEmit` clean on both tsconfigs.
+- Notes / follow-ups: SSH actor verification (`expectedGitHubActor` on SSH push) intentionally stays informational (not a blocker) per Appendix C — the MVP does not attempt `ssh -T` probing. HTTPS actor verification via `expectedGitHubActor` override is now wired for Phase 59 to surface in the push sheet's Branch Access block. Phase 59 adds the Push Policy editor UI, Branch Access push-sheet block, Safety Center block, branch badge, and suggested-prefix display on the Branches screen.

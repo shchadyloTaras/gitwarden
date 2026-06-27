@@ -6,6 +6,7 @@ interface RemoteState {
   repository: RepositoryRecord | null
   remotes: GitRemote[]
   currentBranch: string | null
+  upstream: string | null
   identity: EffectiveGitIdentity | null
   loading: boolean
   fetchLoading: string | null
@@ -26,6 +27,7 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
   repository: null,
   remotes: [],
   currentBranch: null,
+  upstream: null,
   identity: null,
   loading: false,
   fetchLoading: null,
@@ -54,6 +56,7 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
       set({
         remotes: remotesRes.ok ? remotesRes.data : [],
         currentBranch: statusRes.ok ? (statusRes.data.branch ?? null) : null,
+        upstream: statusRes.ok ? (statusRes.data.upstream ?? null) : null,
         identity: identityRes.ok ? identityRes.data : null,
         error: !remotesRes.ok
           ? remotesRes.error

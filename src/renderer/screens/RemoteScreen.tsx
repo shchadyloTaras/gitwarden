@@ -19,6 +19,7 @@ export default function RemoteScreen(): React.ReactElement {
     repository,
     remotes,
     currentBranch,
+    upstream,
     identity,
     loading,
     fetchLoading,
@@ -52,14 +53,17 @@ export default function RemoteScreen(): React.ReactElement {
   // HTTPS GitHub remote, so SSH/file remotes are unaffected.
   const githubContext = useMemo((): GitHubPushContext | undefined => {
     if (!selectedRemote || !isHttpsGitHubRemoteUrl(selectedRemote.url)) return undefined
+    // expectedGitHubActor overrides the profile's linked login for HTTPS actor verification.
+    const assignedLogin =
+      repository?.pushPolicy?.expectedGitHubActor ?? assignedProfile?.linkedGitHub?.login
     return {
       httpsToGitHub: true,
-      assignedLogin: assignedProfile?.linkedGitHub?.login,
+      assignedLogin,
       hasToken: pushStatus?.hasToken ?? false,
       tokenInvalid: pushStatus?.tokenInvalid ?? false,
       effectiveLogin: pushStatus?.effectiveLogin,
     }
-  }, [selectedRemote, assignedProfile, pushStatus])
+  }, [selectedRemote, repository, assignedProfile, pushStatus])
 
   // Compute push safety for the selected remote
   const pushSafetyResult = useMemo(() => {
@@ -70,6 +74,7 @@ export default function RemoteScreen(): React.ReactElement {
       identity,
       remotes: [selectedRemote],
       currentBranch: currentBranch ?? undefined,
+      upstream: upstream ?? undefined,
       // Withhold the context until the token is verified so we don't flash a stale verdict.
       github: pushStatusPending ? undefined : githubContext,
     })
@@ -79,6 +84,7 @@ export default function RemoteScreen(): React.ReactElement {
     activeProfile,
     selectedRemote,
     currentBranch,
+    upstream,
     githubContext,
     pushStatusPending,
   ])
