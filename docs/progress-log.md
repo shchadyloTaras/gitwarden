@@ -106,7 +106,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] DX-1 — Executable guardrails (hooks + `settings.json`)
 - [x] DX-2 — Slash commands
 - [x] DX-3 — Subagent reviewers
-- [ ] DX-4 — AI evals
+- [x] DX-4 — AI evals
 - [ ] DX-5 — Agent-agnostic shareability
 - [ ] DX-6 — Optional / à la carte
 
@@ -127,7 +127,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | Client Branch Access   | 56–59     | ⬜ not started                    |
 | Distribution & Release | 40–45     | ⬜ not started                    |
 | Landing Page           | 46–51     | ⬜ not started                    |
-| Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-3 done, DX-4–DX-6 open |
+| Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-4 done, DX-5–DX-6 open |
 
 ## Progress Log
 
@@ -673,3 +673,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: Demonstration — DX-1 hooks fired and blocked a temp impure `src/core/` file (`child_process` import); `core-purity-reviewer` logic invoked on the file returned `FINDING: src/core/_dx3_test_impure.ts:2 — import { execFile } from 'child_process' violates AGENTS.md rule #1`; `safety-reviewer` logic invoked on a token-logging diff returned `FINDING: src/main/ai/adapter.ts:2 — console.log logs accessToken violates AGENTS.md never-log-secrets`. Temp file deleted. `npm run lint` clean. No `src/` changes.
 - Exit criteria: ✅ met — both agent files exist with `name`/`description`/`tools` frontmatter; `core-purity-reviewer` returned a finding on a deliberately impure `src/core/` file; `safety-reviewer` returned a finding on a diff that logs a token variable; `AGENTS.md` references both agents; `npm run lint` clean.
 - Notes / follow-ups: Project agents in `.claude/agents/` are invoked through Claude Code's interactive agent picker (not through the Agent tool's `subagent_type` registry); demonstration used equivalent agent logic to confirm FINDING output format. Next: DX-4 — AI evals.
+
+### 2026-06-27 — DX-4: AI evals
+
+- Built: `tests/evals/` eval harness — 5 golden-set fixture files, a Vitest-based runner (`run-evals.test.ts`), and a type-definitions module (`types.ts`). Added `npm run eval` script (`vitest run tests/evals/ --reporter=verbose`). Documented the golden-set format and add-a-case workflow in `tests/evals/README.md`.
+- Files added: `tests/evals/README.md`, `tests/evals/types.ts`, `tests/evals/run-evals.test.ts`, `tests/evals/fixtures/01-smart-commit-basic.ts`, `tests/evals/fixtures/02-smart-commit-specific.ts`, `tests/evals/fixtures/03-safety-copilot-profile-mismatch.ts`, `tests/evals/fixtures/04-change-review-bug.ts`, `tests/evals/fixtures/05-change-review-clean.ts`; modified `package.json` (eval script), `vitest.config.ts` (added evals include), `tsconfig.node.json` (added tests/evals), `WORKFLOW.md` (DX-4 unlocked, "Current level" updated, DX-4 block uncommented).
+- Tests: `npm run eval` → **5/5 passed** (smart-commit-basic, smart-commit-specific, safety-copilot-profile-mismatch, change-review-bug, change-review-clean). `npm run lint` clean. Both tsc projects clean. No `src/` changes.
+- Exit criteria: ✅ met — `npm run eval` runs offline without network access and reports per-case pass/fail; PROFILE_MISMATCH Safety Copilot case passes (code === PROFILE_MISMATCH, suggestedAction in allowlist); false-positive case passes (0 findings); adding a new case is a single file in `tests/evals/fixtures/`; lint + both tsc clean.
+- Notes / follow-ups: The eval runner uses a two-track design — offline mode validates `cannedResponse` through the assistant Zod schema and runs quality checks; live mode (`GITWARDEN_EVAL_LIVE=1`) is stubbed for future wiring to the real adapter. Safety Copilot evals use `buildDeterministicSafetyExplanation` directly (no adapter needed for the deterministic path). Quality checks are structural/regex — not exact strings — so they remain valid for both the offline canned responses and future live AI output. Next: DX-5 — Agent-agnostic shareability.

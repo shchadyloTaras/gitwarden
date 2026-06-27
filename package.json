@@ -11,6 +11,7 @@
     "e2e": "electron-vite build && playwright test",
     "lint": "eslint . --ext .ts,.tsx && prettier --check .",
     "test:tooling": "bash tests/tooling/guardrails.test.sh",
+    "eval": "vitest run tests/evals/ --reporter=verbose",
     "pack": "npx repomix"
   },
   "devDependencies": {

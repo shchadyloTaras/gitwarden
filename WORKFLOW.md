@@ -5,7 +5,7 @@ Living reference. Starts at Baseline, grows one section per completed DX step.
 **How to update:** when a DX step completes, change its `🔒` to `✅` and uncomment the
 locked content below it. The DX prompt for that step includes this as an explicit task.
 
-**Current level:** `DX-3 — Maker ≠ checker`
+**Current level:** `DX-4 — Measured AI quality`
 
 > Derived view. This line and the `🔒`/`✅` section markers below mirror the **Agentic DX** row in
 > `docs/progress-log.md`'s Feature Track Status table — itself derived from the Phase Checklist.
@@ -219,23 +219,22 @@ advisory-only AI boundary crossed.
 
 ### When to invoke
 
-| Phase touches               | Reviewer to invoke                 |
-| --------------------------- | ---------------------------------- |
-| `src/core/`                 | `core-purity-reviewer`             |
-| `src/main/git/`, IPC, `src/main/ai/` | `safety-reviewer`         |
-| Both                        | Both, in parallel                  |
-| UI-only changes             | Neither required                   |
+| Phase touches                        | Reviewer to invoke     |
+| ------------------------------------ | ---------------------- |
+| `src/core/`                          | `core-purity-reviewer` |
+| `src/main/git/`, IPC, `src/main/ai/` | `safety-reviewer`      |
+| Both                                 | Both, in parallel      |
+| UI-only changes                      | Neither required       |
 
 Add reviewer invocation between `/verify-phase` and `/log-phase` for any phase that touches the above paths.
 
 ---
 
-## 🔒 DX-4 — Measured AI quality
+## ✅ DX-4 — Measured AI quality
 
 > Unlocks after: `DX-4: AI evals` commit lands.
 > Update: change `🔒` → `✅`, uncomment the block below, update "Current level" at the top.
 
-<!--
 ### Run AI quality checks
 
 ```bash
@@ -270,7 +269,6 @@ Uses the real configured AI provider. Skipped by default.
 `npm run eval` must pass before `/commit-phase` on any phase that adds a new AI capability.
 Phase 62 (free-text GenUI) requires a golden fixture for the new capability added first,
 then implement, then eval passes — in that order.
--->
 
 ---
 

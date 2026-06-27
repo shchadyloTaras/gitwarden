@@ -17,6 +17,7 @@
     "src/main/**/*",
     "tests/unit/**/*",
     "tests/integration/**/*",
+    "tests/evals/**/*",
     "electron.vite.config.ts",
     "vitest.config.ts",
     "playwright.config.ts"
