@@ -425,13 +425,44 @@ export default function SettingsScreen(): React.ReactElement {
                 <p
                   style={{
                     marginTop: 0,
-                    marginBottom: 12,
+                    marginBottom: 16,
                     fontSize: 14,
                     color: 'var(--gw-text-faint, #71717a)',
                   }}
                 >
                   {STR.SETTINGS_ONBOARDING_HINT}
                 </p>
+                <ol
+                  style={{
+                    margin: '0 0 20px',
+                    padding: '0 0 0 18px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 6,
+                  }}
+                >
+                  {[
+                    STR.ONBOARDING_STEP_WELCOME_TITLE,
+                    STR.ONBOARDING_STEP_HEADER_TITLE,
+                    STR.ONBOARDING_STEP_NAV_TITLE,
+                    STR.ONBOARDING_STEP_PROFILES_TITLE,
+                    STR.ONBOARDING_STEP_REPOS_TITLE,
+                    STR.ONBOARDING_STEP_STATUS_TITLE,
+                    STR.ONBOARDING_STEP_COMMIT_TITLE,
+                    STR.ONBOARDING_STEP_REMOTE_TITLE,
+                    STR.ONBOARDING_STEP_SAFETY_TITLE,
+                    STR.ONBOARDING_STEP_AI_CHAT_TITLE,
+                    STR.ONBOARDING_STEP_AI_SETTINGS_TITLE,
+                    STR.ONBOARDING_STEP_SETTINGS_TITLE,
+                  ].map((title) => (
+                    <li
+                      key={title}
+                      style={{ fontSize: 13, color: 'var(--gw-text-muted, #a1a1aa)' }}
+                    >
+                      {title}
+                    </li>
+                  ))}
+                </ol>
                 <button
                   data-testid="settings-start-onboarding"
                   onClick={startOnboarding}

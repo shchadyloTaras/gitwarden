@@ -86,7 +86,8 @@ export const STR = {
   SETTINGS_GIT_INVALID: 'Not a valid git executable.',
   SETTINGS_GIT_VALIDATE_HINT: 'Enter a path to validate it, or leave blank to use auto-detect.',
   SETTINGS_ONBOARDING_LABEL: 'Walkthrough',
-  SETTINGS_ONBOARDING_HINT: 'Run the guided introduction again.',
+  SETTINGS_ONBOARDING_HINT:
+    'A guided tour of Git Warden — profiles, repositories, safety checks, Git actions, and the AI assistant. Run it again any time.',
   SETTINGS_ONBOARDING_START: 'Start Walkthrough',
 
   // ── Onboarding walkthrough ────────────────────────────────────────────────
