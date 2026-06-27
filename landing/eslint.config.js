@@ -6,7 +6,7 @@ import astro from 'eslint-plugin-astro'
 // Flat config (ESLint 10). Isolated from the Electron app's .eslintrc.cjs (plan §2).
 // Plain array form (not the deprecated tseslint.config() helper).
 export default [
-  { ignores: ['dist/', '.astro/', 'node_modules/'] },
+  { ignores: ['dist/', '.astro/', 'node_modules/', 'test-results/', 'playwright-report/'] },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   ...astro.configs.recommended,

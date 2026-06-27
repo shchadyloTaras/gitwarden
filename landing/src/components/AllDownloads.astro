@@ -1,0 +1,53 @@
+---
+import { copy } from '../content/copy'
+import { formatBytes } from '../lib/format'
+import type { OS, ResolvedTargets } from '../lib/types'
+
+interface Props {
+  resolved: ResolvedTargets
+}
+
+const { resolved } = Astro.props
+const groups: OS[] = ['macOS', 'Windows', 'Linux']
+---
+
+<section class="all-downloads" data-testid="all-downloads">
+  <h2>{copy.allDownloads.heading}</h2>
+  <p class="subhead">{copy.allDownloads.subhead}</p>
+
+  <div class="groups">
+    {
+      groups.map((os) => (
+        <div class="group" data-testid={`downloads-${os}`}>
+          <h3>{os}</h3>
+          {resolved.all[os].length ? (
+            <ul>
+              {resolved.all[os].map((t) => (
+                <li>
+                  <a href={t.url} data-testid={`asset-${t.filename}`}>
+                    {t.label}
+                  </a>
+                  <span class="meta">
+                    {t.ext}
+                    {t.sizeBytes ? ` · ${formatBytes(t.sizeBytes)}` : ''}
+                    {resolved.version ? ` · ${resolved.version}` : ''}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p class="empty">
+              <a href={resolved.releaseUrl}>{copy.allDownloads.fallbackRow}</a>
+            </p>
+          )}
+        </div>
+      ))
+    }
+  </div>
+
+  <p class="all-fallback">
+    <a href={resolved.releaseUrl} data-testid="all-downloads-fallback">
+      {copy.allDownloads.fallbackRow}
+    </a>
+  </p>
+</section>

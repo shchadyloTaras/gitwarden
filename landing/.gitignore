@@ -4,6 +4,9 @@ dist/
 .astro/
 # vercel
 .vercel/
+# playwright
+test-results/
+playwright-report/
 
 # dependencies
 node_modules/

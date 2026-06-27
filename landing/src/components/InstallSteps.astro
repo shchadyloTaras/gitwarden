@@ -1,0 +1,78 @@
+---
+import { copy } from '../content/copy'
+
+const tabs = [
+  { os: 'macOS', ...copy.install.macOS },
+  { os: 'Windows', ...copy.install.windows },
+  { os: 'Linux', ...copy.install.linux },
+]
+---
+
+<section class="install" data-testid="install-steps">
+  <h2>{copy.install.heading}</h2>
+
+  <div class="tablist" role="tablist" aria-label="Install steps by operating system">
+    {
+      tabs.map((t, i) => (
+        <button
+          type="button"
+          role="tab"
+          id={`install-tab-${t.os}`}
+          aria-controls={`install-panel-${t.os}`}
+          aria-selected={i === 0 ? 'true' : 'false'}
+          data-os={t.os}
+          data-testid={`install-tab-${t.os}`}
+        >
+          {t.tab}
+        </button>
+      ))
+    }
+  </div>
+
+  {
+    tabs.map((t) => (
+      <div
+        role="tabpanel"
+        id={`install-panel-${t.os}`}
+        aria-labelledby={`install-tab-${t.os}`}
+        data-os={t.os}
+        data-testid={`install-panel-${t.os}`}
+      >
+        <ol>
+          {t.steps.map((s) => (
+            <li>{s}</li>
+          ))}
+        </ol>
+      </div>
+    ))
+  }
+
+  <p class="note" data-testid="install-unsigned-note">{copy.install.unsignedNote}</p>
+</section>
+
+<script>
+  // Progressive enhancement: without JS every panel is visible (content reachable). With JS,
+  // turn them into real tabs showing one OS at a time, defaulting to the detected platform.
+  import { detectOsFromNavigator } from '../lib/detectOs'
+
+  const root = document.querySelector<HTMLElement>('[data-testid="install-steps"]')
+  if (root) {
+    const tabs = Array.from(root.querySelectorAll<HTMLElement>('[role="tab"]'))
+    const panels = Array.from(root.querySelectorAll<HTMLElement>('[role="tabpanel"]'))
+
+    function select(os: string | undefined): void {
+      if (!os) return
+      tabs.forEach((t) => t.setAttribute('aria-selected', String(t.dataset.os === os)))
+      panels.forEach((p) => {
+        p.hidden = p.dataset.os !== os
+      })
+    }
+
+    root.dataset.enhanced = 'true'
+    tabs.forEach((t) => t.addEventListener('click', () => select(t.dataset.os)))
+
+    const detected = detectOsFromNavigator()
+    const start = tabs.some((t) => t.dataset.os === detected) ? detected : tabs[0]?.dataset.os
+    select(start)
+  }
+</script>

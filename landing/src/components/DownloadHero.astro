@@ -1,0 +1,122 @@
+---
+import { copy } from '../content/copy'
+import type { Release, ResolvedTargets } from '../lib/types'
+
+interface Props {
+  resolved: ResolvedTargets
+  release: Release | null
+}
+
+const { resolved, release } = Astro.props
+const hasAnyAsset =
+  resolved.all.macOS.length + resolved.all.Windows.length + resolved.all.Linux.length > 0
+
+// Embed the build-time release so the client island can re-resolve for the detected OS
+// (and self-heal). Escaping `<` keeps the JSON safe inside a <script> tag.
+const embedded = JSON.stringify(release).replace(/</g, '\\u003c')
+---
+
+<section class="hero" data-testid="hero">
+  <p class="eyebrow">{copy.productName}</p>
+  <h1>{copy.tagline}</h1>
+  <p class="subtitle">{copy.heroSubtitle}</p>
+
+  <div class="cta" data-gw-cta data-testid="hero-cta">
+    {
+      hasAnyAsset ? (
+        <a class="btn-primary" data-testid="hero-fallback" href={resolved.releaseUrl}>
+          {copy.download.fallback}
+        </a>
+      ) : (
+        <div class="error" data-testid="hero-error">
+          <strong>{copy.download.errorTitle}</strong>{' '}
+          <a href={resolved.releaseUrl} data-testid="hero-error-link">
+            {copy.download.errorLink}
+          </a>
+        </div>
+      )
+    }
+  </div>
+
+  {
+    hasAnyAsset && (
+      <p class="version" data-gw-version data-testid="hero-version" hidden={!resolved.version}>
+        {copy.download.versionPrefix} {resolved.version}
+      </p>
+    )
+  }
+
+  <script type="application/json" data-gw-release is:inline set:html={embedded} />
+</section>
+
+<script>
+  // Client island (progressive enhancement): detect the OS, swap the fallback link for the
+  // right "Download for <OS>" button using the build-time data, then self-heal from the live
+  // API. The page is fully usable without this script (all-downloads panel is always present).
+  import { detectOsFromNavigator } from '../lib/detectOs'
+  import { resolveTargets } from '../lib/resolveTargets'
+  import { fetchLatestRelease } from '../lib/fetchRelease'
+  import { copy } from '../content/copy'
+  import type { OS, Release } from '../lib/types'
+
+  const cta = document.querySelector<HTMLElement>('[data-gw-cta]')
+  const versionEl = document.querySelector<HTMLElement>('[data-gw-version]')
+  const dataEl = document.querySelector('[data-gw-release]')
+
+  const labels: Record<OS, string> = {
+    macOS: copy.download.downloadForMac,
+    Windows: copy.download.downloadForWindows,
+    Linux: copy.download.downloadForLinux,
+    unknown: copy.download.fallback,
+  }
+
+  function readEmbedded(): Release | null {
+    try {
+      return dataEl?.textContent ? (JSON.parse(dataEl.textContent) as Release) : null
+    } catch {
+      return null
+    }
+  }
+
+  function link(href: string, text: string, testid: string, className: string): HTMLAnchorElement {
+    const a = document.createElement('a')
+    a.href = href
+    a.textContent = text
+    a.className = className
+    a.dataset.testid = testid
+    return a
+  }
+
+  function render(release: Release | null): void {
+    if (!cta) return
+    const os = detectOsFromNavigator()
+    const { primary, secondary, releaseUrl, version } = resolveTargets(release, os)
+
+    cta.innerHTML = ''
+    if (!primary) {
+      cta.appendChild(link(releaseUrl, copy.download.fallback, 'hero-fallback', 'btn-primary'))
+    } else {
+      const btn = link(primary.url, labels[os], 'hero-primary', 'btn-primary')
+      btn.setAttribute('data-os', os)
+      cta.appendChild(btn)
+      if (secondary) {
+        const text = os === 'macOS' ? copy.download.intelSecondary : copy.download.debSecondary
+        cta.appendChild(link(secondary.url, text, 'hero-secondary', 'btn-secondary'))
+      }
+    }
+    if (versionEl) {
+      versionEl.hidden = !version
+      if (version) versionEl.textContent = `${copy.download.versionPrefix} ${version}`
+    }
+  }
+
+  const embedded = readEmbedded()
+  // Only enhance when we actually have release data; otherwise leave the server's degraded
+  // error state in place (the self-heal fetch below may still recover it).
+  if (embedded) render(embedded)
+  fetchLatestRelease()
+    .then((fresh) => {
+      if (fresh) render(fresh)
+    })
+    .catch(() => {})
+</script>

@@ -66,7 +66,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 
 - [x] Phase 46 — Site Foundations & Toolchain
 - [x] Phase 47 — Release Metadata & Latest-Binary Resolution
-- [ ] Phase 48 — Download Experience & OS Detection
+- [x] Phase 48 — Download Experience & OS Detection
 - [ ] Phase 49 — Product Messaging & Marketing UI
 - [ ] Phase 50 — SEO, Accessibility, Analytics & Performance
 - [ ] Phase 51 — Deployment, CI & Release Integration
@@ -126,7 +126,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | Generative UI Blocks   | 60–62     | ✅ complete                                                   |
 | Client Branch Access   | 56–59     | ✅ complete                                                   |
 | Distribution & Release | 40–45     | 🟡 Phases 40–42, 45 done; 43–44 open (gated on signing certs) |
-| Landing Page           | 46–51     | 🟡 Phases 46–47 done; 48–51 open                              |
+| Landing Page           | 46–51     | 🟡 Phases 46–48 done; 49–51 open                              |
 | Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-5 done, DX-6 open                                  |
 
 ## Progress Log
@@ -804,6 +804,14 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: landing Vitest **24/24 passed** (2 files) — full per-OS matrix, target-field/grouping, sidecar exclusion, null/empty fallback, fetch wrapper (draft/prerelease/404/403/network-throw/malformed-JSON), and the Appendix A ↔ Distribution §3 contract; all offline (mock `fetch`). `tsc --noEmit`, `astro check` (0/0/0), `eslint` + `prettier`, and `astro build` all clean.
 - Exit criteria: ✅ met — resolver is pure + tsc clean; the full matrix is covered with no real network call; the asset-name contract is asserted by test; every code path yields a valid versioned `browser_download_url` or the Releases-page fallback (never `undefined`/throw to the UI).
 - Notes / follow-ups: Labels (e.g. "macOS · Apple Silicon (arm64)") are technical descriptors the resolver emits for the all-downloads panel; marketing button copy stays in `copy.ts` (Phase 48). `version` is the raw `tag_name` ("v0.1.0"); Phase 48 hides the version label in the degraded/no-release state. Phase 48 wires OS detection + the smart hero button onto this resolver.
+
+### 2026-06-27 — Phase 48: Download Experience & OS Detection
+
+- Built: Pure `detectOs` (UA/platform → OS; mobile → unknown) + `detectOsFromNavigator`; `formatBytes`; build-time release source `getRelease.ts` (`RELEASE_MODE` fixture/empty for offline builds). UI: `DownloadHero.astro` (server fallback + embedded build-time data + a client island that detects OS, swaps to "Download for <OS>" with arm64/Intel or AppImage/.deb secondary + version, and self-heals via the API), `AllDownloads.astro` (per-OS groups with size/version + Releases fallback rows — always present, no JS), `InstallSteps.astro` (no-JS-visible panels enhanced into OS tabs; one-time unsigned-warning workaround mirroring Distribution §1 Path A). Composed in `index.astro`; functional dark styling with AA-contrast link/button shades.
+- Files: added `landing/src/lib/{detectOs,format,getRelease}.ts` + `{detectOs,format}.test.ts`, `landing/src/components/{DownloadHero,AllDownloads,InstallSteps}.astro`, `landing/playwright.config.ts`, `landing/tests/e2e/home.spec.ts`; updated `index.astro`, `content/copy.ts`, `styles/global.css`, `package.json` (e2e script + @playwright/test, @axe-core/playwright, @types/node), `.gitignore`, `eslint.config.js`.
+- Tests: landing Vitest **32/32 passed** (4 files); Playwright **6/6 passed** (all-downloads grouping + resolved links, macOS hero arm64 + Intel + version, no-JS fallback with panel/install still reachable, install tabs + unsigned note, axe WCAG A/AA smoke = 0 critical/serious). `tsc --noEmit`, `astro check` (0/0/0), `eslint` + `prettier`, and both the fixture and degraded (`RELEASE_MODE=empty`) builds clean; the degraded dist was asserted to render the friendly error + Releases fallback with no primary/asset/broken links.
+- Exit criteria: ✅ met — macOS → arm64 + Intel, Windows → .exe, Linux → AppImage + .deb, unknown / no-JS → GitHub fallback; resolution failure → friendly message + Releases link (no broken link, no throw); all-platforms panel reachable without JS; interactive elements keyboard-accessible; axe smoke passes; Vitest + Playwright cover the resolver, hero, and fallback.
+- Notes / follow-ups: Used vanilla `<script>` islands (no `@astrojs/react`) to stay light. The client self-heal fetch is wired now; Phase 51 adds the release deploy-hook and confirms it live. e2e blocks `api.github.com` to stay offline. Styling is functional-only — the marketing design system, light mode, and remaining sections (Why / Features / Screenshots / FAQ / Footer) land in Phase 49.
 
 ## Documentation
 

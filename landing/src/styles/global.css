@@ -4,7 +4,7 @@
  * GitWarden design tokens — mirror the Electron app's src/renderer/theme.css
  * (plan §2: "Visual consistency with the app … Do not invent a separate color system").
  * Dark-first, matching the app's default. The full light-mode palette, type scale, and
- * design system land in Phase 49; Phase 46 seeds only the core brand colors.
+ * design system land in Phase 49; Phase 46 seeded the core brand colors.
  *
  * Tailwind v4 reads these @theme custom properties and generates utilities such as
  * `bg-gw-bg`, `text-gw-text`, `text-gw-accent`.
@@ -16,4 +16,205 @@
   --color-gw-primary: #3b82f6;
   --color-gw-text: #f4f4f5;
   --color-gw-text-muted: #a1a1aa;
+  --color-gw-border: #27272a;
+  /* Accessible-on-dark shades (WCAG AA) for text links + button fills. */
+  --color-gw-link: #818cf8;
+  --color-gw-primary-strong: #2563eb;
+}
+
+/*
+ * Functional styling for the Phase 48 download experience. Deliberately modest — the full
+ * design system, type scale, and light mode arrive in Phase 49.
+ */
+:root {
+  color-scheme: dark;
+}
+
+body {
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+  line-height: 1.6;
+}
+
+.page {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 0 1.25rem 5rem;
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--color-gw-link);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Hero */
+.hero {
+  text-align: center;
+  padding: 5rem 0 3rem;
+}
+.hero .eyebrow {
+  color: var(--color-gw-link);
+  font-size: 0.8rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin: 0 0 0.75rem;
+}
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1.1;
+  margin: 0 auto 1rem;
+  max-width: 22ch;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.hero .subtitle {
+  color: var(--color-gw-text-muted);
+  font-size: 1.125rem;
+  max-width: 44ch;
+  margin: 0 auto 2rem;
+}
+.cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+.version {
+  color: var(--color-gw-text-muted);
+  font-size: 0.875rem;
+  margin: 1rem 0 0;
+}
+
+/* Buttons */
+.btn-primary {
+  display: inline-block;
+  background: var(--color-gw-primary-strong);
+  color: #fff;
+  font-weight: 600;
+  padding: 0.8rem 1.6rem;
+  border-radius: 0.6rem;
+  text-decoration: none;
+}
+.btn-primary:hover {
+  filter: brightness(1.1);
+}
+.btn-secondary {
+  color: var(--color-gw-link);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.btn-secondary:hover {
+  text-decoration: underline;
+}
+.error a {
+  color: var(--color-gw-link);
+}
+
+/* Sections */
+section {
+  padding: 2.5rem 0;
+  border-top: 1px solid var(--color-gw-border);
+}
+.hero {
+  border-top: none;
+}
+section h2 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+}
+.subhead {
+  color: var(--color-gw-text-muted);
+}
+
+/* All downloads */
+.groups {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  margin: 1.5rem 0;
+}
+.group {
+  background: var(--color-gw-surface);
+  border: 1px solid var(--color-gw-border);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+}
+.group h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+}
+.group ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.group a {
+  color: var(--color-gw-text);
+  font-weight: 600;
+  text-decoration: none;
+}
+.group a:hover {
+  color: var(--color-gw-link);
+}
+.group .meta {
+  display: block;
+  color: var(--color-gw-text-muted);
+  font-size: 0.8rem;
+}
+.all-fallback a {
+  color: var(--color-gw-link);
+}
+
+/* Install steps */
+.tablist {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem 0;
+  flex-wrap: wrap;
+}
+.tablist button {
+  background: var(--color-gw-surface);
+  color: var(--color-gw-text);
+  border: 1px solid var(--color-gw-border);
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font: inherit;
+}
+.tablist button[aria-selected='true'] {
+  border-color: var(--color-gw-link);
+  color: var(--color-gw-link);
+}
+[role='tabpanel'] {
+  background: var(--color-gw-surface);
+  border: 1px solid var(--color-gw-border);
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 0.75rem;
+}
+[role='tabpanel'] ol {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.note {
+  color: var(--color-gw-text-muted);
+  font-size: 0.85rem;
+  margin-top: 1rem;
 }

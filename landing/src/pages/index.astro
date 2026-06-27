@@ -1,20 +1,21 @@
 ---
 import Base from '../layouts/Base.astro'
-import { copy } from '../content/copy'
+import DownloadHero from '../components/DownloadHero.astro'
+import AllDownloads from '../components/AllDownloads.astro'
+import InstallSteps from '../components/InstallSteps.astro'
+import { getReleaseForBuild } from '../lib/getRelease'
+import { resolveTargets } from '../lib/resolveTargets'
+
+// Build-time resolution (plan §3). `unknown` OS server-side → no primary; the client island
+// in DownloadHero enhances per detected OS. The all-downloads panel uses the full `all` map.
+const release = await getReleaseForBuild()
+const resolved = resolveTargets(release, 'unknown')
 ---
 
 <Base>
-  <main
-    class="mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center px-6 text-center"
-  >
-    <p class="mb-3 text-sm font-medium tracking-widest text-gw-accent uppercase">
-      {copy.productName}
-    </p>
-    <h1 class="text-4xl font-bold tracking-tight text-balance sm:text-5xl">
-      {copy.tagline}
-    </h1>
-    <p class="mt-6 max-w-xl text-lg text-gw-text-muted">
-      {copy.heroSubtitle}
-    </p>
+  <main class="page">
+    <DownloadHero resolved={resolved} release={release} />
+    <AllDownloads resolved={resolved} />
+    <InstallSteps />
   </main>
 </Base>

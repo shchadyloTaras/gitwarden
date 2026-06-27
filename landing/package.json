@@ -15,7 +15,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.1",
@@ -24,7 +25,10 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
+    "@axe-core/playwright": "^4.12.1",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.61.1",
+    "@types/node": "^26.0.1",
     "astro-eslint-parser": "^1.4.0",
     "eslint": "^10.6.0",
     "eslint-plugin-astro": "^1.7.0",
