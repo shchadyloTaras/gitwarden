@@ -22,6 +22,7 @@ import type { AgenticActionExecutor } from '../ai/AgenticActionExecutor.js'
 import type { StagedChangeReviewService } from '../ai/StagedChangeReviewService.js'
 import { detectProvider } from '../../core/ai/detection.js'
 import { maskSecret } from '../../core/ai/credentials.js'
+import type { RepositoryRecord } from '../../core/types.js'
 import {
   AiConnectionTestResultSchema,
   AiModelInfoSchema,
@@ -192,7 +193,12 @@ export function registerIpcHandlers(services: Services): void {
   ipcMain.handle('repositories:update', (_e, raw: unknown) =>
     wrap(async () => {
       const { id, patch } = RepositoryUpdatePayload.parse(raw)
-      return services.repositories.update(id, patch)
+      const updated = await services.repositories.update(id, patch)
+      // Picking an account for a repo should "just work": reconcile the repo's local
+      // Git identity to its assigned profile so commits/pushes use the right name+email
+      // without the user touching git config. Best-effort — see the helper.
+      await applyAssignedProfileIdentity(services, updated)
+      return updated
     })
   )
 
@@ -746,6 +752,35 @@ export function registerIpcHandlers(services: Services): void {
 
 function zodModelList(models: unknown): unknown {
   return AiModelInfoSchema.array().parse(models)
+}
+
+/**
+ * Reconcile a repository's LOCAL Git identity (`user.name` / `user.email`) to its assigned
+ * profile, so assigning an account is all the user has to do — the repo is then wired to
+ * commit and push as that account. Runs right after a repo's assignment is (re)written.
+ *
+ * Safe by construction:
+ *   - writes ONLY `--local` config (never global), via GitService.setLocalIdentity;
+ *   - no-ops when the repo is unassigned, the assigned id is dangling, or the profile is
+ *     missing a name/email — the existing identity (and any honest Safety Center warning)
+ *     is left untouched;
+ *   - swallows Git errors (e.g. the path is not a Git checkout) so the assignment itself
+ *     still succeeds; the Safety Center will keep reporting any real mismatch.
+ */
+async function applyAssignedProfileIdentity(
+  services: Services,
+  repo: RepositoryRecord
+): Promise<void> {
+  if (!repo.assignedProfileId) return
+  const profile = await services.profiles.get(repo.assignedProfileId)
+  const name = profile?.gitAuthorName.trim()
+  const email = profile?.gitAuthorEmail.trim()
+  if (!name || !email) return
+  try {
+    await services.git.setLocalIdentity(repo.localPath, name, email)
+  } catch {
+    // Best-effort: the assignment is already persisted, and a real mismatch stays visible.
+  }
 }
 
 /**

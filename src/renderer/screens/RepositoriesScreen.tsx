@@ -96,6 +96,13 @@ export default function RepositoriesScreen(): React.ReactElement {
         assignedProfileId: editForm.assignedProfileId || undefined,
         notes: editForm.notes.trim() || undefined,
       })
+      // If we just edited the active repo, refresh its snapshot in appStore so the
+      // header reflects the new record and the active profile re-syncs to the new
+      // assignment. setActiveRepo keeps the current branch for a same-repo refresh.
+      const updated = useRepositoriesStore.getState().repos.find((r) => r.id === selectedId)
+      if (updated && useAppStore.getState().activeRepo?.id === selectedId) {
+        setActiveRepo(updated)
+      }
       setSuccessMessage(STR.REPOSITORY_SAVED)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
@@ -516,7 +523,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                       }}
                     >
                       <span style={{ fontSize: 14, color: 'var(--gw-text-muted, #a1a1aa)' }}>
-                        Remove &ldquo;{selectedRepo.name}&rdquo; from GitWarden?
+                        Remove &ldquo;{selectedRepo.name}&rdquo; from Git Warden?
                       </span>
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button
@@ -613,7 +620,9 @@ function RepositoryPathField({ path }: { path: string }): React.ReactElement {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+      <div
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}
+      >
         <span
           style={{
             fontSize: 14,

@@ -35,6 +35,9 @@ let fixtureIdentity: string
 // Fixture B: working repo pointing at a local bare remote (REMOTE_HOST_MISMATCH)
 let bareRepo: string
 let fixtureRemote: string
+// Fixture C: committed repo whose local identity does NOT match the profile, used to prove
+// that assigning a profile rewrites the repo's local Git identity (EMAIL_MISMATCH → gone).
+let fixtureMismatch: string
 
 test.beforeAll(() => {
   fs.writeFileSync(EMPTY_GIT_CONFIG, '')
@@ -65,12 +68,24 @@ test.beforeAll(() => {
   execSync('git commit -m "initial"', { cwd: fixtureRemote, stdio: 'pipe' })
   execSync(`git remote add origin "${bareRepo}"`, { cwd: fixtureRemote, stdio: 'pipe' })
   execSync('git push origin main', { cwd: fixtureRemote, stdio: 'pipe' })
+
+  // --- Fixture C: committed repo with a local identity that won't match the profile ---
+  fixtureMismatch = fs.mkdtempSync(path.join(os.tmpdir(), 'gw-safety-mismatch-'))
+  execSync('git init -b main', { cwd: fixtureMismatch, stdio: 'pipe' })
+  fs.writeFileSync(path.join(fixtureMismatch, 'readme.txt'), 'initial\n')
+  execSync('git add readme.txt', { cwd: fixtureMismatch, stdio: 'pipe' })
+  // Identity is (re)applied per-test for retry-safety, but commit needs one too.
+  execSync('git -c user.email=old@example.com -c user.name="Old Name" commit -m "initial"', {
+    cwd: fixtureMismatch,
+    stdio: 'pipe',
+  })
 })
 
 test.afterAll(() => {
   fs.rmSync(fixtureIdentity, { recursive: true, force: true })
   fs.rmSync(fixtureRemote, { recursive: true, force: true })
   fs.rmSync(bareRepo, { recursive: true, force: true })
+  fs.rmSync(fixtureMismatch, { recursive: true, force: true })
   try {
     fs.rmSync(EMPTY_GIT_CONFIG, { force: true })
   } catch {
@@ -200,6 +215,60 @@ test.describe('Safety Center', () => {
     })
     await expect(win.getByTestId('safety-assigned-profile-name')).toContainText('GitWarden')
     await expect(win.getByTestId('safety-can-commit')).toContainText('Yes')
+  })
+
+  test('assigning a profile rewrites the repo local Git identity to match', async () => {
+    // Reset the fixture identity to the non-matching value (idempotent across retries).
+    execSync('git config user.email "old@example.com"', { cwd: fixtureMismatch, stdio: 'pipe' })
+    execSync('git config user.name "Old Name"', { cwd: fixtureMismatch, stdio: 'pipe' })
+
+    const profileId = await win.evaluate(async () => {
+      const api = (window as Window & typeof globalThis).api
+      const res = await api.profiles.create({
+        displayName: 'Eleken',
+        gitAuthorName: 'Eleken Git',
+        gitAuthorEmail: 'new@example.com',
+        githubUsername: 'eleken',
+        authenticationMethod: 'ssh',
+        expectedRemoteHosts: [],
+      })
+      return res.ok ? res.data.id : null
+    })
+    expect(profileId).toBeTruthy()
+
+    await win.evaluate(async (id: string) => {
+      const api = (window as Window & typeof globalThis).api
+      await api.settings.update({ activeProfileId: id })
+    }, profileId as string)
+
+    // Repo starts UNASSIGNED with a local identity that does not match the profile.
+    await win.evaluate(async (repoPath: string) => {
+      const api = (window as Window & typeof globalThis).api
+      await api.repositories.create({
+        name: 'mismatch-fixture',
+        localPath: repoPath,
+        isFavorite: false,
+      })
+    }, fixtureMismatch)
+
+    await win.reload()
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
+
+    await win.getByTestId('nav-safety-center').click()
+    await expect(win.getByTestId('screen-safety-center')).toBeVisible()
+    await expect(win.getByTestId('safety-can-commit')).toBeVisible({ timeout: 10000 })
+
+    // Before assigning: the repo's local identity is still the old, non-matching email.
+    await expect(win.getByTestId('safety-identity-email')).toContainText('old@example.com')
+
+    // Assign the repo to the active profile via the inline action (the update path).
+    await win.getByTestId('safety-assign-repo-btn').click()
+
+    // After assigning: the local identity was rewritten to the profile's, so the email
+    // mismatch is gone and the identity card now shows the profile's email.
+    await expect(win.getByTestId('safety-issue-EMAIL_MISMATCH')).toHaveCount(0, { timeout: 10000 })
+    await expect(win.getByTestId('safety-identity-email')).toContainText('new@example.com')
+    await expect(win.getByTestId('safety-assigned-profile-name')).toContainText('Eleken')
   })
 
   test('REMOTE_HOST_MISMATCH: Safety Center blocks push, matches RemoteScreen gate', async () => {

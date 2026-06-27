@@ -67,6 +67,16 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - `git add -A` (the `.gitignore` already excludes `node_modules/`, build output, coverage, secrets).
 - **Do not push automatically** — pushing to `origin/main` happens only when the user asks. Intermediate WIP commits within a phase are fine; squash is optional.
 
+## Claude Code
+
+`CLAUDE.md` must stay thin and import these shared rules with only `@AGENTS.md` (loaded automatically by Claude Code each session). Shared project context, architecture rules, per-phase workflow, and Claude-specific notes live here.
+
+- **Before working:** read the full plan in `docs/plans/gitwarden-plan.md`.
+- **Status & history:** the Phase Checklist and per-phase Progress Log live in `docs/progress-log.md` — kept out of `CLAUDE.md` so it stays small ([Claude Code memory docs](https://code.claude.com/docs/en/memory) recommend instruction files under ~200 lines for better adherence). Update that file at the end of each phase.
+- **Commit trailer:** Claude Code uses `Co-Authored-By: Claude <noreply@anthropic.com>`.
+- **Plan mode:** prefer it for large or cross-cutting changes — propose before editing.
+- **Never push** unless explicitly asked (see the Git workflow above).
+
 ## What not to do
 
 - Don't put business logic in React components or in the git wrapper — it belongs in `src/core/`.

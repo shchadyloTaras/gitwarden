@@ -1,5 +1,6 @@
 import { app, BrowserWindow, session, shell } from 'electron'
 import path from 'node:path'
+import { existsSync } from 'node:fs'
 import {
   installContentSecurityPolicy,
   isDevRenderer,
@@ -114,11 +115,24 @@ function buildGitHubAuthDeps(
 
 app.setName('GitWarden')
 
+/** Resolve the bundled brand icon across dev (out/main → repo root) and packaged builds. */
+function resolveIconPath(): string | undefined {
+  const candidates = [
+    path.join(__dirname, '../../resources/icon.png'),
+    path.join(process.resourcesPath ?? '', 'icon.png'),
+    path.join(app.getAppPath(), 'resources/icon.png'),
+  ]
+  return candidates.find((p) => p && existsSync(p))
+}
+
+const BRAND_ICON = resolveIconPath()
+
 function createWindow(): void {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
-    title: 'GitWarden',
+    title: 'Git Warden',
+    ...(BRAND_ICON ? { icon: BRAND_ICON } : {}),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -148,6 +162,10 @@ function createWindow(): void {
 
 app.whenReady().then(async () => {
   installContentSecurityPolicy(session.defaultSession, IS_DEV_RENDERER)
+
+  if (process.platform === 'darwin' && app.dock && BRAND_ICON) {
+    app.dock.setIcon(BRAND_ICON)
+  }
 
   const userDataPath = app.getPath('userData')
 

@@ -10,7 +10,7 @@ test('app window opens with correct title', async () => {
   try {
     const win = await app.firstWindow()
     await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
-    await expect(win).toHaveTitle('GitWarden')
+    await expect(win).toHaveTitle('Git Warden')
   } finally {
     await app.close()
   }
