@@ -51,16 +51,41 @@ jobs:
         # Validates packaging config without producing a full installer.
         # GUI launch under CI sandbox is not verified (mirrors Phase 18 note).
 
-      - name: Build and publish installers
+      # Code signing is optional (Phase 43). When no certificate secret is configured, GitHub
+      # injects CSC_LINK as an empty string and electron-builder treats "" as a certificate
+      # file path — it resolves to the repo root and fails with "<dir> not a file". Detect the
+      # certificate first, then run the matching build so an absent secret yields a clean
+      # unsigned build (the "absent → unsigned, never a failure" behavior this workflow intends).
+      - name: Detect signing certificate
+        id: signing
+        shell: bash
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+        run: |
+          if [ -n "$CSC_LINK" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and publish installers (signed)
+        if: steps.signing.outputs.available == 'true'
         run: npx electron-builder --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Phase 43 signing secrets (all optional — absent → unsigned build, never a failure):
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      - name: Build and publish installers (unsigned)
+        if: steps.signing.outputs.available == 'false'
+        run: npx electron-builder --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # No certificate → force an explicit unsigned build (never pass the empty CSC_LINK).
+          CSC_IDENTITY_AUTO_DISCOVERY: false
 
   refresh-landing:
     name: Refresh landing site (Vercel deploy hook)
