@@ -5,7 +5,7 @@ Living reference. Starts at Baseline, grows one section per completed DX step.
 **How to update:** when a DX step completes, change its `🔒` to `✅` and uncomment the
 locked content below it. The DX prompt for that step includes this as an explicit task.
 
-**Current level:** `DX-0 — Clean orientation`
+**Current level:** `DX-1 — Guardrails active`
 
 > Derived view. This line and the `🔒`/`✅` section markers below mirror the **Agentic DX** row in
 > `docs/progress-log.md`'s Feature Track Status table — itself derived from the Phase Checklist.
@@ -91,12 +91,11 @@ Paste it (or the whole file) as context. No verbal briefing needed.
 
 ---
 
-## 🔒 DX-1 — Guardrails active
+## ✅ DX-1 — Guardrails active
 
 > Unlocks after: `DX-1: Executable guardrails` commit lands.
 > Update: change `🔒` → `✅`, uncomment the block below, update "Current level" at the top.
 
-<!--
 ### What changed
 
 - **No permission prompts** for `npm run test`, `npm run lint`, `npm run e2e`, `npm run build`,
@@ -106,6 +105,8 @@ Paste it (or the whole file) as context. No verbal briefing needed.
   on its own error it exits 0 (fail-open).
 - **No global git config** — `git config --global` and `--system` are blocked automatically.
 - **execFile guard** — adding `execFile`/`exec`/`spawn` outside `src/main/git/` triggers a warning.
+- **Commit log gate** — `git commit` is blocked if `docs/progress-log.md` is not staged.
+  Bypass for WIP commits: `GITWARDEN_SKIP_LOG_GATE=1 git commit ...`
 
 ### Guardrail tests
 
@@ -120,7 +121,6 @@ Run this anytime to confirm the guards are working. A broken hook never blocks l
 
 The invariants in the Baseline section above are now **mechanically enforced**. If you see a
 hook fire, it caught a real violation — fix the code, not the hook.
--->
 
 ---
 

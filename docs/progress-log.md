@@ -103,7 +103,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 > the Feature Track Status table and for WORKFLOW.md's "Current level".
 
 - [x] DX-0 — Docs reconciliation
-- [ ] DX-1 — Executable guardrails (hooks + `settings.json`)
+- [x] DX-1 — Executable guardrails (hooks + `settings.json`)
 - [ ] DX-2 — Slash commands
 - [ ] DX-3 — Subagent reviewers
 - [ ] DX-4 — AI evals
@@ -127,7 +127,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | Client Branch Access   | 56–59     | ⬜ not started               |
 | Distribution & Release | 40–45     | ⬜ not started               |
 | Landing Page           | 46–51     | ⬜ not started               |
-| Agentic DX             | DX-0–DX-6 | 🟡 DX-0 done, DX-1–DX-6 open |
+| Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-1 done, DX-2–DX-6 open |
 
 ## Progress Log
 
@@ -649,3 +649,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: n/a (docs-only). `npm run lint` clean; cross-doc consistency check confirms all completion-state views agree. Verified `f37c7ee` is an ancestor of HEAD and `233a08e` is not (it lives only on `backup/before-jun23-author-rewrite-20260627`).
 - Exit criteria: ✅ met — every commit path orders the log entry before the commit; every derived view carries a reconciliation rule and agrees with the checklist; no stale Phase-61-as-HEAD literals remain.
 - Notes / follow-ups: Doc-level gates are honour-system; the **mechanical** backstop (a PreToolUse hook that blocks a phase commit lacking a staged `docs/progress-log.md`) lands in **DX-1** and is now specified there. An adversarial pass correctly noted the prose gate is not self-enforcing until that hook ships.
+
+### 2026-06-27 — DX-1: Executable guardrails
+
+- Built: `.claude/settings.json` (permissions allowlist + four hooks), four hook scripts under `.claude/hooks/`, test suite `tests/tooling/guardrails.test.sh` (26 cases), `npm run test:tooling` script, `npm run pack` script (repomix stub).
+- Files added: `.claude/settings.json`, `.claude/hooks/no-global-git-config.sh`, `.claude/hooks/core-purity.sh`, `.claude/hooks/execfile-guard.sh`, `.claude/hooks/commit-needs-log.sh`, `tests/tooling/guardrails.test.sh`; modified `package.json` (test:tooling + pack scripts).
+- Tests: `npm run test:tooling` → **26/26 passed** (bad payload → exit 2; good payload → exit 0; malformed stdin → exit 0 fail-open for all four hooks). `npm run lint` clean. Both tsc projects clean. No src/ changes.
+- Exit criteria: ✅ met — `.claude/settings.json` valid JSON; all four hook scripts exist and are executable; each hook blocks known-bad (exit 2) and allows known-good (exit 0) and exits 0 on malformed stdin; `npm run test:tooling` green; lint + tsc clean; no src/ changes.
+- Notes / follow-ups: The `commit-needs-log.sh` hook enforces the doc-before-commit gate mechanically: if `docs/progress-log.md` is not staged, `git commit` is blocked. Bypass via `GITWARDEN_SKIP_LOG_GATE=1` for WIP/fixup commits. Hook `if`-field pre-filters reduce hook spawns: no-global-git-config only fires on `git config*`; commit-needs-log only fires on `git commit*`. PostToolUse hooks (core-purity, execfile-guard) read the already-written file; they signal violations after the edit — the agent must undo. Next: DX-2 — Slash commands.
