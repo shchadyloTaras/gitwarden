@@ -190,4 +190,28 @@ test.describe('AI Chat panel', () => {
     await expect(win.getByTestId('ai-chat-setup')).toBeVisible()
     await expect(win.getByTestId('ai-chat-input')).toHaveCount(0)
   })
+
+  test('free-text reply upgrades the bubble with a commit-draft card (Level 2)', async () => {
+    await win.evaluate(async () => {
+      const api = (window as Window & typeof globalThis).api
+      const created = await api.ai.createConnection({ name: 'Fake', kind: 'openrouter' })
+      if (!created.ok) throw new Error('connection create failed')
+      await api.ai.saveCredential(created.data.id, 'Fake key', { apiKey: 'sk-or-fake' })
+      await api.ai.setActiveConnection(created.data.id)
+      await api.settings.update({ aiEnabled: true })
+    })
+    await createRepo(win)
+
+    await win.getByTestId('header-ai-chat').click()
+    await expect(win.getByTestId('ai-chat-input')).toBeVisible({ timeout: 10000 })
+
+    await win.getByTestId('ai-chat-input').fill('write me a commit message')
+    await win.getByTestId('ai-chat-send').click()
+
+    const messages = win.getByTestId('ai-chat-message')
+    // The streamed prose arrives first…
+    await expect(messages.last()).toContainText('Fake streaming advisory reply', { timeout: 10000 })
+    // …then the post-stream pass upgrades the same bubble with a commit-draft card.
+    await expect(win.getByTestId('ai-chat-commit-card')).toBeVisible({ timeout: 10000 })
+  })
 })

@@ -77,4 +77,48 @@ describe('AiChatAssistant', () => {
     const assistant = new AiChatAssistant(contextBuilder as AiContextBuilder, adapters as AiAdapter)
     await expect(assistant.chat({ repositoryId: 'repo-1', message: 'hi' })).rejects.toThrow()
   })
+
+  it('suggestBlock returns an allowlisted commit-draft block when the model emits one', async () => {
+    adapters.generateStructured = vi.fn().mockResolvedValue({
+      block: {
+        kind: 'commit-draft',
+        draft: { conventional: 'feat: x', plain: 'X', summary: 'Did X.' },
+      },
+    })
+    const assistant = new AiChatAssistant(contextBuilder as AiContextBuilder, adapters as AiAdapter)
+    const result = await assistant.suggestBlock({
+      repositoryId: 'repo-1',
+      message: 'write a commit message',
+      assistantReply: 'Sure, here is one.',
+    })
+    expect(result.block).toEqual({
+      kind: 'commit-draft',
+      draft: { conventional: 'feat: x', plain: 'X', summary: 'Did X.' },
+    })
+    expect(contextBuilder.buildPreview).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'chat', repositoryId: 'repo-1' })
+    )
+  })
+
+  it('suggestBlock returns no block when the model returns null', async () => {
+    adapters.generateStructured = vi.fn().mockResolvedValue({ block: null })
+    const assistant = new AiChatAssistant(contextBuilder as AiContextBuilder, adapters as AiAdapter)
+    const result = await assistant.suggestBlock({
+      repositoryId: 'repo-1',
+      message: 'hi',
+      assistantReply: 'Hello.',
+    })
+    expect(result.block).toBeNull()
+  })
+
+  it('suggestBlock fails closed when the structured pass throws', async () => {
+    adapters.generateStructured = vi.fn().mockRejectedValue(new Error('boom'))
+    const assistant = new AiChatAssistant(contextBuilder as AiContextBuilder, adapters as AiAdapter)
+    const result = await assistant.suggestBlock({
+      repositoryId: 'repo-1',
+      message: 'hi',
+      assistantReply: 'Hello.',
+    })
+    expect(result.block).toBeNull()
+  })
 })

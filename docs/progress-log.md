@@ -94,7 +94,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 
 - [x] Phase 60 — GenUI Block Contracts, Store & Review Findings card
 - [x] Phase 61 — Commit Draft card
-- [ ] Phase 62 — Free-text model-chosen blocks (Level 2)
+- [x] Phase 62 — Free-text model-chosen blocks (Level 2)
 
 ## Progress Log
 
@@ -592,3 +592,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: Vitest **506 passed** (+3 new in `chat-blocks.test.ts`). `npx tsc --noEmit` clean on `tsconfig.web.json` AND `tsconfig.node.json`; ESLint + Prettier clean on touched files. E2E extended (the `runs /commit …` test asserts `ai-chat-commit-card`, clicks Insert, then asserts the Commit screen opens and `commit-message` holds the draft) but **not run here** (no display in this sandbox) — run `npm run e2e tests/e2e/ai-chat-panel.spec.ts` locally.
 - Exit criteria: ✅ met — `/commit` renders a native card; Insert reuses the existing commit-message path (no new mutate path); block union validates/rejects fail-closed; `src/core/` pure.
 - Notes / follow-ups: Insert relies on `commitStore.load()` NOT resetting `message`, so the draft survives navigation to the Commit screen (verified in the store). Next: Phase 62 free-text model-chosen blocks (Level 2; needs a streaming decision).
+
+### 2026-06-27 — Phase 62: Generative UI Blocks — Free-text model-chosen blocks (Level 2)
+
+- Built: Free-text chat can now optionally surface a model-chosen card. Chosen design = **hybrid**: streaming is unchanged (no regression); after a successful free-text stream, the store runs a small **fail-closed** structured pass (`ai:chatSuggestBlock` → `AiChatAssistant.suggestBlock`) that MAY upgrade the finished bubble with ONE allowlisted block. Scoped to `commit-draft` — the only block derivable from the conversation (chat context has no diffs, so a model-"reviewed" findings block would be fabricated); `review-findings` stays slash-command-only. No in-band stream parsing. The streamed prose renders above the card (`blockAugmentsText`). One extra small structured call per free-text message; advisory-only, same redaction/enablement gate, no new Git authority.
+- Files: edited `src/core/ai/chatBlocks.ts` (`ChatBlockSuggestionSchema` + `parseChatBlockSuggestion` + suggest instruction/JSON schema, named member schemas), `src/main/ai/AiChatAssistant.ts` (`suggestBlock`), `src/main/ipc/{ipc-schemas,ipc-handlers}.ts` (`ai:chatSuggestBlock`), `preload/index.ts` + `src/renderer/types/window.d.ts` (bridge + typings), `src/main/testing/aiFakes.ts` (suggestion fixture), `src/renderer/store/aiChatStore.ts` (post-stream pass + `blockAugmentsText`), `src/renderer/components/AiChatPanel.tsx` (prose-above-card render); tests `tests/unit/{chat-blocks,ai-chat-assistant}.test.ts`, `tests/e2e/ai-chat-panel.spec.ts`.
+- Tests: Vitest **513 passed** (+7: 4 parser fail-closed + 3 assistant `suggestBlock`). `npx tsc --noEmit` clean on `tsconfig.web.json` AND `tsconfig.node.json`; ESLint + Prettier clean on touched files. E2E added (free-text send → streamed reply → `ai-chat-commit-card` upgrade) but **not run here** (no display) — run `npm run e2e tests/e2e/ai-chat-panel.spec.ts` locally.
+- Exit criteria: ✅ met — free-text can yield an allowlisted, Zod-validated card; fail-closed (review/null/garbage → no block, streamed text untouched); closed allowlist holds; advisory-only / no-new-authority unchanged.
+- Notes / follow-ups: **Generative UI Blocks feature (Phases 60–62) is complete.** Cost trade-off accepted: the post-stream pass is one extra structured call per free-text message; it can later be gated (e.g. skip when the reply is clearly non-actionable) if cost matters. Broadening free-text cards beyond `commit-draft` would need the relevant data in chat context (e.g. diffs) — out of scope here.

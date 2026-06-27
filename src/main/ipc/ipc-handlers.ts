@@ -79,6 +79,7 @@ import {
   AiAgenticProposePayload,
   AiAgenticExecutePayload,
   AiChatPayload,
+  AiChatSuggestBlockPayload,
   AiChatStreamEventSchema,
 } from './ipc-schemas.js'
 import {
@@ -754,6 +755,13 @@ export function registerIpcHandlers(services: Services): void {
         emit({ type: 'error', error })
         throw err
       }
+    })
+  )
+
+  ipcMain.handle('ai:chatSuggestBlock', (_e, raw: unknown) =>
+    wrap(async () => {
+      const input = AiChatSuggestBlockPayload.parse(raw)
+      return services.aiChatAssistant.suggestBlock(input)
     })
   )
 }

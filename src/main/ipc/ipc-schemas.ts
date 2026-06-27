@@ -298,6 +298,16 @@ export const AiChatPayload = z.object({
   expensiveSendAcknowledged: z.boolean().optional(),
 })
 
+export const AiChatSuggestBlockPayload = z.object({
+  repositoryId: z.string().min(1),
+  message: z.string().min(1),
+  assistantReply: z.string().min(1),
+  history: z.array(AiChatTurnSchema).optional(),
+  selectedUnstagedPaths: z.array(z.string().min(1)).optional(),
+  requestId: z.string().min(1).optional(),
+  expensiveSendAcknowledged: z.boolean().optional(),
+})
+
 export const AiChatStreamEventSchema = z.discriminatedUnion('type', [
   z.object({
     requestId: z.string().min(1),

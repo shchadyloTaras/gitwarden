@@ -33,6 +33,8 @@ export interface ChatMessage {
   streaming?: boolean
   /** A typed Generative-UI block rendered as a native card (e.g. review findings). */
   block?: ChatUiBlock
+  /** When true, render prose `content` ABOVE the block (free-text post-stream upgrade). */
+  blockAugmentsText?: boolean
 }
 
 export interface ChatSendOptions {
@@ -299,6 +301,29 @@ async function runStreamingChat(
       isError: true,
       content: chatBubbleError(raw),
     })
+  }
+
+  // Phase 62 (Level 2): after a successful free-text stream, optionally upgrade the
+  // finished bubble with ONE allowlisted block. Fail-closed — any failure, or no
+  // fitting card, leaves the streamed text unchanged. Adds no new AI authority.
+  const finalized = get().messages.find((m) => m.id === assistantId)
+  if (!finalized || finalized.isError || finalized.content.trim().length === 0) return
+  try {
+    const suggestion = await window.api.ai.chatSuggestBlock({
+      repositoryId: repo.id,
+      message: currentMessage,
+      assistantReply: finalized.content,
+      history: buildHistory(priorMessages),
+      ...EXPENSIVE_SEND_ACK,
+    })
+    if (suggestion.ok && suggestion.data.block) {
+      updateMessage(set, assistantId, {
+        block: suggestion.data.block,
+        blockAugmentsText: true,
+      })
+    }
+  } catch {
+    // fail-closed: keep the streamed text unchanged
   }
 }
 

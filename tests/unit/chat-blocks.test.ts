@@ -3,6 +3,7 @@ import {
   ChatUiBlockSchema,
   reviewFindingsBlock,
   commitDraftBlock,
+  parseChatBlockSuggestion,
 } from '../../src/core/ai/chatBlocks'
 
 describe('ChatUiBlockSchema', () => {
@@ -65,5 +66,39 @@ describe('ChatUiBlockSchema', () => {
   it('rejects a malformed commit-draft (missing conventional)', () => {
     const bad = { kind: 'commit-draft', draft: { plain: 'x', summary: 'y' } }
     expect(ChatUiBlockSchema.safeParse(bad).success).toBe(false)
+  })
+})
+
+describe('parseChatBlockSuggestion (fail-closed)', () => {
+  it('extracts a commit-draft block', () => {
+    const result = parseChatBlockSuggestion({
+      block: {
+        kind: 'commit-draft',
+        draft: { conventional: 'feat: x', plain: 'X', summary: 'Did X.' },
+      },
+    })
+    expect(result.block).toEqual({
+      kind: 'commit-draft',
+      draft: { conventional: 'feat: x', plain: 'X', summary: 'Did X.' },
+    })
+  })
+
+  it('returns no block for an explicit null', () => {
+    expect(parseChatBlockSuggestion({ block: null }).block).toBeNull()
+  })
+
+  it('returns no block for a review-findings block (outside the suggestion allowlist)', () => {
+    const result = parseChatBlockSuggestion({
+      block: { kind: 'review-findings', review: { findings: [] } },
+    })
+    expect(result.block).toBeNull()
+  })
+
+  it('returns no block for malformed or garbage input', () => {
+    expect(
+      parseChatBlockSuggestion({ block: { kind: 'commit-draft', draft: { plain: 'x' } } }).block
+    ).toBeNull()
+    expect(parseChatBlockSuggestion('nope').block).toBeNull()
+    expect(parseChatBlockSuggestion({}).block).toBeNull()
   })
 })

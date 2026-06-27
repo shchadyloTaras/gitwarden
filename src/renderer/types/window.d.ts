@@ -42,6 +42,7 @@ import type {
   CustomHttpMapping,
 } from '../../core/ai/types.js'
 import type { AiPreparedContext } from '../../core/ai/context.js'
+import type { ChatBlockSuggestion } from '../../core/ai/chatBlocks.js'
 
 type IpcResult<T> = { ok: true; data: T } | { ok: false; error: string }
 
@@ -264,6 +265,15 @@ interface ElectronAPI {
       expensiveSendAcknowledged?: boolean
     }): Promise<IpcResult<AiChatResponse>>
     onChatStreamEvent(callback: (event: AiChatStreamEvent) => void): () => void
+    chatSuggestBlock(input: {
+      repositoryId: string
+      message: string
+      assistantReply: string
+      history?: AiChatTurn[]
+      selectedUnstagedPaths?: string[]
+      requestId?: string
+      expensiveSendAcknowledged?: boolean
+    }): Promise<IpcResult<ChatBlockSuggestion>>
   }
   pushBrief: {
     buildDeterministic(input: {

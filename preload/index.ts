@@ -44,6 +44,7 @@ import type {
   CustomHttpMapping,
 } from '../src/core/ai/types.js'
 import type { AiPreparedContext } from '../src/core/ai/context.js'
+import type { ChatBlockSuggestion } from '../src/core/ai/chatBlocks.js'
 
 export type IpcResult<T> = { ok: true; data: T } | { ok: false; error: string }
 
@@ -336,6 +337,15 @@ export const api = {
       requestId: string
       expensiveSendAcknowledged?: boolean
     }): Promise<IpcResult<AiChatResponse>> => invoke('ai:chatStream', input),
+    chatSuggestBlock: (input: {
+      repositoryId: string
+      message: string
+      assistantReply: string
+      history?: AiChatTurn[]
+      selectedUnstagedPaths?: string[]
+      requestId?: string
+      expensiveSendAcknowledged?: boolean
+    }): Promise<IpcResult<ChatBlockSuggestion>> => invoke('ai:chatSuggestBlock', input),
     onChatStreamEvent: (callback: (event: AiChatStreamEvent) => void): (() => void) => {
       const listener = (_e: IpcRendererEvent, payload: AiChatStreamEvent): void => callback(payload)
       ipcRenderer.on(AI_CHAT_STREAM_EVENT_CHANNEL, listener)

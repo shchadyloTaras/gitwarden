@@ -304,7 +304,16 @@ function MessageRow({
     <div data-testid="ai-chat-message" data-role={message.role} className={className}>
       <div className="gw-chat-message-body">
         {message.block ? (
-          <ChatBlockView block={message.block} />
+          message.blockAugmentsText ? (
+            <>
+              {message.content}
+              <div style={{ marginTop: 8 }}>
+                <ChatBlockView block={message.block} />
+              </div>
+            </>
+          ) : (
+            <ChatBlockView block={message.block} />
+          )
         ) : message.streaming && message.content.length === 0 ? (
           <ThinkingIndicator />
         ) : (

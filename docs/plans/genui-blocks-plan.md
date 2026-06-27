@@ -23,8 +23,8 @@ push automatically**.
 Client Branch Access feature, so this feature starts at **Phase 60**:
 
 - **Phase 60 — GenUI Block Contracts, Store & Review Findings card** ✅ _(shipped)_
-- **Phase 61 — Commit Draft card** _(planned)_
-- **Phase 62 — Free-text model-chosen blocks (Level 2)** _(planned)_
+- **Phase 61 — Commit Draft card** ✅ _(shipped)_
+- **Phase 62 — Free-text model-chosen blocks (Level 2)** ✅ _(shipped)_
 
 **Verifiability principle:** the block union + validation live in pure `src/core/ai/` (Vitest under
 plain Node); the renderer maps a validated block to a whitelisted native card. No real AI network
@@ -124,7 +124,7 @@ refactor.
 (text `why` still present, so the existing assertion stays green); `src/core/` pure; web + node
 `tsc --noEmit` clean; ESLint/Prettier clean.
 
-### Phase 61 — Commit Draft card (planned)
+### Phase 61 — Commit Draft card ✅ (shipped)
 
 **Goal:** render `/commit` as a `CommitDraftCard` with a real action.
 
@@ -136,19 +136,29 @@ user still commits through the Safety Engine).
 **Exit criteria:** Vitest covers the new variant; Playwright: `/commit` renders the card and Insert
 populates the commit message; no new mutate path; core pure; typecheck/lint clean.
 
-### Phase 62 — Free-text model-chosen blocks (Level 2) (planned)
+### Phase 62 — Free-text model-chosen blocks (Level 2) ✅ (shipped)
 
-**Goal:** let a free-text answer return a model-chosen block from the closed union (true GenUI
-intent), not just slash-commands.
+**Goal:** let a free-text answer optionally surface a model-chosen card from the closed allowlist —
+not only slash-commands.
 
-**Tasks:** decide the streaming trade-off (structured blocks don't stream token-by-token like the
-current plain-text path) — e.g. a post-stream structured pass, or non-streamed for block answers;
-teach the chat assistant to optionally emit a block intent; validate fail-closed and fall back to
-text on any mismatch.
+**Streaming decision (documented):** the **hybrid** path. Free-text keeps streaming token-by-token
+exactly as before (no regression). After the stream finishes, a small **fail-closed structured
+pass** (`AiChatAssistant.suggestBlock` via a dedicated `ai:chatSuggestBlock` IPC) MAY upgrade the
+finished bubble with one allowlisted block. The streamed prose is never parsed for in-band signals.
+The pass is **scoped to `commit-draft`** — the only block derivable from the conversation alone,
+since the chat context carries no diffs (a model-"reviewed" findings block would be fabricated);
+`review-findings` stays slash-command-only. Cost: one extra small structured call per free-text
+message.
 
-**Exit criteria:** Vitest for the assistant block-intent path with the fake adapter; the closed
-allowlist + fail-closed fallback proven; streaming behavior documented; advisory-only invariant
-unchanged.
+**Shipped:** `ChatBlockSuggestionSchema` + `parseChatBlockSuggestion` (fail-closed, commit-draft
+only) in `chatBlocks.ts`; `suggestBlock` on the assistant; `ai:chatSuggestBlock` IPC + preload +
+typings; the store runs the pass after a successful stream and sets `blockAugmentsText` so
+`MessageRow` renders the prose **above** the card.
+
+**Exit criteria:** ✅ Vitest proves the assistant pass (block / null / throw) and the parser's
+fail-closed allowlist (commit-draft accepted; review-findings, null, garbage → no block); the
+closed allowlist holds; advisory-only / no-new-authority invariants unchanged; both tsconfigs +
+ESLint + Prettier clean.
 
 ---
 

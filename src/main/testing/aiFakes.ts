@@ -167,6 +167,16 @@ class FakeAiAdapter implements AiAdapter {
         reply: 'Fake advisory chat reply for e2e. Use /review before committing.',
         suggestedCommands: ['/review', '/commit'],
       },
+      {
+        block: {
+          kind: 'commit-draft',
+          draft: {
+            conventional: 'feat(ai): summarize the conversation',
+            plain: 'Summarize the conversation',
+            summary: 'Drafted from the chat conversation for e2e.',
+          },
+        },
+      },
       { text: 'ok' },
     ]
     for (const candidate of candidates) {
