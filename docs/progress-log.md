@@ -878,3 +878,14 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Problem: `playwright.config.ts` used port 4321 (Astro dev default). When `astro dev` was already running locally, `reuseExistingServer: true` caused Playwright to reuse the dev server instead of starting a fresh fixture build — download panel, version badge, sitemap, and hero-primary all failed (8/20 tests).
 - Fix: changed e2e webServer port from 4321 → 4323 in `playwright.config.ts` (both `baseURL`, `webServer.url`, and the `--port` arg). Port 4323 is dedicated to e2e to avoid conflict with the dev server (4321) or the Claude Code preview tool (auto-assigned).
 - Tests: Playwright **20/20** confirmed after the fix.
+
+### 2026-06-28 — v0.1.0 first release: CI/build fixes
+
+- Cut the first GitHub release (tag `v0.1.0`, draft published via the Release workflow). Five issues surfaced on CI and were each fixed and verified before re-tagging:
+  1. `GitRunner` cancellation could hang on Linux CI — it waited on the child `'close'` event, which an orphaned grandchild (a shell's `sleep`) kept open. Now settles promptly on abort/timeout. (`src/main/git/GitRunner.ts`)
+  2. An absent `CSC_LINK` signing secret is injected as `""`; electron-builder treated it as a certificate path → `<dir> not a file`. Added a detect-certificate step → signed vs clean-unsigned build. (`.github/workflows/release.yml`)
+  3. The unsigned macOS app had an invalid signature → Apple Silicon rejected it as "damaged". An `afterPack` hook now ad-hoc signs the app (`scripts/after-pack.cjs`); `execfile-guard.sh` exempts build tooling under `scripts/`.
+  4. Parallel x64/arm64 dmg builds raced on a shared `/Volumes/GitWarden` mount (background.tiff / hdiutil detach failures) → per-arch `dmg.title` (`${productName} ${arch}`).
+  5. `strategy.fail-fast: false` so one OS's transient flake (e.g. a dropped electron download) no longer cancels the other platforms.
+- Each macOS fix was reproduced and verified locally (both arches built in parallel; `codesign --verify` valid) before pushing the tag.
+- Not a phase — release engineering on the shipped MVP. Real Developer-ID signing + notarization remains Phase 43; current builds are ad-hoc-signed (one-time Gatekeeper bypass on download).

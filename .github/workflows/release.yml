@@ -29,6 +29,9 @@ jobs:
     name: Build (${{ matrix.os }})
     needs: guard
     strategy:
+      # Don't cancel the other OS builds when one transiently fails (e.g. a flaky electron
+      # download): let every platform that can build publish its artifact.
+      fail-fast: false
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}

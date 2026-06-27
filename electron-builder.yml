@@ -25,7 +25,9 @@ mac:
       arch: [x64, arm64]
   artifactName: ${productName}-${version}-${arch}.${ext}
 dmg:
-  title: GitWarden
+  # Per-arch volume name: x64 and arm64 dmgs build in parallel, so a static title makes both
+  # mount /Volumes/GitWarden and race on detach (intermittent background.tiff / hdiutil failures).
+  title: ${productName} ${arch}
   window:
     width: 540
     height: 380
