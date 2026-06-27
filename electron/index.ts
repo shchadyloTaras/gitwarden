@@ -68,6 +68,9 @@ const IS_E2E_FAKE_GITHUB = process.env['GITWARDEN_E2E_FAKE_GITHUB'] === '1'
 /** True for AI e2e — fake (in-memory) credential store so no safeStorage is needed. */
 const IS_E2E_FAKE_AI = process.env['GITWARDEN_E2E_FAKE_AI'] === '1'
 
+/** True for local Playwright runs that should not steal the user's active window. */
+const IS_E2E_BACKGROUND = process.env['GITWARDEN_E2E_BACKGROUND'] === '1'
+
 const IS_DEV_RENDERER = isDevRenderer()
 
 // Vite dev/HMR needs 'unsafe-eval', which triggers Electron's CSP security warning.
@@ -132,6 +135,9 @@ function createWindow(): void {
     width: 1200,
     height: 800,
     title: 'Git Warden',
+    ...(IS_E2E_BACKGROUND
+      ? { show: false, focusable: false, skipTaskbar: true, paintWhenInitiallyHidden: true }
+      : {}),
     ...(BRAND_ICON ? { icon: BRAND_ICON } : {}),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
@@ -165,6 +171,10 @@ app.whenReady().then(async () => {
 
   if (process.platform === 'darwin' && app.dock && BRAND_ICON) {
     app.dock.setIcon(BRAND_ICON)
+  }
+
+  if (IS_E2E_BACKGROUND && process.platform === 'darwin' && app.dock) {
+    app.dock.hide()
   }
 
   const userDataPath = app.getPath('userData')

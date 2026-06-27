@@ -563,3 +563,10 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Files: `src/renderer/store/appStore.ts`, `tests/unit/app-store-profile-sync.test.ts`, `tests/e2e/repositories.spec.ts`, `tests/e2e/shell.spec.ts`, `docs/progress-log.md`.
 - Tests: `npm test` → Vitest **499 passed**. `npm run lint` → ESLint + Prettier clean. `npx tsc -p tsconfig.node.json --noEmit` and `npx tsc -p tsconfig.web.json --noEmit` → clean. Clean-userData `npm run e2e` → Playwright exit code 0 with **75 passed** and **1 known flaky** `ai-connections.spec.ts` retry pass.
 - Notes: Before the clean e2e run, `~/Library/Application Support/gitwarden/` contained only temp e2e profiles/repos and was removed. No push performed.
+
+### 2026-06-27 — Fix: Background Electron e2e window
+
+- Fixed: Local Playwright runs now set `GITWARDEN_E2E_BACKGROUND=1` by default, and Electron creates the e2e `BrowserWindow` hidden, non-focusable, and skipped from the taskbar/Dock. This keeps `npm run e2e` from stealing the user's active desktop window while preserving Playwright access to the renderer.
+- Files: `electron/index.ts`, `playwright.config.ts`, `docs/progress-log.md`.
+- Tests: Background smoke `npm run e2e -- tests/e2e/window.spec.ts tests/e2e/shell.spec.ts` → **7 passed** (including resize drag). `npm run lint`, both TypeScript projects, `npm test` → **499 passed**, and clean-userData `npm run e2e` → Playwright exit code 0 with **75 passed** and **1 known flaky** `ai-connections.spec.ts` retry pass.
+- Notes: Use `GITWARDEN_E2E_SHOW_WINDOW=1 npm run e2e` when a visible Electron window is needed for debugging. No push performed.
