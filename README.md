@@ -33,6 +33,19 @@ Electron + TypeScript (strict) + React (Vite) · Vitest (logic) + Playwright (e2
 git@github.com:shchadyloTaras/gitwarden.git
 ```
 
+## Cutting a release
+
+> Full checklist: see [Phase 45 — Release Process](docs/progress-log.md) once Phase 45 is complete.
+
+Quick pointer (unsigned path):
+
+1. Bump `version` in `package.json` and update `CHANGELOG.md`.
+2. Tag and push: `git tag v<version> && git push origin v<version>`.
+3. The [Release workflow](.github/workflows/release.yml) builds macOS + Windows + Linux installers and attaches them to a **draft** GitHub Release.
+4. Review the draft, then publish it.
+
+Signing (Phase 43) is optional; absent `CSC_LINK` / `APPLE_ID` secrets the workflow still produces working unsigned installers.
+
 ## License
 
-TBD.
+[MIT](LICENSE).

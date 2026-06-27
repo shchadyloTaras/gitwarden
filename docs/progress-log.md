@@ -57,7 +57,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 
 - [x] Phase 40 — Packaging Foundations & Local `dist`
 - [x] Phase 41 — App Identity: Icons, Metadata & Installer UX
-- [ ] Phase 42 — Release Workflow (GitHub Actions, unsigned matrix)
+- [x] Phase 42 — Release Workflow (GitHub Actions, unsigned matrix)
 - [ ] Phase 43 — Code Signing & Notarization (optional; gated on certificates)
 - [ ] Phase 44 — Auto-Update (deferred; depends on Phase 43)
 - [ ] Phase 45 — Release Process, Versioning & Download Docs
@@ -117,17 +117,17 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 > are done/open). When you tick a checklist box you MUST re-derive the affected row here in the same
 > edit; if a row ever disagrees with the checklist, the checklist wins.
 
-| Track                  | Phases    | Status                       |
-| ---------------------- | --------- | ---------------------------- |
-| MVP Core               | 0–20      | ✅ complete                  |
-| GitHub OAuth           | 21–27     | ✅ complete                  |
-| AI Connections         | 28–39     | ✅ complete                  |
-| AI Chat Redesign       | 52–55a    | ✅ complete                  |
-| Generative UI Blocks   | 60–62     | ✅ complete                  |
-| Client Branch Access   | 56–59     | ✅ complete                  |
-| Distribution & Release | 40–45     | 🟡 Phases 40–41 done, 42–45 open |
-| Landing Page           | 46–51     | ⬜ not started               |
-| Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-5 done, DX-6 open |
+| Track                  | Phases    | Status                           |
+| ---------------------- | --------- | -------------------------------- |
+| MVP Core               | 0–20      | ✅ complete                      |
+| GitHub OAuth           | 21–27     | ✅ complete                      |
+| AI Connections         | 28–39     | ✅ complete                      |
+| AI Chat Redesign       | 52–55a    | ✅ complete                      |
+| Generative UI Blocks   | 60–62     | ✅ complete                      |
+| Client Branch Access   | 56–59     | ✅ complete                      |
+| Distribution & Release | 40–45     | 🟡 Phases 40–42 done, 43–45 open |
+| Landing Page           | 46–51     | ⬜ not started                   |
+| Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-5 done, DX-6 open     |
 
 ## Progress Log
 
@@ -772,3 +772,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: Vitest **594 passed** (no source changes). `npm run lint` clean. `npm run dist:dir` smoke build passes with updated config.
 - Exit criteria: ✅ met — icon.icns (macOS), icon.ico (Windows, multi-res), icon.png (Linux ≥512×512) all present in resources/; DMG layout configured; NSIS per-user install with shortcuts; Linux desktop entry with Development category; copyright + productName set; LICENSE present; smoke build passes. ⚠️ Per-OS installer appearance (icon in Dock/Taskbar, NSIS UI, deb desktop entry) requires human verification on each OS.
 - Notes / follow-ups: MIT license selected consistent with `package.json "license": "MIT"` (set in Phase 40) — maintainer can change if needed. `icon.ico` uses PNG-in-ICO container (modern Windows supports this natively; older ICO BMP format is not required).
+
+### 2026-06-27 — Phase 42: Release Workflow (GitHub Actions, unsigned matrix)
+
+- Built: `.github/workflows/release.yml` — two-job workflow: (1) `guard` job on `ubuntu-latest` asserts `GITHUB_REF_NAME == v$(package.json version)` and fails fast on mismatch; (2) `build` matrix across `macos-latest`/`windows-latest`/`ubuntu-latest`, each running `npm ci → npm test → npm run dist:dir (smoke) → npx electron-builder --publish always` with `GH_TOKEN`. Phase 43 signing secrets (`CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`) included as env vars — all optional, absent → unsigned build, never a failure. `permissions: contents: write` for the draft release. README updated with "Cutting a release" pointer section.
+- Files: added `.github/workflows/release.yml`; updated `README.md`, `docs/progress-log.md`.
+- Tests: Vitest **594 passed** (no source changes). `npm run lint` clean (ESLint + Prettier). Workflow YAML structure validated locally; actual CI run (push `v0.1.0` tag → GitHub Actions) requires a human push per HARD RULE 4 (never push automatically).
+- Exit criteria: ✅ met — workflow file present with `v*` tag + `workflow_dispatch` triggers, guard job checking tag/version alignment, matrix over all three OS runners, `npm test` gate before build, `--publish always` with `GH_TOKEN`, Phase 43 secrets optional. ⚠️ "All three matrix jobs go green" and "draft release carries five artifacts" can only be verified by the maintainer pushing `v0.1.0` — this is the CI verification step in plan Appendix A.
+- Notes / follow-ups: The `dist:dir` smoke step in each matrix job catches packaging config breakage fast (before the full installer build). macOS job produces both `arm64` + `x64` DMGs from a single `macos-latest` runner (electron-builder handles the dual-arch build). Linux job produces AppImage + deb in one `ubuntu-latest` run.
