@@ -284,6 +284,12 @@ export const STR = {
   CHAT_CAPABILITY_STRUCTURED_PARSE_ERROR:
     'The model returned an unexpected response. Try again or pick a model that supports structured JSON output.',
 
+  // ── AI Chat — review findings card (Generative UI) ─────────────────────────
+  REVIEW_NO_FINDINGS: 'No findings.',
+  REVIEW_CONFIDENCE_HIGH: 'High',
+  REVIEW_CONFIDENCE_MEDIUM: 'Medium',
+  REVIEW_CONFIDENCE_LOW: 'Low',
+
   // ── Safety Copilot (Phase 34) ──────────────────────────────────────────────
   SAFETY_COPILOT_EXPLAIN_BTN: 'Explain this',
   SAFETY_COPILOT_SUGGESTED_ACTION: 'Suggested next step',

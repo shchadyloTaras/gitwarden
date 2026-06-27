@@ -90,6 +90,12 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [ ] Phase 58 — Policy Persistence, IPC & Push-Path Wiring
 - [ ] Phase 59 — Push Policy UI (feature-complete stop point)
 
+### Generative UI Blocks feature (plan: `docs/plans/genui-blocks-plan.md`, prompts: `docs/prompts/genui-blocks-prompts.md`)
+
+- [x] Phase 60 — GenUI Block Contracts, Store & Review Findings card
+- [ ] Phase 61 — Commit Draft card
+- [ ] Phase 62 — Free-text model-chosen blocks (Level 2)
+
 ## Progress Log
 
 > Append a new entry at the bottom after each phase. Newest last. Do not rewrite past entries.
@@ -570,3 +576,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Files: `electron/index.ts`, `playwright.config.ts`, `docs/progress-log.md`.
 - Tests: Background smoke `npm run e2e -- tests/e2e/window.spec.ts tests/e2e/shell.spec.ts` → **7 passed** (including resize drag). `npm run lint`, both TypeScript projects, `npm test` → **499 passed**, and clean-userData `npm run e2e` → Playwright exit code 0 with **75 passed** and **1 known flaky** `ai-connections.spec.ts` retry pass.
 - Notes: Use `GITWARDEN_E2E_SHOW_WINDOW=1 npm run e2e` when a visible Electron window is needed for debugging. No push performed.
+
+### 2026-06-27 — Phase 60: Generative UI Blocks — Review Findings card
+
+- Built: First slice of controlled Generative UI in the AI chat. `/review` no longer flattens its `AiChangeReview` to text — the typed result is carried to the renderer as a validated `ChatUiBlock` and rendered as a native card (severity chip by confidence, category, file chip, rationale; empty-state). New pure `ChatUiBlock` discriminated union + `ChatUiBlockSchema` (reuses `AiChangeReviewSchema`, fail-closed) + `reviewFindingsBlock()`; a renderer registry (`ChatBlockView`) maps a validated block to a whitelisted card and falls back to the message's plain-text `content` for unknown kinds. No new IPC / send path / Git action — advisory-only; redaction/enablement/precedence unchanged. Card styling uses theme `var(--gw-*)` tokens inline (mirroring `SafetyIssueRow`) — no `aiChat.css` change.
+- Files: **new** `src/core/ai/chatBlocks.ts`, `src/renderer/components/chatBlocks/{ReviewFindingsCard.tsx,index.tsx}`, `tests/unit/chat-blocks.test.ts`, `docs/plans/genui-blocks-plan.md`, `docs/prompts/genui-blocks-prompts.md`; edited `src/core/ai/index.ts` (barrel), `src/renderer/store/aiChatStore.ts` (`ChatMessage.block` + review case), `src/renderer/components/AiChatPanel.tsx` (`MessageRow` renders `ChatBlockView`), `src/renderer/strings.ts` (`REVIEW_*`), `tests/e2e/ai-chat-panel.spec.ts` (assert `ai-chat-review-card`).
+- Tests: Vitest **503 passed** (+4 new in `chat-blocks.test.ts`). `npx tsc --noEmit` clean on `tsconfig.web.json` AND `tsconfig.node.json`; ESLint + Prettier clean on touched files. E2E assertion added to `ai-chat-panel.spec.ts` but **not run here** (no display in this sandbox) — run `npm run e2e tests/e2e/ai-chat-panel.spec.ts` locally.
+- Exit criteria: ✅ met — typed `/review` renders as a native card; block union validates/rejects fail-closed; `src/core/` stays pure; flattened `content` retained as fallback so existing assertions, copy, and a11y are preserved.
+- Notes / follow-ups: Phase numbering — 56–59 are reserved by Client Branch Access, so Generative UI Blocks starts at **60**. Next: Phase 61 `CommitDraftCard` (with Insert action), Phase 62 free-text model-chosen blocks (Level 2; needs a streaming decision).

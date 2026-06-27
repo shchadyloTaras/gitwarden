@@ -6,6 +6,7 @@ import { filterSlashCommands, type ChatCommandSpec } from '../../core/ai/chatCom
 import { requiresBaseUrlEntry } from '../../core/ai/detection'
 import type { AiConnectionKind, AiProviderDetection } from '../../core/ai/types'
 import Dropdown from './Dropdown'
+import { ChatBlockView } from './chatBlocks'
 import { modelDropdownOptions } from './aiModelOptions'
 import { STR } from '../strings'
 
@@ -302,7 +303,9 @@ function MessageRow({
   return (
     <div data-testid="ai-chat-message" data-role={message.role} className={className}>
       <div className="gw-chat-message-body">
-        {message.streaming && message.content.length === 0 ? (
+        {message.block ? (
+          <ChatBlockView block={message.block} />
+        ) : message.streaming && message.content.length === 0 ? (
           <ThinkingIndicator />
         ) : (
           <>

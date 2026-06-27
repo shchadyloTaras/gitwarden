@@ -10,6 +10,7 @@ import {
 import { normalizeContextPaths } from '../../core/ai/chatContext'
 import { friendlyCapabilityError } from '../../core/ai/capabilityErrors'
 import type { AiAgenticProposal, AiChatTurn } from '../../core/ai/types'
+import { reviewFindingsBlock, type ChatUiBlock } from '../../core/ai/chatBlocks'
 import { useAppStore } from './appStore'
 import { useAiStore } from './aiStore'
 import { STR } from '../strings'
@@ -30,6 +31,8 @@ export interface ChatMessage {
   proposalApplied?: boolean
   /** True while tokens are still arriving for a streaming reply. */
   streaming?: boolean
+  /** A typed Generative-UI block rendered as a native card (e.g. review findings). */
+  block?: ChatUiBlock
 }
 
 export interface ChatSendOptions {
@@ -335,6 +338,7 @@ async function runCapability(parsed: ParsedChatCommand): Promise<Omit<ChatMessag
         role: 'assistant',
         kind: 'review',
         content: review.overall ? `${review.overall}\n\n${content}` : content,
+        block: reviewFindingsBlock(review),
       }
     }
     case 'push-brief': {

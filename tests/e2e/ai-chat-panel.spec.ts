@@ -165,6 +165,9 @@ test.describe('AI Chat panel', () => {
       await input.fill(command)
       await win.getByTestId('ai-chat-send').click()
       await expect(messages.last()).toContainText(expectText, { timeout: 10000 })
+      if (command === '/review') {
+        await expect(win.getByTestId('ai-chat-review-card')).toBeVisible()
+      }
       await expect(messages.last()).not.toContainText(
         'explicit expensive-send warning acknowledgement'
       )
