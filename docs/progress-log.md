@@ -858,3 +858,8 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: `astro check` 0/0/0 · `tsc --noEmit` clean · ESLint + Prettier clean · `npm run build` 10 pages built (1 home + 9 docs) · sitemap updated.
 - Exit criteria: ✅ met — build and check clean; /docs renders overview; all 8 sub-pages reachable via sidebar nav; sidebar keyboard-accessible; all pages mobile-responsive; each page has a unique `<title>` and meta description from frontmatter; content cross-checked against README.md and plan files — no invented features; OS warning workaround present in installation.md.
 - Notes / follow-ups: changelog.md is auto-generated from root CHANGELOG.md by the Vite plugin — do not edit it manually. To add a "Docs" link in the main landing header, update `src/components/Header.astro`. Prettier table alignment was auto-fixed on the markdown files (cosmetic only).
+
+### 2026-06-28 — e2e CI fix: port conflict with dev server
+- Problem: `playwright.config.ts` used port 4321 (Astro dev default). When `astro dev` was already running locally, `reuseExistingServer: true` caused Playwright to reuse the dev server instead of starting a fresh fixture build — download panel, version badge, sitemap, and hero-primary all failed (8/20 tests).
+- Fix: changed e2e webServer port from 4321 → 4323 in `playwright.config.ts` (both `baseURL`, `webServer.url`, and the `--port` arg). Port 4323 is dedicated to e2e to avoid conflict with the dev server (4321) or the Claude Code preview tool (auto-assigned).
+- Tests: Playwright **20/20** confirmed after the fix.

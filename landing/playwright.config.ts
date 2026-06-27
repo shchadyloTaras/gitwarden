@@ -9,12 +9,12 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: 'list',
   use: {
-    baseURL: 'http://localhost:4321',
+    baseURL: 'http://localhost:4323',
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'RELEASE_MODE=fixture npm run build && npm run preview -- --port 4321',
-    url: 'http://localhost:4321',
+    command: 'RELEASE_MODE=fixture npm run build && npm run preview -- --port 4323',
+    url: 'http://localhost:4323',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },
