@@ -253,7 +253,9 @@
   border: 1px solid var(--gw-border-subtle);
   border-radius: 12px;
   overflow: hidden;
-  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
 }
 
 .gw-ai-chat-composer:focus-within {

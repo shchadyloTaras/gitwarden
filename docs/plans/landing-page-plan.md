@@ -25,7 +25,7 @@ Phase order (continues the global counter; the Distribution track ends at Phase 
 
 ## 1. Product Direction: One Obvious Download, Zero Friction
 
-The visitor is assumed to be **non-technical**. The site optimizes for a single outcome — *get the right installer onto this person's machine in one click* — and treats everything else (features, screenshots, FAQ) as supporting material that earns that click.
+The visitor is assumed to be **non-technical**. The site optimizes for a single outcome — _get the right installer onto this person's machine in one click_ — and treats everything else (features, screenshots, FAQ) as supporting material that earns that click.
 
 ### Primary flow (the 80% path)
 
@@ -45,7 +45,7 @@ A persistent **"All downloads"** panel lists every artifact with its OS, file ty
 ### Non-negotiable principles
 
 - **The download must never be a dead end.** If the GitHub API fails, is rate-limited, or returns no usable asset, the button degrades to the GitHub Releases "latest" page — never to an error.
-- **Latest, always.** The site reflects the newest *published, non-draft, non-prerelease* release without a manual edit (resolution strategy in §3 / Appendix B).
+- **Latest, always.** The site reflects the newest _published, non-draft, non-prerelease_ release without a manual edit (resolution strategy in §3 / Appendix B).
 - **The site hosts no binaries.** Files live on GitHub Releases (Distribution plan §2). The site stores only links/metadata.
 - **Honest about the unsigned warning.** Until Distribution Phase 43 signs builds, the install steps state the one-time Gatekeeper/SmartScreen workaround plainly (Distribution plan §1).
 - **Accessible and fast by default.** Non-technical, possibly low-bandwidth visitors: keyboard-navigable, screen-reader-labeled, and light enough to score well on Core Web Vitals.
@@ -69,7 +69,7 @@ These are the landing-site analogues of the app's Architecture rules; they gover
 
 ## 3. Latest-Binary Resolution (the core mechanism)
 
-The site must turn "the newest GitHub Release" into "the exact installer URL for *this* visitor's OS." There are three layers; the resolver (Phase 47) is pure logic shared by all of them.
+The site must turn "the newest GitHub Release" into "the exact installer URL for _this_ visitor's OS." There are three layers; the resolver (Phase 47) is pure logic shared by all of them.
 
 1. **Where the truth lives.** GitHub's REST endpoint
    `GET https://api.github.com/repos/shchadyloTaras/gitwarden/releases/latest`
@@ -82,7 +82,7 @@ The site must turn "the newest GitHub Release" into "the exact installer URL for
 
 3. **How an asset maps to a visitor.** The pure resolver takes `(assets, detectedOS, arch?)` and returns the best `DownloadTarget` per platform using the Appendix A patterns, ignoring auto-update sidecars (`latest*.yml`, `*.blockmap`). It always also returns the full per-OS list (for the "All downloads" panel) and the Releases-page fallback URL.
 
-**Why not GitHub's stable `/releases/latest/download/<name>` shortcut?** That trick needs a *fixed* filename, but GitWarden's artifacts are version-stamped (`GitWarden-0.1.0-arm64.dmg`), so the name changes every release. Resolving via the API (which yields the real versioned `browser_download_url`) is the robust path; the stable-URL shortcut is kept only as the human-facing fallback ("see all releases").
+**Why not GitHub's stable `/releases/latest/download/<name>` shortcut?** That trick needs a _fixed_ filename, but GitWarden's artifacts are version-stamped (`GitWarden-0.1.0-arm64.dmg`), so the name changes every release. Resolving via the API (which yields the real versioned `browser_download_url`) is the robust path; the stable-URL shortcut is kept only as the human-facing fallback ("see all releases").
 
 ---
 
@@ -90,16 +90,16 @@ The site must turn "the newest GitHub Release" into "the exact installer URL for
 
 A single long-scroll page (plus a couple of thin sub-pages) — enough to sell and to instruct, never a sprawling site.
 
-| Section | Purpose | Notes |
-| --- | --- | --- |
-| **Hero** | One-line value prop + the smart Download button + OS-detected label | Above the fold; version + "What's new" link beside the button |
-| **All downloads** | Every artifact, grouped by OS, with type/size/version | macOS arm64/x64 choice; Linux AppImage + `.deb`; Releases-page fallback |
-| **Install steps** | Per-OS, friendly, with the one-time-warning workaround | Tabbed by OS; mirrors Distribution §1 Path A copy |
-| **Why GitWarden** | The multi-account safety story (from README "Why") | Plain language; the "wrong account" pain |
-| **Features** | Profiles, pre-commit/pre-push safety, GitHub connect, AI assists | Short, benefit-led; screenshots/GIFs |
-| **Screenshots** | Show the actual app shell | Light/dark; lazy-loaded |
-| **FAQ** | "Is it safe?", "Why the warning?", "Is it free?", "Which file do I pick?" | Addresses non-technical anxieties + the unsigned note |
-| **Footer** | Repo, license, docs, security, version badge | Links to GitHub, `SECURITY.md`, releases |
+| Section           | Purpose                                                                   | Notes                                                                   |
+| ----------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| **Hero**          | One-line value prop + the smart Download button + OS-detected label       | Above the fold; version + "What's new" link beside the button           |
+| **All downloads** | Every artifact, grouped by OS, with type/size/version                     | macOS arm64/x64 choice; Linux AppImage + `.deb`; Releases-page fallback |
+| **Install steps** | Per-OS, friendly, with the one-time-warning workaround                    | Tabbed by OS; mirrors Distribution §1 Path A copy                       |
+| **Why GitWarden** | The multi-account safety story (from README "Why")                        | Plain language; the "wrong account" pain                                |
+| **Features**      | Profiles, pre-commit/pre-push safety, GitHub connect, AI assists          | Short, benefit-led; screenshots/GIFs                                    |
+| **Screenshots**   | Show the actual app shell                                                 | Light/dark; lazy-loaded                                                 |
+| **FAQ**           | "Is it safe?", "Why the warning?", "Is it free?", "Which file do I pick?" | Addresses non-technical anxieties + the unsigned note                   |
+| **Footer**        | Repo, license, docs, security, version badge                              | Links to GitHub, `SECURITY.md`, releases                                |
 
 Thin sub-pages (optional, in the recommended cut only if cheap): `/download` (the all-platforms panel as its own URL for deep-links) and `/changelog` (renders `CHANGELOG.md` or the release notes). Both can be deferred to Phase 50.
 
@@ -181,7 +181,7 @@ Thin sub-pages (optional, in the recommended cut only if cheap): `/download` (th
 - Implement the §4 sections: Hero, Why GitWarden, Features, Screenshots, FAQ, Footer — all copy from `content/copy.ts`, all benefit-led and jargon-light (source the "Why" + value prop from `README.md`).
 - Design system with Tailwind: type scale, spacing, color tokens, **light/dark mode**, responsive (mobile-first) layout, and a cohesive, modern aesthetic (per the project's UI bar — "beautiful and modern UI, best UX").
 - Add real product screenshots/GIFs of the app shell (light + dark), lazy-loaded and `alt`-described; placeholders are acceptable until captures exist, tracked as a follow-up.
-- FAQ explicitly answers the non-technical anxieties: *Is it safe? Why does my computer warn me? Is it free? Which file do I download?* (the last cross-links the Phase 48 panel).
+- FAQ explicitly answers the non-technical anxieties: _Is it safe? Why does my computer warn me? Is it free? Which file do I download?_ (the last cross-links the Phase 48 panel).
 - Footer: GitHub repo, license, `SECURITY.md`, docs, and a live version badge sourced from the resolved release.
 
 **Exit criteria:**
@@ -240,14 +240,14 @@ Thin sub-pages (optional, in the recommended cut only if cheap): `/download` (th
 - **Pure resolver is the backbone.** The Phase 47 resolver is logic-first and exhaustively unit-tested (asset matching, arch selection, sidecar exclusion, fallback) before any UI consumes it.
 - **Contract test.** A test pins the Appendix A asset-name patterns to the Distribution §3 templates so a rename on either side fails loudly.
 - **UI e2e with injected fixtures.** Playwright drives the page with a stubbed resolver/response to assert the detected-OS button, the all-platforms panel, and the fallback state — no live GitHub dependency.
-- **The live check is manual/CI-smoke at deploy.** Resolving the *real* latest release is verified once on the deployed site (Phase 51), the single step fixtures can't cover.
+- **The live check is manual/CI-smoke at deploy.** Resolving the _real_ latest release is verified once on the deployed site (Phase 51), the single step fixtures can't cover.
 - **a11y + Lighthouse are gates** (Phase 50), not afterthoughts.
 
 ---
 
 ## 7. Non-goals (for this track)
 
-- Hosting installers anywhere other than GitHub Releases (no self-hosted CDN/object storage in the recommended cut; the resolver is written so a cloud-storage source *could* be added later behind the same `DownloadTarget` contract).
+- Hosting installers anywhere other than GitHub Releases (no self-hosted CDN/object storage in the recommended cut; the resolver is written so a cloud-storage source _could_ be added later behind the same `DownloadTarget` contract).
 - In-browser auto-update or update-channel UI (the app handles updates — Distribution Phase 44).
 - Accounts, payments, license keys, or a download gate (GitWarden is a free desktop app).
 - A full CMS/blog/docs portal (a thin optional `/changelog` is the ceiling here).
@@ -261,25 +261,25 @@ Thin sub-pages (optional, in the recommended cut only if cheap): `/download` (th
 
 The resolver matches the canonical `artifactName` templates fixed in `docs/plans/distribution-release-plan.md` §3. Patterns are anchored to the end of the asset `name`:
 
-| Visitor OS | Arch | File type | Asset name (example) | Match pattern |
-| --- | --- | --- | --- | --- |
-| macOS | arm64 (Apple Silicon) | `.dmg` | `GitWarden-0.1.0-arm64.dmg` | `/^GitWarden-.+-arm64\.dmg$/` |
-| macOS | x64 (Intel) | `.dmg` | `GitWarden-0.1.0-x64.dmg` | `/^GitWarden-.+-x64\.dmg$/` |
-| Windows | x64 | `.exe` (NSIS) | `GitWarden-Setup-0.1.0.exe` | `/^GitWarden-Setup-.+\.exe$/` |
-| Linux | x64 | `.AppImage` | `GitWarden-0.1.0.AppImage` | `/^GitWarden-.+\.AppImage$/` |
-| Linux | x64 | `.deb` | `gitwarden_0.1.0_amd64.deb` | `/^gitwarden_.+_amd64\.deb$/` |
+| Visitor OS | Arch                  | File type     | Asset name (example)        | Match pattern                 |
+| ---------- | --------------------- | ------------- | --------------------------- | ----------------------------- |
+| macOS      | arm64 (Apple Silicon) | `.dmg`        | `GitWarden-0.1.0-arm64.dmg` | `/^GitWarden-.+-arm64\.dmg$/` |
+| macOS      | x64 (Intel)           | `.dmg`        | `GitWarden-0.1.0-x64.dmg`   | `/^GitWarden-.+-x64\.dmg$/`   |
+| Windows    | x64                   | `.exe` (NSIS) | `GitWarden-Setup-0.1.0.exe` | `/^GitWarden-Setup-.+\.exe$/` |
+| Linux      | x64                   | `.AppImage`   | `GitWarden-0.1.0.AppImage`  | `/^GitWarden-.+\.AppImage$/`  |
+| Linux      | x64                   | `.deb`        | `gitwarden_0.1.0_amd64.deb` | `/^gitwarden_.+_amd64\.deb$/` |
 
 **Ignored sidecars** (never offered as downloads): `latest.yml`, `latest-mac.yml`, `latest-linux.yml` (electron-updater metadata) and any `*.blockmap`. If Distribution §3 naming changes, update these patterns **and** the contract test in the same commit.
 
 ## Appendix B — "Latest" Resolution Strategies (trade-offs)
 
-| Strategy | Freshness | Rate-limit exposure | Hosting need | Recommended? |
-| --- | --- | --- | --- | --- |
-| **SSG + ISR (revalidate)** | Near-real-time via interval + release hook | None (server-side) | Vercel-style ISR | ✅ primary |
-| **Client-side fetch** | Real-time on load | 60/hr/IP unauth (cache it) | Any static host | ✅ as self-healing fallback layer |
-| **Serverless proxy (+ optional token)** | Real-time, cached | Lifted via token | A function runtime | ◻ optional, only if limits bite |
-| **Build-time only (no ISR)** | Stale until next deploy | None | Any static host | ◻ acceptable only with a release→rebuild hook (Phase 51) |
-| **Stable `/releases/latest/download/<name>`** | Real-time | None | n/a | ✗ unusable — needs a fixed filename; ours is versioned |
+| Strategy                                      | Freshness                                  | Rate-limit exposure        | Hosting need       | Recommended?                                             |
+| --------------------------------------------- | ------------------------------------------ | -------------------------- | ------------------ | -------------------------------------------------------- |
+| **SSG + ISR (revalidate)**                    | Near-real-time via interval + release hook | None (server-side)         | Vercel-style ISR   | ✅ primary                                               |
+| **Client-side fetch**                         | Real-time on load                          | 60/hr/IP unauth (cache it) | Any static host    | ✅ as self-healing fallback layer                        |
+| **Serverless proxy (+ optional token)**       | Real-time, cached                          | Lifted via token           | A function runtime | ◻ optional, only if limits bite                          |
+| **Build-time only (no ISR)**                  | Stale until next deploy                    | None                       | Any static host    | ◻ acceptable only with a release→rebuild hook (Phase 51) |
+| **Stable `/releases/latest/download/<name>`** | Real-time                                  | None                       | n/a                | ✗ unusable — needs a fixed filename; ours is versioned   |
 
 The recommended cut combines **SSG/ISR as primary** with **client-side fetch as the self-healing fallback**, and the **Releases page** as the ultimate human fallback.
 
@@ -299,19 +299,49 @@ The recommended cut combines **SSG/ISR as primary** with **client-side fetch as 
   "prerelease": false,
   "html_url": "https://github.com/shchadyloTaras/gitwarden/releases/tag/v0.1.0",
   "assets": [
-    { "name": "GitWarden-0.1.0-arm64.dmg", "size": 98123456, "content_type": "application/x-apple-diskimage",
-      "browser_download_url": "https://github.com/shchadyloTaras/gitwarden/releases/download/v0.1.0/GitWarden-0.1.0-arm64.dmg" },
-    { "name": "GitWarden-0.1.0-x64.dmg", "size": 99123456, "content_type": "application/x-apple-diskimage",
-      "browser_download_url": "https://github.com/.../GitWarden-0.1.0-x64.dmg" },
-    { "name": "GitWarden-Setup-0.1.0.exe", "size": 78123456, "content_type": "application/octet-stream",
-      "browser_download_url": "https://github.com/.../GitWarden-Setup-0.1.0.exe" },
-    { "name": "GitWarden-0.1.0.AppImage", "size": 102123456, "content_type": "application/octet-stream",
-      "browser_download_url": "https://github.com/.../GitWarden-0.1.0.AppImage" },
-    { "name": "gitwarden_0.1.0_amd64.deb", "size": 70123456, "content_type": "application/vnd.debian.binary-package",
-      "browser_download_url": "https://github.com/.../gitwarden_0.1.0_amd64.deb" },
-    { "name": "latest.yml", "size": 412, "content_type": "text/yaml", "browser_download_url": "https://…/latest.yml" },
-    { "name": "GitWarden-Setup-0.1.0.exe.blockmap", "size": 51234, "content_type": "application/octet-stream", "browser_download_url": "https://…/.blockmap" }
-  ]
+    {
+      "name": "GitWarden-0.1.0-arm64.dmg",
+      "size": 98123456,
+      "content_type": "application/x-apple-diskimage",
+      "browser_download_url": "https://github.com/shchadyloTaras/gitwarden/releases/download/v0.1.0/GitWarden-0.1.0-arm64.dmg",
+    },
+    {
+      "name": "GitWarden-0.1.0-x64.dmg",
+      "size": 99123456,
+      "content_type": "application/x-apple-diskimage",
+      "browser_download_url": "https://github.com/.../GitWarden-0.1.0-x64.dmg",
+    },
+    {
+      "name": "GitWarden-Setup-0.1.0.exe",
+      "size": 78123456,
+      "content_type": "application/octet-stream",
+      "browser_download_url": "https://github.com/.../GitWarden-Setup-0.1.0.exe",
+    },
+    {
+      "name": "GitWarden-0.1.0.AppImage",
+      "size": 102123456,
+      "content_type": "application/octet-stream",
+      "browser_download_url": "https://github.com/.../GitWarden-0.1.0.AppImage",
+    },
+    {
+      "name": "gitwarden_0.1.0_amd64.deb",
+      "size": 70123456,
+      "content_type": "application/vnd.debian.binary-package",
+      "browser_download_url": "https://github.com/.../gitwarden_0.1.0_amd64.deb",
+    },
+    {
+      "name": "latest.yml",
+      "size": 412,
+      "content_type": "text/yaml",
+      "browser_download_url": "https://…/latest.yml",
+    },
+    {
+      "name": "GitWarden-Setup-0.1.0.exe.blockmap",
+      "size": 51234,
+      "content_type": "application/octet-stream",
+      "browser_download_url": "https://…/.blockmap",
+    },
+  ],
 }
 ```
 

@@ -516,7 +516,9 @@ button.gw-dd-trigger:active:not(:disabled) {
   border-radius: 12px;
   background: var(--gw-input-bg, #09090b);
   box-shadow: 0 1px 0 var(--gw-shadow, rgba(0, 0, 0, 0.2));
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .gw-chat-composer:focus-within {

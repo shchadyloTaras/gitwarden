@@ -78,10 +78,9 @@ describe('RepositoryService', () => {
 
   describe('pruneAssignments', () => {
     it('clears assignedProfileId on repos whose profile no longer exists', async () => {
-      const keep = await service.update(
-        (await service.create({ ...BASE_REPO, name: 'keep' })).id,
-        { assignedProfileId: 'alive' }
-      )
+      const keep = await service.update((await service.create({ ...BASE_REPO, name: 'keep' })).id, {
+        assignedProfileId: 'alive',
+      })
       const orphan = await service.update(
         (await service.create({ ...BASE_REPO, name: 'orphan', localPath: '/tmp/orphan' })).id,
         { assignedProfileId: 'deleted' }

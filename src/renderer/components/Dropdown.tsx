@@ -158,8 +158,7 @@ export default function Dropdown({
   const searchRef = useRef<HTMLInputElement>(null)
 
   const filteredOptions = searchable ? options.filter((o) => matchesQuery(o, query)) : options
-  const inlinePlacement: 'above' | 'below' =
-    placement === 'below' ? 'below' : 'above'
+  const inlinePlacement: 'above' | 'below' = placement === 'below' ? 'below' : 'above'
 
   const selected = options.find((o) => o.value === value)
   const label = displayValue ?? selected?.label ?? placeholder
@@ -379,102 +378,102 @@ export default function Dropdown({
         }
         onKeyDown={onPopupKeyDown}
       >
-            {searchable && (
-              <div
+        {searchable && (
+          <div
+            style={{
+              padding: '2px 2px 4px',
+              position: 'sticky',
+              top: 0,
+              background: 'inherit',
+            }}
+          >
+            <input
+              ref={searchRef}
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={onSearchKeyDown}
+              placeholder={searchPlaceholder}
+              aria-label={searchPlaceholder}
+              data-testid={testId ? `${testId}-search` : undefined}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                background: 'var(--gw-input-bg, #09090b)',
+                border: '1px solid var(--gw-border-subtle, #3f3f46)',
+                borderRadius: 4,
+                color: 'var(--gw-text, #f4f4f5)',
+                fontSize: 14,
+                padding: '6px 10px',
+                fontFamily: monospace ? 'monospace' : 'inherit',
+              }}
+            />
+          </div>
+        )}
+        {options.length === 0 && (
+          <div
+            style={{
+              padding: '6px 10px',
+              color: 'var(--gw-text-faint, #71717a)',
+              fontSize: 14,
+            }}
+          >
+            No options
+          </div>
+        )}
+        {searchable && options.length > 0 && filteredOptions.length === 0 && (
+          <div
+            data-testid={testId ? `${testId}-no-matches` : undefined}
+            style={{
+              padding: '6px 10px',
+              color: 'var(--gw-text-faint, #71717a)',
+              fontSize: 14,
+            }}
+          >
+            {noMatchesLabel}
+          </div>
+        )}
+        {filteredOptions.map((o, i) => {
+          const isSel = o.value === value
+          const cls = [
+            'gw-dd-option',
+            isSel ? 'gw-dd-option--selected' : '',
+            o.disabled ? 'gw-dd-option--disabled' : '',
+            i === highlight && !o.disabled ? 'gw-dd-option--active' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')
+          return (
+            <div
+              key={o.value}
+              role="option"
+              aria-selected={isSel}
+              data-testid={testId ? `${testId}-option-${o.value}` : undefined}
+              className={cls}
+              onMouseEnter={() => setHighlight(i)}
+              onClick={() => !o.disabled && choose(o.value)}
+              style={{
+                fontFamily: monospace ? 'monospace' : 'inherit',
+                alignItems: searchable ? 'flex-start' : 'center',
+              }}
+            >
+              <span className="gw-dd-check" aria-hidden="true">
+                {isSel ? '✓' : ''}
+              </span>
+              <span
                 style={{
-                  padding: '2px 2px 4px',
-                  position: 'sticky',
-                  top: 0,
-                  background: 'inherit',
+                  overflow: searchable ? 'visible' : 'hidden',
+                  textOverflow: searchable ? 'clip' : 'ellipsis',
+                  whiteSpace: searchable ? 'normal' : 'nowrap',
+                  wordBreak: searchable ? 'break-word' : undefined,
+                  lineHeight: searchable ? 1.35 : undefined,
                 }}
               >
-                <input
-                  ref={searchRef}
-                  type="search"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  onKeyDown={onSearchKeyDown}
-                  placeholder={searchPlaceholder}
-                  aria-label={searchPlaceholder}
-                  data-testid={testId ? `${testId}-search` : undefined}
-                  style={{
-                    width: '100%',
-                    boxSizing: 'border-box',
-                    background: 'var(--gw-input-bg, #09090b)',
-                    border: '1px solid var(--gw-border-subtle, #3f3f46)',
-                    borderRadius: 4,
-                    color: 'var(--gw-text, #f4f4f5)',
-                    fontSize: 14,
-                    padding: '6px 10px',
-                    fontFamily: monospace ? 'monospace' : 'inherit',
-                  }}
-                />
-              </div>
-            )}
-            {options.length === 0 && (
-              <div
-                style={{
-                  padding: '6px 10px',
-                  color: 'var(--gw-text-faint, #71717a)',
-                  fontSize: 14,
-                }}
-              >
-                No options
-              </div>
-            )}
-            {searchable && options.length > 0 && filteredOptions.length === 0 && (
-              <div
-                data-testid={testId ? `${testId}-no-matches` : undefined}
-                style={{
-                  padding: '6px 10px',
-                  color: 'var(--gw-text-faint, #71717a)',
-                  fontSize: 14,
-                }}
-              >
-                {noMatchesLabel}
-              </div>
-            )}
-            {filteredOptions.map((o, i) => {
-              const isSel = o.value === value
-              const cls = [
-                'gw-dd-option',
-                isSel ? 'gw-dd-option--selected' : '',
-                o.disabled ? 'gw-dd-option--disabled' : '',
-                i === highlight && !o.disabled ? 'gw-dd-option--active' : '',
-              ]
-                .filter(Boolean)
-                .join(' ')
-              return (
-                <div
-                  key={o.value}
-                  role="option"
-                  aria-selected={isSel}
-                  data-testid={testId ? `${testId}-option-${o.value}` : undefined}
-                  className={cls}
-                  onMouseEnter={() => setHighlight(i)}
-                  onClick={() => !o.disabled && choose(o.value)}
-                  style={{
-                    fontFamily: monospace ? 'monospace' : 'inherit',
-                    alignItems: searchable ? 'flex-start' : 'center',
-                  }}
-                >
-                  <span className="gw-dd-check" aria-hidden="true">
-                    {isSel ? '✓' : ''}
-                  </span>
-                  <span
-                    style={{
-                      overflow: searchable ? 'visible' : 'hidden',
-                      textOverflow: searchable ? 'clip' : 'ellipsis',
-                      whiteSpace: searchable ? 'normal' : 'nowrap',
-                      wordBreak: searchable ? 'break-word' : undefined,
-                      lineHeight: searchable ? 1.35 : undefined,
-                    }}
-                  >
-                    {o.label}
-                  </span>
-                </div>
-              )
-            })}
+                {o.label}
+              </span>
+            </div>
+          )
+        })}
       </div>
     ) : null
 

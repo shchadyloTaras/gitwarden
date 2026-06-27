@@ -427,8 +427,7 @@ function ChatConversation({ onClear }: { onClear: () => void }): React.ReactElem
   }, [draft])
 
   const busy = pending
-  const showThinking =
-    pending && !messages.some((m) => m.streaming && m.content.length > 0)
+  const showThinking = pending && !messages.some((m) => m.streaming && m.content.length > 0)
 
   const canSend = draft.trim().length > 0 && !busy
 

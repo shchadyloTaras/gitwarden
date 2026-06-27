@@ -66,15 +66,15 @@ nothing staged · merge conflicts · staged-secret scan · no remote · GitHub t
 
 ```ts
 export type HeaderGuardState =
-  | 'checking'      // async in flight
-  | 'ready'         // repo/profile/identity aligned (NOT "safe to commit/push")
-  | 'review'        // warnings only (email mismatch / global-only identity)
-  | 'blocked'       // any blocker (unassigned / profile mismatch / identity unset / no profile)
-  | 'not-checked'   // no repo, or identity could not be resolved (IPC error)
+  | 'checking' // async in flight
+  | 'ready' // repo/profile/identity aligned (NOT "safe to commit/push")
+  | 'review' // warnings only (email mismatch / global-only identity)
+  | 'blocked' // any blocker (unassigned / profile mismatch / identity unset / no profile)
+  | 'not-checked' // no repo, or identity could not be resolved (IPC error)
 ```
 
 **Crucial distinction:** "identity not configured" (`getEffectiveIdentity` returns an object
-with empty `userName`/`userEmail`) is **`blocked`** via `IDENTITY_UNSET` — *not* `not-checked`.
+with empty `userName`/`userEmail`) is **`blocked`** via `IDENTITY_UNSET` — _not_ `not-checked`.
 `not-checked` is reserved for "no active repo" or "the IPC call itself failed" (git missing,
 repo unreadable). Conflating these would hide a real misconfiguration behind a neutral chip.
 
@@ -104,8 +104,7 @@ is enforced in one place and trivially unit-testable.
 import type { Profile, RepositoryRecord, EffectiveGitIdentity } from '../types.js'
 import { safetyCheckService } from './SafetyCheckService.js'
 
-export type HeaderGuardState =
-  | 'checking' | 'ready' | 'review' | 'blocked' | 'not-checked'
+export type HeaderGuardState = 'checking' | 'ready' | 'review' | 'blocked' | 'not-checked'
 
 export interface HeaderGuardInput {
   loading: boolean
@@ -156,6 +155,7 @@ Action: `refresh(repoPath, repository, activeProfile, profiles)` and a `reset()`
 case.
 
 Requirements:
+
 - Reuse the **dangling-profile normalization** from `safetyCenterStore` (if
   `assignedProfileId` doesn't resolve, treat the repo as unassigned) so the header matches the
   Safety Center verdict.
@@ -177,16 +177,25 @@ const res = await window.api.git.getEffectiveIdentity(repoPath)
 if (myReq !== reqId) return // a newer refresh superseded us — drop stale result
 const identity = res.ok ? res.data : null
 const guard = deriveHeaderGuard({
-  loading: false, hasRepo: true, errored: !res.ok,
-  repository: normalizedRepo, activeProfile, identity,
+  loading: false,
+  hasRepo: true,
+  errored: !res.ok,
+  repository: normalizedRepo,
+  activeProfile,
+  identity,
 })
-set({ loading: false, state: guard.state, issueCount: guard.issueCount,
-      error: res.ok ? null : res.error })
+set({
+  loading: false,
+  state: guard.state,
+  issueCount: guard.issueCount,
+  error: res.ok ? null : res.error,
+})
 ```
 
 ### Step 4 — GlobalHeader
 
 In [GlobalHeader.tsx](../../src/renderer/components/GlobalHeader.tsx):
+
 - Remove `safetyBadge` from the `useAppStore()` destructure, and delete `BADGE_STYLE` /
   `BADGE_LABEL` and the `header-safety-badge` span.
 - Add a `useEffect` (deps `[activeRepo, activeProfile, profiles]`) that calls
@@ -241,6 +250,7 @@ The `aria-label` is composed in the component from the label + issue count + the
 
 **Unit** — `tests/unit/header-guard.test.ts` (alongside `safety-engine.test.ts`; vitest glob
 `tests/unit/**/*.test.ts` already covers it). Cover the mapper via `deriveHeaderGuard`:
+
 - clean identity context → `ready`
 - email mismatch → `review`; global-only identity (`emailSource !== 'local'`) → `review`
 - repo unassigned → `blocked`; profile mismatch → `blocked`; identity unset
@@ -255,6 +265,7 @@ The `aria-label` is composed in the component from the label + issue count + the
 **E2E** — update [shell.spec.ts](../../tests/e2e/shell.spec.ts) and add header-guard behavior
 (reuse the fixture-repo harness from
 [safety-center.spec.ts](../../tests/e2e/safety-center.spec.ts) for identity states):
+
 - header no longer shows `SAFE`/`Safe`
 - a normal, aligned repo shows `Guard · Ready`
 - a broken identity or unassigned repo shows `Guard · Blocked`
@@ -271,18 +282,18 @@ The `aria-label` is composed in the component from the label + issue count + the
 
 ## Files
 
-| Action | Path |
-|---|---|
-| **new** | `src/core/safety/headerGuard.ts` (pure mapper) |
-| **new** | `src/renderer/store/headerGuardStore.ts` |
-| **new** | `tests/unit/header-guard.test.ts` |
-| edit | `src/renderer/store/appStore.ts` — delete `SafetyBadge`/`safetyBadge`/`setSafetyBadge` |
-| edit | `src/renderer/components/GlobalHeader.tsx` — GuardBadge + refresh effect |
-| edit | `src/renderer/components/Inspector.tsx` — read guard state |
-| edit | `src/renderer/strings.ts` — `GUARD_*` strings |
-| edit | `tests/e2e/shell.spec.ts` — replace `Safe` assertion |
-| edit (maybe) | new/extended `tests/e2e/*.spec.ts` for guard behavior |
-| edit | `docs/progress-log.md` — dated fix entry |
+| Action       | Path                                                                                   |
+| ------------ | -------------------------------------------------------------------------------------- |
+| **new**      | `src/core/safety/headerGuard.ts` (pure mapper)                                         |
+| **new**      | `src/renderer/store/headerGuardStore.ts`                                               |
+| **new**      | `tests/unit/header-guard.test.ts`                                                      |
+| edit         | `src/renderer/store/appStore.ts` — delete `SafetyBadge`/`safetyBadge`/`setSafetyBadge` |
+| edit         | `src/renderer/components/GlobalHeader.tsx` — GuardBadge + refresh effect               |
+| edit         | `src/renderer/components/Inspector.tsx` — read guard state                             |
+| edit         | `src/renderer/strings.ts` — `GUARD_*` strings                                          |
+| edit         | `tests/e2e/shell.spec.ts` — replace `Safe` assertion                                   |
+| edit (maybe) | new/extended `tests/e2e/*.spec.ts` for guard behavior                                  |
+| edit         | `docs/progress-log.md` — dated fix entry                                               |
 
 ## Acceptance criteria
 

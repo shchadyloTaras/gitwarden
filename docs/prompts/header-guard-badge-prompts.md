@@ -13,6 +13,7 @@ commit between steps**. Logic-first: the pure mapper + its unit tests go green b
 fixtures in a temp dir (reuse the harness in `tests/e2e/safety-center.spec.ts`).
 
 Background facts (already verified against the tree — don't re-litigate):
+
 - The badge is **static today**: `setSafetyBadge` exists in `appStore.ts` but is **never
   called**, so removing the whole `safetyBadge` apparatus is safe.
 - Use **only** `safetyCheckService.checkRepositoryIdentity` — never `checkCommit` / `checkPush`.

@@ -34,13 +34,13 @@ A desktop client's local check is bypassable (plain `git push`, another GUI, CI)
 
 ### 1.2 What is and isn't locally verifiable (drives every design call)
 
-| Fact | Locally verifiable before push? | How |
-| --- | --- | --- |
-| Current branch | ✅ yes | `git status` / current ref |
-| Push-target remote owner/repo | ✅ yes | parse the resolved remote URL |
-| Branch ∈ allowed / ∈ blocked patterns | ✅ yes | pure glob match |
-| GitHub actor on **HTTPS-token** push | ✅ yes (Phase 27 already) | token → `/user` login |
-| GitHub actor on **SSH** push | ❌ **no** (without a network probe) | only known _after_ the SSH handshake |
+| Fact                                  | Locally verifiable before push?     | How                                  |
+| ------------------------------------- | ----------------------------------- | ------------------------------------ |
+| Current branch                        | ✅ yes                              | `git status` / current ref           |
+| Push-target remote owner/repo         | ✅ yes                              | parse the resolved remote URL        |
+| Branch ∈ allowed / ∈ blocked patterns | ✅ yes                              | pure glob match                      |
+| GitHub actor on **HTTPS-token** push  | ✅ yes (Phase 27 already)           | token → `/user` login                |
+| GitHub actor on **SSH** push          | ❌ **no** (without a network probe) | only known _after_ the SSH handshake |
 
 The SSH-actor gap is the single most important honesty constraint: the push sheet must present the actor as **assumed from config (unverified)** on SSH, never as a verified fact (see Appendix C). Everything else is a hard, local, testable check.
 
@@ -144,13 +144,13 @@ New, **optional** codes — they only fire when a repo has a `branchScoped` poli
 
 ### New issue codes
 
-| Code | Severity | Fires when |
-| --- | --- | --- |
-| `PROTECTED_BRANCH_PUSH` | blocker | Current branch matches a `blockedBranchPatterns` entry (e.g. `main`). Message points to "open a PR instead." |
-| `BRANCH_NOT_ALLOWED` | blocker | `branchScoped` and current branch matches no `allowedBranchPatterns` entry (and isn't explicitly blocked). |
-| `REMOTE_OWNER_MISMATCH` | blocker | Resolved push-target owner ≠ `expectedRemoteOwner`. |
-| `REMOTE_REPO_MISMATCH` | blocker | Resolved push-target repo ≠ `expectedRemoteRepo`. |
-| `PUSH_POLICY_INCOMPLETE` | warning | `branchScoped` with an empty `allowedBranchPatterns` (misconfiguration → safe-deny + nudge to fix). |
+| Code                     | Severity | Fires when                                                                                                   |
+| ------------------------ | -------- | ------------------------------------------------------------------------------------------------------------ |
+| `PROTECTED_BRANCH_PUSH`  | blocker  | Current branch matches a `blockedBranchPatterns` entry (e.g. `main`). Message points to "open a PR instead." |
+| `BRANCH_NOT_ALLOWED`     | blocker  | `branchScoped` and current branch matches no `allowedBranchPatterns` entry (and isn't explicitly blocked).   |
+| `REMOTE_OWNER_MISMATCH`  | blocker  | Resolved push-target owner ≠ `expectedRemoteOwner`.                                                          |
+| `REMOTE_REPO_MISMATCH`   | blocker  | Resolved push-target repo ≠ `expectedRemoteRepo`.                                                            |
+| `PUSH_POLICY_INCOMPLETE` | warning  | `branchScoped` with an empty `allowedBranchPatterns` (misconfiguration → safe-deny + nudge to fix).          |
 
 ### Actor — reuse, don't duplicate
 

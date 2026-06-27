@@ -9,7 +9,7 @@ Copy-paste prompts to drive the Landing Page & Download Site feature one phase a
 **Global invariants (true for every prompt below):**
 
 - **The download is never a dead end.** API failure / rate-limit / missing asset → degrade to the GitHub Releases page with a friendly message, never an error or a broken button.
-- **Latest, always, hands-off.** The site reflects the newest *published, non-draft, non-prerelease* release without a manual edit (plan §3 / Appendix B).
+- **Latest, always, hands-off.** The site reflects the newest _published, non-draft, non-prerelease_ release without a manual edit (plan §3 / Appendix B).
 - **The site hosts no binaries.** GitHub Releases is the single source of truth; the site only derives links/metadata (plan §2).
 - **Asset names are a shared contract.** The resolver matches the canonical `artifactName` templates from `distribution-release-plan.md` §3 (plan Appendix A); a contract test pins them.
 - **No secrets in the client.** The GitHub Releases endpoint is unauthenticated; any rate-limit token lives only in host/CI env vars, never in the bundle, never committed.
@@ -170,4 +170,7 @@ Before considering the site launched, a maintainer runs the checks that offline 
 3. Temporarily simulate an API failure (or check during a rate-limit) — confirm every button falls back to the GitHub Releases page with the friendly message, never a broken link.
 4. Publish a **new** GitHub Release and confirm the live buttons resolve to the new version without a manual redeploy (ISR/rebuild/client-fetch).
 5. Run Lighthouse on the live home route (mobile) and confirm the Phase 50 thresholds hold in production.
+
+```
+
 ```

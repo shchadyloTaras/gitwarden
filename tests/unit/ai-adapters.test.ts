@@ -290,7 +290,10 @@ describe('built-in AI adapters', () => {
     })
     const schema = z.object({ summary: z.string(), highlights: z.array(z.string()) })
     const body = {
-      error: { message: "This model's maximum context length is 8192 tokens.", code: 'context_length_exceeded' },
+      error: {
+        message: "This model's maximum context length is 8192 tokens.",
+        code: 'context_length_exceeded',
+      },
     }
     const http = new FakeHttp([
       { status: 400, json: body },
@@ -315,7 +318,7 @@ describe('built-in AI adapters', () => {
       defaultModel: 'local-model',
     })
     const schema = z.object({ summary: z.string(), highlights: z.array(z.string()) })
-    const plain = { status: 400, json: undefined, bodyText: "Error: System role not supported" }
+    const plain = { status: 400, json: undefined, bodyText: 'Error: System role not supported' }
     const http = new FakeHttp([plain, plain, plain, plain])
     const adapter = new OpenAICompatibleAdapter(
       { connections: new FakeConnections([conn]), credentials: new FakeCredentials(), http },

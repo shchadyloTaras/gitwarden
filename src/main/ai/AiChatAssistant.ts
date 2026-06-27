@@ -1,5 +1,9 @@
 import type { z } from 'zod'
-import { CHAT_STREAM_TASK_INSTRUCTION, CHAT_TASK_INSTRUCTION, parseChatResponse } from '../../core/ai/outputs.js'
+import {
+  CHAT_STREAM_TASK_INSTRUCTION,
+  CHAT_TASK_INSTRUCTION,
+  parseChatResponse,
+} from '../../core/ai/outputs.js'
 import { providerJsonSchemaForKind } from '../../core/ai/providerSchemas.js'
 import { AiChatResponseSchema } from '../../core/ai/schemas.js'
 import type { AiChatResponse, AiChatTurn, AiMessage } from '../../core/ai/types.js'
@@ -134,7 +138,10 @@ export class AiChatAssistant {
     messages: AiMessage[]
   ): Promise<AiChatResponse> {
     const structuredMessages: AiMessage[] = [
-      { ...messages[0], content: `${messages[0].content.split('\n\n')[0]}\n\n${CHAT_TASK_INSTRUCTION}` },
+      {
+        ...messages[0],
+        content: `${messages[0].content.split('\n\n')[0]}\n\n${CHAT_TASK_INSTRUCTION}`,
+      },
       ...messages.slice(1),
     ]
     const raw = await this.generateStructured(

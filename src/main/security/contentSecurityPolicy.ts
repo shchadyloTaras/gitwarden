@@ -6,9 +6,7 @@ export function isDevRenderer(): boolean {
 }
 
 export function buildContentSecurityPolicy(dev: boolean): string {
-  const scriptSrc = dev
-    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-    : "script-src 'self'"
+  const scriptSrc = dev ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'" : "script-src 'self'"
   const connectSrc = dev
     ? "connect-src 'self' ws://127.0.0.1:* ws://localhost:* http://127.0.0.1:* http://localhost:*"
     : "connect-src 'self'"
