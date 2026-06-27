@@ -1,5 +1,6 @@
 appId: com.gitwarden.app
 productName: GitWarden
+copyright: Copyright © 2026 Taras Shchadylo
 asar: true
 directories:
   buildResources: resources
@@ -21,13 +22,41 @@ mac:
   artifactName: ${productName}-${version}-${arch}.${ext}
 dmg:
   title: GitWarden
+  window:
+    width: 540
+    height: 380
+  contents:
+    - x: 150
+      y: 185
+      type: file
+    - x: 390
+      y: 185
+      type: link
+      path: /Applications
 win:
-  icon: resources/icon.png
+  icon: resources/icon.ico
   target:
     - target: nsis
   artifactName: ${productName}-Setup-${version}.${ext}
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: GitWarden
+  installerIcon: resources/icon.ico
+  uninstallerIcon: resources/icon.ico
 linux:
   icon: resources/icon.png
+  category: Development
+  maintainer: Taras Shchadylo <marketing@eleken.co>
+  synopsis: Safe multi-account Git GUI
+  description: GitWarden is a cross-platform desktop Git GUI focused on safe multi-account GitHub usage. Prevent committing or pushing with the wrong profile, author name, email, or SSH key.
+  desktop:
+    Name: GitWarden
+    Comment: Safe multi-account Git GUI
+    Categories: Development;VersionControl;
   target:
     - target: AppImage
     - target: deb

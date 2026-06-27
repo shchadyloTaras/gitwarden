@@ -56,7 +56,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 ### Distribution & Release feature (plan: `docs/plans/distribution-release-plan.md`, prompts: `docs/prompts/distribution-release-prompts.md`)
 
 - [x] Phase 40 — Packaging Foundations & Local `dist`
-- [ ] Phase 41 — App Identity: Icons, Metadata & Installer UX
+- [x] Phase 41 — App Identity: Icons, Metadata & Installer UX
 - [ ] Phase 42 — Release Workflow (GitHub Actions, unsigned matrix)
 - [ ] Phase 43 — Code Signing & Notarization (optional; gated on certificates)
 - [ ] Phase 44 — Auto-Update (deferred; depends on Phase 43)
@@ -125,7 +125,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | AI Chat Redesign       | 52–55a    | ✅ complete                  |
 | Generative UI Blocks   | 60–62     | ✅ complete                  |
 | Client Branch Access   | 56–59     | ✅ complete                  |
-| Distribution & Release | 40–45     | 🟡 Phase 40 done, 41–45 open |
+| Distribution & Release | 40–45     | 🟡 Phases 40–41 done, 42–45 open |
 | Landing Page           | 46–51     | ⬜ not started               |
 | Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-5 done, DX-6 open |
 
@@ -764,3 +764,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: Vitest **594 passed** (no source changes). `npm run lint` clean (ESLint + Prettier). `npm run dist:dir` produced `dist/mac-arm64/GitWarden.app`. `npm run dist` produced `dist/GitWarden-0.1.0-arm64.dmg` + `dist/GitWarden-0.1.0-x64.dmg`, both named per plan §3.
 - Exit criteria: ✅ met — `npm run dist` produces `GitWarden-0.1.0-{arm64,x64}.dmg` in `dist/`; `npm run dist:dir` produces runnable unpacked build; unsigned build succeeds without secrets (signing warning expected per Path A); `package.json` metadata complete; `dist/` gitignored. ⚠️ Manual GUI launch verification (open .dmg → drag → launch) is a human prerequisite per plan Appendix A — CI cannot verify sandbox-restricted GUI launch.
 - Notes / follow-ups: `deb.artifactName` overrides `linux.artifactName` for the `.deb` target so AppImage uses `${productName}-${version}.${ext}` and deb uses `${name}_${version}_${arch}.${ext}`. The `publish` block is harmless locally (default `--publish never`); it is consumed in Phase 42.
+
+### 2026-06-27 — Phase 41: App Identity: Icons, Metadata & Installer UX
+
+- Built: `resources/icon.ico` (multi-resolution: 16/32/48/64/128/256 px, generated from existing 1024×1024 PNG via Pillow); `LICENSE` (MIT); full `electron-builder.yml` additions — `copyright`, DMG window/contents layout (540×380, file + Applications link), Windows NSIS config (`oneClick: false`, `perMachine: false`, `allowToChangeInstallationDirectory: true`, desktop+start-menu shortcuts, named icons), Linux desktop integration (`category: Development`, `maintainer`, `synopsis`, `description`, `desktop` entry with Name/Comment/Categories).
+- Files: added `resources/icon.ico`, `LICENSE`; updated `electron-builder.yml` (copyright, dmg, nsis, linux desktop, win.icon); updated `docs/progress-log.md`.
+- Tests: Vitest **594 passed** (no source changes). `npm run lint` clean. `npm run dist:dir` smoke build passes with updated config.
+- Exit criteria: ✅ met — icon.icns (macOS), icon.ico (Windows, multi-res), icon.png (Linux ≥512×512) all present in resources/; DMG layout configured; NSIS per-user install with shortcuts; Linux desktop entry with Development category; copyright + productName set; LICENSE present; smoke build passes. ⚠️ Per-OS installer appearance (icon in Dock/Taskbar, NSIS UI, deb desktop entry) requires human verification on each OS.
+- Notes / follow-ups: MIT license selected consistent with `package.json "license": "MIT"` (set in Phase 40) — maintainer can change if needed. `icon.ico` uses PNG-in-ICO container (modern Windows supports this natively; older ICO BMP format is not required).
