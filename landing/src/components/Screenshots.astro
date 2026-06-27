@@ -1,5 +1,13 @@
 ---
+import { Image } from 'astro:assets'
 import { copy } from '../content/copy'
+import statusDark from '../assets/screenshots/status-dark.webp'
+import repositoriesLight from '../assets/screenshots/repositories-light.webp'
+
+// Real app captures, optimized at build time by astro:assets. Paired with the
+// copy entries by order (dark Status, then light Repositories — see copy.ts).
+const images = [statusDark, repositoriesLight]
+const shots = copy.screenshots.shots.map((shot, i) => ({ ...shot, image: images[i] }))
 ---
 
 <section id="screenshots" class="screenshots" data-testid="screenshots">
@@ -7,13 +15,12 @@ import { copy } from '../content/copy'
   <p class="subhead">{copy.screenshots.subhead}</p>
   <div class="shots">
     {
-      copy.screenshots.shots.map((s) => (
+      shots.map((s) => (
         <figure>
-          <img src={s.src} alt={s.alt} loading="lazy" decoding="async" width="800" height="500" />
+          <Image src={s.image} alt={s.alt} width={1280} loading="lazy" decoding="async" />
           <figcaption>{s.caption}</figcaption>
         </figure>
       ))
     }
   </div>
-  <p class="note">{copy.screenshots.note}</p>
 </section>

@@ -125,16 +125,15 @@ export const copy = {
   screenshots: {
     heading: 'See it in action',
     subhead: 'The same safety checks, at home in light and dark.',
-    note: 'Preview mockups — real app captures are on the way.',
+    // Captures of the real app. The image files are imported and optimized in
+    // Screenshots.astro and paired with these entries by order (dark, then light).
     shots: [
       {
-        src: '/screenshots/app-dark.svg',
-        alt: 'GitWarden in dark mode: the header shows the active Work profile and a green “safe” badge above a list of staged changes ready to commit.',
+        alt: 'GitWarden in dark mode: the Status screen header shows the active Work profile and a green “Guard · Ready” badge, above two staged changes and a diff on the feature/oauth-login branch, ready to commit.',
         caption: 'Identity and safety, front and center',
       },
       {
-        src: '/screenshots/app-light.svg',
-        alt: 'GitWarden in light mode: the repositories screen lists each repository with the profile it is assigned to.',
+        alt: 'GitWarden in light mode: the Repositories screen lists each repository with its assigned profile — Personal, Work, and Client — and flags the ones that do not match the active profile.',
         caption: 'A profile for every repository',
       },
     ],

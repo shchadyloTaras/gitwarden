@@ -200,7 +200,7 @@ A single long-scroll page — enough to sell and to instruct, never a sprawling 
 
 - Implement the §4 sections: Hero, Why GitWarden, Features, Screenshots, FAQ, Footer — all copy from `src/content/copy.ts`, all benefit-led and jargon-light (source the "Why" + value prop from `README.md`).
 - Design system with Tailwind: wire the app's design tokens (`src/renderer/theme.css`) into the Tailwind theme (a `@theme` block in the global CSS on Tailwind v4, or `tailwind.config.*` on v3) as named colors — `gw-bg`, `gw-accent`, `gw-primary`, etc. — so the landing page shares the same palette. Dark-first (matches the app's default); light mode mirrors `data-theme='light'`. Type scale, spacing, responsive (mobile-first) layout, and cohesive modern aesthetic consistent with the Electron app's UI.
-- Add real product screenshots/GIFs of the app shell (light + dark), lazy-loaded and `alt`-described; placeholders are acceptable until captures exist, tracked as a follow-up.
+- Add real product screenshots/GIFs of the app shell (light + dark), lazy-loaded and `alt`-described. _(Done: real captures — dark Status, light Repositories — live in `landing/src/assets/screenshots/`, optimized at build via `astro:assets` `<Image>`. The earlier hand-drawn SVG placeholders were removed.)_
 - FAQ explicitly answers non-technical anxieties: _Is it safe? Why does my computer warn me? Is it free? Which file do I download?_ (the last cross-links the all-downloads panel).
 - Footer: GitHub repo, license, `SECURITY.md`, docs, and a live version badge sourced from the resolved release.
 
@@ -208,7 +208,7 @@ A single long-scroll page — enough to sell and to instruct, never a sprawling 
 
 - The full page renders responsively at mobile/tablet/desktop widths in both light and dark mode with no layout breakage.
 - All copy comes from the single content module; no hardcoded strings in components.
-- Screenshots (or tracked placeholders) render with `alt` text; the page reads clearly to a non-technical visitor (no unexplained git/CLI jargon in the primary path).
+- Screenshots render with `alt` text; the page reads clearly to a non-technical visitor (no unexplained git/CLI jargon in the primary path).
 
 ---
 
