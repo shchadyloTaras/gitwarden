@@ -81,6 +81,13 @@ describe('appStore — active profile follows the active repo', () => {
     await useProfilesStore.getState().setActiveProfile('p-personal')
     await flush()
     expect(useProfilesStore.getState().activeProfileId).toBe('p-personal')
+
+    // Reselecting the same repo is not a repo change, so it must not erase the override.
+    settingsUpdate.mockClear()
+    useAppStore.getState().setActiveRepo(makeRepo('r1', 'p-work'))
+    await flush()
+    expect(settingsUpdate).not.toHaveBeenCalled()
+    expect(useProfilesStore.getState().activeProfileId).toBe('p-personal')
   })
 
   it('clearing the active repo (repo removed) leaves the active profile intact', async () => {

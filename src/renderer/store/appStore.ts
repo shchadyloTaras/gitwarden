@@ -5,11 +5,11 @@ import { useProfilesStore } from './profilesStore'
 /**
  * Switch the active profile to follow the repo's assigned profile.
  *
- * Fired on every repo change (header picker, Repositories screen, auto-select) so the
- * identity surfaced in the header always matches the repo you're working in — the core
- * "right profile for the right repo" promise. Deliberately scoped to repo *changes*:
- * it never re-fires when the user manually picks a different profile, so a deliberate
- * override sticks and PROFILE_MISMATCH can still surface.
+ * Fired on real repo changes (header picker, Repositories screen, auto-select) and
+ * assignment refreshes so the identity surfaced in the header matches the repo you're
+ * working in — the core "right profile for the right repo" promise. Deliberately scoped
+ * to those changes: reselecting the same repo never pulls a manual profile override back,
+ * so PROFILE_MISMATCH can still surface.
  *
  * No-ops when the repo is unassigned (leaves the current identity intact so
  * REPO_UNASSIGNED warns instead), when the assignment already matches, or when the
@@ -72,13 +72,20 @@ export const useAppStore = create<AppState>((set) => ({
 
   navigate: (screen) => set({ activeScreen: screen }),
   setActiveRepo: (repo) => {
-    set((s) => ({
-      activeRepo: repo,
-      // Switching to a different repo invalidates the branch; re-setting the *same*
-      // repo (a metadata refresh, e.g. after editing its profile assignment) keeps it.
-      currentBranch: repo?.id === s.activeRepo?.id ? s.currentBranch : null,
-    }))
-    syncProfileToRepo(repo)
+    let shouldSyncProfile = false
+    set((s) => {
+      const sameRepo = repo?.id === s.activeRepo?.id
+      const assignmentChanged = repo?.assignedProfileId !== s.activeRepo?.assignedProfileId
+      shouldSyncProfile = Boolean(repo && (!sameRepo || assignmentChanged))
+
+      return {
+        activeRepo: repo,
+        // Switching to a different repo invalidates the branch; re-setting the *same*
+        // repo (a metadata refresh, e.g. after editing its profile assignment) keeps it.
+        currentBranch: sameRepo ? s.currentBranch : null,
+      }
+    })
+    if (shouldSyncProfile) syncProfileToRepo(repo)
   },
   setCurrentBranch: (branch) => set({ currentBranch: branch }),
   toggleInspector: () => set((s) => ({ inspectorOpen: !s.inspectorOpen })),

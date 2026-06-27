@@ -226,6 +226,7 @@ test.describe('App shell & navigation', () => {
     try {
       const win = await app.firstWindow()
       await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
+      await clearPanelWidths(win)
       await clearStorageKey(win, REPOSITORIES_SPLIT_STORAGE_KEY)
       await win.reload()
       await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })

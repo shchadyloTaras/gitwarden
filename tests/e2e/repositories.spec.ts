@@ -132,6 +132,27 @@ test.describe('Repository management', () => {
 
     await expect(win.getByTestId('repo-saved-msg')).toContainText('Repository saved.')
 
+    // Saving a profile assignment refreshes the active repo, which intentionally
+    // syncs the active profile to Work. Manually switching profiles is the user
+    // override path where PROFILE_MISMATCH should persist.
+    await win.getByTestId('nav-profiles').click()
+    await expect(win.getByTestId('screen-profiles')).toBeVisible()
+    await win
+      .getByTestId('profile-item')
+      .filter({ hasText: 'Personal' })
+      .getByTestId('profile-row-set-active-btn')
+      .click()
+    await expect(
+      win
+        .getByTestId('profile-item')
+        .filter({ hasText: 'Personal' })
+        .getByTestId('profile-active-badge')
+    ).toContainText('Active')
+
+    await win.getByTestId('nav-repositories').click()
+    await expect(win.getByTestId('screen-repositories')).toBeVisible()
+    await win.getByTestId('repo-item').filter({ hasText: repoName }).click()
+
     // Mismatch warning must appear: active=Personal, assigned=Work
     await expect(win.getByTestId('repo-mismatch-warning')).toBeVisible({ timeout: 5000 })
     await expect(win.getByTestId('repo-mismatch-warning')).toContainText('Work')
