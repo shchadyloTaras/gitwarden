@@ -13,13 +13,30 @@ interface EditForm {
   name: string
   assignedProfileId: string
   notes: string
+  policyEnabled: boolean
+  policyMode: 'unrestricted' | 'branchScoped'
+  policyAllowed: string
+  policyBlocked: string
+  policyExpectedOwner: string
+  policyExpectedRepo: string
+  policyGitHubActor: string
+  policyPrefix: string
 }
 
 function editFormFromRepo(r: RepositoryRecord): EditForm {
+  const p = r.pushPolicy
   return {
     name: r.name,
     assignedProfileId: r.assignedProfileId ?? '',
     notes: r.notes ?? '',
+    policyEnabled: !!p,
+    policyMode: p?.mode ?? 'unrestricted',
+    policyAllowed: p?.allowedBranchPatterns.join('\n') ?? '',
+    policyBlocked: p?.blockedBranchPatterns.join('\n') ?? '',
+    policyExpectedOwner: p?.expectedRemoteOwner ?? '',
+    policyExpectedRepo: p?.expectedRemoteRepo ?? '',
+    policyGitHubActor: p?.expectedGitHubActor ?? '',
+    policyPrefix: p?.suggestedBranchPrefix ?? '',
   }
 }
 
@@ -35,6 +52,14 @@ export default function RepositoriesScreen(): React.ReactElement {
     name: '',
     assignedProfileId: '',
     notes: '',
+    policyEnabled: false,
+    policyMode: 'unrestricted',
+    policyAllowed: '',
+    policyBlocked: '',
+    policyExpectedOwner: '',
+    policyExpectedRepo: '',
+    policyGitHubActor: '',
+    policyPrefix: '',
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -91,10 +116,28 @@ export default function RepositoriesScreen(): React.ReactElement {
     setError(null)
     setSuccessMessage(null)
     try {
+      const pushPolicy = editForm.policyEnabled
+        ? {
+            mode: editForm.policyMode,
+            allowedBranchPatterns: editForm.policyAllowed
+              .split('\n')
+              .map((s) => s.trim())
+              .filter(Boolean),
+            blockedBranchPatterns: editForm.policyBlocked
+              .split('\n')
+              .map((s) => s.trim())
+              .filter(Boolean),
+            expectedRemoteOwner: editForm.policyExpectedOwner.trim() || undefined,
+            expectedRemoteRepo: editForm.policyExpectedRepo.trim() || undefined,
+            expectedGitHubActor: editForm.policyGitHubActor.trim() || undefined,
+            suggestedBranchPrefix: editForm.policyPrefix.trim() || undefined,
+          }
+        : undefined
       await updateRepo(selectedId, {
         name: editForm.name.trim() || selectedRepo?.name,
         assignedProfileId: editForm.assignedProfileId || undefined,
         notes: editForm.notes.trim() || undefined,
+        pushPolicy,
       })
       // If we just edited the active repo, refresh its snapshot in appStore so the
       // header reflects the new record and the active profile re-syncs to the new
@@ -449,6 +492,192 @@ export default function RepositoriesScreen(): React.ReactElement {
                     style={{ ...inputStyle, resize: 'vertical' }}
                   />
                 </Field>
+
+                {/* Push Policy section */}
+                <div
+                  data-testid="repo-push-policy-section"
+                  style={{
+                    border: '1px solid var(--gw-border, #27272a)',
+                    borderRadius: 4,
+                    padding: '10px 12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 10,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: 'var(--gw-text-faint, #71717a)',
+                      letterSpacing: '0.04em',
+                    }}
+                  >
+                    {STR.PUSH_POLICY_SECTION_TITLE.toUpperCase()}
+                  </div>
+                  <div style={{ fontSize: 14, color: 'var(--gw-text-dim, #52525b)' }}>
+                    {STR.PUSH_POLICY_SECTION_HINT}
+                  </div>
+                  <label
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+                  >
+                    <input
+                      data-testid="repo-policy-enabled"
+                      type="checkbox"
+                      checked={editForm.policyEnabled}
+                      onChange={(e) => {
+                        setSuccessMessage(null)
+                        setEditForm((f) => ({ ...f, policyEnabled: e.target.checked }))
+                      }}
+                    />
+                    <span style={{ fontSize: 14, color: 'var(--gw-text-muted, #a1a1aa)' }}>
+                      {STR.PUSH_POLICY_ENABLE_LABEL}
+                    </span>
+                  </label>
+
+                  {editForm.policyEnabled && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <Field label={STR.PUSH_POLICY_MODE_LABEL}>
+                        <Dropdown
+                          testId="repo-policy-mode"
+                          ariaLabel={STR.PUSH_POLICY_MODE_LABEL}
+                          block
+                          value={editForm.policyMode}
+                          onChange={(v) => {
+                            setSuccessMessage(null)
+                            setEditForm((f) => ({
+                              ...f,
+                              policyMode: v as 'unrestricted' | 'branchScoped',
+                            }))
+                          }}
+                          options={[
+                            { value: 'unrestricted', label: STR.PUSH_POLICY_MODE_UNRESTRICTED },
+                            { value: 'branchScoped', label: STR.PUSH_POLICY_MODE_BRANCH_SCOPED },
+                          ]}
+                          triggerStyle={inputStyle}
+                        />
+                      </Field>
+
+                      <Field label={STR.PUSH_POLICY_ALLOWED_LABEL}>
+                        <textarea
+                          data-testid="repo-policy-allowed"
+                          value={editForm.policyAllowed}
+                          onChange={(e) => {
+                            setSuccessMessage(null)
+                            setEditForm((f) => ({ ...f, policyAllowed: e.target.value }))
+                          }}
+                          rows={3}
+                          placeholder="client-x/taras/*"
+                          style={{ ...inputStyle, resize: 'vertical', fontFamily: 'monospace' }}
+                        />
+                        <span
+                          style={{
+                            fontSize: 12,
+                            color: 'var(--gw-text-dim, #52525b)',
+                            marginTop: 2,
+                          }}
+                        >
+                          {STR.PUSH_POLICY_ALLOWED_HINT}
+                        </span>
+                      </Field>
+
+                      <Field label={STR.PUSH_POLICY_BLOCKED_LABEL}>
+                        <textarea
+                          data-testid="repo-policy-blocked"
+                          value={editForm.policyBlocked}
+                          onChange={(e) => {
+                            setSuccessMessage(null)
+                            setEditForm((f) => ({ ...f, policyBlocked: e.target.value }))
+                          }}
+                          rows={2}
+                          placeholder="main&#10;release/*"
+                          style={{ ...inputStyle, resize: 'vertical', fontFamily: 'monospace' }}
+                        />
+                        <span
+                          style={{
+                            fontSize: 12,
+                            color: 'var(--gw-text-dim, #52525b)',
+                            marginTop: 2,
+                          }}
+                        >
+                          {STR.PUSH_POLICY_BLOCKED_HINT}
+                        </span>
+                      </Field>
+
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <div style={{ flex: 1 }}>
+                          <Field label={STR.PUSH_POLICY_EXPECTED_OWNER_LABEL}>
+                            <input
+                              data-testid="repo-policy-expected-owner"
+                              value={editForm.policyExpectedOwner}
+                              onChange={(e) => {
+                                setSuccessMessage(null)
+                                setEditForm((f) => ({
+                                  ...f,
+                                  policyExpectedOwner: e.target.value,
+                                }))
+                              }}
+                              placeholder={STR.PUSH_POLICY_EXPECTED_OWNER_PLACEHOLDER}
+                              style={{ ...inputStyle, fontFamily: 'monospace' }}
+                            />
+                          </Field>
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <Field label={STR.PUSH_POLICY_EXPECTED_REPO_LABEL}>
+                            <input
+                              data-testid="repo-policy-expected-repo"
+                              value={editForm.policyExpectedRepo}
+                              onChange={(e) => {
+                                setSuccessMessage(null)
+                                setEditForm((f) => ({
+                                  ...f,
+                                  policyExpectedRepo: e.target.value,
+                                }))
+                              }}
+                              placeholder={STR.PUSH_POLICY_EXPECTED_REPO_PLACEHOLDER}
+                              style={{ ...inputStyle, fontFamily: 'monospace' }}
+                            />
+                          </Field>
+                        </div>
+                      </div>
+
+                      <Field label={STR.PUSH_POLICY_GITHUB_ACTOR_LABEL}>
+                        <input
+                          data-testid="repo-policy-github-actor"
+                          value={editForm.policyGitHubActor}
+                          onChange={(e) => {
+                            setSuccessMessage(null)
+                            setEditForm((f) => ({ ...f, policyGitHubActor: e.target.value }))
+                          }}
+                          placeholder={STR.PUSH_POLICY_GITHUB_ACTOR_PLACEHOLDER}
+                          style={{ ...inputStyle, fontFamily: 'monospace' }}
+                        />
+                        <span
+                          style={{
+                            fontSize: 12,
+                            color: 'var(--gw-text-dim, #52525b)',
+                            marginTop: 2,
+                          }}
+                        >
+                          {STR.PUSH_POLICY_GITHUB_ACTOR_HINT}
+                        </span>
+                      </Field>
+
+                      <Field label={STR.PUSH_POLICY_PREFIX_LABEL}>
+                        <input
+                          data-testid="repo-policy-prefix"
+                          value={editForm.policyPrefix}
+                          onChange={(e) => {
+                            setSuccessMessage(null)
+                            setEditForm((f) => ({ ...f, policyPrefix: e.target.value }))
+                          }}
+                          placeholder={STR.PUSH_POLICY_PREFIX_PLACEHOLDER}
+                          style={{ ...inputStyle, fontFamily: 'monospace' }}
+                        />
+                      </Field>
+                    </div>
+                  )}
+                </div>
 
                 {error && (
                   <div

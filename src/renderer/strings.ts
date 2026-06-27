@@ -310,6 +310,8 @@ export const STR = {
     'resolve-conflicts': 'Resolve conflicts',
     'configure-remote': 'Configure remote',
     'review-staged-changes': 'Review staged changes',
+    'switch-branch': 'Switch branch',
+    'edit-push-policy': 'Edit push policy',
   },
 
   // ── Push Brief & History Intelligence (Phase 35) ───────────────────────────
@@ -375,6 +377,51 @@ export const STR = {
   AGENTIC_PREVIEW_REQUIRED: 'Show what will be sent before requesting agentic proposals.',
   AGENTIC_FILE_EDITS: 'Proposed file edits',
   AGENTIC_ACTIONS: 'Suggested actions',
+
+  // ── Push Policy editor (RepositoriesScreen) ───────────────────────────────
+  PUSH_POLICY_SECTION_TITLE: 'Push Policy',
+  PUSH_POLICY_SECTION_HINT:
+    'Controls which branches are allowed, which are protected, and which remote this repo should push to.',
+  PUSH_POLICY_ENABLE_LABEL: 'Enable push policy for this repository',
+  PUSH_POLICY_MODE_LABEL: 'Mode',
+  PUSH_POLICY_MODE_UNRESTRICTED: 'Unrestricted (blocked patterns only)',
+  PUSH_POLICY_MODE_BRANCH_SCOPED: 'Branch scoped (allowed list required)',
+  PUSH_POLICY_ALLOWED_LABEL: 'Allowed branch patterns',
+  PUSH_POLICY_ALLOWED_HINT:
+    'One pattern per line. * = one segment, ** = any depth. Required in Branch Scoped mode.',
+  PUSH_POLICY_BLOCKED_LABEL: 'Protected branch patterns',
+  PUSH_POLICY_BLOCKED_HINT: 'Always enforced in both modes. e.g. main, release/*',
+  PUSH_POLICY_EXPECTED_OWNER_LABEL: 'Expected remote owner',
+  PUSH_POLICY_EXPECTED_OWNER_PLACEHOLDER: 'e.g. client-org',
+  PUSH_POLICY_EXPECTED_REPO_LABEL: 'Expected remote repo',
+  PUSH_POLICY_EXPECTED_REPO_PLACEHOLDER: 'e.g. project',
+  PUSH_POLICY_GITHUB_ACTOR_LABEL: 'Expected GitHub actor (optional)',
+  PUSH_POLICY_GITHUB_ACTOR_PLACEHOLDER: 'e.g. taras-work',
+  PUSH_POLICY_GITHUB_ACTOR_HINT:
+    'For HTTPS pushes, verified against the stored token. SSH actor is assumed — not verified locally.',
+  PUSH_POLICY_PREFIX_LABEL: 'Suggested branch prefix (optional)',
+  PUSH_POLICY_PREFIX_PLACEHOLDER: 'e.g. client-x/taras/',
+
+  // ── Branch Access block (push sheet + Safety Center) ─────────────────────
+  BRANCH_ACCESS_SECTION_TITLE: 'Branch Access',
+  BRANCH_ACCESS_CURRENT_BRANCH_LABEL: 'Current branch',
+  BRANCH_ACCESS_VERDICT_ALLOWED: '✓ Allowed',
+  BRANCH_ACCESS_VERDICT_BLOCKED: '✗ Blocked — use a Pull Request',
+  BRANCH_ACCESS_VERDICT_UNRESTRICTED: '✓ Unrestricted',
+  BRANCH_ACCESS_MODE_LABEL: 'Policy mode',
+  BRANCH_ACCESS_ALLOWED_PATTERNS_LABEL: 'Allowed patterns',
+  BRANCH_ACCESS_BLOCKED_PATTERNS_LABEL: 'Protected patterns',
+  BRANCH_ACCESS_NO_POLICY: 'No push policy configured.',
+  BRANCH_ACCESS_SSH_ACTOR_LABEL: 'Pushing as (SSH)',
+  BRANCH_ACCESS_SSH_ACTOR_UNVERIFIED: (actor: string): string =>
+    `@${actor} — assumed from policy, unverified`,
+  BRANCH_ACCESS_ENFORCEMENT_NOTE:
+    'GitWarden enforces this locally. Ask the repo owner to set GitHub branch protection for real enforcement.',
+
+  // ── Branch badge (BranchesScreen) ─────────────────────────────────────────
+  BRANCH_BADGE_ALLOWED: 'allowed',
+  BRANCH_BADGE_BLOCKED: 'blocked',
+  BRANCH_BADGE_SUGGESTED_PREFIX: (prefix: string): string => `Suggested prefix: ${prefix}`,
 
   // ── Inspector ──────────────────────────────────────────────────────────────
   INSPECTOR_TITLE: 'Inspector',

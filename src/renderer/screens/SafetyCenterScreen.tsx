@@ -4,7 +4,9 @@ import { useSafetyCenterStore } from '../store/safetyCenterStore'
 import { useRepositoriesStore } from '../store/repositoriesStore'
 import { useAppStore } from '../store/appStore'
 import SafetyIssueRow from '../components/SafetyIssueRow'
+import { matchesAnyPattern } from '../../core/safety/branchPatterns'
 import type { SafetyIssue } from '../../core/types'
+import { STR } from '../strings'
 
 function ScopeLabel({ scope }: { scope: string | undefined }): React.ReactElement {
   if (!scope) return <span style={{ color: 'var(--gw-text-dim, #52525b)' }}>—</span>
@@ -339,6 +341,74 @@ export default function SafetyCenterScreen(): React.ReactElement {
               ))
             )}
           </div>
+
+          {/* Branch Access card — only when a push policy is configured */}
+          {repository?.pushPolicy && (
+            <div data-testid="safety-branch-access-card" style={CARD}>
+              <div style={CARD_HEADER}>{STR.BRANCH_ACCESS_SECTION_TITLE}</div>
+              <div style={CARD_ROW}>
+                <span style={LABEL}>{STR.BRANCH_ACCESS_MODE_LABEL}</span>
+                <span style={VALUE}>
+                  {repository.pushPolicy.mode === 'branchScoped'
+                    ? STR.PUSH_POLICY_MODE_BRANCH_SCOPED
+                    : STR.PUSH_POLICY_MODE_UNRESTRICTED}
+                </span>
+              </div>
+              {repository.pushPolicy.allowedBranchPatterns.length > 0 && (
+                <div style={CARD_ROW}>
+                  <span style={LABEL}>{STR.BRANCH_ACCESS_ALLOWED_PATTERNS_LABEL}</span>
+                  <span
+                    data-testid="safety-branch-access-allowed"
+                    style={{ ...VALUE, fontFamily: 'monospace', fontSize: 12 }}
+                  >
+                    {repository.pushPolicy.allowedBranchPatterns.join(', ')}
+                  </span>
+                </div>
+              )}
+              {repository.pushPolicy.blockedBranchPatterns.length > 0 && (
+                <div style={CARD_ROW}>
+                  <span style={LABEL}>{STR.BRANCH_ACCESS_BLOCKED_PATTERNS_LABEL}</span>
+                  <span
+                    data-testid="safety-branch-access-blocked"
+                    style={{ ...VALUE, fontFamily: 'monospace', fontSize: 12 }}
+                  >
+                    {repository.pushPolicy.blockedBranchPatterns.join(', ')}
+                  </span>
+                </div>
+              )}
+              <div style={{ ...CARD_ROW, borderBottom: 'none' }}>
+                <span style={LABEL}>{STR.BRANCH_ACCESS_CURRENT_BRANCH_LABEL}</span>
+                <span
+                  data-testid="safety-branch-access-verdict"
+                  style={{
+                    fontWeight: 600,
+                    color: currentBranch
+                      ? matchesAnyPattern(
+                          currentBranch,
+                          repository.pushPolicy.blockedBranchPatterns
+                        )
+                        ? 'var(--gw-danger, #f87171)'
+                        : 'var(--gw-success, #4ade80)'
+                      : 'var(--gw-text-dim, #52525b)',
+                    fontSize: 14,
+                  }}
+                >
+                  {currentBranch
+                    ? matchesAnyPattern(currentBranch, repository.pushPolicy.blockedBranchPatterns)
+                      ? `${currentBranch} · ${STR.BRANCH_BADGE_BLOCKED}`
+                      : repository.pushPolicy.mode === 'branchScoped' &&
+                          repository.pushPolicy.allowedBranchPatterns.length > 0 &&
+                          matchesAnyPattern(
+                            currentBranch,
+                            repository.pushPolicy.allowedBranchPatterns
+                          )
+                        ? `${currentBranch} · ${STR.BRANCH_BADGE_ALLOWED}`
+                        : currentBranch
+                    : '—'}
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Verdict card */}
           <div style={CARD}>

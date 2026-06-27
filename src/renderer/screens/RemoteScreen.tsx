@@ -5,6 +5,7 @@ import { useAppStore } from '../store/appStore'
 import { safetyCheckService } from '../../core/safety/SafetyCheckService'
 import type { GitHubPushContext } from '../../core/safety/SafetyCheckService'
 import { isHttpsGitHubRemoteUrl } from '../../core/github/remoteUrl'
+import { matchesAnyPattern } from '../../core/safety/branchPatterns'
 import type { GitRemote } from '../../core/types'
 import { STR } from '../strings'
 import SafetyIssueRow from '../components/SafetyIssueRow'
@@ -427,6 +428,15 @@ export default function RemoteScreen(): React.ReactElement {
               )}
             </div>
 
+            {/* Branch Access block — shown only when a push policy is configured */}
+            {repository?.pushPolicy && (
+              <BranchAccessBlock
+                policy={repository.pushPolicy}
+                currentBranch={currentBranch}
+                isHttps={isHttpsGitHubRemoteUrl(selectedRemote.url)}
+              />
+            )}
+
             {/* Safety issues */}
             {pushSafetyResult && pushSafetyResult.issues.length > 0 && (
               <div
@@ -506,6 +516,116 @@ export default function RemoteScreen(): React.ReactElement {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+/** Branch Access summary block shown in the push sheet when a push policy is set. */
+function BranchAccessBlock({
+  policy,
+  currentBranch,
+  isHttps,
+}: {
+  policy: NonNullable<import('../../core/types').RepositoryRecord['pushPolicy']>
+  currentBranch: string | null
+  isHttps: boolean
+}): React.ReactElement {
+  const branch = currentBranch ?? ''
+  const isBlocked = branch ? matchesAnyPattern(branch, policy.blockedBranchPatterns) : false
+  const isAllowed =
+    !isBlocked &&
+    (policy.mode === 'unrestricted' ||
+      (policy.allowedBranchPatterns.length > 0 &&
+        matchesAnyPattern(branch, policy.allowedBranchPatterns)))
+
+  const verdict = isBlocked
+    ? STR.BRANCH_ACCESS_VERDICT_BLOCKED
+    : isAllowed
+      ? STR.BRANCH_ACCESS_VERDICT_ALLOWED
+      : policy.mode === 'unrestricted'
+        ? STR.BRANCH_ACCESS_VERDICT_UNRESTRICTED
+        : null
+
+  const verdictColor = isBlocked ? 'var(--gw-danger, #f87171)' : 'var(--gw-success, #4ade80)'
+
+  return (
+    <div
+      data-testid="remote-push-branch-access"
+      style={{
+        border: '1px solid var(--gw-border, #27272a)',
+        borderRadius: 4,
+        marginBottom: 16,
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        style={{
+          padding: '6px 12px',
+          background: 'var(--gw-bg, #09090b)',
+          borderBottom: '1px solid var(--gw-border, #27272a)',
+          fontSize: 12,
+          fontWeight: 600,
+          color: 'var(--gw-text-faint, #71717a)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
+        }}
+      >
+        {STR.BRANCH_ACCESS_SECTION_TITLE}
+      </div>
+      <div
+        style={{
+          padding: '8px 12px',
+          fontSize: 14,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 6,
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ color: 'var(--gw-text-faint, #71717a)' }}>
+            {STR.BRANCH_ACCESS_CURRENT_BRANCH_LABEL}
+          </span>
+          <span style={{ fontFamily: 'monospace', color: 'var(--gw-text-muted, #a1a1aa)' }}>
+            {branch || '—'}
+          </span>
+        </div>
+        {verdict && (
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ color: 'var(--gw-text-faint, #71717a)' }}>Verdict</span>
+            <span
+              data-testid="remote-push-branch-verdict"
+              style={{ fontWeight: 600, color: verdictColor }}
+            >
+              {verdict}
+            </span>
+          </div>
+        )}
+        {/* SSH actor: shown as unverified when policy has expectedGitHubActor and push is SSH */}
+        {!isHttps && policy.expectedGitHubActor && (
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ color: 'var(--gw-text-faint, #71717a)' }}>
+              {STR.BRANCH_ACCESS_SSH_ACTOR_LABEL}
+            </span>
+            <span
+              data-testid="remote-push-ssh-actor"
+              style={{ color: 'var(--gw-warning, #fbbf24)', textAlign: 'right' }}
+            >
+              {STR.BRANCH_ACCESS_SSH_ACTOR_UNVERIFIED(policy.expectedGitHubActor)}
+            </span>
+          </div>
+        )}
+        <div
+          style={{
+            marginTop: 4,
+            fontSize: 12,
+            color: 'var(--gw-text-dim, #52525b)',
+            borderTop: '1px solid var(--gw-border, #27272a)',
+            paddingTop: 6,
+          }}
+        >
+          {STR.BRANCH_ACCESS_ENFORCEMENT_NOTE}
+        </div>
+      </div>
     </div>
   )
 }

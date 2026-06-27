@@ -88,7 +88,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] Phase 56 — Push Policy Foundations & Pure Helpers
 - [x] Phase 57 — Safety Engine: Branch Access Checks
 - [x] Phase 58 — Policy Persistence, IPC & Push-Path Wiring
-- [ ] Phase 59 — Push Policy UI (feature-complete stop point)
+- [x] Phase 59 — Push Policy UI (feature-complete stop point)
 
 ### Generative UI Blocks feature (plan: `docs/plans/genui-blocks-plan.md`, prompts: `docs/prompts/genui-blocks-prompts.md`)
 
@@ -124,7 +124,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | AI Connections         | 28–39     | ✅ complete                  |
 | AI Chat Redesign       | 52–55a    | ✅ complete                  |
 | Generative UI Blocks   | 60–62     | ✅ complete                  |
-| Client Branch Access   | 56–59     | 🟡 56–58 done, 59 open       |
+| Client Branch Access   | 56–59     | ✅ complete                  |
 | Distribution & Release | 40–45     | ⬜ not started               |
 | Landing Page           | 46–51     | ⬜ not started               |
 | Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-5 done, DX-6 open |
@@ -743,3 +743,16 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: Vitest **594 passed** (was 585; +9 new in `push-policy-persistence.test.ts`). `npm run lint` clean (ESLint + Prettier). `npx tsc --noEmit` clean on both tsconfigs. Core purity reviewer: PASS — no `src/core/` changes.
 - Exit criteria: ✅ met — `pushPolicy` round-trips through `JsonStore` + `RepositoryService` (save → reload → deep-equal); Zod rejects invalid mode (`INVALID_MODE`), missing required fields, and non-string pattern entries; safety engine uses the resolved upstream remote over origin for owner/repo checks (two-remote fixture); `npx tsc --noEmit` clean on both tsconfigs.
 - Notes / follow-ups: SSH actor verification (`expectedGitHubActor` on SSH push) intentionally stays informational (not a blocker) per Appendix C — the MVP does not attempt `ssh -T` probing. HTTPS actor verification via `expectedGitHubActor` override is now wired for Phase 59 to surface in the push sheet's Branch Access block. Phase 59 adds the Push Policy editor UI, Branch Access push-sheet block, Safety Center block, branch badge, and suggested-prefix display on the Branches screen.
+
+### 2026-06-27 — Phase 59: Push Policy UI
+
+- Built: All four UI surfaces for the Client Branch Access feature — making the push policy visible, configurable, and enforced in every place a user interacts with branches or remotes.
+  - `src/renderer/strings.ts`: added two new `SAFETY_ACTION_LABELS` entries (`'switch-branch'`, `'edit-push-policy'`); added string groups `PUSH_POLICY_*` (editor section title, hint, labels, placeholders for all seven policy fields) and `BRANCH_ACCESS_*` (section title, verdicts, mode/patterns labels, enforcement note, SSH actor display) and `BRANCH_BADGE_*` (allowed/blocked badge text, `BRANCH_BADGE_SUGGESTED_PREFIX` formatter). Zero hard-coded user-facing strings remain outside `strings.ts`.
+  - `src/renderer/screens/RepositoriesScreen.tsx`: extended `EditForm` with 8 policy fields (`policyEnabled`, `policyMode`, `policyAllowed`/`policyBlocked` as newline-delimited textarea strings, `policyExpectedOwner`, `policyExpectedRepo`, `policyGitHubActor`, `policyPrefix`); updated `editFormFromRepo` to round-trip existing policy; updated `handleSave` to build and persist `pushPolicy` (or `undefined` to clear); added full Push Policy editor section in the edit panel with checkbox enable toggle, mode dropdown, allowed/blocked textareas, and four optional fields — all `data-testid`-annotated.
+  - `src/renderer/screens/RemoteScreen.tsx`: added `BranchAccessBlock` component (verdict, SSH actor hint, enforcement note) rendered in the push sheet between the details table and the safety issues list whenever `repository.pushPolicy` is set; verdict logic: blocked patterns → "Blocked", allowed match in `branchScoped` mode → "Allowed", otherwise "Unrestricted".
+  - `src/renderer/screens/SafetyCenterScreen.tsx`: added Branch Access card after the "Remote & Branch" card, showing policy mode, allowed/blocked pattern lists, and current-branch verdict badge.
+  - `src/renderer/screens/BranchesScreen.tsx`: added `BranchBadge` component in the header bar next to the current-branch display (blocked → red badge, explicitly-allowed in `branchScoped` mode → green badge, unlisted unrestricted → no badge); added suggested-prefix hint below the new-branch input; updated input placeholder to use `suggestedBranchPrefix` when set.
+- Files: updated `src/renderer/strings.ts`, `src/renderer/screens/{RepositoriesScreen,RemoteScreen,SafetyCenterScreen,BranchesScreen}.tsx`; added `tests/e2e/push-policy.spec.ts`; updated `docs/progress-log.md`.
+- Tests: Vitest **594 passed** (unchanged — all logic already tested in Phases 56–58). Playwright e2e **3 passed** (new `tests/e2e/push-policy.spec.ts`): allowed branch on feature/taras/fix shows "Allowed" verdict and Confirm Push enabled; `main` shows "Blocked" verdict + `PROTECTED_BRANCH_PUSH` issue + Confirm Push disabled; wrong-org remote triggers `REMOTE_OWNER_MISMATCH` + Confirm Push disabled. `npm run lint` clean (ESLint + Prettier). `npx tsc --noEmit` clean on both tsconfigs. Core purity reviewer: PASS — no `src/core/` changes.
+- Exit criteria: ✅ met — Playwright 3/3 against local fixture repos (offline, no network, local bare remote as push target): allowed branch → Safe verdict, Confirm enabled; `main` (blocked) → Blocked verdict, Confirm disabled; wrong remote owner → `REMOTE_OWNER_MISMATCH`, Confirm disabled. `npx tsc --noEmit` clean. No new hard-coded user-facing strings.
+- Notes / follow-ups: Phase 59 is the **feature-complete stop point** for Client Branch Access (Phases 56–59). The full feature — push-policy type system, glob matching, remote-owner parsing, push-target resolution, safety engine, persistence, IPC wiring, and all four UI surfaces — is now complete and tested end-to-end. Next available tracks: Distribution & Release (40–45) or Landing Page (46–51) per AGENTS.md build order.

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { useBranchStore } from '../store/branchStore'
 import { useAppStore } from '../store/appStore'
+import { matchesAnyPattern } from '../../core/safety/branchPatterns'
+import { STR } from '../strings'
 
 const ROW: React.CSSProperties = {
   display: 'flex',
@@ -35,6 +37,7 @@ const BTN_PRIMARY: React.CSSProperties = {
 export default function BranchesScreen(): React.ReactElement {
   const activeRepo = useAppStore((s) => s.activeRepo)
   const {
+    repository,
     branches,
     loading,
     error,
@@ -111,6 +114,10 @@ export default function BranchesScreen(): React.ReactElement {
             current: {currentBranch}
           </span>
         )}
+        {/* Branch badge — shown when a push policy is configured */}
+        {currentBranch && repository?.pushPolicy && (
+          <BranchBadge branch={currentBranch} policy={repository.pushPolicy} />
+        )}
       </div>
 
       {/* Body */}
@@ -164,50 +171,64 @@ export default function BranchesScreen(): React.ReactElement {
               padding: '12px 16px',
               borderBottom: '1px solid var(--gw-border, #27272a)',
               display: 'flex',
-              alignItems: 'center',
-              gap: 8,
+              flexDirection: 'column',
+              gap: 6,
             }}
           >
-            <span
-              style={{
-                fontSize: 14,
-                color: 'var(--gw-text-faint, #71717a)',
-                width: 100,
-                flexShrink: 0,
-              }}
-            >
-              New branch
-            </span>
-            <input
-              data-testid="branches-create-input"
-              value={newBranchName}
-              onChange={(e) => setNewBranchName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') void handleCreate()
-              }}
-              placeholder="branch-name"
-              style={{
-                flex: 1,
-                background: 'var(--gw-input-bg, #09090b)',
-                color: 'var(--gw-text, #f4f4f5)',
-                border: '1px solid var(--gw-border-subtle, #3f3f46)',
-                borderRadius: 4,
-                padding: '4px 8px',
-                fontSize: 14,
-                maxWidth: 240,
-              }}
-            />
-            <button
-              data-testid="branches-create-btn"
-              disabled={!newBranchName.trim()}
-              onClick={() => void handleCreate()}
-              style={{
-                ...BTN_PRIMARY,
-                opacity: !newBranchName.trim() ? 0.4 : 1,
-              }}
-            >
-              Create &amp; Switch
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span
+                style={{
+                  fontSize: 14,
+                  color: 'var(--gw-text-faint, #71717a)',
+                  width: 100,
+                  flexShrink: 0,
+                }}
+              >
+                New branch
+              </span>
+              <input
+                data-testid="branches-create-input"
+                value={newBranchName}
+                onChange={(e) => setNewBranchName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') void handleCreate()
+                }}
+                placeholder={
+                  repository?.pushPolicy?.suggestedBranchPrefix
+                    ? `${repository.pushPolicy.suggestedBranchPrefix}branch-name`
+                    : 'branch-name'
+                }
+                style={{
+                  flex: 1,
+                  background: 'var(--gw-input-bg, #09090b)',
+                  color: 'var(--gw-text, #f4f4f5)',
+                  border: '1px solid var(--gw-border-subtle, #3f3f46)',
+                  borderRadius: 4,
+                  padding: '4px 8px',
+                  fontSize: 14,
+                  maxWidth: 240,
+                }}
+              />
+              <button
+                data-testid="branches-create-btn"
+                disabled={!newBranchName.trim()}
+                onClick={() => void handleCreate()}
+                style={{
+                  ...BTN_PRIMARY,
+                  opacity: !newBranchName.trim() ? 0.4 : 1,
+                }}
+              >
+                Create &amp; Switch
+              </button>
+            </div>
+            {repository?.pushPolicy?.suggestedBranchPrefix && (
+              <span
+                data-testid="branches-suggested-prefix"
+                style={{ fontSize: 12, color: 'var(--gw-text-dim, #52525b)', paddingLeft: 108 }}
+              >
+                {STR.BRANCH_BADGE_SUGGESTED_PREFIX(repository.pushPolicy.suggestedBranchPrefix)}
+              </span>
+            )}
           </div>
 
           {/* Local branches */}
@@ -316,5 +337,39 @@ export default function BranchesScreen(): React.ReactElement {
         </div>
       )}
     </div>
+  )
+}
+
+/** Badge showing "allowed" / "blocked" based on the repo push policy. */
+function BranchBadge({
+  branch,
+  policy,
+}: {
+  branch: string
+  policy: NonNullable<import('../../core/types').RepositoryRecord['pushPolicy']>
+}): React.ReactElement {
+  const blocked = matchesAnyPattern(branch, policy.blockedBranchPatterns)
+  const allowed =
+    !blocked &&
+    policy.mode === 'branchScoped' &&
+    policy.allowedBranchPatterns.length > 0 &&
+    matchesAnyPattern(branch, policy.allowedBranchPatterns)
+
+  if (!blocked && !allowed) return <></>
+
+  return (
+    <span
+      data-testid="branches-branch-badge"
+      style={{
+        fontSize: 12,
+        padding: '1px 6px',
+        borderRadius: 3,
+        background: blocked ? 'var(--gw-danger-bg, #450a0a)' : 'var(--gw-success-bg, #052e16)',
+        color: blocked ? 'var(--gw-danger, #f87171)' : 'var(--gw-success, #4ade80)',
+        border: `1px solid ${blocked ? 'var(--gw-danger-solid, #dc2626)' : 'var(--gw-success-border, #2d4a2d)'}`,
+      }}
+    >
+      {blocked ? STR.BRANCH_BADGE_BLOCKED : STR.BRANCH_BADGE_ALLOWED}
+    </span>
   )
 }
