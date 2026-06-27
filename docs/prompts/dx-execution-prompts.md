@@ -745,19 +745,24 @@ New working pattern:
 
 Do any of these independently. None are required. Do not batch them.
 
-| Option                             | When to do it                                                               | Prompt approach                                                                                                        |
-| ---------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| **Architecture diagram**           | When a new agent/human is confused by core↔main↔preload↔renderer boundaries | Ask Claude to produce `docs/architecture.md` with an ASCII or Mermaid diagram of the 4 layers and their crossing rules |
-| **project-factory onboard**        | When starting a genuinely new feature (not retroactively)                   | `/project-factory:onboard` on the new feature's plan — do NOT run across existing 61 phases                            |
-| **Split DECISIONS.md → ADR files** | When the monolith starts hurting navigation (likely > 20 decisions)         | Ask Claude to split each decision to `docs/adr/NNNN-*.md` MADR format, one commit                                      |
-| **GenUI north-star refs**          | When extending the GenUI chat blocks                                        | Add Vercel AI SDK generative-UI + Google A2UI links to genui-blocks-plan.md as named anchors                           |
-| **.mcp.json code-graph**           | If codebase navigation is costing real time in sessions                     | Add project-scoped MCP only when the pain is demonstrated, not speculatively                                           |
+> **✅ Executed 2026-06-28.** Four of five options shipped — Architecture diagram, Split DECISIONS.md →
+> ADR files, GenUI north-star refs, `.mcp.json` code-graph (opt-in). The **project-factory onboard**
+> option is intentionally deferred to a deliberate, separate step on a new feature. See the Progress
+> Log entry in `docs/progress-log.md` and the plan's §Step DX-6 note.
+
+| Option                             | When to do it                                                               | Prompt approach                                                                                                                          |
+| ---------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| **Architecture diagram**           | When a new agent/human is confused by core↔main↔preload↔renderer boundaries | Ask Claude to produce `docs/architecture/README.md` with a diagram (Mermaid / excalidraw / SVG) of the 4 layers and their crossing rules |
+| **project-factory onboard**        | When starting a genuinely new feature (not retroactively)                   | `/project-factory:onboard` on the new feature's plan — do NOT run across existing 61 phases                                              |
+| **Split DECISIONS.md → ADR files** | When the monolith starts hurting navigation (likely > 20 decisions)         | Ask Claude to split each decision to `docs/adr/NNNN-*.md` MADR format, one commit                                                        |
+| **GenUI north-star refs**          | When extending the GenUI chat blocks                                        | Add Vercel AI SDK generative-UI + Google A2UI links to genui-blocks-plan.md as named anchors                                             |
+| **.mcp.json code-graph**           | If codebase navigation is costing real time in sessions                     | Add project-scoped MCP only when the pain is demonstrated, not speculatively                                                             |
 
 ---
 
 ## Quick reference: new workflow summary
 
-| Before DX track                            | After full DX track (DX-0→DX-5)                              |
+| Before DX track                            | After full DX track (DX-0→DX-6)                              |
 | ------------------------------------------ | ------------------------------------------------------------ |
 | Docs may not match reality                 | Status table in progress-log.md is single source of truth    |
 | Permission prompts for npm/git             | Allowlisted — run silently                                   |

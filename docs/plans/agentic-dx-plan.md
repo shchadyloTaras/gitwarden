@@ -83,7 +83,7 @@ Distilled from the reference set (full links in §7). Frameworks for building ag
 | MCP / `modelcontextprotocol`, CodeGraphContext        | standard tool protocol; code-graph navigation                                        | optional `.mcp.json` (DX-6)                                                           |
 | Vercel _react-best-practices_ skill, OpenAI skills    | reusable **Skills** as portable capability docs                                      | optionally vendor a project skill (DX-6)                                              |
 | Vercel **AI SDK**, **A2UI**, genui.com                | controlled / declarative Generative UI patterns                                      | already captured in `genui-blocks-plan.md`; add explicit north-star refs (DX-6)       |
-| excalidraw                                            | a single architecture diagram beats paragraphs                                       | optional `docs/architecture.excalidraw` / PNG (DX-6)                                  |
+| excalidraw                                            | a single architecture diagram beats paragraphs                                       | optional `docs/architecture/` diagram (DX-6)                                          |
 
 Commentary-only links (willrobotstakemyjob, dou/habr threads, model/provider catalogs, OCR papers)
 are background reading, not actionable here.
@@ -230,6 +230,14 @@ pass/fail; the wrong-profile Safety-Copilot case is covered; adding a new case i
 
 Pick à la carte; none are required.
 
+> **✅ Executed 2026-06-28** (DX-6 ticked in the Phase Checklist — the authoritative source).
+> **Done:** ADR split → `docs/adr/` (MADR; `DECISIONS.md` is now the index) · GenUI north-star refs in
+> `genui-blocks-plan.md` (Vercel AI SDK generative-UI + Google A2UI) · opt-in code-graph `.mcp.json`
+> (CodeGraphContext, approval-gated; see `docs/code-graph-mcp.md`) · architecture diagram
+> (`docs/architecture/` — README.md + diagram.{excalidraw,svg,png}). **Deferred:** wiring
+> `project-factory`/`sdd` into the
+> repo — adopt deliberately on a new feature, not retroactively (next bullet).
+
 - **Wire `project-factory` or `sdd` into this repo.** Both plugins are installed globally but unused
   here. `/project-factory:onboard` reverse-engineers requirements + baseline OpenSpec specs from the
   current code and governs new phases through gates. High value, but it's a workflow shift — adopt
@@ -241,7 +249,7 @@ Pick à la carte; none are required.
   declarative-block schema reference, so the closed-union approach has a named industry anchor.
 - **`.mcp.json` / CodeGraphContext.** A project-scoped code-graph MCP only if navigating the codebase
   starts costing real time. Don't add MCP servers speculatively.
-- **`docs/architecture.excalidraw` (+ exported PNG).** One diagram of core ↔ main ↔ preload ↔
+- **Architecture diagram → `docs/architecture/`.** One diagram of core ↔ main ↔ preload ↔
   renderer boundaries; cheap, high-orientation-value for new agents/humans.
 
 ---

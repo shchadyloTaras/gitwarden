@@ -1,0 +1,270 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "https://excalidraw.com",
+  "elements": [
+    {
+      "id": "title", "type": "text", "x": 300, "y": 22, "width": 600, "height": 35, "angle": 0,
+      "strokeColor": "#0f172a", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": null, "seed": 1001, "version": 1, "versionNonce": 1001, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false,
+      "fontSize": 28, "fontFamily": 2, "text": "GitWarden — process & module boundaries",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null,
+      "originalText": "GitWarden — process & module boundaries", "lineHeight": 1.25, "autoResize": true
+    },
+
+    {
+      "id": "r-renderer", "type": "rectangle", "x": 70, "y": 90, "width": 690, "height": 110, "angle": 0,
+      "strokeColor": "#2563eb", "backgroundColor": "#dbeafe", "fillStyle": "solid", "strokeWidth": 2,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": { "type": 3 }, "seed": 1002, "version": 1, "versionNonce": 1002, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false
+    },
+    {
+      "id": "t-renderer", "type": "text", "x": 88, "y": 104, "width": 640, "height": 80, "angle": 0,
+      "strokeColor": "#1e3a8a", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": null, "seed": 1003, "version": 1, "versionNonce": 1003, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false,
+      "fontSize": 16, "fontFamily": 2,
+      "text": "RENDERER  (src/renderer/)\nReact UI · process: renderer · components · screens · store · types\n✗ no Node · ✗ no fs/child_process · contextIsolation + sandbox",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null,
+      "originalText": "RENDERER  (src/renderer/)\nReact UI · process: renderer · components · screens · store · types\n✗ no Node · ✗ no fs/child_process · contextIsolation + sandbox",
+      "lineHeight": 1.25, "autoResize": true
+    },
+
+    {
+      "id": "r-preload", "type": "rectangle", "x": 70, "y": 250, "width": 690, "height": 92, "angle": 0,
+      "strokeColor": "#7c3aed", "backgroundColor": "#ede9fe", "fillStyle": "solid", "strokeWidth": 2,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": { "type": 3 }, "seed": 1004, "version": 1, "versionNonce": 1004, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false
+    },
+    {
+      "id": "t-preload", "type": "text", "x": 88, "y": 268, "width": 640, "height": 55, "angle": 0,
+      "strokeColor": "#5b21b6", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": null, "seed": 1005, "version": 1, "versionNonce": 1005, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false,
+      "fontSize": 16, "fontFamily": 2,
+      "text": "PRELOAD — the only bridge  (preload/index.ts)\ntyped contextBridge API · IPC payloads Zod-validated at this boundary",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null,
+      "originalText": "PRELOAD — the only bridge  (preload/index.ts)\ntyped contextBridge API · IPC payloads Zod-validated at this boundary",
+      "lineHeight": 1.25, "autoResize": true
+    },
+
+    {
+      "id": "r-main", "type": "rectangle", "x": 70, "y": 420, "width": 690, "height": 116, "angle": 0,
+      "strokeColor": "#d97706", "backgroundColor": "#fef3c7", "fillStyle": "solid", "strokeWidth": 2,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": { "type": 3 }, "seed": 1006, "version": 1, "versionNonce": 1006, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false
+    },
+    {
+      "id": "t-main", "type": "text", "x": 88, "y": 434, "width": 640, "height": 80, "angle": 0,
+      "strokeColor": "#92400e", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": null, "seed": 1007, "version": 1, "versionNonce": 1007, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false,
+      "fontSize": 16, "fontFamily": 2,
+      "text": "MAIN — Electron main (Node access)  (src/main/)\nipc · git (GitRunner) · ai · security · services · storage · testing\nGitRunner = the only execFile caller · args array, never a shell, paths after --",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null,
+      "originalText": "MAIN — Electron main (Node access)  (src/main/)\nipc · git (GitRunner) · ai · security · services · storage · testing\nGitRunner = the only execFile caller · args array, never a shell, paths after --",
+      "lineHeight": 1.25, "autoResize": true
+    },
+
+    {
+      "id": "r-core", "type": "rectangle", "x": 70, "y": 616, "width": 690, "height": 140, "angle": 0,
+      "strokeColor": "#16a34a", "backgroundColor": "#dcfce7", "fillStyle": "solid", "strokeWidth": 2.5,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": { "type": 3 }, "seed": 1008, "version": 1, "versionNonce": 1008, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false
+    },
+    {
+      "id": "t-core", "type": "text", "x": 88, "y": 630, "width": 640, "height": 105, "angle": 0,
+      "strokeColor": "#14532d", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": null, "seed": 1009, "version": 1, "versionNonce": 1009, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false,
+      "fontSize": 16, "fontFamily": 2,
+      "text": "CORE — pure · the verifiability backbone  (src/core/)\nsafety (Safety Engine) · parsers (porcelain) · ai · config · github · types\n✗ no child_process · ✗ no fs · ✗ no electron · ✗ no DOM\ninterfaces + injected → runs under plain Vitest, offline (imports nothing impure)",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null,
+      "originalText": "CORE — pure · the verifiability backbone  (src/core/)\nsafety (Safety Engine) · parsers (porcelain) · ai · config · github · types\n✗ no child_process · ✗ no fs · ✗ no electron · ✗ no DOM\ninterfaces + injected → runs under plain Vitest, offline (imports nothing impure)",
+      "lineHeight": 1.25, "autoResize": true
+    },
+
+    {
+      "id": "t-ext-head", "type": "text", "x": 820, "y": 78, "width": 320, "height": 20, "angle": 0,
+      "strokeColor": "#475569", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": null, "seed": 1010, "version": 1, "versionNonce": 1010, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false,
+      "fontSize": 13, "fontFamily": 2, "text": "OUTSIDE WORLD (main only)",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null,
+      "originalText": "OUTSIDE WORLD (main only)", "lineHeight": 1.25, "autoResize": true
+    },
+    {
+      "id": "r-git", "type": "rectangle", "x": 820, "y": 420, "width": 320, "height": 60, "angle": 0,
+      "strokeColor": "#64748b", "backgroundColor": "#f1f5f9", "fillStyle": "solid", "strokeWidth": 1.6,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": { "type": 3 }, "seed": 1011, "version": 1, "versionNonce": 1011, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false
+    },
+    {
+      "id": "t-git", "type": "text", "x": 836, "y": 432, "width": 290, "height": 40, "angle": 0,
+      "strokeColor": "#334155", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": null, "seed": 1012, "version": 1, "versionNonce": 1012, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false,
+      "fontSize": 13, "fontFamily": 2, "text": "git binary\nchild process · resolved at runtime (≥ 2.30)",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null,
+      "originalText": "git binary\nchild process · resolved at runtime (≥ 2.30)", "lineHeight": 1.25, "autoResize": true
+    },
+    {
+      "id": "r-net", "type": "rectangle", "x": 820, "y": 500, "width": 320, "height": 60, "angle": 0,
+      "strokeColor": "#64748b", "backgroundColor": "#f1f5f9", "fillStyle": "solid", "strokeWidth": 1.6,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": { "type": 3 }, "seed": 1013, "version": 1, "versionNonce": 1013, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false
+    },
+    {
+      "id": "t-net", "type": "text", "x": 836, "y": 512, "width": 290, "height": 40, "angle": 0,
+      "strokeColor": "#334155", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": null, "seed": 1014, "version": 1, "versionNonce": 1014, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false,
+      "fontSize": 13, "fontFamily": 2, "text": "GitHub API · AI providers\nnetwork · AI advisory-only (never a git action)",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null,
+      "originalText": "GitHub API · AI providers\nnetwork · AI advisory-only (never a git action)", "lineHeight": 1.25, "autoResize": true
+    },
+    {
+      "id": "r-store", "type": "rectangle", "x": 820, "y": 616, "width": 320, "height": 60, "angle": 0,
+      "strokeColor": "#64748b", "backgroundColor": "#f1f5f9", "fillStyle": "solid", "strokeWidth": 1.6,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": { "type": 3 }, "seed": 1015, "version": 1, "versionNonce": 1015, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false
+    },
+    {
+      "id": "t-store", "type": "text", "x": 836, "y": 628, "width": 290, "height": 40, "angle": 0,
+      "strokeColor": "#334155", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": null, "seed": 1016, "version": 1, "versionNonce": 1016, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false,
+      "fontSize": 13, "fontFamily": 2, "text": "safeStorage · userData (JSON)\nsecrets encrypted · non-secret config as JSON",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null,
+      "originalText": "safeStorage · userData (JSON)\nsecrets encrypted · non-secret config as JSON", "lineHeight": 1.25, "autoResize": true
+    },
+
+    {
+      "id": "a-rp", "type": "arrow", "x": 200, "y": 200, "width": 0, "height": 50, "angle": 0,
+      "strokeColor": "#334155", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": { "type": 2 }, "seed": 1017, "version": 1, "versionNonce": 1017, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false,
+      "points": [[0, 0], [0, 50]], "lastCommittedPoint": null,
+      "startBinding": null, "endBinding": null, "startArrowhead": "arrow", "endArrowhead": "arrow"
+    },
+    {
+      "id": "a-pm", "type": "arrow", "x": 200, "y": 342, "width": 0, "height": 78, "angle": 0,
+      "strokeColor": "#334155", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": { "type": 2 }, "seed": 1018, "version": 1, "versionNonce": 1018, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false,
+      "points": [[0, 0], [0, 78]], "lastCommittedPoint": null,
+      "startBinding": null, "endBinding": null, "startArrowhead": "arrow", "endArrowhead": "arrow"
+    },
+    {
+      "id": "a-mc", "type": "arrow", "x": 200, "y": 536, "width": 0, "height": 80, "angle": 0,
+      "strokeColor": "#334155", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": { "type": 2 }, "seed": 1019, "version": 1, "versionNonce": 1019, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false,
+      "points": [[0, 0], [0, 80]], "lastCommittedPoint": null,
+      "startBinding": null, "endBinding": null, "startArrowhead": null, "endArrowhead": "arrow"
+    },
+    {
+      "id": "l-rp", "type": "text", "x": 232, "y": 212, "width": 480, "height": 20, "angle": 0,
+      "strokeColor": "#334155", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": null, "seed": 1020, "version": 1, "versionNonce": 1020, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false,
+      "fontSize": 12, "fontFamily": 2, "text": "contextBridge → window.api.* · renderer has no direct Node",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null,
+      "originalText": "contextBridge → window.api.* · renderer has no direct Node", "lineHeight": 1.25, "autoResize": true
+    },
+    {
+      "id": "l-pm", "type": "text", "x": 232, "y": 372, "width": 480, "height": 20, "angle": 0,
+      "strokeColor": "#334155", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": null, "seed": 1021, "version": 1, "versionNonce": 1021, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false,
+      "fontSize": 12, "fontFamily": 2, "text": "IPC ipcMain/ipcRenderer · payloads Zod-validated",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null,
+      "originalText": "IPC ipcMain/ipcRenderer · payloads Zod-validated", "lineHeight": 1.25, "autoResize": true
+    },
+    {
+      "id": "l-mc", "type": "text", "x": 232, "y": 560, "width": 500, "height": 20, "angle": 0,
+      "strokeColor": "#334155", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": null, "seed": 1022, "version": 1, "versionNonce": 1022, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false,
+      "fontSize": 12, "fontFamily": 2, "text": "imports pure core (one-way ↓) · core imports nothing impure",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null,
+      "originalText": "imports pure core (one-way ↓) · core imports nothing impure", "lineHeight": 1.25, "autoResize": true
+    },
+
+    {
+      "id": "a-mgit", "type": "arrow", "x": 760, "y": 458, "width": 60, "height": 8, "angle": 0,
+      "strokeColor": "#334155", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": { "type": 2 }, "seed": 1023, "version": 1, "versionNonce": 1023, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false,
+      "points": [[0, 0], [60, -8]], "lastCommittedPoint": null,
+      "startBinding": null, "endBinding": null, "startArrowhead": null, "endArrowhead": "arrow"
+    },
+    {
+      "id": "a-mnet", "type": "arrow", "x": 760, "y": 495, "width": 60, "height": 35, "angle": 0,
+      "strokeColor": "#334155", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": { "type": 2 }, "seed": 1024, "version": 1, "versionNonce": 1024, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false,
+      "points": [[0, 0], [60, 35]], "lastCommittedPoint": null,
+      "startBinding": null, "endBinding": null, "startArrowhead": null, "endArrowhead": "arrow"
+    },
+    {
+      "id": "a-mstore", "type": "arrow", "x": 760, "y": 522, "width": 60, "height": 120, "angle": 0,
+      "strokeColor": "#334155", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": { "type": 2 }, "seed": 1025, "version": 1, "versionNonce": 1025, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false,
+      "points": [[0, 0], [60, 120]], "lastCommittedPoint": null,
+      "startBinding": null, "endBinding": null, "startArrowhead": null, "endArrowhead": "arrow"
+    },
+
+    {
+      "id": "r-footer", "type": "rectangle", "x": 70, "y": 786, "width": 1070, "height": 118, "angle": 0,
+      "strokeColor": "#cbd5e1", "backgroundColor": "#f8fafc", "fillStyle": "solid", "strokeWidth": 1.4,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": { "type": 3 }, "seed": 1026, "version": 1, "versionNonce": 1026, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false
+    },
+    {
+      "id": "t-footer", "type": "text", "x": 90, "y": 800, "width": 1030, "height": 90, "angle": 0,
+      "strokeColor": "#0f172a", "backgroundColor": "transparent", "fillStyle": "solid", "strokeWidth": 2,
+      "strokeStyle": "solid", "roughness": 1, "opacity": 100, "groupIds": [], "frameId": null,
+      "roundness": null, "seed": 1027, "version": 1, "versionNonce": 1027, "isDeleted": false,
+      "boundElements": null, "updated": 1, "link": null, "locked": false,
+      "fontSize": 13, "fontFamily": 2,
+      "text": "Non-negotiable crossing rules\n1 · src/core/ pure (no child_process/fs/electron/DOM)    2 · all git via GitRunner only (src/main/git/)\n3 · git args always an array, paths after --    4 · only --local config, never --global/--system\n5 · never log secrets    6 · destructive/remote actions behind confirmation    7 · AI advisory-only",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null,
+      "originalText": "Non-negotiable crossing rules\n1 · src/core/ pure (no child_process/fs/electron/DOM)    2 · all git via GitRunner only (src/main/git/)\n3 · git args always an array, paths after --    4 · only --local config, never --global/--system\n5 · never log secrets    6 · destructive/remote actions behind confirmation    7 · AI advisory-only",
+      "lineHeight": 1.25, "autoResize": true
+    }
+  ],
+  "appState": {
+    "gridSize": null,
+    "viewBackgroundColor": "#ffffff"
+  },
+  "files": {}
+}

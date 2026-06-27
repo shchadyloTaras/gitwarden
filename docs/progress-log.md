@@ -108,7 +108,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] DX-3 — Subagent reviewers
 - [x] DX-4 — AI evals
 - [x] DX-5 — Agent-agnostic shareability
-- [ ] DX-6 — Optional / à la carte
+- [x] DX-6 — Optional / à la carte
 
 ## Feature Track Status
 
@@ -127,7 +127,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | Client Branch Access   | 56–59     | ✅ complete                                                   |
 | Distribution & Release | 40–45     | 🟡 Phases 40–42, 45 done; 43–44 open (gated on signing certs) |
 | Landing Page           | 46–51     | ✅ complete                                                   |
-| Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-5 done, DX-6 open                                  |
+| Agentic DX             | DX-0–DX-6 | ✅ complete (DX-6 = à la carte; project-factory/sdd deferred) |
 
 ## Progress Log
 
@@ -837,6 +837,18 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Exit criteria: ⚠️ PARTIAL — all offline-codeable parts done (landing CI gate; release deploy-hook wiring; README link; static output + client self-heal). **Human-only steps remaining** (require your Vercel/GitHub accounts — HARD RULE 4): (1) create the Vercel project with **Root Directory = `landing/`** and connect the repo (push-to-deploy + PR previews); (2) create a **Vercel deploy hook** and add it as the **`VERCEL_DEPLOY_HOOK_URL`** repo secret; (3) optional **custom domain** + update `site` in `astro.config.mjs`; (4) **cut a real release** and verify the live download buttons resolve per OS plus the offline-fallback. Checklist box left unticked until the site is live + verified.
 - Notes / follow-ups: No `@astrojs/vercel` adapter needed (static output is sufficient). The landing-ci e2e step installs Chromium with `--with-deps`. The manual launch-verification checklist lives at the end of `docs/prompts/landing-page-prompts.md`.
 
+### 2026-06-28 — DX-6: Optional / à la carte
+
+- Built: Executed four of the five optional DX-6 items; the fifth (wiring `project-factory`/`sdd` into the repo) is **intentionally deferred** to a deliberate, separate step on a new feature — per the user and the plan's "adopt deliberately, not retroactively" guidance.
+  1. **Split `DECISIONS.md` → `docs/adr/` (MADR).** One file per decision (`0001`–`0008`) + an ADR index (`docs/adr/README.md`). `DECISIONS.md` is reduced to a `§N`→ADR mapping table so the ~25 existing "DECISIONS.md §N" cross-references still resolve. Supersession/amendment preserved (0003→0004; 0007↔0008).
+  2. **GenUI north-star refs** in `docs/plans/genui-blocks-plan.md` — named the **Vercel AI SDK generative-UI** pattern and **Google A2UI** as the industry anchors for the closed-union/declarative-block schema (market-table row + "North-star anchors" note + References).
+  3. **`.mcp.json` code-graph MCP (opt-in).** CodeGraphContext configured but left **disabled** — Claude Code approval-gates project MCP servers and `.claude/settings.json` does not auto-enable it (DX-6 rule: don't add MCP speculatively). Secret read from `${NEO4J_PASSWORD}` env, never committed. Setup/rationale: `docs/code-graph-mcp.md`.
+  4. **Architecture diagram** in its own folder `docs/architecture/` — `diagram.excalidraw` (editable) + `diagram.svg` + `diagram.png` (rendered via the repo's bundled Chromium) + `README.md` index — core ↔ main ↔ preload ↔ renderer and the only allowed crossings.
+- Files: added `docs/adr/0001..0008-*.md`, `docs/adr/README.md`, `docs/architecture/` (`README.md` + `diagram.{excalidraw,svg,png}`), `docs/code-graph-mcp.md`, `.mcp.json`; modified `DECISIONS.md` (→ index), `docs/plans/genui-blocks-plan.md`, `docs/plans/agentic-dx-plan.md` (DX-6 done note), `docs/prompts/dx-execution-prompts.md`, `AGENTS.md` (architecture + ADR refs; build-order DX-6 → complete), `WORKFLOW.md` (Current level → DX-6 + DX-6 section + orientation row), `docs/progress-log.md`.
+- Tests: docs/tooling only — no `src/` or runtime code touched (ESLint scope `.ts/.tsx` unaffected). `.mcp.json` and `diagram.excalidraw` validated as JSON (27 elements); `diagram.png` rendered 2400×1880 @2×. `prettier --check` clean on every changed DX-6 file. (Repo-wide `prettier --check .` flags one **pre-existing untracked** file, `docs/plans/sdd-migration-plan.md`, unrelated to this change — left untouched.)
+- Exit criteria: ✅ met — 4/5 à-la-carte items shipped; `project-factory`/`sdd` deliberately deferred (the menu is "pick any, none required"). All derived views re-derived from the Phase Checklist: Feature Track Status row, AGENTS.md build order, WORKFLOW.md "Current level".
+- Notes / follow-ups: project-factory/sdd onboarding belongs on a genuinely new feature, not retroactively across existing phases. Code-graph MCP stays disabled until navigation pain is demonstrated. Regenerate the architecture PNG with the snippet in `docs/architecture/README.md` after editing the SVG. The diagram lives in its own folder `docs/architecture/` (README.md + diagram.\*).
+
 ## Documentation
 
 ### landing-page plan + prompts updated — 2026-06-27
@@ -845,6 +857,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Summary: Updated to reflect decided stack (Astro + TS + Tailwind, `landing/` folder, Vercel) and OS detection strategy (macOS arm64 primary + Intel secondary, Windows exe, Linux AppImage + deb secondary, unknown → GitHub Releases fallback). Replaced all Next.js / `site/` references.
 
 ### 2026-06-27 — Phase 50+51: Verification complete (site live)
+
 - Lighthouse (mobile): Performance 98 / Accessibility 100 / Best-Practices 96 / SEO 100 — all ≥95 ✅
 - OG/Twitter/JSON-LD meta: all tags present and correct on live site ✅
 - Vercel site live at https://gitwarden.vercel.app (HTTP 200); `VERCEL_DEPLOY_HOOK_URL` secret wired in GitHub Actions ✅
@@ -853,13 +866,15 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Follow-up: swap `og-image.svg` → PNG (1200×630) when real app screenshots land; some social platforms (Twitter/X, Slack) do not render SVG og:image.
 
 ### 2026-06-27 — Docs page: /docs section
+
 - Built: Astro Content Collections docs site inside landing/. 9 markdown pages (overview, installation, first-run, profiles, safety, github-connect, ai-connections, faq, changelog). `DocsLayout.astro` — sticky header with "← GitWarden" back-link, two-column sidebar + prose layout, hamburger toggle on mobile. `DocsSidebar.astro` — sorted nav from `getCollection('docs')` with `is-active` highlight. `[...slug].astro` dynamic route + `pages/docs/index.astro`. Changelog auto-synced from root `CHANGELOG.md` via a Vite plugin in `astro.config.mjs` (runs at config-load time). All copy sourced from README.md, CHANGELOG.md, plan files — no invented features. OS warning workaround in installation.md.
-- Files: added `landing/src/content.config.ts`, `landing/src/content/docs/` (9 .md files), `landing/src/components/DocsLayout.astro`, `landing/src/components/DocsSidebar.astro`, `landing/src/pages/docs/index.astro`, `landing/src/pages/docs/[...slug].astro`; updated `landing/astro.config.mjs` (changelog sync plugin + node globals), `landing/eslint.config.js` (node globals for *.mjs), `landing/src/styles/global.css` (docs layout + prose CSS).
+- Files: added `landing/src/content.config.ts`, `landing/src/content/docs/` (9 .md files), `landing/src/components/DocsLayout.astro`, `landing/src/components/DocsSidebar.astro`, `landing/src/pages/docs/index.astro`, `landing/src/pages/docs/[...slug].astro`; updated `landing/astro.config.mjs` (changelog sync plugin + node globals), `landing/eslint.config.js` (node globals for \*.mjs), `landing/src/styles/global.css` (docs layout + prose CSS).
 - Tests: `astro check` 0/0/0 · `tsc --noEmit` clean · ESLint + Prettier clean · `npm run build` 10 pages built (1 home + 9 docs) · sitemap updated.
 - Exit criteria: ✅ met — build and check clean; /docs renders overview; all 8 sub-pages reachable via sidebar nav; sidebar keyboard-accessible; all pages mobile-responsive; each page has a unique `<title>` and meta description from frontmatter; content cross-checked against README.md and plan files — no invented features; OS warning workaround present in installation.md.
 - Notes / follow-ups: changelog.md is auto-generated from root CHANGELOG.md by the Vite plugin — do not edit it manually. To add a "Docs" link in the main landing header, update `src/components/Header.astro`. Prettier table alignment was auto-fixed on the markdown files (cosmetic only).
 
 ### 2026-06-28 — e2e CI fix: port conflict with dev server
+
 - Problem: `playwright.config.ts` used port 4321 (Astro dev default). When `astro dev` was already running locally, `reuseExistingServer: true` caused Playwright to reuse the dev server instead of starting a fresh fixture build — download panel, version badge, sitemap, and hero-primary all failed (8/20 tests).
 - Fix: changed e2e webServer port from 4321 → 4323 in `playwright.config.ts` (both `baseURL`, `webServer.url`, and the `--port` arg). Port 4323 is dedicated to e2e to avoid conflict with the dev server (4321) or the Claude Code preview tool (auto-assigned).
 - Tests: Playwright **20/20** confirmed after the fix.

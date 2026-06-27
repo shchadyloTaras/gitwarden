@@ -48,21 +48,34 @@ This feature restores that richness inside the unified chat, framed as the indus
 
 **What the market does (and how it maps to our stack):**
 
-| Approach                             | What it is                                                                         | Fit for Electron + sandboxed renderer                                                                                    |
-| ------------------------------------ | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Vercel AI SDK `streamUI` (RSC)       | server streams React components via tool calls                                     | ❌ requires React Server Components + Server Actions; we have no RSC and a sandboxed renderer                            |
-| CopilotKit / AG-UI                   | full agentic framework, JSON-protocol → UI (Controlled / Declarative / Open-ended) | ⚠️ owns the chat + transport; too large for an advisory layer                                                            |
-| assistant-ui                         | React chat primitives with a GenUI primitive                                       | ⚠️ owns the chat; we already built ours                                                                                  |
-| Thesys C1 / OpenUI                   | hosted endpoint that returns UI; OpenUI = component-registry standard              | ❌ C1 ships repo context to a third-party host (privacy); OpenUI is a useful _pattern_ reference                         |
-| **Native `ChatUiBlock`** (this plan) | closed union + Zod in `core/` + a renderer registry                                | ✅ we already have ~80% (Zod core, adapter registry, structured outputs, `kind` discriminant, `/propose` card precedent) |
+| Approach                             | What it is                                                                                | Fit for Electron + sandboxed renderer                                                                                     |
+| ------------------------------------ | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Vercel AI SDK `streamUI` (RSC)       | server streams React components via tool calls                                            | ❌ requires React Server Components + Server Actions; we have no RSC and a sandboxed renderer                             |
+| CopilotKit / AG-UI                   | full agentic framework, JSON-protocol → UI (Controlled / Declarative / Open-ended)        | ⚠️ owns the chat + transport; too large for an advisory layer                                                             |
+| assistant-ui                         | React chat primitives with a GenUI primitive                                              | ⚠️ owns the chat; we already built ours                                                                                   |
+| Thesys C1 / OpenUI                   | hosted endpoint that returns UI; OpenUI = component-registry standard                     | ❌ C1 ships repo context to a third-party host (privacy); OpenUI is a useful _pattern_ reference                          |
+| **Google A2UI** (declarative)        | agent emits UI as declarative data against a **closed component catalog**; client renders | ✅ same shape as ours — a closed, declarative block catalog rendered client-side; the **north-star** for the block schema |
+| **Native `ChatUiBlock`** (this plan) | closed union + Zod in `core/` + a renderer registry                                       | ✅ we already have ~80% (Zod core, adapter registry, structured outputs, `kind` discriminant, `/propose` card precedent)  |
 
 **Decision: borrow the controlled-GenUI pattern, build it natively.** The portable idea across all
 frameworks is identical — _the model returns a typed block from a closed allowlist; the client maps
 the block type to a whitelisted native component._ Implementing it natively is less code than
 adopting any framework and keeps the chat subordinate to the Safety Engine.
 
-References: [Vercel AI SDK 3.0 — Generative UI](https://vercel.com/blog/ai-sdk-3-generative-ui),
+**North-star anchors (the named industry reference for the closed-union/declarative-block schema).**
+Two references validate this exact shape and are the anchors to track as the catalog grows:
+
+- **Vercel AI SDK — Generative UI:** the model returns a typed UI payload the client renders from a
+  **fixed** component set (not arbitrary markup). This is the canonical "controlled GenUI" pattern our
+  `ChatUiBlock` union mirrors — minus the RSC transport we deliberately don't adopt.
+- **Google A2UI:** an agent describes UI as **declarative data against a closed component catalog**,
+  rendered by the client. This is the closest external analogue to our design — a closed, validated
+  block schema rendered natively — and the north-star to align the block contracts with.
+
+References: [Vercel AI SDK — Generative User Interfaces](https://ai-sdk.dev/docs/ai-sdk-ui/generative-user-interfaces),
+[Vercel AI SDK 3.0 — Generative UI](https://vercel.com/blog/ai-sdk-3-generative-ui),
 [AI SDK RSC `streamUI`](https://ai-sdk.dev/docs/ai-sdk-rsc/streaming-react-components),
+[Google A2UI](https://github.com/google/A2UI),
 [CopilotKit — Developer's Guide to GenUI 2026](https://www.copilotkit.ai/blog/the-developer-s-guide-to-generative-ui-in-2026),
 [Thesys OpenUI](https://github.com/thesysdev/openui).
 
@@ -178,7 +191,11 @@ ESLint + Prettier clean.
 ## References
 
 - Internal: `docs/plans/ai-chat-redesign-plan.md`, `docs/plans/ai-integration-plan.md` (privacy §4,
-  advisory rationale §2, agentic boundary §7), `DECISIONS.md`, `SECURITY.md`, `docs/progress-log.md`
+  advisory rationale §2, agentic boundary §7), `docs/adr/` (ADR 0007/0008), `SECURITY.md`,
+  `docs/progress-log.md`
+- North-star (industry anchors for the declarative-block schema):
+  [Vercel AI SDK — Generative User Interfaces](https://ai-sdk.dev/docs/ai-sdk-ui/generative-user-interfaces)
+  · [Google A2UI](https://github.com/google/A2UI)
 - Prompts: `docs/prompts/genui-blocks-prompts.md`
 - Reused surfaces: `src/core/ai/schemas.ts` (per-feature schemas), `src/renderer/store/aiChatStore.ts`,
   `src/renderer/components/AiChatPanel.tsx`

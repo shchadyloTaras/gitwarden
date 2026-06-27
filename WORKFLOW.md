@@ -5,7 +5,7 @@ Living reference. Starts at Baseline, grows one section per completed DX step.
 **How to update:** when a DX step completes, change its `🔒` to `✅` and uncomment the
 locked content below it. The DX prompt for that step includes this as an explicit task.
 
-**Current level:** `DX-5 — Agent-agnostic`
+**Current level:** `DX-6 — Optional / à la carte (DX track complete)`
 
 > Derived view. This line and the `🔒`/`✅` section markers below mirror the **Agentic DX** row in
 > `docs/progress-log.md`'s Feature Track Status table — itself derived from the Phase Checklist.
@@ -75,14 +75,15 @@ cat docs/progress-log.md   # Phase Checklist + Progress Log
 Open `docs/progress-log.md` → look at the **Feature Track Status** table at the top.
 No spelunking through 62 checkboxes.
 
-| What you need       | Where to look                        |
-| ------------------- | ------------------------------------ |
-| Current HEAD phase  | Status table → last ✅ row           |
-| What's next         | Status table → first ⬜ row          |
-| All plans + prompts | AGENTS.md "Reference docs" §         |
-| Decision history    | DECISIONS.md                         |
-| Security rules      | SECURITY.md                          |
-| DX step prompts     | docs/prompts/dx-execution-prompts.md |
+| What you need       | Where to look                             |
+| ------------------- | ----------------------------------------- |
+| Current HEAD phase  | Status table → last ✅ row                |
+| What's next         | Status table → first ⬜ row               |
+| All plans + prompts | AGENTS.md "Reference docs" §              |
+| Architecture map    | docs/architecture/ (+ diagram.excalidraw) |
+| Decision history    | docs/adr/ (index: DECISIONS.md)           |
+| Security rules      | SECURITY.md                               |
+| DX step prompts     | docs/prompts/dx-execution-prompts.md      |
 
 ### Hand off to another agent (Codex, new session)
 
@@ -296,6 +297,34 @@ Paste `gitwarden-context.txt` into any AI tool for full project context without 
 
 `CONTRIBUTING.md` — prerequisites, five commands, phase workflow, three non-negotiables,
 how to pack the repo. Under 100 lines. Read time: 5 minutes.
+
+---
+
+## ✅ DX-6 — Optional / à la carte
+
+> Unlocks after: `DX-6: Optional / à la carte` commit lands.
+> The à-la-carte menu — pick any, none required. Four of five options shipped (2026-06-28).
+
+### What's available now
+
+- **Architecture diagram** — [`docs/architecture/`](docs/architecture/README.md) (PNG) + editable
+  `docs/architecture/diagram.excalidraw` / `docs/architecture/diagram.svg`. One picture of core ↔ main
+  ↔ preload ↔ renderer and the only allowed crossings. Regenerate the PNG with the snippet in
+  `docs/architecture/README.md` after editing the SVG.
+- **ADRs split out** — decisions now live one-per-file under [`docs/adr/`](docs/adr/) (MADR).
+  `DECISIONS.md` is the `§N`→ADR index, so old "DECISIONS.md §6" references still resolve.
+- **GenUI north-star refs** — `docs/plans/genui-blocks-plan.md` now names the Vercel AI SDK
+  generative-UI pattern and Google A2UI as the industry anchors for the closed-union/declarative-block
+  schema.
+- **Code-graph MCP (opt-in)** — `.mcp.json` configures CodeGraphContext but leaves it **disabled**;
+  Claude Code asks before running any project MCP server, and `.claude/settings.json` does not
+  auto-enable it. Setup + rationale: `docs/code-graph-mcp.md`. Approve only if navigation pain is real
+  (DX-6 rule: don't add MCP speculatively).
+
+### Deferred (do on a genuinely new feature, not retroactively)
+
+- **project-factory / sdd onboarding** — wire the governance plugins into the repo deliberately on a
+  new feature; do not run across the existing phases. Left as a separate, conscious step.
 
 ---
 
