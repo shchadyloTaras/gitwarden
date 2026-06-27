@@ -51,28 +51,35 @@ export class GitRunner {
       const stderrChunks: string[] = []
       let aborted = false
       let settled = false
-
-      const doAbort = () => {
-        if (settled) return
-        aborted = true
-        child.kill('SIGTERM')
-      }
-
-      if (inv.signal) {
-        inv.signal.addEventListener('abort', doAbort, { once: true })
-      }
-
       let timer: ReturnType<typeof setTimeout> | undefined
-      if (inv.timeoutMs != null) {
-        timer = setTimeout(() => {
-          aborted = true
-          child.kill('SIGTERM')
-        }, inv.timeoutMs)
-      }
 
       const cleanup = () => {
         if (timer != null) clearTimeout(timer)
-        inv.signal?.removeEventListener('abort', doAbort)
+        inv.signal?.removeEventListener('abort', settleCancelled)
+      }
+
+      // Cancellation (AbortSignal or timeout) settles the promise promptly instead of waiting
+      // for 'close'. A SIGTERM'd child can leave an orphaned grandchild (e.g. a shell's `sleep`)
+      // that inherited and still holds the stdout pipe open; that delays the 'close' event —
+      // indefinitely on some platforms — so waiting for it would make cancellation hang. We
+      // reject on the abort itself and destroy our ends of the pipes to release those handles.
+      const settleCancelled = () => {
+        if (settled) return
+        settled = true
+        aborted = true
+        child.kill('SIGTERM')
+        child.stdout?.destroy()
+        child.stderr?.destroy()
+        cleanup()
+        reject(new Error('Git operation was cancelled.'))
+      }
+
+      if (inv.signal) {
+        inv.signal.addEventListener('abort', settleCancelled, { once: true })
+      }
+
+      if (inv.timeoutMs != null) {
+        timer = setTimeout(settleCancelled, inv.timeoutMs)
       }
 
       child.stdout.on('data', (chunk: Buffer) => stdoutChunks.push(chunk))
