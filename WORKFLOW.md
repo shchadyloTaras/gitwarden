@@ -5,7 +5,7 @@ Living reference. Starts at Baseline, grows one section per completed DX step.
 **How to update:** when a DX step completes, change its `🔒` to `✅` and uncomment the
 locked content below it. The DX prompt for that step includes this as an explicit task.
 
-**Current level:** `DX-2 — Phase workflow in four commands`
+**Current level:** `DX-3 — Maker ≠ checker`
 
 > Derived view. This line and the `🔒`/`✅` section markers below mirror the **Agentic DX** row in
 > `docs/progress-log.md`'s Feature Track Status table — itself derived from the Phase Checklist.
@@ -186,45 +186,47 @@ commands — it's a convenience wrapper, not a replacement of the underlying che
 
 ---
 
-## 🔒 DX-3 — Maker ≠ checker
+## ✅ DX-3 — Maker ≠ checker
 
 > Unlocks after: `DX-3: Subagent reviewers` commit lands.
 > Update: change `🔒` → `✅`, uncomment the block below, update "Current level" at the top.
 
-<!--
 ### Available reviewers
 
 Both are **read-only, clean-context** — they start without your session history.
 
 **`core-purity-reviewer`** — invoke on any diff touching `src/core/`:
+
 ```
 Task: review the changes in src/core/ for purity violations.
 Use the core-purity-reviewer subagent.
 ```
+
 Returns `FINDING: file:line — <what> violates AGENTS.md rule #N` or `CLEAN`.
 Checks: forbidden imports, non-injected services.
 
 **`safety-reviewer`** — invoke on any diff touching `src/main/git`, `src/main/security`,
 `src/main/ai`, or IPC:
+
 ```
 Task: review this diff for security rule violations.
 Use the safety-reviewer subagent.
 ```
+
 Returns findings or `CLEAN`.
 Checks: secrets logged, git args as strings (not arrays), destructive actions without confirmation,
 advisory-only AI boundary crossed.
 
 ### When to invoke
 
-| Phase touches | Reviewer to invoke |
-|---|---|
-| `src/core/` | `core-purity-reviewer` |
-| `src/main/git/`, IPC, `src/main/ai/` | `safety-reviewer` |
-| Both | Both, in parallel |
-| UI-only changes | Neither required |
+| Phase touches               | Reviewer to invoke                 |
+| --------------------------- | ---------------------------------- |
+| `src/core/`                 | `core-purity-reviewer`             |
+| `src/main/git/`, IPC, `src/main/ai/` | `safety-reviewer`         |
+| Both                        | Both, in parallel                  |
+| UI-only changes             | Neither required                   |
 
 Add reviewer invocation between `/verify-phase` and `/log-phase` for any phase that touches the above paths.
--->
 
 ---
 

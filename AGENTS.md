@@ -101,3 +101,4 @@ Compiles with no TS/ESLint errors in touched files · phase Exit criteria met ·
 - **Agentic DX:** `docs/plans/agentic-dx-plan.md` + `docs/prompts/dx-execution-prompts.md`
 - **Decisions (ADR):** `DECISIONS.md` · **Security threat model:** `SECURITY.md`
 - **Status, checklist & progress log:** `docs/progress-log.md`
+- **Subagent reviewers:** `.claude/agents/core-purity-reviewer.md` (AGENTS.md #1/#4), `.claude/agents/safety-reviewer.md` (SECURITY.md + AI advisory boundary)

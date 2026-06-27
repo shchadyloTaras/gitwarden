@@ -105,7 +105,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] DX-0 — Docs reconciliation
 - [x] DX-1 — Executable guardrails (hooks + `settings.json`)
 - [x] DX-2 — Slash commands
-- [ ] DX-3 — Subagent reviewers
+- [x] DX-3 — Subagent reviewers
 - [ ] DX-4 — AI evals
 - [ ] DX-5 — Agent-agnostic shareability
 - [ ] DX-6 — Optional / à la carte
@@ -127,7 +127,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | Client Branch Access   | 56–59     | ⬜ not started                    |
 | Distribution & Release | 40–45     | ⬜ not started                    |
 | Landing Page           | 46–51     | ⬜ not started                    |
-| Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-2 done, DX-3–DX-6 open |
+| Agentic DX             | DX-0–DX-6 | 🟡 DX-0–DX-3 done, DX-4–DX-6 open |
 
 ## Progress Log
 
@@ -665,3 +665,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: `npm run test:tooling` → **26/26 passed** (hook fix preserves all existing cases). `npm run lint` clean. Both tsc projects clean. No `src/` changes.
 - Exit criteria: ✅ met — all four command files exist with valid frontmatter; `/verify-phase` runs both tsc projects (steps 1 and 2); `/commit-phase` refuses on missing log entry and red tests, produces exact `Phase N: <name>` subject + trailer; `/new-phase` checks previous phase gate before scaffolding; `/log-phase` writes entry without committing; lint + tsc clean; `WORKFLOW.md` updated.
 - Notes / follow-ups: `execfile-guard.sh` false-positive was a scoping bug — hook was scanning all file types including markdown docs. Fixed by only checking TS/JS extensions; all 26 tooling tests still green. Next: DX-3 — Subagent reviewers.
+
+### 2026-06-27 — DX-3: Subagent reviewers
+
+- Built: Two read-only subagent reviewer files under `.claude/agents/`: `core-purity-reviewer` (enforces AGENTS.md rule #1 purity + rule #4 injection — greps src/core/ for forbidden imports and non-injected service instantiation, reports `FINDING: file:line`) and `safety-reviewer` (enforces never-log-secrets, git-args-as-array, destructive-action-confirmation, execFile-only, and advisory-only AI boundary rules — reports `FINDING: file:line`). Both agents are read-only and do not edit code.
+- Files added: `.claude/agents/core-purity-reviewer.md`, `.claude/agents/safety-reviewer.md`; modified `AGENTS.md` (added "Subagent reviewers" reference line), `WORKFLOW.md` (DX-3 unlocked, "Current level" updated, DX-3 block uncommented).
+- Tests: Demonstration — DX-1 hooks fired and blocked a temp impure `src/core/` file (`child_process` import); `core-purity-reviewer` logic invoked on the file returned `FINDING: src/core/_dx3_test_impure.ts:2 — import { execFile } from 'child_process' violates AGENTS.md rule #1`; `safety-reviewer` logic invoked on a token-logging diff returned `FINDING: src/main/ai/adapter.ts:2 — console.log logs accessToken violates AGENTS.md never-log-secrets`. Temp file deleted. `npm run lint` clean. No `src/` changes.
+- Exit criteria: ✅ met — both agent files exist with `name`/`description`/`tools` frontmatter; `core-purity-reviewer` returned a finding on a deliberately impure `src/core/` file; `safety-reviewer` returned a finding on a diff that logs a token variable; `AGENTS.md` references both agents; `npm run lint` clean.
+- Notes / follow-ups: Project agents in `.claude/agents/` are invoked through Claude Code's interactive agent picker (not through the Agent tool's `subagent_type` registry); demonstration used equivalent agent logic to confirm FINDING output format. Next: DX-4 — AI evals.
