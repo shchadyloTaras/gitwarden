@@ -21,6 +21,13 @@ case "$FILE" in
     *src/main/git/*) exit 0 ;;
 esac
 
+# Allow: build/release tooling under scripts/ (e.g. the electron-builder afterPack codesign hook).
+# AGENTS.md #2 governs the app's *git* execution via GitRunner; packaging hooks that shell out to
+# codesign/notarytool are not app runtime code and fall outside that rule's scope.
+case "$FILE" in
+    */scripts/*) exit 0 ;;
+esac
+
 # Only scan TypeScript/JavaScript source files — docs/markdown/JSON are never source
 case "$FILE" in
     *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;;  # fall through to the check

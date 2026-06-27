@@ -2,6 +2,10 @@ appId: com.gitwarden.app
 productName: GitWarden
 copyright: Copyright © 2026 Taras Shchadylo
 asar: true
+# Ad-hoc sign the macOS app after packaging (see scripts/after-pack.cjs). electron-builder
+# rewrites the app but, with no Developer ID, skips re-signing — leaving an invalid signature
+# that Apple Silicon rejects as "damaged". Ad-hoc signing keeps it valid; Phase 43 adds real signing.
+afterPack: scripts/after-pack.cjs
 directories:
   buildResources: resources
   output: dist
