@@ -607,6 +607,14 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Exit criteria: ✅ met — `/commit` renders a native card; Insert reuses the existing commit-message path (no new mutate path); block union validates/rejects fail-closed; `src/core/` pure.
 - Notes / follow-ups: Insert relies on `commitStore.load()` NOT resetting `message`, so the draft survives navigation to the Commit screen (verified in the store). Next: Phase 62 free-text model-chosen blocks (Level 2; needs a streaming decision).
 
+### 2026-06-27 — DX-0: Docs reconciliation
+
+- Built: Docs-only orientation step. Tracked WORKFLOW.md and dx-execution-prompts.md; extended AGENTS.md build order through Phase 62 + DX track (DX-0→DX-6); added 7 missing plan/prompt references to AGENTS.md Reference docs §; added Feature Track Status table to progress-log.md; fixed header-guard-badge-plan.md status to ✅ implemented; set WORKFLOW.md DX-0 section to active (🔒→✅, block uncommented).
+- Files: `AGENTS.md`, `WORKFLOW.md` (new), `docs/plans/agentic-dx-plan.md` (prettier), `docs/plans/header-guard-badge-plan.md`, `docs/progress-log.md`, `docs/prompts/dx-execution-prompts.md` (new).
+- Tests: n/a (docs-only). `npm run lint` clean; both tsc projects clean.
+- Exit criteria: ✅ met — all 10 plans + prompts in AGENTS.md; build order shows Phase 61 at HEAD; status table present; header-guard-badge status corrected; lint clean; no untracked files.
+- Notes / follow-ups: Next: DX-1 — Executable guardrails (`.claude/settings.json` allowlist + PreToolUse hooks + test:tooling suite).
+
 ### 2026-06-27 — Phase 62: Generative UI Blocks — Free-text model-chosen blocks (Level 2)
 
 - Built: Free-text chat can now optionally surface a model-chosen card. Chosen design = **hybrid**: streaming is unchanged (no regression); after a successful free-text stream, the store runs a small **fail-closed** structured pass (`ai:chatSuggestBlock` → `AiChatAssistant.suggestBlock`) that MAY upgrade the finished bubble with ONE allowlisted block. Scoped to `commit-draft` — the only block derivable from the conversation (chat context has no diffs, so a model-"reviewed" findings block would be fabricated); `review-findings` stays slash-command-only. No in-band stream parsing. The streamed prose renders above the card (`blockAugmentsText`). One extra small structured call per free-text message; advisory-only, same redaction/enablement gate, no new Git authority.
