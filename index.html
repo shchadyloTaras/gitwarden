@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>GitWarden Presentation Prototype</title>
+    <meta name="description" content="A small standalone presentation prototype for GitWarden." />
+    <meta name="color-scheme" content="dark" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="stage" aria-label="GitWarden presentation prototype">
+      <div class="stage-grid" aria-hidden="true"></div>
+      <div class="stage-aurora" aria-hidden="true"></div>
+      <div class="stage-scan" aria-hidden="true"></div>
+
+      <div class="deck-wrap">
+        <div class="deck">
+          <main id="slides" class="slides" aria-live="polite"></main>
+          <div class="deck-glow" aria-hidden="true"></div>
+        </div>
+      </div>
+
+      <div class="hud" aria-hidden="true">
+        <span class="hud-mark">GitWarden</span>
+        <span class="hud-count">
+          <b id="slide-no">01</b><span class="hud-sep">/</span><span id="slide-total">03</span>
+        </span>
+      </div>
+
+      <div class="progress" aria-hidden="true">
+        <div id="progress-bar" class="progress-bar"></div>
+      </div>
+
+      <nav class="controls" aria-label="Slide controls">
+        <button id="prev" class="icon-button" type="button" aria-label="Previous slide">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M15 5l-7 7 7 7" />
+          </svg>
+        </button>
+        <button id="overview-toggle" class="icon-button" type="button" aria-label="Toggle overview">
+          <span class="overview-icon" aria-hidden="true"></span>
+        </button>
+        <button id="next" class="icon-button" type="button" aria-label="Next slide">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </nav>
+
+      <aside id="overview" class="overview" aria-label="Slide overview" hidden></aside>
+    </div>
+
+    <script src="./slides.js" defer></script>
+  </body>
+</html>
