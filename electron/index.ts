@@ -59,8 +59,14 @@ import {
   GitHubAuthCoordinator,
   type GitHubAuthCoordinatorDeps,
 } from '../src/main/ipc/GitHubAuthCoordinator.js'
-import { GITHUB_OAUTH_SCOPES } from '../src/core/config/github.js'
+import {
+  GITHUB_OAUTH_SCOPES,
+  GITHUB_REPO_OWNER,
+  GITHUB_REPO_NAME,
+} from '../src/core/config/github.js'
 import { createGitHubAuthTestServices } from '../src/main/testing/githubAuthFakes.js'
+import { GitHubUpdateService, type IUpdateService } from '../src/main/services/UpdateService.js'
+import { createUpdateTestService } from '../src/main/testing/updateFakes.js'
 
 /** True when launched by the Playwright e2e harness — fakes + no real browser. */
 const IS_E2E_FAKE_GITHUB = process.env['GITWARDEN_E2E_FAKE_GITHUB'] === '1'
@@ -70,6 +76,9 @@ const IS_E2E_FAKE_AI = process.env['GITWARDEN_E2E_FAKE_AI'] === '1'
 
 /** True for local Playwright runs that should not steal the user's active window. */
 const IS_E2E_BACKGROUND = process.env['GITWARDEN_E2E_BACKGROUND'] === '1'
+
+/** True for update-notifier e2e — fake update service so no real GitHub call happens. */
+const IS_E2E_FAKE_UPDATES = process.env['GITWARDEN_E2E_FAKE_UPDATES'] === '1'
 
 const IS_DEV_RENDERER = isDevRenderer()
 
@@ -273,6 +282,17 @@ app.whenReady().then(async () => {
   const aiChatAssistant = new AiChatAssistant(aiContextBuilder, aiAdapters)
   const agenticActionExecutor = new AgenticActionExecutor(repositories)
 
+  // Update notifier: real GitHub-releases check in production; a deterministic fake under e2e so
+  // the suite stays offline. Detection only — clicking the button opens the release page.
+  const updates: IUpdateService = IS_E2E_FAKE_UPDATES
+    ? createUpdateTestService()
+    : new GitHubUpdateService({
+        http: new FetchHttpClient(),
+        currentVersion: app.getVersion(),
+        owner: GITHUB_REPO_OWNER,
+        repo: GITHUB_REPO_NAME,
+      })
+
   registerIpcHandlers({
     profiles,
     repositories,
@@ -294,6 +314,7 @@ app.whenReady().then(async () => {
     aiChatAssistant,
     agenticActionExecutor,
     stagedChangeReview,
+    updates,
     openExternal,
   })
 

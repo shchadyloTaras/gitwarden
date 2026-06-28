@@ -366,6 +366,316 @@ button.gw-dd-trigger:active:not(:disabled) {
   background: transparent;
 }
 
+/* ── Startup loader: animated brand mark while renderer stores initialise ─── */
+.gw-startup-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, rgba(52, 211, 153, 0.1), transparent 34%),
+    linear-gradient(315deg, rgba(59, 130, 246, 0.12), transparent 42%), var(--gw-bg, #09090b);
+  color: var(--gw-text, #f4f4f5);
+  animation: gw-startup-loader-in 0.28s ease-out both;
+}
+
+.gw-startup-loader--exit {
+  animation: gw-startup-loader-out 0.22s ease-in both;
+}
+
+.gw-startup-loader__texture {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.42;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent);
+}
+
+.gw-startup-loader__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(360px, 100%);
+}
+
+.gw-startup-loader__mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 156px;
+  height: 156px;
+  margin-bottom: 20px;
+  animation: gw-startup-mark-float 2.8s ease-in-out infinite;
+}
+
+.gw-startup-loader__logo {
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0 18px 34px rgba(0, 0, 0, 0.35));
+}
+
+.gw-startup-loader__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(52, 211, 153, 0.12) 54deg,
+    rgba(52, 211, 153, 0.92) 82deg,
+    rgba(59, 130, 246, 0.88) 112deg,
+    transparent 146deg,
+    transparent 360deg
+  );
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+  animation: gw-startup-ring-spin 1.7s linear infinite;
+}
+
+.gw-startup-loader__ring--reverse {
+  inset: 12px;
+  opacity: 0.72;
+  animation-duration: 2.6s;
+  animation-direction: reverse;
+}
+
+.gw-startup-loader__scan {
+  position: absolute;
+  z-index: 3;
+  left: 30px;
+  right: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(255, 255, 255, 0.76),
+    rgba(52, 211, 153, 0.44),
+    transparent
+  );
+  mix-blend-mode: screen;
+  opacity: 0;
+  transform: translateY(-74px);
+  animation: gw-startup-scan 1.65s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+.gw-startup-loader__copy {
+  text-align: center;
+}
+
+.gw-startup-loader__eyebrow {
+  margin: 0 0 8px;
+  color: var(--gw-teal, #34d399);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.gw-startup-loader__copy h1 {
+  margin: 0;
+  color: var(--gw-text, #f4f4f5);
+  font-size: 28px;
+  line-height: 1.1;
+  font-weight: 750;
+  letter-spacing: 0;
+}
+
+.gw-startup-loader__copy p:last-child {
+  margin: 10px 0 0;
+  color: var(--gw-text-muted, #a1a1aa);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.gw-startup-loader__progress {
+  position: relative;
+  width: min(220px, 76vw);
+  height: 3px;
+  margin-top: 24px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--gw-surface3, #3f3f46);
+}
+
+.gw-startup-loader__progress span {
+  position: absolute;
+  inset: 0;
+  width: 42%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--gw-teal, #34d399), var(--gw-primary, #3b82f6));
+  animation: gw-startup-progress 1.24s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+.gw-logo-shield {
+  transform-origin: 256px 258px;
+  animation: gw-logo-shield-pulse 1.65s ease-in-out infinite;
+}
+
+.gw-logo-branch {
+  stroke-dasharray: 190;
+  stroke-dashoffset: 190;
+  animation: gw-logo-branch-draw 1.65s ease-in-out infinite;
+}
+
+.gw-logo-branch-curve {
+  animation-delay: 0.1s;
+}
+
+.gw-logo-node,
+.gw-logo-core {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: gw-logo-node-check 1.65s ease-in-out infinite;
+}
+
+.gw-logo-node--top,
+.gw-logo-core--top {
+  animation-delay: 0.14s;
+}
+
+.gw-logo-node--branch,
+.gw-logo-core--branch {
+  animation-delay: 0.32s;
+}
+
+.gw-logo-node--bottom,
+.gw-logo-core--bottom {
+  animation-delay: 0.5s;
+}
+
+@keyframes gw-startup-loader-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes gw-startup-loader-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.01);
+  }
+}
+
+@keyframes gw-startup-ring-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes gw-startup-mark-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes gw-startup-scan {
+  0% {
+    opacity: 0;
+    transform: translateY(-74px);
+  }
+  16%,
+  62% {
+    opacity: 0.88;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(74px);
+  }
+}
+
+@keyframes gw-startup-progress {
+  0% {
+    transform: translateX(-110%);
+  }
+  100% {
+    transform: translateX(260%);
+  }
+}
+
+@keyframes gw-logo-shield-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  45% {
+    transform: scale(1.025);
+    filter: brightness(1.12);
+  }
+}
+
+@keyframes gw-logo-branch-draw {
+  0%,
+  12% {
+    stroke-dashoffset: 190;
+    opacity: 0.42;
+  }
+  54%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+@keyframes gw-logo-node-check {
+  0%,
+  18%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  38% {
+    transform: scale(1.2);
+    opacity: 0.96;
+  }
+  56% {
+    transform: scale(0.96);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gw-startup-loader,
+  .gw-startup-loader--exit,
+  .gw-startup-loader__mark,
+  .gw-startup-loader__ring,
+  .gw-startup-loader__scan,
+  .gw-startup-loader__progress span,
+  .gw-logo-shield,
+  .gw-logo-branch,
+  .gw-logo-node,
+  .gw-logo-core {
+    animation: none;
+  }
+
+  .gw-logo-branch {
+    stroke-dashoffset: 0;
+  }
+
+  .gw-startup-loader__scan {
+    display: none;
+  }
+}
+
 /* ── AI Chat (Cursor-style composer + message stream) ─────────────────────── */
 .gw-chat-panel {
   display: flex;

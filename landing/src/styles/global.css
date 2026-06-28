@@ -265,6 +265,16 @@ section > h2 {
   font-size: 1.05rem;
   margin: 0 0 1.5rem;
 }
+/* Section-level "learn more" link into the docs (inherits link color from `a`). */
+.doc-link {
+  display: inline-block;
+  margin-top: 1.5rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.doc-link:hover {
+  text-decoration: underline;
+}
 
 /* Cards (Why / Features) */
 .cards {

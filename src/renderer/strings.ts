@@ -4,6 +4,9 @@
 export const STR = {
   // ── App shell ──────────────────────────────────────────────────────────────
   APP_TITLE: 'Git Warden',
+  STARTUP_LOADING_ARIA: 'Git Warden is starting',
+  STARTUP_LOADER_EYEBROW: 'Identity guard',
+  STARTUP_LOADER_STATUS: 'Preparing your workspace…',
   LEFT_PANEL_RESIZE_LABEL: 'Resize navigation panel',
   RIGHT_PANEL_RESIZE_LABEL: 'Resize context panel',
   REPOSITORIES_SPLIT_RESIZE_LABEL: 'Resize repository list',
@@ -432,4 +435,21 @@ export const STR = {
 
   // ── Keyboard shortcuts ─────────────────────────────────────────────────────
   KB_NAV_HINT: 'Cmd+1–9 to navigate screens',
+
+  // ── Updates (notifier) ──────────────────────────────────────────────────────
+  // The header button appears ONLY when a newer release is published; clicking it opens the
+  // release page for a manual download (in-app install needs code signing — Phase 43).
+  UPDATE_BUTTON_LABEL: 'Update',
+  UPDATE_BUTTON_ARIA: (version: string): string =>
+    `Update available — version ${version}. Opens the download page.`,
+  UPDATE_SETTINGS_TITLE: 'Updates',
+  UPDATE_SETTINGS_HINT:
+    'Git Warden checks GitHub for a newer version on launch. New versions are downloaded and installed manually.',
+  UPDATE_CHECK_BUTTON: 'Check for updates',
+  UPDATE_CHECKING: 'Checking…',
+  UPDATE_UP_TO_DATE: (version: string): string => `You're on the latest version (${version}).`,
+  UPDATE_AVAILABLE: (version: string): string => `Version ${version} is available.`,
+  UPDATE_NO_RELEASES: 'No published releases yet.',
+  UPDATE_ERROR: 'Could not check for updates. Check your connection and try again.',
+  UPDATE_DOWNLOAD_BUTTON: 'Download',
 } as const

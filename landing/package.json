@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
+    "og:image": "node scripts/generate-og-image.mjs",
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",

@@ -4,7 +4,17 @@ description: Full version history for GitWarden.
 order: 9
 ---
 
+# Changelog
+
 ## [Unreleased]
+
+## [0.1.1] — 2026-06-28
+
+### Fixed
+
+- Branches now detect local branches checked out in another Git worktree, show the worktree path, and disable switch/delete actions that Git would reject.
+- Branch switch/delete errors for worktree-checked-out branches now explain the actual worktree conflict instead of showing a generic or misleading branch error.
+- Branch deletion now refreshes stale branch lists and treats already-missing local branches as a safe no-op.
 
 ## [0.1.0] — 2026-06-27
 
@@ -67,4 +77,5 @@ order: 9
 
 - Docs reconciliation, executable guardrails (hooks + `settings.json`), slash commands, subagent reviewers, AI evals, agent-agnostic shareability.
 
+[0.1.1]: https://github.com/shchadyloTaras/gitwarden/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/shchadyloTaras/gitwarden/releases/tag/v0.1.0

@@ -1,5 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="GitWarden — never commit with the wrong account again" font-family="ui-sans-serif, system-ui, sans-serif">
-  <!-- Branded Open Graph card (placeholder — a raster PNG/JPG is the tracked follow-up). -->
+  <!-- Branded Open Graph card. Source of truth for public/og-image.png (crawlers don't render
+       SVG OG images). Regenerate the PNG after editing this file: `npm run og:image`. -->
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#09090b" />

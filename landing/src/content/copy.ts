@@ -11,13 +11,13 @@
  */
 export const copy = {
   meta: {
-    title: 'GitWarden — Safe multi-account Git for desktop',
+    title: 'Safe Multi-Account Git Client for Desktop — GitWarden',
     description:
       'A desktop Git app that stops you committing or pushing with the wrong account. ' +
       'One click downloads the right installer for macOS, Windows, or Linux.',
   },
   productName: 'GitWarden',
-  tagline: 'Never commit with the wrong account again.',
+  tagline: 'Never commit with the wrong Git account again.',
   heroSubtitle:
     'A desktop Git app that checks your identity before every commit and push — so your ' +
     'Personal, Work, and Client work never gets crossed.',
@@ -68,6 +68,7 @@ export const copy = {
         'Debian / Ubuntu: install the package with “sudo apt install ./gitwarden_*.deb”.',
       ],
     },
+    docsLink: { label: 'Full installation guide', href: '/docs/installation' },
   },
 
   nav: {
@@ -100,6 +101,7 @@ export const copy = {
         body: 'No commits under the wrong name, no pushes to the wrong remote. Slip-ups are caught while they are still on your machine.',
       },
     ],
+    docsLink: { label: 'See how the safety checks work', href: '/docs/safety' },
   },
 
   features: {
@@ -122,6 +124,7 @@ export const copy = {
         body: 'Add your own API key for commit-message help, change review, and a built-in chat. Advisory only — it never runs Git for you.',
       },
     ],
+    docsLink: { label: 'Browse the full documentation', href: '/docs' },
   },
 
   screenshots: {

@@ -30,8 +30,13 @@ test.describe('SEO', () => {
     await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', /GitWarden/)
     await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
       'content',
-      /og-image\.svg$/
+      /og-image\.png$/
     )
+    await expect(page.locator('meta[property="og:image:type"]')).toHaveAttribute(
+      'content',
+      'image/png'
+    )
+    await expect(page.locator('meta[property="og:image:width"]')).toHaveAttribute('content', '1200')
     await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute(
       'content',
       'summary_large_image'
@@ -45,6 +50,20 @@ test.describe('SEO', () => {
     const types = blocks.map((b) => JSON.parse(b)['@type'])
     expect(types).toContain('SoftwareApplication')
     expect(types).toContain('WebSite')
+    expect(types).toContain('FAQPage')
+  })
+
+  test('sitemap entries carry a lastmod timestamp', async ({ request }) => {
+    const res = await request.get('/sitemap-0.xml')
+    expect(res.ok()).toBeTruthy()
+    expect(await res.text()).toContain('<lastmod>')
+  })
+
+  test('docs pages expose BreadcrumbList structured data', async ({ page }) => {
+    await page.goto('/docs/installation/')
+    const blocks = await page.locator('script[type="application/ld+json"]').allTextContents()
+    const types = blocks.map((b) => JSON.parse(b)['@type'])
+    expect(types).toContain('BreadcrumbList')
   })
 })
 

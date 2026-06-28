@@ -15,8 +15,9 @@ function syncChangelog() {
   const src = resolve(rootDir, 'CHANGELOG.md')
   const dest = resolve(landingDir, 'src/content/docs/changelog.md')
   if (!existsSync(src)) return
-  const raw = readFileSync(src, 'utf-8')
-  const body = raw.replace(/^# Changelog\n+/, '')
+  // Keep the source's leading `# Changelog` H1 so the rendered docs page has a top-level
+  // heading (DocsLayout renders the page title only into <title>, not as an on-page <h1>).
+  const body = readFileSync(src, 'utf-8').trimStart()
   writeFileSync(
     dest,
     `---\ntitle: Changelog\ndescription: Full version history for GitWarden.\norder: 9\n---\n\n${body}`,
@@ -42,7 +43,9 @@ export default defineConfig({
   // at build time + a client-side self-heal fetch (plan §3 / Appendix B).
   output: 'static',
   // @astrojs/sitemap emits sitemap-index.xml + sitemap-0.xml from `site` (Phase 50).
-  integrations: [sitemap()],
+  // `lastmod` stamps every URL with the build time so crawlers can prioritize re-crawls;
+  // a static marketing site rebuilds + redeploys on content change, so build time is accurate.
+  integrations: [sitemap({ lastmod: new Date() })],
   vite: {
     // Tailwind v4 is wired as a Vite plugin; tokens live in src/styles/global.css (@theme).
     plugins: [tailwindcss(), changelogSyncPlugin],

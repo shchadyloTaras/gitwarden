@@ -45,6 +45,7 @@ import type {
 } from '../src/core/ai/types.js'
 import type { AiPreparedContext } from '../src/core/ai/context.js'
 import type { ChatBlockSuggestion } from '../src/core/ai/chatBlocks.js'
+import type { UpdateCheckResult } from '../src/core/updates/types.js'
 
 export type IpcResult<T> = { ok: true; data: T } | { ok: false; error: string }
 
@@ -391,6 +392,10 @@ export const api = {
   changeReview: {
     scanStaged: (input: { repositoryId: string }): Promise<IpcResult<AiReviewFinding[]>> =>
       invoke('changeReview:scanStaged', input),
+  },
+  updates: {
+    /** Check GitHub for a newer published release. Resolves to a soft result, never rejects. */
+    check: (): Promise<IpcResult<UpdateCheckResult>> => invoke('updates:check'),
   },
 }
 

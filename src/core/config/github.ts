@@ -1,6 +1,6 @@
 // GitHub OAuth (Device Authorization Flow) configuration.
 //
-// PURE module — no node/electron/DOM. These values are NOT secret:
+// PURE module — no Node, Electron, or DOM imports. These values are NOT secret:
 // Device Flow uses only a public client_id; there is NO client secret anywhere
 // in GitWarden (see docs/plans/github-oauth-plan.md §1.1 + Appendix B/D).
 
@@ -18,3 +18,11 @@ export const GITHUB_CLIENT_ID = 'Ov23liMJ2oRxygjRi84h'
  * with the broader scope (scope minimization, Appendix B).
  */
 export const GITHUB_OAUTH_SCOPES = ['read:user', 'user:email'] as const
+
+/**
+ * The public GitHub repository that hosts GitWarden releases. Used by the update
+ * notifier to query the latest published release (mirrors the publish target in
+ * the builder config and `repository` in package.json). Not secret.
+ */
+export const GITHUB_REPO_OWNER = 'shchadyloTaras'
+export const GITHUB_REPO_NAME = 'gitwarden'

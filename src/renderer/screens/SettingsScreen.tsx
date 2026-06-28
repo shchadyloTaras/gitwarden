@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useSettingsStore } from '../store/settingsStore'
 import { useOnboardingStore } from '../store/onboardingStore'
+import { useUpdatesStore } from '../store/updatesStore'
 import AiConnectionSettings from '../components/AiConnectionSettings'
 import type { AppearanceMode } from '../../core/types'
 import { STR } from '../strings'
@@ -88,6 +89,102 @@ function AppearancePicker({
           {m.label}
         </button>
       ))}
+    </div>
+  )
+}
+
+const SECONDARY_BUTTON: React.CSSProperties = {
+  padding: '6px 12px',
+  background: 'none',
+  border: '1px solid var(--gw-surface3, #3f3f46)',
+  borderRadius: 4,
+  color: 'var(--gw-text-muted, #a1a1aa)',
+  fontSize: 14,
+  cursor: 'pointer',
+  flexShrink: 0,
+}
+
+const ACCENT_BUTTON: React.CSSProperties = {
+  padding: '6px 14px',
+  background: 'var(--gw-accent, #6366f1)',
+  border: 'none',
+  borderRadius: 4,
+  color: 'var(--gw-on-solid, #fff)',
+  fontSize: 14,
+  fontWeight: 600,
+  cursor: 'pointer',
+  flexShrink: 0,
+}
+
+/** Manual "Check for updates" + status, mirroring the header notifier (no in-app install). */
+function UpdatesCard(): React.ReactElement {
+  const result = useUpdatesStore((s) => s.result)
+  const checking = useUpdatesStore((s) => s.checking)
+  const check = useUpdatesStore((s) => s.check)
+
+  const release = result?.status === 'update-available' ? result.release : null
+
+  let status: string | null = null
+  if (checking) {
+    status = STR.UPDATE_CHECKING
+  } else if (result) {
+    switch (result.status) {
+      case 'update-available':
+        status = STR.UPDATE_AVAILABLE(result.release.version)
+        break
+      case 'up-to-date':
+        status = STR.UPDATE_UP_TO_DATE(result.currentVersion)
+        break
+      case 'no-releases':
+        status = STR.UPDATE_NO_RELEASES
+        break
+      case 'error':
+        status = STR.UPDATE_ERROR
+        break
+    }
+  }
+
+  return (
+    <div style={CARD}>
+      <div style={CARD_TITLE}>{STR.UPDATE_SETTINGS_TITLE}</div>
+      <div
+        style={{
+          display: 'flex',
+          gap: 8,
+          alignItems: 'center',
+          marginBottom: 10,
+          flexWrap: 'wrap',
+        }}
+      >
+        <button
+          data-testid="settings-update-check"
+          onClick={() => void check()}
+          disabled={checking}
+          style={{ ...SECONDARY_BUTTON, opacity: checking ? 0.6 : 1 }}
+        >
+          {checking ? STR.UPDATE_CHECKING : STR.UPDATE_CHECK_BUTTON}
+        </button>
+        {release && (
+          <button
+            data-testid="settings-update-download"
+            onClick={() => void window.api.shell.openExternal(release.url)}
+            style={ACCENT_BUTTON}
+          >
+            {STR.UPDATE_DOWNLOAD_BUTTON}
+          </button>
+        )}
+        {status && (
+          <span
+            data-testid="settings-update-status"
+            style={{ fontSize: 14, color: 'var(--gw-text-muted, #a1a1aa)' }}
+          >
+            {status}
+          </span>
+        )}
+      </div>
+      <p style={{ margin: 0, fontSize: 14, color: 'var(--gw-text-faint, #71717a)' }}>
+        {STR.UPDATE_SETTINGS_HINT}
+      </p>
     </div>
   )
 }
@@ -319,6 +416,8 @@ export default function SettingsScreen(): React.ReactElement {
                   {STR.SETTINGS_DEFAULT_FOLDER_HINT}
                 </p>
               </div>
+
+              <UpdatesCard />
             </div>
           )}
 

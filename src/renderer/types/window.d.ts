@@ -43,6 +43,7 @@ import type {
 } from '../../core/ai/types.js'
 import type { AiPreparedContext } from '../../core/ai/context.js'
 import type { ChatBlockSuggestion } from '../../core/ai/chatBlocks.js'
+import type { UpdateCheckResult } from '../../core/updates/types.js'
 
 type IpcResult<T> = { ok: true; data: T } | { ok: false; error: string }
 
@@ -309,6 +310,9 @@ interface ElectronAPI {
   }
   changeReview: {
     scanStaged(input: { repositoryId: string }): Promise<IpcResult<AiReviewFinding[]>>
+  }
+  updates: {
+    check(): Promise<IpcResult<UpdateCheckResult>>
   }
 }
 

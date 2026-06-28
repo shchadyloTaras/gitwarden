@@ -11,7 +11,7 @@ interface Props {
 const {
   title = copy.meta.title,
   description = copy.meta.description,
-  image = '/og-image.svg',
+  image = '/og-image.png',
 } = Astro.props
 
 const canonical = new URL(Astro.url.pathname, Astro.site)
@@ -44,7 +44,9 @@ const plausibleDomain = import.meta.env.PUBLIC_PLAUSIBLE_DOMAIN
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={ogImage} />
-    <meta property="og:image:type" content="image/svg+xml" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content={`${copy.productName} — ${copy.tagline}`} />
 
     <!-- Twitter -->

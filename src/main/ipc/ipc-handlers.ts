@@ -20,6 +20,8 @@ import type { AiAgenticAssistant } from '../ai/AiAgenticAssistant.js'
 import type { AiChatAssistant } from '../ai/AiChatAssistant.js'
 import type { AgenticActionExecutor } from '../ai/AgenticActionExecutor.js'
 import type { StagedChangeReviewService } from '../ai/StagedChangeReviewService.js'
+import type { IUpdateService } from '../services/UpdateService.js'
+import { UpdateCheckResultSchema } from '../../core/updates/schemas.js'
 import { detectProvider } from '../../core/ai/detection.js'
 import { maskSecret } from '../../core/ai/credentials.js'
 import type { RepositoryRecord } from '../../core/types.js'
@@ -121,6 +123,7 @@ export interface Services {
   aiChatAssistant: AiChatAssistant
   agenticActionExecutor: AgenticActionExecutor
   stagedChangeReview: StagedChangeReviewService
+  updates: IUpdateService
   /** Browser-open seam — real `shell.openExternal` in production, no-op under e2e. */
   openExternal: (url: string) => void | Promise<void>
 }
@@ -763,6 +766,12 @@ export function registerIpcHandlers(services: Services): void {
       const input = AiChatSuggestBlockPayload.parse(raw)
       return services.aiChatAssistant.suggestBlock(input)
     })
+  )
+
+  // Updates — check GitHub for a newer published release. Takes no payload; the service never
+  // throws (a failed check returns a soft `error` result so the button just stays hidden).
+  ipcMain.handle('updates:check', () =>
+    wrap(async () => UpdateCheckResultSchema.parse(await services.updates.checkForUpdates()))
   )
 }
 

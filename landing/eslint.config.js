@@ -10,7 +10,7 @@ export default [
   { ignores: ['dist/', '.astro/', 'node_modules/', 'test-results/', 'playwright-report/'] },
   // Node.js globals for config files (astro.config.mjs, vitest.config.ts, playwright.config.ts)
   {
-    files: ['*.mjs', '*.cjs', '*.config.ts'],
+    files: ['**/*.mjs', '**/*.cjs', '*.config.ts'],
     languageOptions: {
       globals: { ...globals.node },
     },

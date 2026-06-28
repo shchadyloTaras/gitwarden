@@ -3,11 +3,13 @@ import GlobalHeader from './components/GlobalHeader'
 import Sidebar from './components/Sidebar'
 import RightPanel from './components/RightPanel'
 import OnboardingTour from './components/OnboardingTour'
+import StartupLoader from './components/StartupLoader'
 import { useAppStore } from './store/appStore'
 import { useProfilesStore } from './store/profilesStore'
 import { useRepositoriesStore } from './store/repositoriesStore'
 import { useSettingsStore } from './store/settingsStore'
 import { useOnboardingStore } from './store/onboardingStore'
+import { useUpdatesStore } from './store/updatesStore'
 import type { NavScreen } from './store/appStore'
 
 import RepositoriesScreen from './screens/RepositoriesScreen'
@@ -49,6 +51,8 @@ const LEFT_PANEL_MIN_WIDTH = 160
 const LEFT_PANEL_MAX_WIDTH = 320
 const RIGHT_PANEL_MIN_WIDTH = 260
 const RIGHT_PANEL_MAX_WIDTH = 520
+const STARTUP_LOADER_MIN_MS = 900
+const STARTUP_LOADER_EXIT_MS = 220
 
 function applyTheme(appearance: string): void {
   const root = document.documentElement
@@ -181,10 +185,12 @@ function MainContent(): React.ReactElement {
 
 export default function App(): React.ReactElement {
   const shellRef = useRef<HTMLDivElement | null>(null)
+  const loaderStartedAt = useRef(Date.now())
   const load = useProfilesStore((s) => s.load)
   const loadRepos = useRepositoriesStore((s) => s.load)
   const repos = useRepositoriesStore((s) => s.repos)
   const loadSettings = useSettingsStore((s) => s.load)
+  const checkForUpdates = useUpdatesStore((s) => s.check)
   const appearance = useSettingsStore((s) => s.appearance)
   const activeRepo = useAppStore((s) => s.activeRepo)
   const setActiveRepo = useAppStore((s) => s.setActiveRepo)
@@ -201,6 +207,8 @@ export default function App(): React.ReactElement {
   const inspectorOpen = useAppStore((s) => s.inspectorOpen)
   // Signal for tests: set to true once all initial store loads complete.
   const [storesReady, setStoresReady] = useState(false)
+  const [startupLoaderVisible, setStartupLoaderVisible] = useState(true)
+  const [startupLoaderExiting, setStartupLoaderExiting] = useState(false)
   const [autoOnboardingChecked, setAutoOnboardingChecked] = useState(false)
   const [shellWidth, setShellWidth] = useState(getViewportWidth)
   const [resizingPanel, setResizingPanel] = useState<PanelSide | null>(null)
@@ -217,6 +225,35 @@ export default function App(): React.ReactElement {
       .then(() => setStoresReady(true))
       .catch((err: unknown) => console.error('[App] store init failed:', err))
   }, [load, loadRepos, loadSettings])
+
+  // Background update check on launch — kept off the storesReady path so a slow network never
+  // delays the shell. Skipped under Playwright (navigator.webdriver) so the e2e suite makes no
+  // real GitHub call; the update spec drives the check explicitly through the fake service.
+  useEffect(() => {
+    if (!navigator.webdriver) void checkForUpdates()
+  }, [checkForUpdates])
+
+  useEffect(() => {
+    if (!storesReady || !startupLoaderVisible) return
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const skipAnimationDelay = prefersReducedMotion || navigator.webdriver
+    const minVisibleMs = skipAnimationDelay ? 0 : STARTUP_LOADER_MIN_MS
+    const exitMs = skipAnimationDelay ? 0 : STARTUP_LOADER_EXIT_MS
+    const elapsedMs = Date.now() - loaderStartedAt.current
+    const exitDelayMs = Math.max(0, minVisibleMs - elapsedMs)
+    let hideTimer: number | undefined
+
+    const exitTimer = window.setTimeout(() => {
+      setStartupLoaderExiting(true)
+      hideTimer = window.setTimeout(() => setStartupLoaderVisible(false), exitMs)
+    }, exitDelayMs)
+
+    return () => {
+      window.clearTimeout(exitTimer)
+      if (hideTimer !== undefined) window.clearTimeout(hideTimer)
+    }
+  }, [startupLoaderVisible, storesReady])
 
   useEffect(() => {
     const updateShellWidth = (): void => {
@@ -427,11 +464,13 @@ export default function App(): React.ReactElement {
 
   const leftPanelMax = getLeftPanelMax(shellWidth, panelWidths.right, inspectorOpen)
   const rightPanelMax = getRightPanelMax(shellWidth, panelWidths.left)
+  const appReady = storesReady && !startupLoaderVisible
 
   return (
     <div
       data-testid="app-root"
-      data-ready={storesReady ? 'true' : undefined}
+      data-ready={appReady ? 'true' : undefined}
+      aria-busy={!appReady}
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -496,6 +535,8 @@ export default function App(): React.ReactElement {
         onComplete={handleOnboardingComplete}
         onSkip={handleOnboardingSkip}
       />
+
+      {startupLoaderVisible && <StartupLoader exiting={startupLoaderExiting} />}
     </div>
   )
 }

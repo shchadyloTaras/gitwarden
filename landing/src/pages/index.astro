@@ -40,6 +40,17 @@ const websiteLd = {
   name: copy.productName,
   url: siteUrl,
 }
+// FAQPage structured data — mirrors the on-page FAQ. Valid markup that feeds AI/answer engines;
+// classic FAQ rich results are limited since Google's 2023 change, but the cost here is nil.
+const faqLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: copy.faq.items.map((item) => ({
+    '@type': 'Question',
+    name: item.q,
+    acceptedAnswer: { '@type': 'Answer', text: item.a },
+  })),
+}
 ---
 
 <Base>
@@ -57,4 +68,5 @@ const websiteLd = {
 
   <script type="application/ld+json" is:inline set:html={JSON.stringify(softwareLd)} />
   <script type="application/ld+json" is:inline set:html={JSON.stringify(websiteLd)} />
+  <script type="application/ld+json" is:inline set:html={JSON.stringify(faqLd)} />
 </Base>
