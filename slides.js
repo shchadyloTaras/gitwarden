@@ -6,7 +6,7 @@ const slides = [
     id: 'cover',
     className: 'slide-cover',
     eyebrow: 'GitWarden',
-    title: 'Ніколи не робіть <span class="grad">commit з чужого Git-акаунта</span>',
+    title: 'Ніколи не робить <span class="grad">commit з чужого Git-акаунта</span>',
     lead: 'Desktop Git GUI, що перевіряє вашу identity перед кожним commit і push — щоб Personal, Work і Client ніколи не переплутались.',
     headExtra: `
       <div class="badge-row">
@@ -152,7 +152,7 @@ verdict: <span class="verdict">BLOCKED</span> — likely wrong account / key</pr
         <div class="arch-link">↕ pure calls</div>
         <div class="arch-layer is-core">
           <div class="arch-head"><span class="arch-name">core</span><span class="arch-tag">pure · 0 forbidden imports</span></div>
-          <div class="arch-desc">src/core/ — Safety Engine · parser · types. No child_process / fs / electron.</div>
+          <div class="arch-desc">src/core/ — Safety Engine · parser · types. No child-process / fs / electron.</div>
         </div>
       </div>
     `,
@@ -311,7 +311,7 @@ verdict: <span class="verdict">BLOCKED</span> — likely wrong account / key</pr
         <div class="stat">
           <div class="stat-kicker">core purity</div>
           <div class="stat-value">0</div>
-          <div class="stat-copy">imports of child_process / fs / electron у src/core</div>
+          <div class="stat-copy">imports of child-process / fs / electron у src/core</div>
         </div>
         <div class="stat">
           <div class="stat-kicker">ADR · MADR</div>
@@ -340,7 +340,7 @@ verdict: <span class="verdict">BLOCKED</span> — likely wrong account / key</pr
         </div>
         <div class="panel">
           <div class="panel-title">Спробувати</div>
-          <div class="panel-copy">↓ gitwarden.vercel.app · github.com/shchadyloTaras/gitwarden · MIT.</div>
+          <div class="panel-copy">↓ <a class="lnk" href="https://gitwarden.vercel.app" target="_blank" rel="noopener">gitwarden.vercel.app</a> · <a class="lnk" href="https://github.com/shchadyloTaras/gitwarden" target="_blank" rel="noopener">github.com/shchadyloTaras/gitwarden</a> · MIT.</div>
         </div>
       </div>
     `,
@@ -412,10 +412,7 @@ function writeHash() {
 
 /* ------------------------------------------------------------------- Render */
 
-function renderSlide(direction) {
-  const slide = slides[state.index]
-  const anim = reduceMotion ? '' : ` data-anim="${direction === 'back' ? 'back' : 'fwd'}"`
-
+function buildInner(slide) {
   const points = (slide.points || []).map((p) => `<li class="point">${p}</li>`).join('')
 
   const head = `
@@ -430,14 +427,46 @@ function renderSlide(direction) {
 
   const aside = slide.aside ? `<div class="slide-content slide-aside">${slide.aside}</div>` : ''
 
-  slidesEl.innerHTML = `
-    <section class="slide ${slide.className}" aria-label="Slide ${state.index + 1}: ${stripTags(
-      slide.title,
-    )}"${anim}>
-      ${head}
-      ${aside}
-    </section>
-  `
+  return head + aside
+}
+
+function renderSlide(direction) {
+  const slide = slides[state.index]
+  const dir = direction === 'back' ? 'back' : 'fwd'
+
+  // Drop any slide still animating out (rapid navigation) before adding the next.
+  slidesEl.querySelectorAll('.slide[data-leave]').forEach((el) => el.remove())
+  const outgoing = slidesEl.querySelector('.slide')
+
+  const section = document.createElement('section')
+  section.className = `slide ${slide.className}`
+  section.setAttribute('aria-label', `Slide ${state.index + 1}: ${stripTags(slide.title)}`)
+  if (!reduceMotion) section.dataset.anim = dir
+  section.innerHTML = buildInner(slide)
+  slidesEl.appendChild(section)
+
+  if (outgoing) {
+    if (reduceMotion) {
+      outgoing.remove()
+    } else {
+      outgoing.dataset.leave = dir
+      let done = false
+      const drop = () => {
+        if (done) return
+        done = true
+        outgoing.remove()
+      }
+      outgoing.addEventListener(
+        'animationend',
+        (event) => {
+          if (event.target === outgoing) drop()
+        },
+        { once: true },
+      )
+      // Fallback in case animationend does not fire (e.g. tab hidden).
+      setTimeout(drop, 650)
+    }
+  }
 }
 
 function updateChrome() {
