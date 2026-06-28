@@ -372,9 +372,11 @@ const DECK_W = 1280
 const DECK_H = 720
 
 function fit() {
+  // Reserve matches .stage padding (32 top + 96 bottom = 128 vertical, 80 horizontal)
+  // so the scaled deck never reaches into the bottom control bar.
   const scale = Math.max(
     0.2,
-    Math.min((window.innerWidth - 80) / DECK_W, (window.innerHeight - 104) / DECK_H, 1.7),
+    Math.min((window.innerWidth - 80) / DECK_W, (window.innerHeight - 128) / DECK_H, 1.7),
   )
   root.style.setProperty('--scale', String(scale))
 }

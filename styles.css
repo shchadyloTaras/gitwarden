@@ -80,6 +80,7 @@ button {
   align-items: center;
   justify-content: center;
   height: 100%;
+  padding: 32px 40px 96px;
   overflow: hidden;
   isolation: isolate;
   background:
@@ -1032,8 +1033,9 @@ h2 {
 
 .hud {
   position: fixed;
-  left: 30px;
-  bottom: 24px;
+  left: 40px;
+  bottom: 28px;
+  height: 44px;
   z-index: 4;
   display: flex;
   align-items: center;
@@ -1081,7 +1083,7 @@ h2 {
 .controls {
   position: fixed;
   left: 50%;
-  bottom: 22px;
+  bottom: 28px;
   transform: translateX(-50%);
   z-index: 5;
   display: flex;
