@@ -8,6 +8,13 @@ order: 9
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-06-28
+
+### Added
+
+- Startup loader: a brief launch screen shown while GitWarden initializes.
+- Update notifier: GitWarden now checks GitHub for a newer version on launch and shows an Update button in the header when one is available. A new Updates section in Settings lets you check on demand and open the download page; new versions are installed manually.
+
 ## [0.1.1] — 2026-06-28
 
 ### Fixed
@@ -77,5 +84,6 @@ order: 9
 
 - Docs reconciliation, executable guardrails (hooks + `settings.json`), slash commands, subagent reviewers, AI evals, agent-agnostic shareability.
 
+[0.2.0]: https://github.com/shchadyloTaras/gitwarden/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/shchadyloTaras/gitwarden/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/shchadyloTaras/gitwarden/releases/tag/v0.1.0
