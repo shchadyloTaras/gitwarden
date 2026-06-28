@@ -5,6 +5,7 @@ import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { execSync } from 'node:child_process'
+import { profileFixture, type ProfileInput } from '../fixtures/profiles'
 
 const EMPTY_GIT_CONFIG = path.join(os.tmpdir(), 'gw-ai-commit-empty.gitconfig')
 
@@ -69,15 +70,11 @@ test.describe('Smart Commit Assistant', () => {
     await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
     await cleanupAll(win)
 
-    const profileId = await win.evaluate(async () => {
+    const aliceInput = profileFixture('alice', { expectedRemoteHosts: ['github.com'] })
+    const profileId = await win.evaluate(async (input: ProfileInput) => {
       const api = (window as Window & typeof globalThis).api
       const profile = await api.profiles.create({
-        displayName: 'Alice',
-        gitAuthorName: 'Alice Dev',
-        gitAuthorEmail: 'alice@example.com',
-        githubUsername: 'alice',
-        authenticationMethod: 'ssh',
-        expectedRemoteHosts: ['github.com'],
+        ...input,
       })
       if (!profile.ok) throw new Error(profile.error)
       await api.settings.update({ activeProfileId: profile.data.id })
@@ -89,7 +86,7 @@ test.describe('Smart Commit Assistant', () => {
       if (!connection.ok) throw new Error(connection.error)
       await api.settings.update({ aiEnabled: true })
       return profile.data.id
-    })
+    }, aliceInput)
 
     await win.evaluate(
       async ([repoPath, assignedProfileId]: [string, string]) => {

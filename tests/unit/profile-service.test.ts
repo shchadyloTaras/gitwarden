@@ -5,16 +5,14 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { ProfilesDataSchema } from '../../src/core/schemas.js'
 import { JsonStore } from '../../src/main/storage/JsonStore.js'
 import { ProfileService } from '../../src/main/services/ProfileService.js'
-import type { Profile } from '../../src/core/types.js'
+import { profileFixture } from '../fixtures/profiles'
 
-const BASE_PROFILE: Omit<Profile, 'id'> = {
-  displayName: 'Personal',
+const BASE_PROFILE = profileFixture('personal', {
   gitAuthorName: 'Alice',
   gitAuthorEmail: 'alice@example.com',
   githubUsername: 'alice',
-  authenticationMethod: 'ssh',
   expectedRemoteHosts: ['github.com'],
-}
+})
 
 let tmpDir: string
 let service: ProfileService

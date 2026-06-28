@@ -5,6 +5,7 @@ import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { execSync } from 'node:child_process'
+import { profileFixture, type ProfileInput } from '../fixtures/profiles'
 
 // Phase 27 — push safety with the GitHub account check.
 //
@@ -66,18 +67,14 @@ test.afterAll(() => {
 
 /** Create a profile matching the repo's local identity, link it via the fake flow. */
 async function setupLinkedProfile(win: Page, linkedLogin: string): Promise<string> {
-  const profileId = await win.evaluate(async () => {
+  const octoInput = profileFixture('octoToken')
+  const profileId = await win.evaluate(async (input: ProfileInput) => {
     const api = (window as Window & typeof globalThis).api
     const res = await api.profiles.create({
-      displayName: 'Octo',
-      gitAuthorName: 'Octo Dev',
-      gitAuthorEmail: 'octo@example.com',
-      githubUsername: 'octocat',
-      authenticationMethod: 'token',
-      expectedRemoteHosts: ['github.com'],
+      ...input,
     })
     return res.ok ? res.data.id : ''
-  })
+  }, octoInput)
 
   // Link via the real device flow and await the 'authorized' event — by then the
   // coordinator has stored the token and persisted linkedGitHub.login = 'octocat'.

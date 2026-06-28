@@ -9,6 +9,7 @@ import {
   type AiContextBuilderDeps,
 } from '../../src/main/ai/AiContextBuilder'
 import type { AiAdapter, AiStructuredRequest } from '../../src/main/ai/types'
+import { profileFixture } from '../fixtures/profiles'
 
 const SECRET_FIXTURES = {
   github: `ghp_${'c'.repeat(36)}`,
@@ -18,12 +19,7 @@ const SECRET_FIXTURES = {
 
 const profile: Profile = {
   id: 'profile-1',
-  displayName: 'Alice',
-  gitAuthorName: 'Alice Dev',
-  gitAuthorEmail: 'alice@example.com',
-  githubUsername: 'alice',
-  authenticationMethod: 'ssh',
-  expectedRemoteHosts: ['github.com'],
+  ...profileFixture('alice', { expectedRemoteHosts: ['github.com'] }),
 }
 
 function connection(patch: Partial<AiConnection> = {}): AiConnection {

@@ -5,6 +5,7 @@ import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { execSync } from 'node:child_process'
+import { profileFixture, type ProfileInput } from '../fixtures/profiles'
 
 // An empty gitconfig file so the Electron process sees no global git identity.
 // This ensures IDENTITY_UNSET fires in tests that rely on no local identity.
@@ -91,18 +92,14 @@ test.describe('Commit Flow', () => {
 
   test('commit is blocked on identity mismatch → set-local-identity unblocks → commit creates correct author', async () => {
     // Create profile Alice
-    const aliceId = await win.evaluate(async () => {
+    const aliceInput = profileFixture('alice')
+    const aliceId = await win.evaluate(async (input: ProfileInput) => {
       const api = (window as Window & typeof globalThis).api
       const res = await api.profiles.create({
-        displayName: 'Alice',
-        gitAuthorName: 'Alice Dev',
-        gitAuthorEmail: 'alice@example.com',
-        githubUsername: 'alice',
-        authenticationMethod: 'ssh',
-        expectedRemoteHosts: [],
+        ...input,
       })
       return res.ok ? res.data.id : null
-    })
+    }, aliceInput)
     expect(aliceId).toBeTruthy()
 
     // Set Alice as active profile

@@ -5,6 +5,7 @@ import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { execSync } from 'node:child_process'
+import { profileFixture, type ProfileInput } from '../fixtures/profiles'
 
 // Empty global git config so the header guard never inherits a global identity — the
 // identity-unset fixture must read as IDENTITY_UNSET (blocked), not as a global-only warning.
@@ -39,18 +40,14 @@ async function setupRepo(
   email: string,
   assign: boolean
 ): Promise<void> {
-  const profileId = await win.evaluate(async (e: string) => {
+  const profileInput = profileFixture('alice', { gitAuthorEmail: email })
+  const profileId = await win.evaluate(async (input: ProfileInput) => {
     const api = (window as Window & typeof globalThis).api
     const res = await api.profiles.create({
-      displayName: 'Alice',
-      gitAuthorName: 'Alice Dev',
-      gitAuthorEmail: e,
-      githubUsername: 'alice',
-      authenticationMethod: 'ssh',
-      expectedRemoteHosts: [],
+      ...input,
     })
     return res.ok ? res.data.id : null
-  }, email)
+  }, profileInput)
   expect(profileId).toBeTruthy()
 
   await win.evaluate(async (id: string) => {

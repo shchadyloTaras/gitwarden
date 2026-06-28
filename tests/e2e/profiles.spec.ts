@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import { _electron as electron } from 'playwright'
 import type { ElectronApplication, Page } from 'playwright'
 import path from 'node:path'
+import { profileFixture, type ProfileInput } from '../fixtures/profiles'
 
 function launchApp(): Promise<ElectronApplication> {
   return electron.launch({
@@ -29,12 +30,7 @@ async function cleanupProfiles(win: Page): Promise<void> {
 
 async function fillAndSubmitProfile(
   win: Page,
-  data: {
-    displayName: string
-    gitAuthorName: string
-    gitAuthorEmail: string
-    githubUsername: string
-  }
+  data: Pick<ProfileInput, 'displayName' | 'gitAuthorName' | 'gitAuthorEmail' | 'githubUsername'>
 ): Promise<void> {
   await win.getByTestId('profiles-new-btn').click()
   await win.getByTestId('profile-form-displayName').fill(data.displayName)
@@ -66,24 +62,9 @@ test.describe('Profile management', () => {
   })
 
   test('creates 3 profiles (Personal / Work / Client)', async () => {
-    await fillAndSubmitProfile(win, {
-      displayName: 'Personal',
-      gitAuthorName: 'Jane Personal',
-      gitAuthorEmail: 'jane@personal.dev',
-      githubUsername: 'janepersonal',
-    })
-    await fillAndSubmitProfile(win, {
-      displayName: 'Work',
-      gitAuthorName: 'Jane Work',
-      gitAuthorEmail: 'jane@company.com',
-      githubUsername: 'janework',
-    })
-    await fillAndSubmitProfile(win, {
-      displayName: 'Client',
-      gitAuthorName: 'Jane Client',
-      gitAuthorEmail: 'jane@client.dev',
-      githubUsername: 'janeclient',
-    })
+    await fillAndSubmitProfile(win, profileFixture('personal'))
+    await fillAndSubmitProfile(win, profileFixture('work', { gitAuthorEmail: 'jane@company.com' }))
+    await fillAndSubmitProfile(win, profileFixture('client'))
 
     await expect(win.getByTestId('profiles-list')).toContainText('Personal')
     await expect(win.getByTestId('profiles-list')).toContainText('Work')
@@ -91,12 +72,7 @@ test.describe('Profile management', () => {
   })
 
   test('edits a profile display name', async () => {
-    await fillAndSubmitProfile(win, {
-      displayName: 'Work',
-      gitAuthorName: 'Jane Work',
-      gitAuthorEmail: 'jane@company.com',
-      githubUsername: 'janework',
-    })
+    await fillAndSubmitProfile(win, profileFixture('work', { gitAuthorEmail: 'jane@company.com' }))
 
     // Select the Work profile to edit it
     await win.getByTestId('profiles-list').getByText('Work').click()
@@ -111,12 +87,7 @@ test.describe('Profile management', () => {
   })
 
   test('deletes a profile', async () => {
-    await fillAndSubmitProfile(win, {
-      displayName: 'Client',
-      gitAuthorName: 'Jane Client',
-      gitAuthorEmail: 'jane@client.dev',
-      githubUsername: 'janeclient',
-    })
+    await fillAndSubmitProfile(win, profileFixture('client'))
 
     await win.getByTestId('profiles-list').getByText('Client').click()
     await win.getByTestId('profile-delete-btn').click()
@@ -126,12 +97,7 @@ test.describe('Profile management', () => {
   })
 
   test('sets active profile and it appears in the header', async () => {
-    await fillAndSubmitProfile(win, {
-      displayName: 'Personal',
-      gitAuthorName: 'Jane Personal',
-      gitAuthorEmail: 'jane@personal.dev',
-      githubUsername: 'janepersonal',
-    })
+    await fillAndSubmitProfile(win, profileFixture('personal'))
 
     // After creating, form stays in edit mode with Personal selected
     await win.getByTestId('profile-set-active-btn').click()
@@ -142,12 +108,7 @@ test.describe('Profile management', () => {
   })
 
   test('active profile survives an app relaunch', async () => {
-    await fillAndSubmitProfile(win, {
-      displayName: 'Personal',
-      gitAuthorName: 'Jane Personal',
-      gitAuthorEmail: 'jane@personal.dev',
-      githubUsername: 'janepersonal',
-    })
+    await fillAndSubmitProfile(win, profileFixture('personal'))
     await win.getByTestId('profile-set-active-btn').click()
     await expect(win.getByTestId('header-profile')).toContainText('Personal')
 

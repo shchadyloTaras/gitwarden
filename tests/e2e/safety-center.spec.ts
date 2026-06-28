@@ -5,6 +5,7 @@ import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { execSync } from 'node:child_process'
+import { profileFixture, type ProfileInput } from '../fixtures/profiles'
 
 const EMPTY_GIT_CONFIG = path.join(os.tmpdir(), 'gw-safety-empty.gitconfig')
 
@@ -112,18 +113,14 @@ test.describe('Safety Center', () => {
 
   test('IDENTITY_UNSET: Safety Center blocks commit, matches CommitScreen gate', async () => {
     // Profile whose email won't match (no local identity set)
-    const profileId = await win.evaluate(async () => {
+    const aliceInput = profileFixture('alice')
+    const profileId = await win.evaluate(async (input: ProfileInput) => {
       const api = (window as Window & typeof globalThis).api
       const res = await api.profiles.create({
-        displayName: 'Alice',
-        gitAuthorName: 'Alice Dev',
-        gitAuthorEmail: 'alice@example.com',
-        githubUsername: 'alice',
-        authenticationMethod: 'ssh',
-        expectedRemoteHosts: [],
+        ...input,
       })
       return res.ok ? res.data.id : null
-    })
+    }, aliceInput)
     expect(profileId).toBeTruthy()
 
     await win.evaluate(async (id: string) => {
@@ -273,18 +270,19 @@ test.describe('Safety Center', () => {
 
   test('REMOTE_HOST_MISMATCH: Safety Center blocks push, matches RemoteScreen gate', async () => {
     // Profile with github.com constraint — local bare repo has no host
-    const profileId = await win.evaluate(async () => {
+    const workInput = profileFixture('work', {
+      gitAuthorName: 'Alice Dev',
+      gitAuthorEmail: 'alice@example.com',
+      githubUsername: 'alice',
+      expectedRemoteHosts: ['github.com'],
+    })
+    const profileId = await win.evaluate(async (input: ProfileInput) => {
       const api = (window as Window & typeof globalThis).api
       const res = await api.profiles.create({
-        displayName: 'Work',
-        gitAuthorName: 'Alice Dev',
-        gitAuthorEmail: 'alice@example.com',
-        githubUsername: 'alice',
-        authenticationMethod: 'ssh',
-        expectedRemoteHosts: ['github.com'],
+        ...input,
       })
       return res.ok ? res.data.id : null
-    })
+    }, workInput)
     expect(profileId).toBeTruthy()
 
     await win.evaluate(async (id: string) => {

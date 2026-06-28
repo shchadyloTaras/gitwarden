@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import { _electron as electron } from 'playwright'
 import type { ElectronApplication, Page } from 'playwright'
 import path from 'node:path'
+import { profileFixture } from '../fixtures/profiles'
 
 // Phase 25 — IPC Bridge for GitHub Auth.
 //
@@ -19,14 +20,7 @@ function launchApp(): Promise<ElectronApplication> {
   })
 }
 
-const PROFILE_INPUT = {
-  displayName: 'GitHub Test',
-  gitAuthorName: 'Test User',
-  gitAuthorEmail: 'test@example.com',
-  githubUsername: '',
-  authenticationMethod: 'ssh' as const,
-  expectedRemoteHosts: ['github.com'],
-}
+const PROFILE_INPUT = profileFixture('githubTest')
 
 /** Create a fresh profile via IPC and return its id. */
 async function createProfile(win: Page): Promise<string> {

@@ -5,6 +5,7 @@ import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { execSync } from 'node:child_process'
+import { profileFixture, type ProfileInput } from '../fixtures/profiles'
 
 const EMPTY_GIT_CONFIG = path.join(os.tmpdir(), 'gw-remote-empty.gitconfig')
 
@@ -86,18 +87,14 @@ test.describe('Remote Operations', () => {
 
   test('push is blocked on REMOTE_HOST_MISMATCH when profile has github.com constraint', async () => {
     // Create profile expecting github.com — local bare repo has no host
-    const aliceId = await win.evaluate(async () => {
+    const aliceInput = profileFixture('alice', { expectedRemoteHosts: ['github.com'] })
+    const aliceId = await win.evaluate(async (input: ProfileInput) => {
       const api = (window as Window & typeof globalThis).api
       const res = await api.profiles.create({
-        displayName: 'Alice',
-        gitAuthorName: 'Alice Dev',
-        gitAuthorEmail: 'alice@example.com',
-        githubUsername: 'alice',
-        authenticationMethod: 'ssh',
-        expectedRemoteHosts: ['github.com'],
+        ...input,
       })
       return res.ok ? res.data.id : null
-    })
+    }, aliceInput)
     expect(aliceId).toBeTruthy()
 
     await win.evaluate(async (id: string) => {
@@ -144,18 +141,14 @@ test.describe('Remote Operations', () => {
 
   test('push succeeds with explicit confirmation when no blockers', async () => {
     // Profile with no host constraints — all remotes are acceptable
-    const aliceId = await win.evaluate(async () => {
+    const aliceInput = profileFixture('alice')
+    const aliceId = await win.evaluate(async (input: ProfileInput) => {
       const api = (window as Window & typeof globalThis).api
       const res = await api.profiles.create({
-        displayName: 'Alice',
-        gitAuthorName: 'Alice Dev',
-        gitAuthorEmail: 'alice@example.com',
-        githubUsername: 'alice',
-        authenticationMethod: 'ssh',
-        expectedRemoteHosts: [],
+        ...input,
       })
       return res.ok ? res.data.id : null
-    })
+    }, aliceInput)
     expect(aliceId).toBeTruthy()
 
     await win.evaluate(async (id: string) => {

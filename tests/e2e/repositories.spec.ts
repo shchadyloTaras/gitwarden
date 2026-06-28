@@ -5,6 +5,7 @@ import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { execSync } from 'node:child_process'
+import { profileFixture, type ProfileInput } from '../fixtures/profiles'
 
 function launchApp(): Promise<ElectronApplication> {
   return electron.launch({
@@ -76,29 +77,21 @@ test.describe('Repository management', () => {
 
   test('adds a repository, assigns a profile, shows mismatch warning, and removes it', async () => {
     // Create Personal and Work profiles via IPC
-    const personalId: string = await win.evaluate(async () => {
+    const personalInput = profileFixture('personal')
+    const personalId: string = await win.evaluate(async (input: ProfileInput) => {
       const res = await (window as Window & typeof globalThis).api.profiles.create({
-        displayName: 'Personal',
-        gitAuthorName: 'Jane Personal',
-        gitAuthorEmail: 'jane@personal.dev',
-        githubUsername: 'janepersonal',
-        authenticationMethod: 'ssh',
-        expectedRemoteHosts: [],
+        ...input,
       })
       return res.ok ? res.data.id : ''
-    })
+    }, personalInput)
 
-    const workId: string = await win.evaluate(async () => {
+    const workInput = profileFixture('work')
+    const workId: string = await win.evaluate(async (input: ProfileInput) => {
       const res = await (window as Window & typeof globalThis).api.profiles.create({
-        displayName: 'Work',
-        gitAuthorName: 'Jane Work',
-        gitAuthorEmail: 'jane@work.com',
-        githubUsername: 'janework',
-        authenticationMethod: 'ssh',
-        expectedRemoteHosts: [],
+        ...input,
       })
       return res.ok ? res.data.id : ''
-    })
+    }, workInput)
 
     // Set Personal as active profile
     await win.evaluate(
@@ -183,17 +176,16 @@ test.describe('Repository management', () => {
   })
 
   test('mismatch warning absent when no active profile is set', async () => {
-    const personalId: string = await win.evaluate(async () => {
+    const personalInput = profileFixture('personal', {
+      gitAuthorName: 'Jane',
+      githubUsername: 'jane',
+    })
+    const personalId: string = await win.evaluate(async (input: ProfileInput) => {
       const res = await (window as Window & typeof globalThis).api.profiles.create({
-        displayName: 'Personal',
-        gitAuthorName: 'Jane',
-        gitAuthorEmail: 'jane@personal.dev',
-        githubUsername: 'jane',
-        authenticationMethod: 'ssh',
-        expectedRemoteHosts: [],
+        ...input,
       })
       return res.ok ? res.data.id : ''
-    })
+    }, personalInput)
 
     // No active profile set; reload to sync
     await win.reload()

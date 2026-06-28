@@ -15,6 +15,7 @@
     "preload/**/*",
     "src/core/**/*",
     "src/main/**/*",
+    "tests/fixtures/**/*",
     "tests/unit/**/*",
     "tests/integration/**/*",
     "tests/evals/**/*",
