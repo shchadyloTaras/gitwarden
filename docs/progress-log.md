@@ -927,3 +927,18 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
   1. **Custom domain** (already tracked in Phase 51): user decided 2026-06-28 to stay on `gitwarden.vercel.app` for now. When the domain is registered and DNS points at Vercel, set `site` in `landing/astro.config.mjs` to it and update the canonical-URL assertion in `landing/tests/e2e/seo.spec.ts` (currently the `gitwarden\.vercel\.app` regex). Flipping `site` before DNS is live would point canonical/OG/sitemap URLs at a dead host.
   2. **Submit the sitemap** (external; after the domain is live): add the site to **Google Search Console** + **Bing Webmaster Tools**, verify ownership, and submit `https://<domain>/sitemap-index.xml`. Required to actually monitor indexing/coverage — no code change.
   3. **SEO content pages** (new track — beyond the current landing §7 Non-goals, so a deliberate go/no-go): comparison pages ("GitWarden vs GitHub Desktop", "open-source GitKraken alternative") and problem-first how-tos ("use multiple GitHub accounts on one machine", "committed with the wrong Git account — how to fix"). Positioning per `docs/plans/gitwarden-plan.md:41` (it explicitly does not aim to replace GitHub Desktop / GitKraken / Sourcetree) — a **new category** (safety-first multi-account Git GUI), closest in form to **GitHub Desktop**, differentiator = the **Safety Engine** (identity check before every commit/push). If pursued, scaffold as a proper `docs/plans/<slug>-plan.md` + `docs/prompts/<slug>-prompts.md` track per the repo convention.
+
+### sdd:specify gitwarden — 2026-06-28
+
+- Output: `docs/features/gitwarden/spec.md` (+ `docs/features/gitwarden/CONTEXT.md` glossary, `.size`)
+- Summary: Product-level PRD-as-spec for GitWarden (medium depth) — §1 context, §2 goals, §3 non-goals, 8 user stories, 15 acceptance criteria (all 5 coverage types, use-case floor met), numeric NFRs + §6.1 security/abuse cases, 4 KPIs, 4 open questions. Ideation: `sdd:researcher` (competitive landscape — the unoccupied wedge is the three-way binding of commit identity + transport key + account ownership at push time) + `sdd:devils-advocate` (failure-mode hunt — SSH-actor blind spot, false-sense-of-security, mis-binding). `sdd:critic` verdict: NO_CONTESTED_DECISIONS. Additive; product not migrated (slug `gitwarden`, others remain under `docs/plans/`). On branch `docs/sdd-prd`.
+
+### sdd:roadmap gitwarden — 2026-06-28
+
+- Output: `docs/roadmap.md`
+- Summary: Portfolio view (outcome altitude, no dates). Shipped: MVP core, GitHub OAuth, AI Connections, AI Chat, GenUI Blocks, Client Branch Access, Landing. Now: Distribution & Release 🟡, Agentic DX 🟡. Next: RICE-ordered candidate pool (implausible-binding warning, SSH-setup helper, stash UI, commit graph, PR support). Later: directional themes. `gitwarden` links to the new spec; other tracks link to their existing `docs/plans/` files.
+
+### superpowers:brainstorming — changelog release automation — 2026-06-28
+
+- Output: `docs/superpowers/specs/2026-06-28-changelog-release-automation-design.md`
+- Summary: Design spec for a release-time `/release` command that drafts the app `CHANGELOG.md` from commits since the last tag — deterministic skeleton (`src/core/changelog/` pure fns + `scripts/release-changelog.cjs`) + agent-written prose, human does the final push. Slice 1 scope only (app changelog; landing sync + CI release notes deferred). **Design only — not implemented.**
