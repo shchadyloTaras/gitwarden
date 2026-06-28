@@ -12,9 +12,9 @@ Yes. GitWarden is open source under the MIT licence — the full source is on [G
 
 ## Why does macOS or Windows warn me on first launch?
 
-The current builds are not code-signed. Signing requires a paid Apple Developer account ($99/year) and a Windows code-signing certificate. Until those are in place, macOS Gatekeeper and Windows SmartScreen show a one-time warning.
+The current builds are not code-signed or notarized. Signing requires a paid Apple Developer account ($99/year) and a Windows code-signing certificate. Until those are in place, macOS shows _"Apple could not verify … is free of malware"_ and Windows SmartScreen shows an unknown-publisher warning on first launch.
 
-The [Installation guide](/docs/installation) walks through dismissing it in two clicks. It does not come back for the same version.
+The [Installation guide](/docs/installation) walks through allowing it — on macOS via **System Settings → Privacy & Security → "Open Anyway"** (or one Terminal command). It does not come back for the same version.
 
 ## Is it free?
 

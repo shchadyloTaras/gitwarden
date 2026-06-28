@@ -51,7 +51,7 @@ export const copy = {
       tab: 'macOS',
       steps: [
         'Open the downloaded .dmg and drag GitWarden into your Applications folder.',
-        'First launch: right-click GitWarden → Open → Open (a one-time step until the app is signed).',
+        'First launch: macOS blocks it once — open it, then go to System Settings → Privacy & Security and click “Open Anyway”. (One-time, until the app is signed.)',
       ],
     },
     windows: {
@@ -150,7 +150,7 @@ export const copy = {
       },
       {
         q: 'Why does my computer warn me on first launch?',
-        a: 'The current builds aren’t code-signed yet, so macOS and Windows show a one-time “unknown developer” warning. The install steps above dismiss it safely. Signed builds are on the way.',
+        a: 'The current builds aren’t code-signed yet, so macOS and Windows show a one-time security warning. On macOS, allow it via System Settings → Privacy & Security → “Open Anyway”; on Windows, click “More info” → “Run anyway”. The install steps above walk through it. Signed builds are on the way.',
       },
       {
         q: 'Is it free?',

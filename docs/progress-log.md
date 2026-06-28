@@ -889,3 +889,10 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
   5. `strategy.fail-fast: false` so one OS's transient flake (e.g. a dropped electron download) no longer cancels the other platforms.
 - Each macOS fix was reproduced and verified locally (both arches built in parallel; `codesign --verify` valid) before pushing the tag.
 - Not a phase — release engineering on the shipped MVP. Real Developer-ID signing + notarization remains Phase 43; current builds are ad-hoc-signed (one-time Gatekeeper bypass on download).
+
+### 2026-06-28 — landing + docs: macOS open instructions updated
+
+- Rewrote the unsigned-build open instructions for the macOS 15+ (Sequoia/Tahoe) flow. The old wording was "right-click → Open → Open", which modern macOS has largely removed — the real prompt is now _"Apple could not verify … is free of malware"_ with only Move-to-Trash / Done.
+- Home install step + home FAQ (`landing/src/content/copy.ts`) now point to **System Settings → Privacy & Security → "Open Anyway"**.
+- Docs `installation.md`: macOS Gatekeeper section rewritten — macOS 15+ "Open Anyway" path (with a "click Done, not Move to Trash" warning), macOS 14-and-earlier right-click fallback, and a `xattr -dr com.apple.quarantine /Applications/GitWarden.app` one-liner. `faq.md` updated to match.
+- `astro build` green (10 pages). The warning disappears entirely with notarization (Phase 43).

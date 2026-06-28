@@ -26,15 +26,33 @@ GitWarden is not yet code-signed. This means macOS and Windows show a warning th
 
 ### macOS — Gatekeeper
 
-macOS says: _"GitWarden can't be opened because Apple cannot check it for malicious software."_
+The app is signed (ad-hoc) but not notarized, so macOS blocks the first launch. The wording depends on your macOS version:
 
-1. Right-click (or Control-click) **GitWarden.app** in your Applications folder
-2. Choose **Open** from the menu — a new dialog appears
-3. Click **Open** again
+- **macOS 15 (Sequoia) and later:** _"Apple could not verify 'GitWarden' is free of malware that may harm your Mac or compromise your privacy."_
+- **macOS 14 and earlier:** _"GitWarden can't be opened because Apple cannot check it for malicious software."_
 
-After this, GitWarden opens normally without any warning.
+The app is fine — it simply isn't signed by a paid Apple Developer ID yet. Open it once using any of these:
 
-> This warning goes away once code signing ships. It is tracked in the build plan as Phase 43 (Code Signing & Notarization).
+**macOS 15+ (Sequoia and newer) — recommended**
+
+1. In the warning, click **Done** — **not** "Move to Trash" (that deletes the app).
+2. Open **System Settings → Privacy & Security**.
+3. Scroll to the **Security** section — you'll see _"GitWarden was blocked to protect your Mac."_ Click **Open Anyway**.
+4. Confirm with Touch ID or your password, then click **Open** in the final prompt.
+
+**macOS 14 and earlier**
+
+1. Right-click (or Control-click) **GitWarden.app** in Applications → **Open** → **Open**.
+
+**Any macOS — one command in Terminal**
+
+```bash
+xattr -dr com.apple.quarantine /Applications/GitWarden.app
+```
+
+Then open GitWarden normally. After any of these, it launches without warnings and the exception is remembered for that version.
+
+> This goes away once code signing **and notarization** ship — tracked in the build plan as Phase 43 (Code Signing & Notarization).
 
 ### Windows — SmartScreen
 
