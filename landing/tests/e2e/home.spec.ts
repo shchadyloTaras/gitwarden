@@ -71,8 +71,21 @@ test.describe('progressive enhancement (JavaScript disabled)', () => {
 
 test.describe('install steps', () => {
   test('unsigned-warning note present; tabs switch panels with JS', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'light' })
     await page.goto('/')
-    await expect(page.getByTestId('install-unsigned-note')).toContainText('one-time')
+    const note = page.getByTestId('install-unsigned-note')
+    await expect(note).toContainText('one-time')
+    const noteStyles = await note.evaluate((el) => {
+      const styles = getComputedStyle(el)
+      return {
+        backgroundColor: styles.backgroundColor,
+        color: styles.color,
+      }
+    })
+    expect(noteStyles).toEqual({
+      backgroundColor: 'rgb(255, 244, 204)',
+      color: 'rgb(109, 75, 0)',
+    })
     await page.getByTestId('install-tab-Linux').click()
     await expect(page.getByTestId('install-panel-Linux')).toBeVisible()
   })

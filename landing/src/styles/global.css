@@ -381,6 +381,25 @@ section > h2 {
   font-size: 0.85rem;
   font-style: italic;
 }
+.install .note {
+  background: #3f3109;
+  border: 1px solid #f2c94c;
+  border-radius: 0.75rem;
+  color: #ffe08a;
+  margin-top: 0.75rem;
+  padding: 0.8rem 1rem;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .install .note {
+    background: #fff4cc;
+    color: #6d4b00;
+  }
+}
+:root[data-theme='light'] .install .note {
+  background: #fff4cc;
+  color: #6d4b00;
+}
 
 /* All downloads */
 .groups {
