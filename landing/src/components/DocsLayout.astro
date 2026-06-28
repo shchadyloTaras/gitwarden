@@ -79,4 +79,69 @@ const breadcrumbLd = {
       btn?.setAttribute('aria-expanded', 'false')
     })
   })
+
+  const copyWithFallback = async (text: string) => {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+      return
+    }
+
+    const textarea = document.createElement('textarea')
+    textarea.value = text
+    textarea.setAttribute('readonly', '')
+    textarea.style.position = 'fixed'
+    textarea.style.inset = '0 auto auto 0'
+    textarea.style.opacity = '0'
+    textarea.style.pointerEvents = 'none'
+    document.body.append(textarea)
+    textarea.select()
+
+    try {
+      const copied = document.execCommand('copy')
+      if (!copied) throw new Error('Copy command was rejected')
+    } finally {
+      textarea.remove()
+    }
+  }
+
+  document.querySelectorAll<HTMLElement>('.prose pre > code').forEach((code) => {
+    const pre = code.parentElement
+    if (!pre || pre.dataset.copyable === 'true') return
+    const language = pre.dataset.language ?? code.dataset.language ?? ''
+    const classNames = `${pre.className} ${code.className}`
+    if (language !== 'bash' && !classNames.includes('language-bash')) return
+
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.className = 'code-copy-btn'
+    button.textContent = 'Copy'
+    button.setAttribute('aria-label', 'Copy terminal command')
+
+    let resetTimer: number | undefined
+    button.addEventListener('click', async () => {
+      const command = code.textContent?.replace(/\n$/, '') ?? ''
+      if (!command.trim()) return
+
+      button.disabled = true
+      window.clearTimeout(resetTimer)
+
+      try {
+        await copyWithFallback(command)
+        button.textContent = 'Copied'
+        button.setAttribute('aria-label', 'Copied terminal command')
+      } catch {
+        button.textContent = 'Failed'
+        button.setAttribute('aria-label', 'Copy failed')
+      } finally {
+        button.disabled = false
+        resetTimer = window.setTimeout(() => {
+          button.textContent = 'Copy'
+          button.setAttribute('aria-label', 'Copy terminal command')
+        }, 1600)
+      }
+    })
+
+    pre.dataset.copyable = 'true'
+    pre.append(button)
+  })
 </script>
