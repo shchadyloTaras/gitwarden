@@ -64,6 +64,16 @@ export class ErrorMapper {
       }
     }
 
+    const worktreeMatch = stderr.match(/(?:is already checked out|checked out) at '([^']+)'/i)
+    if (worktreeMatch) {
+      return {
+        code: 'branchCheckedOutElsewhere',
+        userMessage: `This branch is already open in another worktree: ${worktreeMatch[1]}. Open that worktree or remove it before switching here.`,
+        technicalDetails: stderr,
+        exitCode,
+      }
+    }
+
     if (/merge conflict|CONFLICT \(|automatic merge failed/i.test(stderr)) {
       return {
         code: 'mergeConflict',

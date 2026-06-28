@@ -40,6 +40,25 @@ describe('ErrorMapper', () => {
     expect(err.code).toBe('branchNotFound')
   })
 
+  it('maps a branch checked out in another worktree', () => {
+    const err = ErrorMapper.map(
+      "fatal: 'feature-a' is already checked out at '/tmp/gitwarden-linked-worktree'",
+      128
+    )
+    expect(err.code).toBe('branchCheckedOutElsewhere')
+    expect(err.userMessage).toContain('/tmp/gitwarden-linked-worktree')
+    expect(err.exitCode).toBe(128)
+  })
+
+  it('maps a branch delete blocked by another worktree', () => {
+    const err = ErrorMapper.map(
+      "error: Cannot delete branch 'feature-a' checked out at '/tmp/gitwarden-linked-worktree'",
+      1
+    )
+    expect(err.code).toBe('branchCheckedOutElsewhere')
+    expect(err.userMessage).toContain('/tmp/gitwarden-linked-worktree')
+  })
+
   it('maps merge conflict', () => {
     const err = ErrorMapper.map('CONFLICT (content): Merge conflict in foo.ts', 1)
     expect(err.code).toBe('mergeConflict')
@@ -68,6 +87,8 @@ describe('ErrorMapper', () => {
       'remote: Authentication failed',
       "fatal: repository 'x' not found",
       "pathspec 'y' did not match any",
+      "fatal: 'feature-a' is already checked out at '/tmp/feature-a'",
+      "error: Cannot delete branch 'feature-a' checked out at '/tmp/feature-a'",
       'CONFLICT (content)',
       'nothing to commit',
       'Could not resolve host: github.com',

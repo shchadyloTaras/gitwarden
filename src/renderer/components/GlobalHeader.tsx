@@ -153,7 +153,16 @@ export default function GlobalHeader(): React.ReactElement {
             ariaLabel="Current branch"
             monospace
             value={currentBranch ?? ''}
-            options={localBranches.map((b) => ({ value: b.name, label: b.name }))}
+            options={localBranches.map((b) => {
+              const checkedOutElsewhere = Boolean(
+                !b.isCurrent && b.worktreePath && b.worktreePath !== activeRepo?.localPath
+              )
+              return {
+                value: b.name,
+                label: checkedOutElsewhere ? `${b.name} (worktree)` : b.name,
+                disabled: checkedOutElsewhere,
+              }
+            })}
             onChange={(name) => void doSwitch(name)}
             triggerStyle={{
               ...SELECT_STYLE,

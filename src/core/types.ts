@@ -139,6 +139,8 @@ export interface GitBranch {
   isCurrent: boolean
   isRemote: boolean
   upstream?: string
+  /** Absolute path when this local branch is checked out in any worktree. */
+  worktreePath?: string
 }
 
 export interface GitCommit {
@@ -202,6 +204,7 @@ export type GitErrorCode =
   | 'authenticationFailed'
   | 'remoteNotFound'
   | 'branchNotFound'
+  | 'branchCheckedOutElsewhere'
   | 'mergeConflict'
   | 'nothingToCommit'
   | 'networkError'

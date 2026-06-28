@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useBranchStore } from '../store/branchStore'
 import { useAppStore } from '../store/appStore'
 import { matchesAnyPattern } from '../../core/safety/branchPatterns'
+import type { GitBranch } from '../../core/types'
 import { STR } from '../strings'
 
 const ROW: React.CSSProperties = {
@@ -34,6 +35,19 @@ const BTN_PRIMARY: React.CSSProperties = {
   color: 'var(--gw-accent, #6366f1)',
 }
 
+const WORKTREE_BADGE: React.CSSProperties = {
+  fontSize: 12,
+  padding: '2px 6px',
+  borderRadius: 999,
+  border: '1px solid var(--gw-warning-solid, #d97706)',
+  color: 'var(--gw-warning, #fbbf24)',
+  whiteSpace: 'nowrap',
+}
+
+function isCheckedOutInAnotherWorktree(branch: GitBranch, repoPath: string | null): boolean {
+  return Boolean(!branch.isCurrent && branch.worktreePath && branch.worktreePath !== repoPath)
+}
+
 export default function BranchesScreen(): React.ReactElement {
   const activeRepo = useAppStore((s) => s.activeRepo)
   const {
@@ -43,6 +57,7 @@ export default function BranchesScreen(): React.ReactElement {
     error,
     successMessage,
     deleteConfirmBranch,
+    repoPath,
     load,
     doSwitch,
     doCreate,
@@ -249,64 +264,93 @@ export default function BranchesScreen(): React.ReactElement {
                 None
               </div>
             )}
-            {localBranches.map((b) => (
-              <div key={b.name} data-testid={`branches-local-item-${b.name}`} style={ROW}>
-                <span
-                  style={{
-                    flex: 1,
-                    fontSize: 14,
-                    fontFamily: 'monospace',
-                    color: b.isCurrent ? 'var(--gw-accent, #6366f1)' : 'var(--gw-text, #f4f4f5)',
-                    fontWeight: b.isCurrent ? 600 : 400,
-                  }}
-                >
-                  {b.isCurrent ? '* ' : '  '}
-                  {b.name}
-                </span>
-
-                {!b.isCurrent && (
-                  <button
-                    data-testid="branches-switch-btn"
-                    onClick={() => void handleSwitch(b.name)}
-                    style={BTN}
-                  >
-                    Switch
-                  </button>
-                )}
-
-                {!b.isCurrent && deleteConfirmBranch !== b.name && (
-                  <button
-                    data-testid="branches-delete-btn"
-                    onClick={() => setDeleteConfirm(b.name)}
-                    style={BTN_DANGER}
-                  >
-                    Delete
-                  </button>
-                )}
-
-                {!b.isCurrent && deleteConfirmBranch === b.name && (
-                  <>
-                    <span style={{ fontSize: 14, color: 'var(--gw-danger, #f87171)' }}>
-                      Delete?
-                    </span>
-                    <button
-                      data-testid="branches-delete-confirm-btn"
-                      onClick={() => void handleDelete(b.name)}
-                      style={{ ...BTN_DANGER, fontWeight: 600 }}
+            {localBranches.map((b) => {
+              const checkedOutElsewhere = isCheckedOutInAnotherWorktree(b, repoPath)
+              return (
+                <div key={b.name} data-testid={`branches-local-item-${b.name}`} style={ROW}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        fontFamily: 'monospace',
+                        color: b.isCurrent
+                          ? 'var(--gw-accent, #6366f1)'
+                          : 'var(--gw-text, #f4f4f5)',
+                        fontWeight: b.isCurrent ? 600 : 400,
+                      }}
                     >
-                      Yes, delete
-                    </button>
+                      {b.isCurrent ? '* ' : '  '}
+                      {b.name}
+                    </div>
+                    {checkedOutElsewhere && (
+                      <div
+                        data-testid="branches-worktree-path"
+                        title={b.worktreePath}
+                        style={{
+                          marginTop: 2,
+                          marginLeft: 18,
+                          color: 'var(--gw-text-faint, #71717a)',
+                          fontSize: 12,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {b.worktreePath}
+                      </div>
+                    )}
+                  </div>
+
+                  {checkedOutElsewhere && (
+                    <span data-testid="branches-worktree-badge" style={WORKTREE_BADGE}>
+                      In worktree
+                    </span>
+                  )}
+
+                  {!b.isCurrent && !checkedOutElsewhere && (
                     <button
-                      data-testid="branches-delete-cancel-btn"
-                      onClick={() => setDeleteConfirm(null)}
+                      data-testid="branches-switch-btn"
+                      onClick={() => void handleSwitch(b.name)}
                       style={BTN}
                     >
-                      Cancel
+                      Switch
                     </button>
-                  </>
-                )}
-              </div>
-            ))}
+                  )}
+
+                  {!b.isCurrent && !checkedOutElsewhere && deleteConfirmBranch !== b.name && (
+                    <button
+                      data-testid="branches-delete-btn"
+                      onClick={() => setDeleteConfirm(b.name)}
+                      style={BTN_DANGER}
+                    >
+                      Delete
+                    </button>
+                  )}
+
+                  {!b.isCurrent && !checkedOutElsewhere && deleteConfirmBranch === b.name && (
+                    <>
+                      <span style={{ fontSize: 14, color: 'var(--gw-danger, #f87171)' }}>
+                        Delete?
+                      </span>
+                      <button
+                        data-testid="branches-delete-confirm-btn"
+                        onClick={() => void handleDelete(b.name)}
+                        style={{ ...BTN_DANGER, fontWeight: 600 }}
+                      >
+                        Yes, delete
+                      </button>
+                      <button
+                        data-testid="branches-delete-cancel-btn"
+                        onClick={() => setDeleteConfirm(null)}
+                        style={BTN}
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  )}
+                </div>
+              )
+            })}
           </div>
 
           {/* Remote branches */}

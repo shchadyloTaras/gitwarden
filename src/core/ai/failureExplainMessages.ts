@@ -6,6 +6,7 @@ export const FAILURE_CATEGORY_BY_CODE: Record<GitErrorCode, string> = {
   authenticationFailed: 'authentication',
   remoteNotFound: 'remote',
   branchNotFound: 'branch',
+  branchCheckedOutElsewhere: 'branch',
   mergeConflict: 'merge',
   nothingToCommit: 'commit',
   networkError: 'network',
@@ -18,6 +19,7 @@ export const FAILURE_ACTION_BY_CODE: Record<GitErrorCode, FailureSuggestedAction
   authenticationFailed: 'review-auth',
   remoteNotFound: 'configure-remote',
   branchNotFound: 'switch-branch',
+  branchCheckedOutElsewhere: 'switch-branch',
   mergeConflict: 'resolve-conflicts',
   nothingToCommit: 'stage-changes',
   networkError: 'check-network',
@@ -39,6 +41,8 @@ export function actionHintForFailure(code: GitErrorCode): string {
       return 'Verify the remote URL in Remote and that you have access to the repository.'
     case 'branchNotFound':
       return 'Switch to an existing branch or create the branch locally first.'
+    case 'branchCheckedOutElsewhere':
+      return 'Open the worktree that already has this branch checked out, or remove that worktree before switching here.'
     case 'mergeConflict':
       return 'Resolve conflict markers, stage the fixes, then retry your Git action.'
     case 'nothingToCommit':

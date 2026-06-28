@@ -266,6 +266,7 @@ export const GitFailureExplainPayload = z.object({
     'authenticationFailed',
     'remoteNotFound',
     'branchNotFound',
+    'branchCheckedOutElsewhere',
     'mergeConflict',
     'nothingToCommit',
     'networkError',

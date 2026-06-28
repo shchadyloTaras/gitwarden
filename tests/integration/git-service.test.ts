@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest'
-import { mkdtemp, rm, writeFile } from 'fs/promises'
+import { mkdtemp, realpath, rm, writeFile } from 'fs/promises'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import * as os from 'os'
 import * as path from 'path'
 import { GitLocator } from '../../src/main/git/GitLocator'
 import { GitRunner } from '../../src/main/git/GitRunner'
+import type { GitError } from '../../src/main/git/ErrorMapper'
 import { GitService } from '../../src/main/services/GitService'
 
 const execFileAsync = promisify(execFile)
@@ -143,5 +144,40 @@ describe('GitService.getStatus integration', () => {
     const f = status.files.find((c) => c.path === fileName)
     expect(f).toBeDefined()
     expect(f!.indexStatus).toBe('untracked')
+  })
+
+  it('marks local branches that are checked out in another worktree', async () => {
+    await writeFile(path.join(repoPath, 'init.txt'), 'initial\n')
+    await git(repoPath, 'add', 'init.txt')
+    await git(repoPath, 'commit', '-m', 'initial')
+    await git(repoPath, 'branch', 'linked-worktree')
+
+    const linkedPath = path.join(tmpDir, 'linked-worktree')
+    await execFileAsync('git', ['-C', repoPath, 'worktree', 'add', linkedPath, 'linked-worktree'])
+
+    const branches = await service.getBranches(repoPath)
+    const linkedBranch = branches.find((b) => b.name === 'linked-worktree')
+
+    expect(linkedBranch).toBeDefined()
+    expect(linkedBranch!.isCurrent).toBe(false)
+    await expect(realpath(linkedBranch!.worktreePath!)).resolves.toBe(await realpath(linkedPath))
+  })
+
+  it('treats deleting an already-missing branch as a successful refresh-safe no-op', async () => {
+    await expect(service.deleteBranch(repoPath, 'already-gone')).resolves.toBeUndefined()
+  })
+
+  it('reports when delete is blocked because the branch is checked out in another worktree', async () => {
+    await writeFile(path.join(repoPath, 'init.txt'), 'initial\n')
+    await git(repoPath, 'add', 'init.txt')
+    await git(repoPath, 'commit', '-m', 'initial')
+    await git(repoPath, 'branch', 'linked-worktree')
+
+    const linkedPath = path.join(tmpDir, 'linked-worktree')
+    await execFileAsync('git', ['-C', repoPath, 'worktree', 'add', linkedPath, 'linked-worktree'])
+
+    await expect(service.deleteBranch(repoPath, 'linked-worktree')).rejects.toMatchObject({
+      code: 'branchCheckedOutElsewhere',
+    } satisfies Partial<GitError>)
   })
 })

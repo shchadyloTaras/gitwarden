@@ -19,6 +19,11 @@ interface BranchState {
   clearMessages(): void
 }
 
+async function refreshBranches(repoPath: string): Promise<GitBranch[] | null> {
+  const listRes = await window.api.git.getBranches(repoPath)
+  return listRes.ok ? listRes.data : null
+}
+
 export const useBranchStore = create<BranchState>((set, get) => ({
   repoPath: null,
   repository: null,
@@ -52,8 +57,8 @@ export const useBranchStore = create<BranchState>((set, get) => ({
       if (!res.ok) throw new Error(res.error)
       useAppStore.getState().setCurrentBranch(branch)
       // Reload branch list so isCurrent flags update
-      const listRes = await window.api.git.getBranches(repoPath)
-      if (listRes.ok) set({ branches: listRes.data })
+      const branches = await refreshBranches(repoPath)
+      if (branches) set({ branches })
       set({ successMessage: `Switched to ${branch}.` })
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) })
@@ -68,8 +73,8 @@ export const useBranchStore = create<BranchState>((set, get) => ({
       const res = await window.api.git.createBranch(repoPath, name)
       if (!res.ok) throw new Error(res.error)
       useAppStore.getState().setCurrentBranch(name)
-      const listRes = await window.api.git.getBranches(repoPath)
-      if (listRes.ok) set({ branches: listRes.data })
+      const branches = await refreshBranches(repoPath)
+      if (branches) set({ branches })
       set({ successMessage: `Created and switched to ${name}.` })
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) })
@@ -83,11 +88,15 @@ export const useBranchStore = create<BranchState>((set, get) => ({
     try {
       const res = await window.api.git.deleteBranch(repoPath, branch)
       if (!res.ok) throw new Error(res.error)
-      const listRes = await window.api.git.getBranches(repoPath)
-      if (listRes.ok) set({ branches: listRes.data })
+      const branches = await refreshBranches(repoPath)
+      if (branches) set({ branches })
       set({ successMessage: `Deleted branch ${branch}.` })
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) })
+      const branches = await refreshBranches(repoPath)
+      set({
+        ...(branches ? { branches } : {}),
+        error: err instanceof Error ? err.message : String(err),
+      })
     }
   },
 

@@ -181,7 +181,7 @@ export class GitService {
 
   async getBranches(repoPath: string): Promise<GitBranch[]> {
     const localRes = await this.runner.run({
-      args: ['for-each-ref', '--format=%(refname:short)\t%(HEAD)', 'refs/heads'],
+      args: ['for-each-ref', '--format=%(refname:short)\t%(HEAD)\t%(worktreepath)', 'refs/heads'],
       cwd: repoPath,
       readOnly: true,
     })
@@ -190,8 +190,13 @@ export class GitService {
       .split('\n')
       .filter(Boolean)
       .map((line) => {
-        const [name, head] = line.split('\t')
-        return { name, isCurrent: head === '*', isRemote: false }
+        const [name, head, worktreePath] = line.split('\t')
+        return {
+          name,
+          isCurrent: head === '*',
+          isRemote: false,
+          worktreePath: worktreePath || undefined,
+        }
       })
 
     const remoteRes = await this.runner.run({
@@ -218,6 +223,17 @@ export class GitService {
   }
 
   async deleteBranch(repoPath: string, name: string): Promise<void> {
+    const existsRes = await this.runner.run({
+      args: ['for-each-ref', '--format=%(refname:short)', 'refs/heads'],
+      cwd: repoPath,
+      readOnly: true,
+    })
+    const exists = existsRes.stdout
+      .toString('utf8')
+      .split('\n')
+      .some((branch) => branch === name)
+    if (!exists) return
+
     await this.runner.run({ args: ['branch', '-D', name], cwd: repoPath, readOnly: false })
   }
 

@@ -4,7 +4,7 @@ import type { ElectronApplication, Page } from 'playwright'
 import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
-import { execSync } from 'node:child_process'
+import { execFileSync, execSync } from 'node:child_process'
 
 const EMPTY_GIT_CONFIG = path.join(os.tmpdir(), 'gw-branches-empty.gitconfig')
 
@@ -32,6 +32,7 @@ async function cleanupAll(win: Page): Promise<void> {
 
 // Fixture repo: main + feature-a (both have at least one commit)
 let fixtureRepo: string
+let linkedWorktree = ''
 
 test.beforeAll(() => {
   fs.writeFileSync(EMPTY_GIT_CONFIG, '')
@@ -53,10 +54,28 @@ test.beforeAll(() => {
 
   // Return to main
   execSync('git checkout main', { cwd: fixtureRepo, stdio: 'pipe' })
+
+  execSync('git branch worktree-only', { cwd: fixtureRepo, stdio: 'pipe' })
+  linkedWorktree = path.join(os.tmpdir(), `gw-branches-linked-${Date.now()}`)
+  execFileSync('git', ['worktree', 'add', linkedWorktree, 'worktree-only'], {
+    cwd: fixtureRepo,
+    stdio: 'pipe',
+  })
 })
 
 test.afterAll(() => {
+  try {
+    if (linkedWorktree) {
+      execFileSync('git', ['worktree', 'remove', '--force', linkedWorktree], {
+        cwd: fixtureRepo,
+        stdio: 'pipe',
+      })
+    }
+  } catch {
+    // ignore
+  }
   fs.rmSync(fixtureRepo, { recursive: true, force: true })
+  if (linkedWorktree) fs.rmSync(linkedWorktree, { recursive: true, force: true })
   try {
     fs.rmSync(EMPTY_GIT_CONFIG, { force: true })
   } catch {
@@ -164,5 +183,19 @@ test.describe('Branches', () => {
       timeout: 10000,
     })
     await expect(win.getByTestId('branches-success')).toBeVisible()
+  })
+
+  test('shows branches checked out in another worktree without switch or delete actions', async () => {
+    await registerFixtureRepo()
+
+    await win.getByTestId('nav-branches').click()
+    await expect(win.getByTestId('screen-branches')).toBeVisible()
+
+    const worktreeRow = win.getByTestId('branches-local-item-worktree-only')
+    await expect(worktreeRow).toBeVisible({ timeout: 10000 })
+    await expect(worktreeRow.getByTestId('branches-worktree-badge')).toContainText('In worktree')
+    await expect(worktreeRow.getByTestId('branches-worktree-path')).toContainText(linkedWorktree)
+    await expect(worktreeRow.getByTestId('branches-switch-btn')).toHaveCount(0)
+    await expect(worktreeRow.getByTestId('branches-delete-btn')).toHaveCount(0)
   })
 })
