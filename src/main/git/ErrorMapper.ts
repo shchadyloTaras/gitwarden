@@ -64,7 +64,9 @@ export class ErrorMapper {
       }
     }
 
-    const worktreeMatch = stderr.match(/(?:is already checked out|checked out) at '([^']+)'/i)
+    const worktreeMatch = stderr.match(
+      /(?:is already checked out|checked out|used by worktree) at ['"]([^'"]+)['"]/i
+    )
     if (worktreeMatch) {
       return {
         code: 'branchCheckedOutElsewhere',

@@ -59,6 +59,15 @@ describe('ErrorMapper', () => {
     expect(err.userMessage).toContain('/tmp/gitwarden-linked-worktree')
   })
 
+  it('maps a branch delete blocked by newer Git worktree wording', () => {
+    const err = ErrorMapper.map(
+      "error: cannot delete branch 'feature-a' used by worktree at '/tmp/gitwarden-linked-worktree'",
+      1
+    )
+    expect(err.code).toBe('branchCheckedOutElsewhere')
+    expect(err.userMessage).toContain('/tmp/gitwarden-linked-worktree')
+  })
+
   it('maps merge conflict', () => {
     const err = ErrorMapper.map('CONFLICT (content): Merge conflict in foo.ts', 1)
     expect(err.code).toBe('mergeConflict')
@@ -89,6 +98,7 @@ describe('ErrorMapper', () => {
       "pathspec 'y' did not match any",
       "fatal: 'feature-a' is already checked out at '/tmp/feature-a'",
       "error: Cannot delete branch 'feature-a' checked out at '/tmp/feature-a'",
+      "error: cannot delete branch 'feature-a' used by worktree at '/tmp/feature-a'",
       'CONFLICT (content)',
       'nothing to commit',
       'Could not resolve host: github.com',
