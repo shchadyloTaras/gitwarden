@@ -1,6 +1,6 @@
 {
   "name": "gitwarden",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Safe multi-account Git GUI focused on identity safety",
   "main": "out/main/index.js",
   "author": {
