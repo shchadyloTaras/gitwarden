@@ -3,8 +3,8 @@ import { copy } from '../content/copy'
 ---
 
 <section id="faq" class="faq" data-testid="faq">
-  <h2>{copy.faq.heading}</h2>
-  <div class="faq-list">
+  <h2 data-reveal>{copy.faq.heading}</h2>
+  <div class="faq-list" data-reveal-group>
     {
       copy.faq.items.map((item) => (
         <details class="faq-item">

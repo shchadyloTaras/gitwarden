@@ -3,9 +3,9 @@ import { copy } from '../content/copy'
 ---
 
 <section id="why" class="why" data-testid="why">
-  <h2>{copy.why.heading}</h2>
-  <p class="lead">{copy.why.lead}</p>
-  <div class="cards">
+  <h2 data-reveal>{copy.why.heading}</h2>
+  <p class="lead" data-reveal>{copy.why.lead}</p>
+  <div class="cards" data-reveal-group>
     {
       copy.why.points.map((p) => (
         <article class="card">
@@ -15,5 +15,5 @@ import { copy } from '../content/copy'
       ))
     }
   </div>
-  <a class="doc-link" href={copy.why.docsLink.href}>{copy.why.docsLink.label} →</a>
+  <a class="doc-link" href={copy.why.docsLink.href} data-reveal>{copy.why.docsLink.label} →</a>
 </section>

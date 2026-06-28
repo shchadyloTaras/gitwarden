@@ -12,10 +12,10 @@ const groups: OS[] = ['macOS', 'Windows', 'Linux']
 ---
 
 <section id="downloads" class="all-downloads" data-testid="all-downloads">
-  <h2>{copy.allDownloads.heading}</h2>
-  <p class="subhead">{copy.allDownloads.subhead}</p>
+  <h2 data-reveal>{copy.allDownloads.heading}</h2>
+  <p class="subhead" data-reveal>{copy.allDownloads.subhead}</p>
 
-  <div class="groups">
+  <div class="groups" data-reveal-group>
     {
       groups.map((os) => {
         const hasDl = resolved.all[os].length > 0
@@ -52,7 +52,7 @@ const groups: OS[] = ['macOS', 'Windows', 'Linux']
     }
   </div>
 
-  <p class="all-fallback">
+  <p class="all-fallback" data-reveal>
     <a href={resolved.releaseUrl} data-testid="all-downloads-fallback">
       {copy.allDownloads.fallbackRow}
     </a>

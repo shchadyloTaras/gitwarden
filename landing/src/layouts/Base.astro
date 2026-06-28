@@ -66,6 +66,19 @@ const plausibleDomain = import.meta.env.PUBLIC_PLAUSIBLE_DOMAIN
       }
     </script>
 
+    <script is:inline>
+      // Enable scroll-reveal only when JS is on AND the visitor hasn't requested reduced motion.
+      // Gating the hidden initial state (global.css) on this class keeps no-JS / reduced-motion
+      // visitors' content fully visible — they never get stuck at opacity:0.
+      try {
+        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          document.documentElement.classList.add('reveal-ready')
+        }
+      } catch {
+        /* ignore — leave content visible */
+      }
+    </script>
+
     {
       plausibleDomain && (
         <script

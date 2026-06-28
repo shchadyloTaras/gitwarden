@@ -13,8 +13,8 @@ const lastIndex = copy.features.items.length - 1
 ---
 
 <section id="features" class="features" data-testid="features">
-  <h2>{copy.features.heading}</h2>
-  <div class="cards">
+  <h2 data-reveal>{copy.features.heading}</h2>
+  <div class="cards" data-reveal-group>
     {
       copy.features.items.map((f, i) => (
         <article class:list={['card', { 'card--ai': i === lastIndex }]}>
@@ -28,5 +28,7 @@ const lastIndex = copy.features.items.length - 1
       ))
     }
   </div>
-  <a class="doc-link" href={copy.features.docsLink.href}>{copy.features.docsLink.label} →</a>
+  <a class="doc-link" href={copy.features.docsLink.href} data-reveal
+    >{copy.features.docsLink.label} →</a
+  >
 </section>

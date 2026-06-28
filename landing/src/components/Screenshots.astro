@@ -11,9 +11,9 @@ const shots = copy.screenshots.shots.map((shot, i) => ({ ...shot, image: images[
 ---
 
 <section id="screenshots" class="screenshots" data-testid="screenshots">
-  <h2>{copy.screenshots.heading}</h2>
-  <p class="subhead">{copy.screenshots.subhead}</p>
-  <div class="shots">
+  <h2 data-reveal>{copy.screenshots.heading}</h2>
+  <p class="subhead" data-reveal>{copy.screenshots.subhead}</p>
+  <div class="shots" data-reveal-group>
     {
       shots.map((s) => (
         <figure>

@@ -69,4 +69,29 @@ const faqLd = {
   <script type="application/ld+json" is:inline set:html={JSON.stringify(softwareLd)} />
   <script type="application/ld+json" is:inline set:html={JSON.stringify(websiteLd)} />
   <script type="application/ld+json" is:inline set:html={JSON.stringify(faqLd)} />
+
+  <script>
+    // Scroll-reveal: fade + rise sections and grouped items as they enter the viewport. The hidden
+    // initial state lives in global.css behind `.reveal-ready` (added by the head script in
+    // Base.astro only when JS is on and motion is allowed), so this just toggles `.is-visible` once.
+    const revealRoot = document.documentElement
+    const revealTargets = document.querySelectorAll('[data-reveal], [data-reveal-group]')
+    if (revealRoot.classList.contains('reveal-ready') && 'IntersectionObserver' in window) {
+      const io = new IntersectionObserver(
+        (entries, obs) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('is-visible')
+              obs.unobserve(entry.target)
+            }
+          }
+        },
+        { threshold: 0, rootMargin: '0px 0px -12% 0px' }
+      )
+      revealTargets.forEach((el) => io.observe(el))
+    } else {
+      // Reduced motion, JS gate off, or no IntersectionObserver → show everything immediately.
+      revealTargets.forEach((el) => el.classList.add('is-visible'))
+    }
+  </script>
 </Base>
