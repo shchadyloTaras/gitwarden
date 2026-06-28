@@ -45,3 +45,6 @@ gitwarden-context.txt
 .vscode/*
 !.vscode/extensions.json
 *.swp
+
+# Agent scratch (SDD progress ledger, briefs)
+.superpowers/

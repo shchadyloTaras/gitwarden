@@ -10,12 +10,12 @@
 
 ## Global Constraints
 
-- **`src/core/**` is pure** — no `fs`, `child_process`, Electron, or DOM imports in `src/core/changelog/`. All I/O lives in `scripts/release-changelog.ts`. (AGENTS.md architecture rule; enforced by the `core-purity-reviewer` subagent.)
+- **`src/core/**`is pure** — no`fs`, `child_process`, Electron, or DOM imports in `src/core/changelog/`. All I/O lives in `scripts/release-changelog.ts`. (AGENTS.md architecture rule; enforced by the `core-purity-reviewer` subagent.)
 - **Git args are always an array**, never string-interpolated (AGENTS.md).
 - **Never push.** The slash command stops after `git tag`; its `allowed-tools` has no `git push` (mirrors `.claude/commands/commit-phase.md`).
 - **TypeScript strict** everywhere; source files in `src/core/changelog/` import siblings with `.js` extensions (matching `src/core/updates/`). Tests and the script import sources **without** an extension (matching `tests/unit/update-version.test.ts`).
-- **Source-of-truth values:** repo URL `https://github.com/shchadyloTaras/gitwarden`; current version `0.1.1`; last tag `v0.1.1`; changelog format is *Keep a Changelog* with bottom link-references (see `CHANGELOG.md`).
-- **Commit policy — ONE commit for this slice.** This repo enforces a Progress-Log gate on **every** commit via the `.claude/hooks/commit-needs-log.sh` PreToolUse hook (`docs/progress-log.md` must be staged). Therefore: do each task's TDD and keep the tree green, but **do not commit per task** — make a single commit in Task 10 after writing the Progress-Log entry. (The hook checks the index *before* the command runs, so staging must precede the `git commit` in a **separate** Bash call.)
+- **Source-of-truth values:** repo URL `https://github.com/shchadyloTaras/gitwarden`; current version `0.1.1`; last tag `v0.1.1`; changelog format is _Keep a Changelog_ with bottom link-references (see `CHANGELOG.md`).
+- **Commit policy — ONE commit for this slice.** This repo enforces a Progress-Log gate on **every** commit via the `.claude/hooks/commit-needs-log.sh` PreToolUse hook (`docs/progress-log.md` must be staged). Therefore: do each task's TDD and keep the tree green, but **do not commit per task** — make a single commit in Task 10 after writing the Progress-Log entry. (The hook checks the index _before_ the command runs, so staging must precede the `git commit` in a **separate** Bash call.)
 - **Co-author trailer:** `Co-Authored-By: Claude <noreply@anthropic.com>`.
 
 ---
@@ -23,11 +23,13 @@
 ### Task 1: Types + `parseGitLog`
 
 **Files:**
+
 - Create: `src/core/changelog/types.ts`
 - Create: `src/core/changelog/commits.ts`
 - Test: `tests/unit/changelog.test.ts`
 
 **Interfaces:**
+
 - Produces: `interface Commit { hash: string; subject: string; body: string; files: string[] }`, `type BumpKind = 'major' | 'minor' | 'patch' | 'none'`, `interface RollResult { text: string; alreadyRolled: boolean }` (all in `types.ts`); `parseGitLog(raw: string): Commit[]`, plus `const FIELD_SEP = '\x1f'` and `const RECORD_SEP = '\x1e'` (in `commits.ts`).
 
 - [ ] **Step 1: Write the failing test** — create `tests/unit/changelog.test.ts`:
@@ -57,7 +59,9 @@ describe('parseGitLog', () => {
 
   it('keeps a body that contains newlines intact and tolerates no files', () => {
     const raw = `${RECORD_SEP}h1${FIELD_SEP}sub${FIELD_SEP}line1\nline2${FIELD_SEP}\n`
-    expect(parseGitLog(raw)).toEqual([{ hash: 'h1', subject: 'sub', body: 'line1\nline2', files: [] }])
+    expect(parseGitLog(raw)).toEqual([
+      { hash: 'h1', subject: 'sub', body: 'line1\nline2', files: [] },
+    ])
   })
 })
 ```
@@ -136,10 +140,12 @@ Expected: PASS (3 tests).
 ### Task 2: `filterAppCommits`
 
 **Files:**
+
 - Modify: `src/core/changelog/commits.ts`
 - Test: `tests/unit/changelog.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Commit` (Task 1).
 - Produces: `filterAppCommits(commits: Commit[]): Commit[]`.
 
@@ -148,7 +154,10 @@ Expected: PASS (3 tests).
 ```ts
 import { filterAppCommits } from '../../src/core/changelog/commits'
 
-function c(subject: string, files: string[]): { hash: string; subject: string; body: string; files: string[] } {
+function c(
+  subject: string,
+  files: string[]
+): { hash: string; subject: string; body: string; files: string[] } {
   return { hash: 'h', subject, body: '', files }
 }
 
@@ -185,7 +194,9 @@ Expected: FAIL — `filterAppCommits is not a function` / import not found.
  * app). Commits with no detected files are kept — we cannot prove they are landing-only.
  */
 export function filterAppCommits(commits: Commit[]): Commit[] {
-  return commits.filter((c) => c.files.length === 0 || !c.files.every((f) => f.startsWith('landing/')))
+  return commits.filter(
+    (c) => c.files.length === 0 || !c.files.every((f) => f.startsWith('landing/'))
+  )
 }
 ```
 
@@ -199,10 +210,12 @@ Expected: PASS (6 tests).
 ### Task 3: `suggestBump`
 
 **Files:**
+
 - Modify: `src/core/changelog/commits.ts`
 - Test: `tests/unit/changelog.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Commit`, `BumpKind`.
 - Produces: `suggestBump(commits: Commit[]): BumpKind`.
 
@@ -229,7 +242,11 @@ describe('suggestBump', () => {
   })
 
   it('returns major on a BREAKING CHANGE body', () => {
-    expect(suggestBump([{ hash: 'h', subject: 'fix: a', body: 'BREAKING CHANGE: x', files: ['src/a.ts'] }])).toBe('major')
+    expect(
+      suggestBump([
+        { hash: 'h', subject: 'fix: a', body: 'BREAKING CHANGE: x', files: ['src/a.ts'] },
+      ])
+    ).toBe('major')
   })
 })
 ```
@@ -269,10 +286,12 @@ Expected: PASS (11 tests).
 ### Task 4: `nextVersion`
 
 **Files:**
+
 - Modify: `src/core/changelog/commits.ts`
 - Test: `tests/unit/changelog.test.ts`
 
 **Interfaces:**
+
 - Consumes: `BumpKind`; `parseVersion` from `src/core/updates/version.ts` (existing: `parseVersion(raw: string): { major: number; minor: number; patch: number; prerelease: string[] } | null`).
 - Produces: `nextVersion(current: string, kind: BumpKind): string | null`.
 
@@ -345,10 +364,12 @@ Expected: PASS (15 tests).
 ### Task 5: `rollUnreleased`
 
 **Files:**
+
 - Create: `src/core/changelog/render.ts`
 - Test: `tests/unit/changelog.test.ts`
 
 **Interfaces:**
+
 - Consumes: `RollResult` (Task 1).
 - Produces: `rollUnreleased(changelogText: string, version: string, date: string, repoUrl: string, prevTag: string): RollResult`.
 
@@ -398,9 +419,9 @@ describe('rollUnreleased', () => {
   })
 
   it('throws when there is no [Unreleased] heading', () => {
-    expect(() => rollUnreleased('# Changelog\n\n## [0.1.0] — x\n', '0.2.0', 'd', REPO, 'v0.1.0')).toThrow(
-      /Unreleased/,
-    )
+    expect(() =>
+      rollUnreleased('# Changelog\n\n## [0.1.0] — x\n', '0.2.0', 'd', REPO, 'v0.1.0')
+    ).toThrow(/Unreleased/)
   })
 })
 ```
@@ -429,7 +450,7 @@ export function rollUnreleased(
   version: string,
   date: string,
   repoUrl: string,
-  prevTag: string,
+  prevTag: string
 ): RollResult {
   if (new RegExp(`^## \\[${escapeRegExp(version)}\\]`, 'm').test(changelogText)) {
     return { text: changelogText, alreadyRolled: true }
@@ -470,9 +491,11 @@ Expected: PASS (19 tests).
 ### Task 6: Integration smoke — real git output → parse → filter
 
 **Files:**
+
 - Create: `tests/integration/release-changelog.test.ts`
 
 **Interfaces:**
+
 - Consumes: `parseGitLog`, `filterAppCommits`, `FIELD_SEP`, `RECORD_SEP` (Tasks 1–2).
 
 - [ ] **Step 1: Write the failing test** — create `tests/integration/release-changelog.test.ts` (temp-repo pattern copied from `tests/integration/git-runner.test.ts`):
@@ -484,7 +507,12 @@ import { execFile } from 'child_process'
 import { promisify } from 'util'
 import * as os from 'os'
 import * as path from 'path'
-import { parseGitLog, filterAppCommits, FIELD_SEP, RECORD_SEP } from '../../src/core/changelog/commits'
+import {
+  parseGitLog,
+  filterAppCommits,
+  FIELD_SEP,
+  RECORD_SEP,
+} from '../../src/core/changelog/commits'
 
 const execFileAsync = promisify(execFile)
 
@@ -544,15 +572,17 @@ Expected: PASS (1 test).
 ### Task 7: The `release-changelog.ts` shell + npm script + tsconfig include
 
 **Files:**
+
 - Create: `scripts/release-changelog.ts`
 - Modify: `package.json` (add a `release:changelog` script)
 - Modify: `tsconfig.node.json` (add `scripts/**/*` to `include` so the script typechecks + lints)
 
 **Interfaces:**
+
 - Consumes: `parseGitLog`, `filterAppCommits`, `suggestBump`, `nextVersion`, `FIELD_SEP`, `RECORD_SEP` (commits.ts); `rollUnreleased` (render.ts).
 - Produces (CLI): `release-changelog.ts collect` → prints JSON `{ prevTag, currentVersion, suggestedKind, suggestedVersion, commits[] }`; `release-changelog.ts apply <version>` → rewrites `CHANGELOG.md` + `package.json`.
 
-- [ ] **Step 1: Add `scripts/**/*` to `tsconfig.node.json` `include`** — insert the line after `"src/main/**/*",`:
+- [ ] **Step 1: Add `scripts/**/_`to`tsconfig.node.json` `include`** — insert the line after `"src/main/\*\*/_",`:
 
 ```json
     "scripts/**/*",
@@ -637,7 +667,9 @@ function collectAppCommits(): { tag: string; commits: ReturnType<typeof parseGit
 function cmdCollect(): void {
   const { tag, commits } = collectAppCommits()
   if (commits.length === 0) {
-    console.error('REFUSED: no app commits since the last tag (landing-only or nothing to release).')
+    console.error(
+      'REFUSED: no app commits since the last tag (landing-only or nothing to release).'
+    )
     process.exit(1)
   }
   const { version } = pkg()
@@ -652,8 +684,8 @@ function cmdCollect(): void {
         commits: commits.map((c) => ({ hash: c.hash.slice(0, 9), subject: c.subject })),
       },
       null,
-      2,
-    ),
+      2
+    )
   )
 }
 
@@ -705,16 +737,18 @@ Expected: no errors. (If `vite-node` cannot resolve the `../src/core/...` import
 ### Task 8: The `/release` slash command
 
 **Files:**
+
 - Create: `.claude/commands/release.md`
 
 **Interfaces:**
+
 - Consumes: `npm run release:changelog -- collect|apply` (Task 7); `CHANGELOG.md`, `package.json`, `docs/progress-log.md`.
 
 - [ ] **Step 1: Create `.claude/commands/release.md`** (modeled on `.claude/commands/commit-phase.md`):
 
 ````markdown
 ---
-description: "Draft the app CHANGELOG for a release from commits since the last tag, bump the version, and make the release commit + tag locally. Never pushes."
+description: 'Draft the app CHANGELOG for a release from commits since the last tag, bump the version, and make the release commit + tag locally. Never pushes.'
 argument-hint: '[major|minor|patch] (optional — overrides the suggested bump)'
 allowed-tools: Bash(npm test), Bash(npm run release:changelog*), Bash(git status), Bash(git diff*), Bash(git log*), Bash(git add*), Bash(git commit*), Bash(git tag*), Read, Edit
 ---
@@ -841,6 +875,7 @@ Expected: no formatting errors.
 ### Task 9: Update the release checklist
 
 **Files:**
+
 - Modify: `docs/release-checklist.md`
 
 - [ ] **Step 1: Replace the manual changelog step.** In `docs/release-checklist.md` §2 "Version bump", replace the manual `CHANGELOG.md` editing sub-steps (the bullet that starts "Edit `CHANGELOG.md`:" and its nested sub-bullets, plus the separate `package.json` version edit and the `chore: bump version` commit bullet) with:
@@ -865,6 +900,7 @@ Expected: no formatting errors.
 ### Task 10: Progress-Log entry + full gate + single commit
 
 **Files:**
+
 - Modify: `docs/progress-log.md`
 - Commit: all of the above
 
@@ -929,6 +965,7 @@ Expected: the commit exists; branch is ahead of origin (not pushed). **Do not pu
 ## Self-Review
 
 **1. Spec coverage** (against `docs/superpowers/specs/2026-06-28-changelog-release-automation-design.md`):
+
 - §3 ① pure functions → Tasks 1–5 (`filterAppCommits`, `suggestBump`, `nextVersion`/`rollUnreleased`; `parseGitLog` added as the spec's "deterministic commit list" needs it). `extractSection` correctly **absent** (deferred, §5). ✓
 - §3 ② `scripts/release-changelog.ts` → Task 7. ✓ (spec said `.cjs`; switched to `.ts` run by the already-installed `vite-node` so it can import the tested TS — noted deviation, no new dep.)
 - §3 ③ slash command → Task 8. ✓

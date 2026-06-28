@@ -16,6 +16,7 @@
     "src/core/**/*",
     "src/main/**/*",
     "tests/fixtures/**/*",
+    "scripts/**/*",
     "tests/unit/**/*",
     "tests/integration/**/*",
     "tests/evals/**/*",

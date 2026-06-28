@@ -10,7 +10,7 @@
 ## 1. Problem & goal
 
 Today `CHANGELOG.md` is written by whichever coding agent happens to remember, inline with a
-fix commit, guided only by convention (`docs/release-checklist.md` + the *Keep a Changelog*
+fix commit, guided only by convention (`docs/release-checklist.md` + the _Keep a Changelog_
 format already in the file). Evidence: `0.1.1` was added inside the unrelated commit
 `60ae68b "fix: handle branch worktree conflicts"`, co-authored by an agent. This works but is
 **unenforced and inconsistent** — nothing collects the changes, nothing checks the entry exists.
@@ -25,13 +25,13 @@ format already in the file). Evidence: `0.1.1` was added inside the unrelated co
 
 ## 2. Locked decisions
 
-| Decision | Choice | Why |
-| --- | --- | --- |
-| **Trigger** | Release time (tag), not per-commit / per-push | Changelog is release-organized; avoids the commit/push loop, token cost, and noise of per-push. |
-| **Location** | Local (Claude Code), not CI | No API key in CI; human keeps the last look; fits `docs/release-checklist.md`. |
-| **Engine** | Pure-AI agent for the prose, on a deterministic skeleton (chosen "Approach 1") | Matches the described flow; no new dependency (no git-cliff); the agent never loses a commit because the list is deterministic. |
-| **Who pushes** | The human. The agent never pushes. | Preserves the AGENTS.md hard rule "Never push unless explicitly asked." |
-| **Output surface** | Root `CHANGELOG.md` only | "For gitwarden, not landing." Landing changelog and GitHub Release notes are deferred (§5). |
+| Decision           | Choice                                                                         | Why                                                                                                                             |
+| ------------------ | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| **Trigger**        | Release time (tag), not per-commit / per-push                                  | Changelog is release-organized; avoids the commit/push loop, token cost, and noise of per-push.                                 |
+| **Location**       | Local (Claude Code), not CI                                                    | No API key in CI; human keeps the last look; fits `docs/release-checklist.md`.                                                  |
+| **Engine**         | Pure-AI agent for the prose, on a deterministic skeleton (chosen "Approach 1") | Matches the described flow; no new dependency (no git-cliff); the agent never loses a commit because the list is deterministic. |
+| **Who pushes**     | The human. The agent never pushes.                                             | Preserves the AGENTS.md hard rule "Never push unless explicitly asked."                                                         |
+| **Output surface** | Root `CHANGELOG.md` only                                                       | "For gitwarden, not landing." Landing changelog and GitHub Release notes are deferred (§5).                                     |
 
 ## 3. Architecture & components
 
@@ -89,12 +89,12 @@ establishes the "Never pushes" precedent). It drives the flow in §4.
 
 ### Responsibility split
 
-| Part | Owner | Deterministic? |
-| --- | --- | --- |
-| last tag, commit list, landing filter, structural edits, version bump | script ② + core ① | ✅ |
-| **summarizing commits → user-facing bullets** | **agent** | ❌ (hence the human review) |
-| commit + tag | agent | ✅ |
-| `git push` | **human** | — |
+| Part                                                                  | Owner             | Deterministic?              |
+| --------------------------------------------------------------------- | ----------------- | --------------------------- |
+| last tag, commit list, landing filter, structural edits, version bump | script ② + core ① | ✅                          |
+| **summarizing commits → user-facing bullets**                         | **agent**         | ❌ (hence the human review) |
+| commit + tag                                                          | agent             | ✅                          |
+| `git push`                                                            | **human**         | —                           |
 
 ## 4. Release flow
 
@@ -118,7 +118,7 @@ Two human checkpoints (✋); the final push is the human's.
    Claude co-author trailer) and `git tag v<version>`. Then **STOP** and print:
    `Ready. Review, then: git push origin main && git push origin v<version>`.
 9. **Human:** pushes → `release.yml` fires on the tag: existing guard (`tag == package.json
-   version`) passes because both were bumped together; the 3-OS matrix builds and a draft
+version`) passes because both were bumped together; the 3-OS matrix builds and a draft
    GitHub Release is published.
 
 ## 5. Scope
@@ -139,15 +139,15 @@ release-checklist update. Output is the root `CHANGELOG.md` only.
 
 ## 6. Gates & error handling
 
-| Condition | Action |
-| --- | --- |
-| Working tree dirty | `REFUSED` — don't fold unrelated changes into the release commit |
-| No commits since last tag | `REFUSED` — nothing to release |
-| All commits are landing-only | `REFUSED` — no app changes ("not landing") |
-| `npm test` red | `REFUSED` — release-checklist step 1 is a hard gate |
-| Target version already tagged | `REFUSED` — version conflict |
-| `## [<version>]` already present (re-run before push) | Detected via `alreadyRolled`; do not double-apply (idempotent) |
-| Any push | Command **STOPS** after the tag; `allowed-tools` has no `git push` |
+| Condition                                             | Action                                                             |
+| ----------------------------------------------------- | ------------------------------------------------------------------ |
+| Working tree dirty                                    | `REFUSED` — don't fold unrelated changes into the release commit   |
+| No commits since last tag                             | `REFUSED` — nothing to release                                     |
+| All commits are landing-only                          | `REFUSED` — no app changes ("not landing")                         |
+| `npm test` red                                        | `REFUSED` — release-checklist step 1 is a hard gate                |
+| Target version already tagged                         | `REFUSED` — version conflict                                       |
+| `## [<version>]` already present (re-run before push) | Detected via `alreadyRolled`; do not double-apply (idempotent)     |
+| Any push                                              | Command **STOPS** after the tag; `allowed-tools` has no `git push` |
 
 Backstop: the existing `release.yml` guard (`tag == package.json version`) catches any
 desync between the bumped version and the tag.
