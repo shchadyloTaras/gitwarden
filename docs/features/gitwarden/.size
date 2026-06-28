@@ -1,0 +1,3 @@
+XL
+
+<!-- 4-signal classification (size-matrix): whole-product umbrella — 60+ phases, many modules/APIs/migrations, months-long build, greenfield product (no breaking-change constraint). This spec documents a built product; size sets spec depth (full AC/NFR coverage). Per-feature specs would size smaller individually. -->

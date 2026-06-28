@@ -942,3 +942,8 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 
 - Output: `docs/superpowers/specs/2026-06-28-changelog-release-automation-design.md`
 - Summary: Design spec for a release-time `/release` command that drafts the app `CHANGELOG.md` from commits since the last tag — deterministic skeleton (`src/core/changelog/` pure fns + `scripts/release-changelog.cjs`) + agent-written prose, human does the final push. Slice 1 scope only (app changelog; landing sync + CI release notes deferred). **Design only — not implemented.**
+
+### sdd:clarify gitwarden — 2026-06-28
+
+- Output: `docs/features/gitwarden/spec.md` (CONTEXT.md unchanged — no new terms)
+- Summary: Ambiguity sweep (medium depth) over the spec; clean-context `sdd:devils-advocate` subagent returned 12 build-divergence findings + 1 self-sweep find (safety-event record assumed by KPIs). **12 resolved, 1 deferred.** Resolved: Active Profile auto-switches to Bound on open (overridable) [AC-04b]; wrong author *name* now blocks like email [AC-05/AC-05b]; one-step fix writes the **Bound** Profile, not Active [AC-10]; push match is **host-only** from the remote URL [AC-08]; read/nav ops show identity context but are **not gated** [AC-13]; registration is **add-local only**, clone/init de-scoped [§3, AC-16, US-09, §6 NFR]; "view history" = minimal commit list, no graph/diff [§3, AC-13]; warning-level push = single confirm restating the warning [AC-09b]; hard/soft verdict taxonomy enumerated in §1; **no SSH-config parsing** — key resolution delegated to the ambient SSH agent, account shown assumed/unverified [§6.1]; safety-event record pinned as the KPI-supporting capability [§7]. Deferred: false-positive verdict-rate target → §8 (owner: Product, post-launch).
