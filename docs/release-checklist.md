@@ -15,13 +15,7 @@ A repeatable checklist for cutting a new release. Follow top-to-bottom; each ste
   - **Patch** (`0.1.0 → 0.1.1`): backward-compatible bug fixes.
   - **Minor** (`0.1.0 → 0.2.0`): new backward-compatible features.
   - **Major** (`0.1.0 → 1.0.0`): breaking changes.
-- [ ] Edit `package.json` → `"version": "<new>"`.
-- [ ] Edit `CHANGELOG.md`:
-  - Rename `## [Unreleased]` to `## [<new>] — <YYYY-MM-DD>`.
-  - Add a fresh `## [Unreleased]` section above it (empty).
-  - Add a comparison link at the bottom:
-    `[<new>]: https://github.com/shchadyloTaras/gitwarden/compare/v<prev>...v<new>`
-- [ ] Commit: `git commit -m "chore: bump version to <new>"`.
+- [ ] Run `/release` (or `npm run release:changelog -- collect` then, after writing entries, `-- apply <version>`). This drafts the `CHANGELOG.md` entries from commits since the last tag (landing excluded), bumps `package.json`, re-opens an empty `[Unreleased]`, adds the compare link, and makes the `chore: release v<new>` commit + `v<new>` tag locally. Review the diff at the prompt.
 
 ## 3. Tag and push tag
 
@@ -61,6 +55,9 @@ On **at least one OS** (your main development machine):
 - [ ] Edit the draft GitHub Release:
   - Paste the `CHANGELOG.md` section for this version into the release notes.
   - Verify the artifact list matches step 4.
+
+> Slice 2b (deferred) will fill the GitHub Release notes from `CHANGELOG.md` automatically in CI; until then, paste the section manually.
+
 - [ ] Click **Publish release**.
 - [ ] Confirm `README.md` download links (or the GitHub Releases "latest" link) resolve to the published installers.
 
