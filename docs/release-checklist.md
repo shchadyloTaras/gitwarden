@@ -6,22 +6,22 @@ A repeatable checklist for cutting a new release. Follow top-to-bottom; each ste
 
 ## 1. Pre-release gate
 
-- [ ] `main` branch is green: `npm test` (594+ passing) and `npm run e2e` pass locally.
-- [ ] No unreleased breaking changes left in `## [Unreleased]` of `CHANGELOG.md` that you did not intend to ship.
+- [x] `main` branch is green: `npm test` (594+ passing) and `npm run e2e` pass locally.
+- [x] No unreleased breaking changes left in `## [Unreleased]` of `CHANGELOG.md` that you did not intend to ship.
 
 ## 2. Version bump
 
-- [ ] Decide the new version using SemVer:
+- [x] Decide the new version using SemVer:
   - **Patch** (`0.1.0 → 0.1.1`): backward-compatible bug fixes.
   - **Minor** (`0.1.0 → 0.2.0`): new backward-compatible features.
   - **Major** (`0.1.0 → 1.0.0`): breaking changes.
-- [ ] Edit `package.json` → `"version": "<new>"`.
-- [ ] Edit `CHANGELOG.md`:
+- [x] Edit `package.json` → `"version": "<new>"`.
+- [x] Edit `CHANGELOG.md`:
   - Rename `## [Unreleased]` to `## [<new>] — <YYYY-MM-DD>`.
   - Add a fresh `## [Unreleased]` section above it (empty).
   - Add a comparison link at the bottom:
     `[<new>]: https://github.com/shchadyloTaras/gitwarden/compare/v<prev>...v<new>`
-- [ ] Commit: `git commit -m "chore: bump version to <new>"`.
+- [x] Commit: `git commit -m "chore: bump version to <new>"`.
 
 ## 3. Tag and push tag
 
@@ -34,11 +34,11 @@ git push origin v<new>
 
 ## 4. CI build (GitHub Actions)
 
-- [ ] Watch the **Release** workflow run at
+- [x] Watch the **Release** workflow run at
       `https://github.com/shchadyloTaras/gitwarden/actions`.
-- [ ] Guard job passes: tag matches `v${package.json version}`.
-- [ ] All three matrix jobs (macOS, Windows, Linux) go green.
-- [ ] A **draft** GitHub Release is created at
+- [x] Guard job passes: tag matches `v${package.json version}`.
+- [x] All three matrix jobs (macOS, Windows, Linux) go green.
+- [x] A **draft** GitHub Release is created at
       `https://github.com/shchadyloTaras/gitwarden/releases` with these five artifacts:
   - `GitWarden-<ver>-arm64.dmg`
   - `GitWarden-<ver>-x64.dmg`
@@ -50,11 +50,11 @@ git push origin v<new>
 
 On **at least one OS** (your main development machine):
 
-- [ ] Download the artifact for your OS from the draft release.
-- [ ] Install it (open the `.dmg` and drag to Applications, run `.exe`, or `chmod +x` the AppImage).
-- [ ] Launch the app and confirm it reaches the shell (header shows, navigation works).
-- [ ] macOS (until Phase 43): right-click → Open at the first launch to dismiss the Gatekeeper warning.
-- [ ] Windows (until Phase 43): click "More info" → "Run anyway" at the SmartScreen dialog.
+- [x] Download the artifact for your OS from the draft release.
+- [x] Install it (open the `.dmg` and drag to Applications, run `.exe`, or `chmod +x` the AppImage).
+- [x] Launch the app and confirm it reaches the shell (header shows, navigation works).
+- [x] macOS (until Phase 43): right-click → Open at the first launch to dismiss the Gatekeeper warning.
+- [x] Windows (until Phase 43): click "More info" → "Run anyway" at the SmartScreen dialog.
 
 ## 6. Publish
 

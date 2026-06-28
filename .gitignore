@@ -36,6 +36,9 @@ gitwarden-context.txt
 .env.*
 !.env.example
 
+# SDD per-developer settings
+.claude/sdd.local.md
+
 # OS / editor
 .DS_Store
 .idea/
