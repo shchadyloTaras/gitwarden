@@ -268,8 +268,15 @@ class SafetyCheckServiceImpl implements SafetyCheckService {
     if (input.remotes.length === 0) {
       issues.push(makeIssue('NO_REMOTE'))
     } else if (input.activeProfile && input.activeProfile.expectedRemoteHosts.length > 0) {
+      // A remote matches an expected host OR the profile's declared ssh alias. Once a repo's
+      // origin is bound to that alias (ADR 0009), the alias IS the expected host — accepting it
+      // here prevents a false REMOTE_HOST_MISMATCH on a correctly-bound SSH remote.
+      const alias = input.activeProfile.sshKeyAlias?.trim()
+      const allowedHosts = alias
+        ? [...input.activeProfile.expectedRemoteHosts, alias]
+        : input.activeProfile.expectedRemoteHosts
       const hasMatch = input.remotes.some(
-        (r) => r.host !== undefined && input.activeProfile!.expectedRemoteHosts.includes(r.host)
+        (r) => r.host !== undefined && allowedHosts.includes(r.host)
       )
       if (!hasMatch) issues.push(makeIssue('REMOTE_HOST_MISMATCH'))
     }

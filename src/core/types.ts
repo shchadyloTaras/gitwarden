@@ -106,6 +106,12 @@ export interface RepositoryRecord {
   recommendedConnectionId?: string
   /** Push policy for client-branch-access enforcement (opt-in, absent = unrestricted). */
   pushPolicy?: RepositoryPushPolicy
+  /**
+   * The repo's canonical SSH remote host, captured the first time its `--local` origin was
+   * bound to a profile's `sshKeyAlias` (ADR 0009). Used to restore the original host exactly
+   * on unassign / switch to a non-ssh-alias profile. Absent ⇒ the remote is not alias-bound.
+   */
+  preBindRemoteHost?: string
 }
 
 export type ChangeKind =

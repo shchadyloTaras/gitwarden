@@ -1,9 +1,10 @@
 # Plan — Guard Quick-Fix: one-click remediation for identity, account & push-auth errors
 
-**Status:** 📋 planned (not started) — **derived view**; the authoritative state is the Phase
-Checklist in [`docs/progress-log.md`](../progress-log.md).
-**Phases:** 63 → 66 (new numbered feature; HEAD is Phase 62).
-**Feature-complete stop point:** Phase 66.
+**Status:** 🟡 in progress — Phases 63–65 done; 66–67 open — **derived view**; the authoritative
+state is the Phase Checklist in [`docs/progress-log.md`](../progress-log.md).
+**Phases:** 63 → 67 (numbered feature; HEAD is Phase 65). Phase 66 (SSH Transport Binding) was
+inserted after the logic phases; the original UI phase is now Phase 67.
+**Feature-complete stop point:** Phase 67.
 **Prompts:** [`docs/prompts/guard-quick-fix-prompts.md`](../prompts/guard-quick-fix-prompts.md).
 
 ## Goal
@@ -298,7 +299,68 @@ retry helper helps), `src/main/ipc/schemas.ts` (Zod payload), `src/renderer/type
 
 ---
 
-## Phase 66 — One-Click Fix UI & Failed-Push Recovery (renderer + e2e)
+## Phase 66 — SSH Transport Binding (the assigned profile governs the SSH key)
+
+**Goal:** make the assigned profile actually determine which SSH key authenticates a push, by
+binding the repo's `--local` SSH remote host to the profile's declared `sshKeyAlias`. Closes the
+**silent wrong-key push** gap and makes Phase 65's `switch-profile-and-retry-push` switch identity
+on SSH remotes (today it only swaps the HTTPS token). Honors ADR 0002 (no key management, no
+`~/.ssh/config` parsing, no `GIT_SSH_COMMAND`); recorded as **ADR 0009** (amends 0002).
+
+**Background (verified):** `sshKeyAlias` is a profile's ssh `Host` alias (UI "SSH Host Alias",
+[ProfilesScreen.tsx:713](../../src/renderer/screens/ProfilesScreen.tsx)), **stored but unused**
+([types.ts:10](../../src/core/types.ts) + schema only). The push host check is
+`expectedRemoteHosts`-only ([SafetyCheckService.ts:270-274](../../src/core/safety/SafetyCheckService.ts)).
+Identity is already reconciled on assignment via `applyAssignedProfileIdentity`
+([ipc-handlers.ts](../../src/main/ipc/ipc-handlers.ts)) — the same seam this phase extends.
+
+**Implementation:**
+
+- **Registration (docs):** this phase renumbers the UI phase. In `docs/progress-log.md`: rename the
+  old "Phase 66 — One-Click Fix UI" checklist row → **Phase 67**, add a **Phase 66 — SSH Transport
+  Binding** row, update the Feature Track Status row to `63–67`; extend the AGENTS.md build order to
+  `… → 63→67`. (The plan + prompts files are already renumbered.)
+- **Pure core — alias-aware host check:** in
+  [SafetyCheckService.ts:270-274](../../src/core/safety/SafetyCheckService.ts), a remote matches when
+  `r.host ∈ (expectedRemoteHosts ∪ {sshKeyAlias})`. Once the remote is bound to the alias, that alias
+  IS an expected host; without this the bind triggers a false `REMOTE_HOST_MISMATCH` blocker. Stays pure.
+- **Pure helper — remote URL transform:** new `src/core/github/remoteAlias.ts`:
+  `bindHostToAlias(url, alias)` / `restoreHost(url, host)` swap only the host of an scp-like/ssh
+  remote (`git@github.com:o/r.git` ↔ `git@<alias>:o/r.git`), reusing the existing remote parsing;
+  HTTPS URLs returned unchanged. Pure + unit-testable.
+- **Main — apply the bind:** add `reconcileAssignedProfileRemote` next to
+  `applyAssignedProfileIdentity` on `repositories:update`. When the assigned profile is
+  `authenticationMethod==='ssh'` with a non-empty `sshKeyAlias` and the origin is an SSH GitHub
+  remote, set the `--local` origin host to the alias (`GitService` → `git remote set-url`, args
+  array). On unassign / switch to a profile without an ssh alias, restore the canonical host
+  (capture the pre-bind host on the `RepositoryRecord` for exact reversal; fall back to
+  `expectedRemoteHosts[0] ?? 'github.com'`). HTTPS/token untouched. **Best-effort** like the identity
+  reconcile — a rewrite failure never blocks assignment (Safety Center still reports the mismatch).
+- **ADR + spec:** ADR 0009 is added (`docs/adr/0009-ssh-transport-binding.md`); add its row to
+  `docs/adr/README.md` and a one-line note to `docs/features/gitwarden/spec.md` §AC-08/AC-12 (the app
+  may set the remote host to the profile's alias; still no `GIT_SSH_COMMAND`, no config parsing).
+
+**Exit criteria:** `npx tsc --noEmit` clean on both tsconfigs; **unit** (pure) — the alias-aware host
+check passes when the remote host equals the profile's `sshKeyAlias` and still fires
+`REMOTE_HOST_MISMATCH` when neither alias nor `expectedRemoteHosts` match; `remoteAlias` bind/restore
+covered (scp + ssh + HTTPS-untouched). **Integration** (offline, real temp git repo) — assigning an
+SSH profile with alias `X` to a repo whose origin is `git@github.com:o/r.git` rewrites the `--local`
+origin to `git@X:o/r.git` (asserted via `git remote get-url`); switching to another SSH profile
+re-points; switching to a token profile / unassigning restores the canonical host; an HTTPS origin and
+an aliasless profile are untouched. `npm run lint` clean; `src/core/` stays pure; the
+**safety-reviewer** subagent passes (no global state, no `~/.ssh/config` writes, no `GIT_SSH_COMMAND`,
+git args arrays). **No UI** in this phase.
+
+**Files:** new `src/core/github/remoteAlias.ts`, `docs/adr/0009-ssh-transport-binding.md`; edit
+`src/core/safety/SafetyCheckService.ts`, `src/main/ipc/ipc-handlers.ts`,
+`src/main/services/GitService.ts` (thin `setRemoteUrl` if needed), `src/core/types.ts` +
+`src/core/schemas.ts` (pre-bind host on `RepositoryRecord`), `docs/adr/README.md`,
+`docs/features/gitwarden/spec.md`; new/extended `tests/unit/safety-*.test.ts`,
+`tests/unit/remote-alias.test.ts`, and an integration spec for the reconcile.
+
+---
+
+## Phase 67 — One-Click Fix UI & Failed-Push Recovery (renderer + e2e)
 
 **Goal:** the user fixes the problem where they hit it — feature-complete stop point.
 
@@ -349,8 +411,10 @@ the push-sheet/Safety Center issue rendering, `remoteStore.ts`, `strings.ts`,
   data-driven, not per-code hand-wiring.
 - Works with AI disabled. Remote retry-push stays behind explicit user action and `GitRunner`
   serialization; tokens are never logged; git args are arrays.
-- Logic-first honored: Phases 63–64 ship green Vitest before the UI; Phase 66 has green
+- Logic-first honored: Phases 63–66 ship green Vitest before the UI; Phase 67 has green
   Playwright. One commit per phase; progress-log entry written **before** each commit; not pushed.
+- The assigned profile governs the SSH key on push: the repo's `--local` remote host is bound to the
+  profile's ssh alias (ADR 0009) — no `GIT_SSH_COMMAND`, no `~/.ssh/config` writes.
 
 ## Decisions (resolved)
 
@@ -362,13 +426,16 @@ the push-sheet/Safety Center issue rendering, `remoteStore.ts`, `strings.ts`,
    `remediation`) — no breaking change to existing consumers.
 5. **Retry-push confirmation:** the explicit fix-button click is the confirmation; no second
    modal, but it still flows through normal push serialization and re-diagnosis on failure.
+6. **SSH transport (ADR 0009):** bind the `--local` remote host to the profile's ssh alias (option B)
+   — honors ADR 0002 (no key management, no `~/.ssh/config`, no `GIT_SSH_COMMAND`); makes
+   `switch-profile-and-retry-push` actually switch identity on SSH remotes.
 
 ## Open questions (resolve at kickoff)
 
-- **Phase registration:** add Phase 63–66 rows to the Phase Checklist, a "Guard Quick-Fix" row to
-  the Feature Track Status table, extend the AGENTS.md build order (`… → 60→62 → 63→66`), and add
-  the plan/prompts to AGENTS.md Reference docs. (Done as the first kickoff edit, or now if you
-  prefer — these are derived views of the new phases.)
+- **Phase registration:** Phases 63–66 are registered (63–65 done). The new **Phase 66 (SSH
+  Transport Binding)** renumbers the old UI phase to **67**; its kickoff re-derives the views —
+  rename the checklist's UI row to Phase 67, add a Phase 66 (SSH Binding) row, update the Feature
+  Track Status to `63–67`, and extend the AGENTS.md build order to `… → 63→67`.
 - **Safety Center parity:** should the same `RemediationButton` also render in the Safety Center
   issue list in Phase 66, or stay Commit/push-only for the MVP and follow up? (Lean: include it —
   it's the same component and the issues already render there.)

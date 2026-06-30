@@ -5,9 +5,9 @@ identity / account / push-auth errors) one phase at a time. Each prompt is self-
 at the plan in `docs/plans/guard-quick-fix-plan.md`, and **ends with the standard progress
 footer** that records progress in `docs/progress-log.md`. Rules live in `CLAUDE.md` / `AGENTS.md`.
 
-**How to use:** run prompts in order (63 → 66). Don't start a phase until the previous phase's
-entry in `docs/progress-log.md` shows Exit criteria ✅. Treat **Phase 65** as the logic-complete
-checkpoint (every fix is verified headlessly against offline fixtures) and **Phase 66** as the UI
+**How to use:** run prompts in order (63 → 67). Don't start a phase until the previous phase's
+entry in `docs/progress-log.md` shows Exit criteria ✅. Treat **Phases 65–66** as the logic-complete
+checkpoints (every fix is verified headlessly against offline fixtures) and **Phase 67** as the UI
 that ships the feature. This is a numbered feature: **one commit per phase**, the progress-log
 entry written **before** the commit.
 
@@ -134,10 +134,32 @@ Then run the standard progress footer.
 
 ---
 
-## Phase 66 — One-Click Fix UI & Failed-Push Recovery (renderer + e2e)
+## Phase 66 — SSH Transport Binding (the assigned profile governs the SSH key)
 
 ```
-Work on Phase 66 of GitWarden (docs/plans/guard-quick-fix-plan.md §"Phase 66", §"Acceptance criteria"). Feature-complete stop point. This phase ends with the per-phase commit.
+Work on Phase 66 of GitWarden (docs/plans/guard-quick-fix-plan.md §"Phase 66 — SSH Transport Binding"). Logic + main; NO UI. This phase also renumbers the old UI phase to 67 and records ADR 0009.
+
+Product boundary (honors ADR 0002, recorded as ADR 0009): bind by REWRITING the repo's --local git remote host to the profile's declared sshKeyAlias. NEVER set GIT_SSH_COMMAND, NEVER read/write ~/.ssh/config, NEVER create/rotate keys. Key resolution stays in the user's ssh config + agent.
+
+Tasks:
+- Registration (docs): in docs/progress-log.md rename the old "Phase 66 — One-Click Fix UI" checklist row → Phase 67; add a "Phase 66 — SSH Transport Binding" row (unchecked); update the Feature Track Status row to 63–67; extend the AGENTS.md build order to "… → 63→67 (Guard Quick-Fix)". (plan + prompts are already renumbered.)
+- Pure core: make the push host check alias-aware in src/core/safety/SafetyCheckService.ts (~line 270) — a remote matches when r.host ∈ (expectedRemoteHosts ∪ {sshKeyAlias}). Without this the bind triggers a false REMOTE_HOST_MISMATCH.
+- Pure helper: add src/core/github/remoteAlias.ts — bindHostToAlias(url, alias) and restoreHost(url, host) swapping ONLY the host of scp-like/ssh remotes (git@github.com:o/r.git ↔ git@<alias>:o/r.git); HTTPS URLs unchanged. Reuse existing remote parsing.
+- Main: add reconcileAssignedProfileRemote alongside applyAssignedProfileIdentity on repositories:update. If assigned profile authenticationMethod==='ssh' AND sshKeyAlias set AND origin is an SSH GitHub remote → set --local origin host to the alias (GitService git remote set-url, args array). On unassign / switch to a non-ssh-alias profile → restore the canonical host (capture pre-bind host on RepositoryRecord; fallback expectedRemoteHosts[0] ?? 'github.com'). HTTPS/token untouched. Best-effort (never block assignment).
+- ADR + spec: ADR 0009 is already drafted (docs/adr/0009-ssh-transport-binding.md) — add its row to docs/adr/README.md and a one-line note to docs/features/gitwarden/spec.md §AC-08/AC-12 (app may set the remote host to the profile's alias; still no GIT_SSH_COMMAND / no ssh-config parsing).
+- Tests: unit (pure) for the alias-aware host check + remoteAlias bind/restore (scp, ssh, HTTPS-untouched); integration (offline, real temp repo) — assign ssh profile alias X → --local origin host becomes X; switch ssh profile → re-points; switch to token / unassign → canonical host restored; HTTPS origin + aliasless profile untouched.
+
+Exit: `npx tsc --noEmit` clean both tsconfigs; `npm test` green (unit + integration); `npm run lint` clean; src/core/ pure; safety-reviewer subagent CLEAN (no global state, no ~/.ssh/config writes, no GIT_SSH_COMMAND, args arrays). No UI.
+
+Then run the standard progress footer.
+```
+
+---
+
+## Phase 67 — One-Click Fix UI & Failed-Push Recovery (renderer + e2e)
+
+```
+Work on Phase 67 of GitWarden (docs/plans/guard-quick-fix-plan.md §"Phase 67", §"Acceptance criteria"). Feature-complete stop point. This phase ends with the per-phase commit.
 
 Tasks:
 - Add src/renderer/components/RemediationButton.tsx: given an issue's Remediation, render EITHER a fix button (kind 'executable' → window.api.remediation.execute(...), with a pending state mirroring the existing Set-local-identity button) OR a "Go to …" link (kind 'navigate' → navigate(navigateTo)). Reuse the visual treatment from CommitScreen.tsx:273-312.
@@ -152,5 +174,5 @@ Exit (Playwright e2e, offline fixtures + local bare remote, reuse the safety-cen
 - a navigate-only issue (unassigned repo) → "Go to Repositories" link, not a fix button
 - `npm test`, `npm run e2e`, `npm run lint` all green.
 
-Then run the standard progress footer. This is the feature-complete stop point for Guard Quick-Fix (63–66).
+Then run the standard progress footer. This is the feature-complete stop point for Guard Quick-Fix (63–67).
 ```

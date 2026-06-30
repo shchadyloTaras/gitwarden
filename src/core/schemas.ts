@@ -48,6 +48,8 @@ export const RepositoryRecordSchema = z.object({
   aiOverride: z.enum(['enabled', 'disabled']).optional(),
   recommendedConnectionId: z.string().optional(),
   pushPolicy: RepositoryPushPolicySchema.optional(),
+  // Canonical SSH remote host captured before alias-binding (ADR 0009); absent = not bound.
+  preBindRemoteHost: z.string().optional(),
 })
 
 export const AppSettingsSchema = z.object({

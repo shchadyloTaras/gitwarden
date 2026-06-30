@@ -1,5 +1,6 @@
 ---
 status: accepted
+amended-by: 0009
 date: 2026-06-23
 phase: Phase 0
 source: docs/plans/gitwarden-plan.md §7.2
@@ -9,7 +10,10 @@ source: docs/plans/gitwarden-plan.md §7.2
 
 ## Status
 
-Accepted (Phase 0).
+Accepted (Phase 0). **Amended by [ADR 0009](0009-ssh-transport-binding.md)** (Phase 66): GitWarden
+may now bind a repo's `--local` git remote host to the assigned profile's declared ssh alias. Every
+other part of this ADR — no key creation/rotation, no `~/.ssh/config` read/write, no
+`GIT_SSH_COMMAND` — still holds.
 
 ## Context
 

@@ -28,6 +28,7 @@ import type { RepositoryRecord, GitErrorCode } from '../../core/types.js'
 import type { Remediation } from '../../core/safety/remediation.js'
 import { toIpcFailure } from './ipcFailure.js'
 import { executeRemediation } from './remediationExecutor.js'
+import { reconcileAssignedProfileRemote } from './remoteReconcile.js'
 import {
   AiConnectionTestResultSchema,
   AiModelInfoSchema,
@@ -210,6 +211,11 @@ export function registerIpcHandlers(services: Services): void {
       // Git identity to its assigned profile so commits/pushes use the right name+email
       // without the user touching git config. Best-effort — see the helper.
       await applyAssignedProfileIdentity(services, updated)
+      // And bind the SSH remote host to the assigned profile's alias (ADR 0009) so the
+      // profile actually governs the key. Best-effort; may set `preBindRemoteHost` in
+      // storage — the returned record's copy of that internal field can lag by a tick
+      // (the renderer ignores it; storage stays authoritative).
+      await reconcileAssignedProfileRemote(services, updated)
       return updated
     })
   )

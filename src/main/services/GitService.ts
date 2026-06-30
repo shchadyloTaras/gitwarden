@@ -146,6 +146,19 @@ export class GitService {
     return parseRemoteLines(result.stdout.toString('utf8'))
   }
 
+  /**
+   * Repoint a remote's URL. `git remote set-url` writes the repo's `.git/config` only
+   * (local scope — there is no global variant), used to bind/restore the SSH host alias
+   * (ADR 0009). Args stay an array; the URL is data, never shell-interpolated.
+   */
+  async setRemoteUrl(repoPath: string, remote: string, url: string): Promise<void> {
+    await this.runner.run({
+      args: ['remote', 'set-url', remote, url],
+      cwd: repoPath,
+      readOnly: false,
+    })
+  }
+
   async fetch(repoPath: string, remote: string): Promise<void> {
     await this.runner.run({
       args: ['fetch', remote],
