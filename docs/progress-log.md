@@ -99,7 +99,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 ### Guard Quick-Fix feature (plan: `docs/plans/guard-quick-fix-plan.md`, prompts: `docs/prompts/guard-quick-fix-prompts.md`)
 
 - [x] Phase 63 — Remediation Model & Action Contracts
-- [ ] Phase 64 — Push-Failure Diagnosis & Structured IPC Errors
+- [x] Phase 64 — Push-Failure Diagnosis & Structured IPC Errors
 - [ ] Phase 65 — Executable Fix Actions (main + IPC)
 - [ ] Phase 66 — One-Click Fix UI & Failed-Push Recovery
 
@@ -131,7 +131,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | AI Connections         | 28–39     | ✅ complete                                                   |
 | AI Chat Redesign       | 52–55a    | ✅ complete                                                   |
 | Generative UI Blocks   | 60–62     | ✅ complete                                                   |
-| Guard Quick-Fix        | 63–66     | 🟡 Phase 63 done; 64–66 open                                  |
+| Guard Quick-Fix        | 63–66     | 🟡 Phases 63–64 done; 65–66 open                              |
 | Client Branch Access   | 56–59     | ✅ complete                                                   |
 | Distribution & Release | 40–45     | 🟡 Phases 40–42, 45 done; 43–44 open (gated on signing certs) |
 | Landing Page           | 46–51     | ✅ complete                                                   |
@@ -974,3 +974,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: Vitest **669/669 passed** (+10 new `remediation.test.ts` — exhaustive over every `SafetyCode`, executable-flag table, navigate targets, each `RemediableGitErrorCode`). `npx tsc --noEmit` clean on `tsconfig.node.json` AND `tsconfig.web.json`; ESLint clean; AI evals 5/5; `core-purity-reviewer` subagent verdict: CLEAN (no forbidden imports; pure data mapping; the only `child_process` text is in a comment).
 - Exit criteria: ✅ met — both `tsc` projects clean; new-file tests green; `src/core/` stays pure; no UI/IPC changes.
 - Notes / follow-ups: `dubiousOwnership` reuses the repositories-routing action purely as a navigation vehicle — its real explanation will be the `GitError.userMessage` attached in Phase 64. Next: **Phase 64** — extend `ErrorMapper` (NEW `pushRejectedWrongAccount`, `dubiousOwnership`; extend existing `authenticationFailed` for HTTPS 401) + additively carry `code`/`remediation` in the `IpcResult` error arm and on the push path.
+
+### 2026-06-30 — Phase 64: Push-Failure Diagnosis & Structured IPC Errors
+
+- Built: Failures now reach the renderer **diagnosed + actionable** instead of as an opaque string. `ErrorMapper` gained three branches: **NEW** `pushRejectedWrongAccount` (matches `remote: Permission to … denied to …`, `The requested URL returned error: 403`, `error: 403`), placed BEFORE the auth matcher so a wrong-account 403 wins; **EXTENDED** `authenticationFailed` to also catch HTTPS token rejection (`could not read Username`, `Invalid username or password`, `401`); **NEW** `dubiousOwnership` (`detected dubious ownership in repository`, explain-only — GitWarden will not write a global `safe.directory`). Each carries a `userMessage` naming the real problem. `GitErrorCode` gained the two new codes; `failureExplainMessages.ts`'s two total `Record<GitErrorCode,…>` maps + the hint switch were extended to match (the ripple of widening the union). The `IpcResult` error arm now **additively** carries optional `code?: GitErrorCode` + `remediation?: Remediation` (the `error` string is byte-for-byte unchanged); a new PURE helper `src/main/ipc/ipcFailure.ts` (`toIpcFailure`) builds the envelope so `wrap()`'s logic is unit-testable without Electron — it forwards `err.message` (NOT stderr / `technicalDetails`) + `code` + (when remediable) `remediation`. `remoteStore.doRemotePush` retains `lastFailure { message, code?, remediation? }` for the Phase 66 recovery banner. Added an `isRemediableGitErrorCode` type-guard to `remediation.ts` (single source = `GIT_ERROR_ACTION` keys). No UI.
+- Files: edited `src/core/types.ts` (+2 `GitErrorCode`), `src/core/safety/remediation.ts` (+guard), `src/core/ai/failureExplainMessages.ts` (+2 codes across 2 Records + switch), `src/main/git/ErrorMapper.ts` (+3 branches), `src/main/ipc/ipc-handlers.ts` (envelope + `wrap()`), `src/renderer/types/window.d.ts` (mirror), `src/renderer/store/remoteStore.ts` (`lastFailure`); added `src/main/ipc/ipcFailure.ts`; extended `tests/unit/error-mapper.test.ts`.
+- Tests: Vitest **679/679 passed** (+10: 6 new ErrorMapper-code cases + 4 `toIpcFailure` envelope cases). Both `tsc` projects clean; ESLint clean; Prettier clean on all touched files; AI evals 5/5. Reviewers: `core-purity-reviewer` CLEAN (3 core files pure); `safety-reviewer` CLEAN (traced the token path — `technicalDetails`/stderr never crosses to the renderer; only `err.message` + `code` + `remediation` do; additive / non-breaking; no new git authority).
+- Exit criteria: ✅ met — both `tsc` projects clean; error-mapper + `toIpcFailure` tests green; every existing `IpcResult` consumer still compiles (additive); lint clean; no UI.
+- Notes / follow-ups: `toIpcFailure` is the seam Phases 65/66 consume; the recovery banner (Phase 66) reads `remoteStore.lastFailure.remediation`. Next: **Phase 65** — the four executable fix actions behind a Zod-validated `remediation:execute` IPC channel, with offline-fixture integration tests + safety-reviewer.

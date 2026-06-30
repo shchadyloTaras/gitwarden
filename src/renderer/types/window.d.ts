@@ -12,7 +12,9 @@ import type {
   GitHubAccount,
   GitHubAuthStatus,
   GitHubAuthErrorCode,
+  GitErrorCode,
 } from '../../core/types.js'
+import type { Remediation } from '../../core/safety/remediation.js'
 import type {
   AiConnection,
   AiConnectionKind,
@@ -45,7 +47,9 @@ import type { AiPreparedContext } from '../../core/ai/context.js'
 import type { ChatBlockSuggestion } from '../../core/ai/chatBlocks.js'
 import type { UpdateCheckResult } from '../../core/updates/types.js'
 
-type IpcResult<T> = { ok: true; data: T } | { ok: false; error: string }
+type IpcResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: string; code?: GitErrorCode; remediation?: Remediation }
 
 interface AiConnectionsView {
   connections: AiConnection[]

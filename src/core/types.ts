@@ -202,6 +202,9 @@ export interface AppSettings {
 export type GitErrorCode =
   | 'notARepository'
   | 'authenticationFailed'
+  // Guard Quick-Fix (Phase 64): actionable push-auth / repo-state failures.
+  | 'pushRejectedWrongAccount'
+  | 'dubiousOwnership'
   | 'remoteNotFound'
   | 'branchNotFound'
   | 'branchCheckedOutElsewhere'

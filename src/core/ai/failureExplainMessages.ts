@@ -4,6 +4,8 @@ import type { FailureSuggestedAction } from './types.js'
 export const FAILURE_CATEGORY_BY_CODE: Record<GitErrorCode, string> = {
   notARepository: 'repository',
   authenticationFailed: 'authentication',
+  pushRejectedWrongAccount: 'authentication',
+  dubiousOwnership: 'repository',
   remoteNotFound: 'remote',
   branchNotFound: 'branch',
   branchCheckedOutElsewhere: 'branch',
@@ -17,6 +19,8 @@ export const FAILURE_CATEGORY_BY_CODE: Record<GitErrorCode, string> = {
 export const FAILURE_ACTION_BY_CODE: Record<GitErrorCode, FailureSuggestedAction> = {
   notARepository: 'open-repositories',
   authenticationFailed: 'review-auth',
+  pushRejectedWrongAccount: 'review-auth',
+  dubiousOwnership: 'open-repositories',
   remoteNotFound: 'configure-remote',
   branchNotFound: 'switch-branch',
   branchCheckedOutElsewhere: 'switch-branch',
@@ -37,6 +41,10 @@ export function actionHintForFailure(code: GitErrorCode): string {
       return 'Open Repositories and add or re-select a valid Git working tree.'
     case 'authenticationFailed':
       return 'Check SSH keys, HTTPS tokens, and the profile linked to this repository.'
+    case 'pushRejectedWrongAccount':
+      return 'Switch to the profile assigned to this repository, then push again with its GitHub account.'
+    case 'dubiousOwnership':
+      return 'Re-point or re-add this repository in Repositories — its folder appears to have moved or changed owner.'
     case 'remoteNotFound':
       return 'Verify the remote URL in Remote and that you have access to the repository.'
     case 'branchNotFound':

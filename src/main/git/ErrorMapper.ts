@@ -31,12 +31,48 @@ export class ErrorMapper {
       }
     }
 
+    // GitHub HTTPS wrong-account / 403 push rejection — the token is VALID but for
+    // the wrong account. Checked BEFORE authenticationFailed so a 403 is diagnosed
+    // as switch-and-retry, not a generic auth failure. (SSH's "permission denied
+    // (publickey)" stays with authenticationFailed below.)
     if (
-      /authentication failed|could not authenticate|permission denied \(publickey\)/i.test(stderr)
+      /remote: Permission to .+ denied to .+/i.test(stderr) ||
+      /The requested URL returned error: 403/i.test(stderr) ||
+      /\berror: 403\b/i.test(stderr)
+    ) {
+      return {
+        code: 'pushRejectedWrongAccount',
+        userMessage:
+          "GitHub rejected the push: you're authenticated as a different account than this repository's profile. Switch to the assigned profile and push again.",
+        technicalDetails: stderr,
+        exitCode,
+      }
+    }
+
+    // SSH key rejection OR HTTPS token rejection (401 / bad credentials). A valid
+    // token for the WRONG account is handled above as pushRejectedWrongAccount.
+    if (
+      /authentication failed|could not authenticate|permission denied \(publickey\)|could not read Username|Invalid username or password|\b401\b/i.test(
+        stderr
+      )
     ) {
       return {
         code: 'authenticationFailed',
-        userMessage: 'Authentication failed. Check your SSH key or credentials.',
+        userMessage:
+          'Authentication failed: GitHub rejected your credentials — the token or SSH key may be missing, expired, or revoked. Reconnect GitHub for this profile (or check your SSH key).',
+        technicalDetails: stderr,
+        exitCode,
+      }
+    }
+
+    // The repository folder moved/renamed (or is owned by another user) → Git
+    // refuses with "dubious ownership". Explain-only: GitWarden will NOT write a
+    // global safe.directory (AGENTS.md rule #4: --local config only).
+    if (/detected dubious ownership in repository/i.test(stderr)) {
+      return {
+        code: 'dubiousOwnership',
+        userMessage:
+          "Git refused to use this repository because its folder looks like it moved or is owned by another user ('dubious ownership'). Re-point or re-add the repository in GitWarden — your global Git config is left untouched.",
         technicalDetails: stderr,
         exitCode,
       }

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { ErrorMapper, GitError } from '../../src/main/git/ErrorMapper'
+import { toIpcFailure } from '../../src/main/ipc/ipcFailure'
 
 describe('ErrorMapper', () => {
   it('returns a GitError instance', () => {
@@ -83,6 +84,51 @@ describe('ErrorMapper', () => {
     expect(err.code).toBe('networkError')
   })
 
+  // ── Guard Quick-Fix (Phase 64): push-failure diagnosis ──
+  it('maps a GitHub HTTPS wrong-account 403 push rejection', () => {
+    const err = ErrorMapper.map(
+      "remote: Permission to octo/repo.git denied to wronguser.\nfatal: unable to access 'https://github.com/octo/repo.git/': The requested URL returned error: 403",
+      128
+    )
+    expect(err.code).toBe('pushRejectedWrongAccount')
+    expect(err.userMessage).toMatch(/different account|assigned profile/i)
+  })
+
+  it('classifies wrong-account BEFORE generic auth (the 403 branch wins)', () => {
+    const err = ErrorMapper.map('remote: Permission to octo/repo.git denied to wronguser.', 128)
+    expect(err.code).toBe('pushRejectedWrongAccount')
+  })
+
+  it('maps HTTPS token rejection (401) to authenticationFailed', () => {
+    const err = ErrorMapper.map(
+      "fatal: unable to access 'https://github.com/octo/repo.git/': The requested URL returned error: 401",
+      128
+    )
+    expect(err.code).toBe('authenticationFailed')
+  })
+
+  it('maps HTTPS "could not read Username" (no credentials) to authenticationFailed', () => {
+    const err = ErrorMapper.map(
+      "fatal: could not read Username for 'https://github.com': terminal prompts disabled",
+      128
+    )
+    expect(err.code).toBe('authenticationFailed')
+  })
+
+  it('still maps SSH "permission denied (publickey)" to authenticationFailed', () => {
+    const err = ErrorMapper.map('git@github.com: Permission denied (publickey).', 128)
+    expect(err.code).toBe('authenticationFailed')
+  })
+
+  it('maps "dubious ownership" (moved/owned-elsewhere repo folder) to dubiousOwnership', () => {
+    const err = ErrorMapper.map(
+      "fatal: detected dubious ownership in repository at '/Users/me/moved-repo'",
+      128
+    )
+    expect(err.code).toBe('dubiousOwnership')
+    expect(err.userMessage).toMatch(/moved|re-point|re-add/i)
+  })
+
   it('falls back to unknown for unrecognized stderr', () => {
     const err = ErrorMapper.map('some completely unknown error output', 1)
     expect(err.code).toBe('unknown')
@@ -108,5 +154,38 @@ describe('ErrorMapper', () => {
       const err = ErrorMapper.map(stderr, 1)
       expect(err.userMessage.length).toBeGreaterThan(0)
     }
+  })
+})
+
+describe('toIpcFailure (structured IPC envelope)', () => {
+  it('attaches code + remediation for a remediable GitError (wrong-account push)', () => {
+    const failure = toIpcFailure(
+      ErrorMapper.map('remote: Permission to octo/repo.git denied to wronguser.', 128)
+    )
+    expect(failure.error.length).toBeGreaterThan(0)
+    expect(failure.code).toBe('pushRejectedWrongAccount')
+    expect(failure.remediation).toEqual({
+      action: 'switch-profile-and-retry-push',
+      kind: 'executable',
+    })
+  })
+
+  it('maps authenticationFailed to the reconnect-github remediation', () => {
+    const failure = toIpcFailure(ErrorMapper.map('fatal: Authentication failed', 128))
+    expect(failure.code).toBe('authenticationFailed')
+    expect(failure.remediation).toEqual({ action: 'reconnect-github', kind: 'executable' })
+  })
+
+  it('attaches code but NO remediation for a non-remediable GitError', () => {
+    const failure = toIpcFailure(ErrorMapper.map('some completely unknown error', 1))
+    expect(failure.code).toBe('unknown')
+    expect(failure.remediation).toBeUndefined()
+  })
+
+  it('leaves a plain Error string-only (no code, no remediation)', () => {
+    const failure = toIpcFailure(new Error('boom'))
+    expect(failure.error).toBe('boom')
+    expect(failure.code).toBeUndefined()
+    expect(failure.remediation).toBeUndefined()
   })
 })

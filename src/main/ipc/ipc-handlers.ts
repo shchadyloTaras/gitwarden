@@ -24,7 +24,9 @@ import type { IUpdateService } from '../services/UpdateService.js'
 import { UpdateCheckResultSchema } from '../../core/updates/schemas.js'
 import { detectProvider } from '../../core/ai/detection.js'
 import { maskSecret } from '../../core/ai/credentials.js'
-import type { RepositoryRecord } from '../../core/types.js'
+import type { RepositoryRecord, GitErrorCode } from '../../core/types.js'
+import type { Remediation } from '../../core/safety/remediation.js'
+import { toIpcFailure } from './ipcFailure.js'
 import {
   AiConnectionTestResultSchema,
   AiModelInfoSchema,
@@ -128,14 +130,18 @@ export interface Services {
   openExternal: (url: string) => void | Promise<void>
 }
 
-export type IpcResult<T> = { ok: true; data: T } | { ok: false; error: string }
+export type IpcResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: string; code?: GitErrorCode; remediation?: Remediation }
 
 async function wrap<T>(fn: () => Promise<T>): Promise<IpcResult<T>> {
   try {
     const data = await fn()
     return { ok: true, data }
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : String(err) }
+    // Additive: the `error` string stays exactly as before; a GitError also
+    // carries its `code` and (when remediable) a `remediation` for the recovery UI.
+    return { ok: false, ...toIpcFailure(err) }
   }
 }
 

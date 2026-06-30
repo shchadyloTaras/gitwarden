@@ -116,3 +116,12 @@ const GIT_ERROR_ACTION: Record<RemediableGitErrorCode, SafetySuggestedAction> = 
 export function remediationForGitError(code: RemediableGitErrorCode): Remediation {
   return remediationForAction(GIT_ERROR_ACTION[code])
 }
+
+/**
+ * Whether a Git error code (or any string) is one the model can remediate.
+ * Derived from `GIT_ERROR_ACTION`'s keys so the remediable set has a single source
+ * of truth — the IPC layer uses this to decide when to attach a remediation.
+ */
+export function isRemediableGitErrorCode(code: string): code is RemediableGitErrorCode {
+  return Object.prototype.hasOwnProperty.call(GIT_ERROR_ACTION, code)
+}
