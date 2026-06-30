@@ -11,3 +11,6 @@ test-results/
 
 # Landing site — isolated workspace with its own Prettier config
 landing/
+
+# Presentation deck — isolated workspace, lives on the `presentation` branch (gitignored on main)
+presentation/
