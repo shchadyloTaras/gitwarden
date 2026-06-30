@@ -8,14 +8,19 @@ import { execSync } from 'node:child_process'
 
 // Guard Quick-Fix Phase 67 — one-click fix UI + failed-push recovery banner.
 // Offline: local bare repos as "remotes"; rejecting remotes use a pre-receive hook whose
-// stderr matches the ErrorMapper regexes (error: 403 → wrong-account, error: 401 → auth).
+// stderr matches the ErrorMapper regexes (named permission denial → wrong-account,
+// generic 401/403 → auth/scope).
 
 const EMPTY_GIT_CONFIG = path.join(os.tmpdir(), 'gw-remediation-empty.gitconfig')
 
 function launchApp(): Promise<ElectronApplication> {
   return electron.launch({
     args: [path.resolve(__dirname, '../../out/main/index.js')],
-    env: { ...process.env, GIT_CONFIG_GLOBAL: EMPTY_GIT_CONFIG },
+    env: {
+      ...process.env,
+      GIT_CONFIG_GLOBAL: EMPTY_GIT_CONFIG,
+      GITWARDEN_E2E_FAKE_GITHUB: '1',
+    },
   })
 }
 
@@ -69,8 +74,11 @@ test.beforeAll(() => {
   gitInWork(switchWork, 'jane@work.com', 'Jane Work')
   execSync(`git remote add origin "${switchBare}"`, { cwd: switchWork, stdio: 'pipe' })
 
-  // Scenario 2 — push rejected as wrong account (403).
-  rejectWrongBare = makeRejectingBare('wrong', 'error: 403 Forbidden')
+  // Scenario 2 — push rejected as wrong account (GitHub names the denied actor).
+  rejectWrongBare = makeRejectingBare(
+    'wrong',
+    'remote: Permission to octo/repo.git denied to wronguser.'
+  )
   rejectWrongWork = fs.mkdtempSync(path.join(os.tmpdir(), 'gw-rem-wrong-work-'))
   gitInWork(rejectWrongWork, 'alice@example.com', 'Alice Dev')
   execSync(`git remote add origin "${rejectWrongBare}"`, { cwd: rejectWrongWork, stdio: 'pipe' })
@@ -279,6 +287,8 @@ test.describe('Guard Quick-Fix — one-click fixes & recovery banner', () => {
     const reconnect = win.getByTestId('remediation-executable-reconnect-github')
     await expect(reconnect).toBeVisible()
     await expect(reconnect).toContainText('Reconnect GitHub')
+    await reconnect.click()
+    await expect(win.getByTestId('remediation-device-code')).toContainText('WDJB-MJHT')
   })
 
   test('navigate-only issue (unassigned repo): Commit shows a "Go to Repositories" link, not a fix button', async () => {

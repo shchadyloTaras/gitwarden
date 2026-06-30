@@ -107,6 +107,13 @@ export class GitRunner {
         const exitCode = code ?? 1
 
         if (exitCode !== 0) {
+          // Surface the RAW git failure so every error is diagnosable in the logs,
+          // not just the ones that fall through to `unknown`. Secret-safe: the token
+          // lives only in GIT_ASKPASS env (never argv), and the askpass path keeps it
+          // out of the remote URL, so neither the args nor stderr can leak it.
+          console.error(
+            `[GitRunner] git ${inv.args.join(' ')} failed (exit ${exitCode}):\n${stderr.trim()}`
+          )
           reject(ErrorMapper.map(stderr, exitCode))
           return
         }

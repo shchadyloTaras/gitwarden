@@ -10,7 +10,10 @@ import type { IRepositoryService } from '../services/RepositoryService.js'
 import type { IProfileService } from '../services/ProfileService.js'
 import type { ISettingsService } from '../services/SettingsService.js'
 import type { IGitHubAuthCoordinator, AuthEventSender } from './GitHubAuthCoordinator.js'
+import { GitError } from '../git/ErrorMapper.js'
+import { isHttpsGitHubRemoteUrl } from '../../core/github/remoteUrl.js'
 import {
+  remediationForGitError,
   remediationForSafetyCode,
   type ExecutableAction,
   type RemediationResult,
@@ -89,7 +92,24 @@ export async function executeRemediation(
       const remotes = await deps.git.getRemotes(repoPath)
       const url = remotes.find((r) => r.name === remote)?.url
       const auth = url ? await deps.github.resolveHttpsAuth(assigned, url) : undefined
-      await deps.git.push(repoPath, remote, branch, auth)
+      try {
+        await deps.git.push(repoPath, remote, branch, auth)
+      } catch (error) {
+        if (
+          url &&
+          isHttpsGitHubRemoteUrl(url) &&
+          error instanceof GitError &&
+          error.code === 'pushRejectedWrongAccount'
+        ) {
+          return {
+            ok: false,
+            remediation: remediationForGitError('authenticationFailed'),
+            message:
+              'GitHub still rejected the HTTPS push with the assigned profile. Reconnect GitHub for this profile, then push again.',
+          }
+        }
+        throw error
+      }
       return { ok: true }
     }
     default: {

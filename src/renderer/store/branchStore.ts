@@ -17,6 +17,7 @@ interface BranchState {
   doDelete(branch: string): Promise<void>
   setDeleteConfirm(branch: string | null): void
   clearMessages(): void
+  clear(): void
 }
 
 async function refreshBranches(repoPath: string): Promise<GitBranch[] | null> {
@@ -106,5 +107,9 @@ export const useBranchStore = create<BranchState>((set, get) => ({
 
   clearMessages() {
     set({ error: null, successMessage: null })
+  },
+
+  clear() {
+    set({ branches: [], repoPath: null, repository: null, error: null, successMessage: null })
   },
 }))

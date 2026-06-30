@@ -29,7 +29,7 @@ export const FAKE_ACCOUNT: GitHubAccount = {
 
 export const FAKE_PRIMARY_EMAIL = 'octocat@users.noreply.github.com'
 export const FAKE_ACCESS_TOKEN = 'gho_FAKEtoken000000000000000000000000'
-export const FAKE_GRANTED_SCOPES = ['read:user', 'user:email']
+export const FAKE_GRANTED_SCOPES = ['repo', 'read:user', 'user:email']
 
 class FakeGitHubAuthService implements IGitHubAuthService {
   async requestDeviceCode(_scopes: string[]): Promise<GitHubDeviceCode> {

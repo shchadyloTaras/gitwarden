@@ -110,11 +110,12 @@ describe('GitService.push token wiring — no token leaks', () => {
       service.push(repoPath, 'origin', 'main', { username: USERNAME, token: TOKEN })
     ).rejects.toBeTruthy()
 
-    const pushCall = calls.find((c) => c.args[0] === 'push')
+    const pushCall = calls.find((c) => c.args.includes('push'))
     expect(pushCall).toBeTruthy()
 
-    // 1) The token is NOT in argv.
-    expect(pushCall!.args).toEqual(['push', 'origin', 'main'])
+    // 1) The token is NOT in argv; a token push also isolates from inherited
+    //    credential helpers so the assigned account can't be overridden.
+    expect(pushCall!.args).toEqual(['-c', 'credential.helper=', 'push', 'origin', 'main'])
     expect(JSON.stringify(pushCall!.args)).not.toContain(TOKEN)
 
     // 2) The token IS carried in the per-invocation env (the only allowed channel).
@@ -131,10 +132,51 @@ describe('GitService.push token wiring — no token leaks', () => {
     expect(config).not.toContain(TOKEN)
   })
 
-  it('an SSH/no-auth push carries no credential env at all', async () => {
-    // No auth → no GIT_ASKPASS, no token env. (Fails on the unreachable URL; that's fine.)
+  it('an SSH/no-auth push carries no credential env or helper-reset at all', async () => {
+    // No auth → no GIT_ASKPASS, no token env, and NO credential.helper reset (ambient
+    // SSH / credential flows are left exactly as the user configured them).
     await expect(service.push(repoPath, 'origin', 'main')).rejects.toBeTruthy()
-    const pushCall = calls.find((c) => c.args[0] === 'push')
+    const pushCall = calls.find((c) => c.args.includes('push'))
     expect(pushCall?.extraEnv).toBeUndefined()
+    expect(pushCall!.args).toEqual(['push', 'origin', 'main'])
+  })
+
+  // fetch/pull must authenticate as the assigned profile too — not only push —
+  // otherwise a private repo's Fetch/Pull fail with "could not read Username"
+  // because the system keychain is ignored (GIT_CONFIG_NOSYSTEM=1).
+  it('fetch passes the token via extraEnv (never argv)', async () => {
+    await expect(
+      service.fetch(repoPath, 'origin', { username: USERNAME, token: TOKEN })
+    ).rejects.toBeTruthy()
+    const call = calls.find((c) => c.args.includes('fetch'))
+    expect(call!.args).toEqual(['-c', 'credential.helper=', 'fetch', 'origin'])
+    expect(JSON.stringify(call!.args)).not.toContain(TOKEN)
+    expect(call!.extraEnv?.[ASKPASS_PASSWORD_ENV]).toBe(TOKEN)
+    expect(call!.extraEnv?.GIT_ASKPASS).toBeTruthy()
+  })
+
+  it('a no-auth fetch carries no credential env or helper-reset', async () => {
+    await expect(service.fetch(repoPath, 'origin')).rejects.toBeTruthy()
+    const call = calls.find((c) => c.args.includes('fetch'))
+    expect(call?.extraEnv).toBeUndefined()
+    expect(call!.args).toEqual(['fetch', 'origin'])
+  })
+
+  it('pull passes the token via extraEnv (never argv) and keeps --ff-only', async () => {
+    await expect(
+      service.pull(repoPath, 'origin', 'main', { username: USERNAME, token: TOKEN })
+    ).rejects.toBeTruthy()
+    const call = calls.find((c) => c.args.includes('pull'))
+    expect(call!.args).toEqual(['-c', 'credential.helper=', 'pull', '--ff-only', 'origin', 'main'])
+    expect(JSON.stringify(call!.args)).not.toContain(TOKEN)
+    expect(call!.extraEnv?.[ASKPASS_PASSWORD_ENV]).toBe(TOKEN)
+    expect(call!.extraEnv?.GIT_ASKPASS).toBeTruthy()
+  })
+
+  it('a no-auth pull carries no credential env or helper-reset', async () => {
+    await expect(service.pull(repoPath, 'origin', 'main')).rejects.toBeTruthy()
+    const call = calls.find((c) => c.args.includes('pull'))
+    expect(call?.extraEnv).toBeUndefined()
+    expect(call!.args).toEqual(['pull', '--ff-only', 'origin', 'main'])
   })
 })

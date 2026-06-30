@@ -66,7 +66,7 @@ export default function GlobalHeader(): React.ReactElement {
   const profiles = useProfilesStore((s) => s.profiles)
   const activeProfileId = useProfilesStore((s) => s.activeProfileId)
   const activeProfile = profiles.find((p) => p.id === activeProfileId) ?? null
-  const { branches, load: loadBranches, doSwitch } = useBranchStore()
+  const { branches, load: loadBranches, doSwitch, clear: clearBranches } = useBranchStore()
 
   const guardState = useHeaderGuardStore((s) => s.state)
   const guardIssueCount = useHeaderGuardStore((s) => s.issueCount)
@@ -77,12 +77,14 @@ export default function GlobalHeader(): React.ReactElement {
   const updateResult = useUpdatesStore((s) => s.result)
   const availableUpdate = updateResult?.status === 'update-available' ? updateResult.release : null
 
-  // Load branches whenever the active repo changes
+  // Load branches whenever the active repo changes; clear when no repo is selected
   useEffect(() => {
     if (activeRepo) {
       void loadBranches(activeRepo.localPath, activeRepo)
+    } else {
+      clearBranches()
     }
-  }, [activeRepo, loadBranches])
+  }, [activeRepo, loadBranches, clearBranches])
 
   // The header is always mounted, so this effect gives the guard app-wide live updates on
   // every repo/profile change — mirrors SafetyCenterScreen's load effect.
@@ -164,8 +166,12 @@ export default function GlobalHeader(): React.ReactElement {
               )
               return {
                 value: b.name,
-                label: checkedOutElsewhere ? `${b.name} (worktree)` : b.name,
+                label: checkedOutElsewhere ? STR.BRANCH_LABEL_WORKTREE(b.name) : b.name,
                 disabled: checkedOutElsewhere,
+                title:
+                  checkedOutElsewhere && b.worktreePath
+                    ? STR.BRANCH_CHECKED_OUT_ELSEWHERE_HINT(b.worktreePath)
+                    : undefined,
               }
             })}
             onChange={(name) => void doSwitch(name)}
@@ -176,6 +182,7 @@ export default function GlobalHeader(): React.ReactElement {
               padding: '2px 6px',
               maxWidth: 140,
             }}
+            popupMinWidth={240}
           />
         </>
       )}

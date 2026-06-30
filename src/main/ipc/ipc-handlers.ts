@@ -335,21 +335,23 @@ export function registerIpcHandlers(services: Services): void {
   ipcMain.handle('git:fetch', (_e, raw: unknown) =>
     wrap(async () => {
       const { repoPath, remote } = GitRemoteOpPayload.parse(raw)
-      return services.git.fetch(repoPath, remote)
+      const auth = await resolveRemoteAuth(services, repoPath, remote)
+      return services.git.fetch(repoPath, remote, auth)
     })
   )
 
   ipcMain.handle('git:pull', (_e, raw: unknown) =>
     wrap(async () => {
       const { repoPath, remote, branch } = GitRemoteBranchOpPayload.parse(raw)
-      return services.git.pull(repoPath, remote, branch)
+      const auth = await resolveRemoteAuth(services, repoPath, remote)
+      return services.git.pull(repoPath, remote, branch, auth)
     })
   )
 
   ipcMain.handle('git:push', (_e, raw: unknown) =>
     wrap(async () => {
       const { repoPath, remote, branch } = GitRemoteBranchOpPayload.parse(raw)
-      const auth = await resolvePushAuth(services, repoPath, remote)
+      const auth = await resolveRemoteAuth(services, repoPath, remote)
       return services.git.push(repoPath, remote, branch, auth)
     })
   )
@@ -834,11 +836,14 @@ async function applyAssignedProfileIdentity(
 }
 
 /**
- * Resolve HTTPS-token push credentials from the repo's assigned profile, if any. Returns
- * undefined for unassigned repos, non-GitHub/SSH remotes, or profiles without a stored
- * token — in which case the push proceeds exactly as before (SSH / ambient credentials).
+ * Resolve HTTPS-token credentials from the repo's assigned profile for ANY remote
+ * operation (push, fetch, or pull). Returns undefined for unassigned repos,
+ * non-GitHub/SSH remotes, or profiles without a stored token — in which case the
+ * operation proceeds exactly as before (SSH / ambient credentials). Sharing this
+ * across fetch/pull/push is what makes the assigned profile authenticate every
+ * remote operation, not only push.
  */
-async function resolvePushAuth(
+async function resolveRemoteAuth(
   services: Services,
   repoPath: string,
   remoteName: string

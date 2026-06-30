@@ -34,6 +34,8 @@ export function explainSafetyIssue(code: SafetyCode): string {
       return 'This profile pushes over HTTPS to GitHub but has no stored token. GitWarden blocks the push until GitHub is connected for the assigned profile.'
     case 'GITHUB_TOKEN_INVALID':
       return 'The stored GitHub token was rejected — it may have expired or been revoked. Reconnect GitHub so GitWarden can verify the push account again.'
+    case 'GITHUB_TOKEN_SCOPE_MISSING':
+      return 'The stored GitHub token proves which account is connected, but it was authorized without repository push permission. GitHub can still reject HTTPS pushes with HTTP 403 until the profile is reconnected with repository access.'
     case 'GITHUB_NOT_CONNECTED':
       return 'This profile has no linked GitHub account. Connect GitHub so GitWarden can confirm which account an HTTPS push would use.'
     case 'STAGED_SECRET_DETECTED':
@@ -76,6 +78,7 @@ export const SAFETY_ACTION_BY_CODE: Record<SafetyCode, SafetySuggestedAction> = 
   GITHUB_ACCOUNT_MISMATCH: 'reconnect-github',
   GITHUB_TOKEN_MISSING: 'reconnect-github',
   GITHUB_TOKEN_INVALID: 'reconnect-github',
+  GITHUB_TOKEN_SCOPE_MISSING: 'reconnect-github',
   GITHUB_NOT_CONNECTED: 'reconnect-github',
   STAGED_SECRET_DETECTED: 'review-staged-changes',
   PROTECTED_BRANCH_PUSH: 'switch-branch',

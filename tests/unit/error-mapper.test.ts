@@ -94,9 +94,18 @@ describe('ErrorMapper', () => {
     expect(err.userMessage).toMatch(/different account|assigned profile/i)
   })
 
-  it('classifies wrong-account BEFORE generic auth (the 403 branch wins)', () => {
+  it('classifies named permission denials before generic auth', () => {
     const err = ErrorMapper.map('remote: Permission to octo/repo.git denied to wronguser.', 128)
     expect(err.code).toBe('pushRejectedWrongAccount')
+  })
+
+  it('maps generic HTTPS 403 to authenticationFailed because it can be missing push scope', () => {
+    const err = ErrorMapper.map(
+      "remote: Write access to repository not granted.\nfatal: unable to access 'https://github.com/octo/repo.git/': The requested URL returned error: 403",
+      128
+    )
+    expect(err.code).toBe('authenticationFailed')
+    expect(err.userMessage).toMatch(/push permission|repository access/i)
   })
 
   it('maps HTTPS token rejection (401) to authenticationFailed', () => {
@@ -127,6 +136,46 @@ describe('ErrorMapper', () => {
     )
     expect(err.code).toBe('dubiousOwnership')
     expect(err.userMessage).toMatch(/moved|re-point|re-add/i)
+  })
+
+  it('maps non-fast-forward push rejection (fetch first)', () => {
+    const stderr = [
+      'To https://github.com/octocat/repo.git',
+      ' ! [rejected]        main -> main (fetch first)',
+      "error: failed to push some refs to 'https://github.com/octocat/repo.git'",
+      'hint: Updates were rejected because the remote contains work that you do not have locally.',
+    ].join('\n')
+    const err = ErrorMapper.map(stderr, 1)
+    expect(err.code).toBe('rejectedNonFastForward')
+    expect(err.userMessage).toMatch(/pull/i)
+  })
+
+  it('maps non-fast-forward push rejection (non-fast-forward wording)', () => {
+    const err = ErrorMapper.map(
+      '! [rejected]        main -> main (non-fast-forward)',
+      1
+    )
+    expect(err.code).toBe('rejectedNonFastForward')
+  })
+
+  // ── Pull-side divergence (the step the user hits after "pull first") ──
+  it('maps "Need to specify how to reconcile divergent branches" to divergentBranches', () => {
+    const err = ErrorMapper.map(
+      'hint: You have divergent branches and need to specify how to reconcile them.\nfatal: Need to specify how to reconcile divergent branches.',
+      128
+    )
+    expect(err.code).toBe('divergentBranches')
+    expect(err.userMessage).toMatch(/diverged|combine|merge|rebase/i)
+  })
+
+  it('maps "Not possible to fast-forward" (the --ff-only result on a diverged branch) to divergentBranches', () => {
+    const err = ErrorMapper.map('fatal: Not possible to fast-forward, aborting.', 128)
+    expect(err.code).toBe('divergentBranches')
+  })
+
+  it('maps "refusing to merge unrelated histories" to divergentBranches', () => {
+    const err = ErrorMapper.map('fatal: refusing to merge unrelated histories', 128)
+    expect(err.code).toBe('divergentBranches')
   })
 
   it('falls back to unknown for unrecognized stderr', () => {

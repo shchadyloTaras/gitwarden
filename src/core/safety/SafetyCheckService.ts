@@ -31,6 +31,7 @@ export type SafetyCode =
   | 'GITHUB_ACCOUNT_MISMATCH'
   | 'GITHUB_TOKEN_MISSING'
   | 'GITHUB_TOKEN_INVALID'
+  | 'GITHUB_TOKEN_SCOPE_MISSING'
   | 'GITHUB_NOT_CONNECTED'
   | 'STAGED_SECRET_DETECTED'
   // Push policy (Phase 57). These engage ONLY when repo.pushPolicy is set and non-unrestricted.
@@ -104,6 +105,8 @@ export interface GitHubPushContext {
   tokenInvalid?: boolean
   /** The @login the stored token actually authenticates as (verified in main). */
   effectiveLogin?: string
+  /** OAuth scopes granted to the stored token, persisted on the linked profile. */
+  scopes?: string[]
 }
 
 function collectGitHubPushIssues(github: GitHubPushContext): SafetyIssue[] {
@@ -121,6 +124,14 @@ function collectGitHubPushIssues(github: GitHubPushContext): SafetyIssue[] {
 
   if (github.tokenInvalid) {
     issues.push(makeIssue('GITHUB_TOKEN_INVALID'))
+    return issues
+  }
+
+  if (
+    github.scopes &&
+    !github.scopes.some((scope) => scope === 'repo' || scope === 'public_repo')
+  ) {
+    issues.push(makeIssue('GITHUB_TOKEN_SCOPE_MISSING'))
     return issues
   }
 

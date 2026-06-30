@@ -5,6 +5,8 @@ export interface DropdownOption {
   value: string
   label: string
   disabled?: boolean
+  /** Native tooltip shown on hover — e.g. explaining why a disabled option can't be picked. */
+  title?: string
 }
 
 interface DropdownProps {
@@ -450,6 +452,7 @@ export default function Dropdown({
               aria-selected={isSel}
               data-testid={testId ? `${testId}-option-${o.value}` : undefined}
               className={cls}
+              title={o.title}
               onMouseEnter={() => setHighlight(i)}
               onClick={() => !o.disabled && choose(o.value)}
               style={{

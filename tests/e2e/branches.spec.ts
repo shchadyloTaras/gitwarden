@@ -137,6 +137,29 @@ test.describe('Branches', () => {
     await expect(win.getByTestId('branches-current-branch')).toContainText('feature-a')
   })
 
+  test('switching branch via the header dropdown updates the Remote screen without navigating away', async () => {
+    await registerFixtureRepo()
+
+    // Land on the Remote screen first so it loads its own view of the current branch.
+    await win.getByTestId('nav-remote').click()
+    await expect(win.getByTestId('screen-remote')).toBeVisible()
+    await expect(win.getByTestId('remote-current-branch')).toBeVisible({ timeout: 10000 })
+    await expect(win.getByTestId('remote-current-branch')).toContainText('main')
+
+    // Switch branch via the HEADER dropdown — not the Branches screen — while staying
+    // on the Remote screen the whole time (no navigation, no reload).
+    await win.getByTestId('header-branch-select').click()
+    await win.getByTestId('header-branch-select-option-feature-a').click()
+
+    await expect(win.getByTestId('header-branch-select')).toContainText('feature-a', {
+      timeout: 10000,
+    })
+    // The Remote screen must reflect the switch immediately, not just the header.
+    await expect(win.getByTestId('remote-current-branch')).toContainText('feature-a', {
+      timeout: 10000,
+    })
+  })
+
   test('create a new branch creates and switches to it', async () => {
     await registerFixtureRepo()
 

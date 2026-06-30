@@ -167,6 +167,49 @@ describe('GitService.getStatus integration', () => {
     await expect(service.deleteBranch(repoPath, 'already-gone')).resolves.toBeUndefined()
   })
 
+  // ── Pull divergence: the real step after a "fetch first" push rejection ──
+  // Builds a bare "remote", clones a second worktree that pushes an extra commit,
+  // then commits locally so the two histories diverge — exactly the offline shape
+  // of the user's failed push/pull loop.
+  async function setUpRemoteAhead(): Promise<{ remote: string }> {
+    const remote = path.join(tmpDir, 'remote.git')
+    await execFileAsync('git', ['init', '--bare', '-b', 'main', remote])
+    // Seed the repo with a first commit on main and push it.
+    await git(repoPath, 'checkout', '-b', 'main')
+    await writeFile(path.join(repoPath, 'base.txt'), 'one\n')
+    await git(repoPath, 'add', 'base.txt')
+    await git(repoPath, 'commit', '-m', 'c1')
+    await git(repoPath, 'remote', 'add', 'origin', remote)
+    await git(repoPath, 'push', 'origin', 'main')
+    // A second clone pushes an extra commit so the remote moves ahead.
+    const other = path.join(tmpDir, 'other')
+    await execFileAsync('git', ['clone', remote, other])
+    await git(other, 'config', 'user.name', 'Other')
+    await git(other, 'config', 'user.email', 'other@example.com')
+    await writeFile(path.join(other, 'base.txt'), 'one\ntwo\n')
+    await git(other, 'commit', '-am', 'remote-ahead')
+    await git(other, 'push', 'origin', 'main')
+    return { remote }
+  }
+
+  it('rejects a pull as divergentBranches when local and remote have diverged', async () => {
+    await setUpRemoteAhead()
+    // Local makes its OWN commit → the two branches diverge.
+    await writeFile(path.join(repoPath, 'base.txt'), 'one\nlocal\n')
+    await git(repoPath, 'commit', '-am', 'local-divergent')
+
+    await expect(service.pull(repoPath, 'origin', 'main')).rejects.toMatchObject({
+      code: 'divergentBranches',
+    } satisfies Partial<GitError>)
+  })
+
+  it('fast-forwards a pull cleanly when local is merely behind (no regression from --ff-only)', async () => {
+    await setUpRemoteAhead()
+    // Local has NO commit of its own → a fast-forward is possible and must succeed.
+    await expect(service.pull(repoPath, 'origin', 'main')).resolves.toBeUndefined()
+    expect(await git(repoPath, 'show', '-s', '--format=%s', 'HEAD')).toBe('remote-ahead')
+  })
+
   it('reports when delete is blocked because the branch is checked out in another worktree', async () => {
     await writeFile(path.join(repoPath, 'init.txt'), 'initial\n')
     await git(repoPath, 'add', 'init.txt')

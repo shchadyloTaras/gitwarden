@@ -13,11 +13,11 @@
 export const GITHUB_CLIENT_ID = 'Ov23liMJ2oRxygjRi84h'
 
 /**
- * Scopes requested for identity verification. `repo` is intentionally absent —
- * it is requested only if/when HTTPS push (Phase 27) is enabled, via a re-auth
- * with the broader scope (scope minimization, Appendix B).
+ * Scopes requested for identity verification AND HTTPS GitHub push.
+ * Phase 27 enabled the token-backed push path, so `repo` is required; otherwise
+ * GitHub can authenticate the account but still reject `git push` with HTTP 403.
  */
-export const GITHUB_OAUTH_SCOPES = ['read:user', 'user:email'] as const
+export const GITHUB_OAUTH_SCOPES = ['repo', 'read:user', 'user:email'] as const
 
 /**
  * The public GitHub repository that hosts GitWarden releases. Used by the update

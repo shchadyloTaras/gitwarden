@@ -12,7 +12,10 @@ import type { GitRunner } from '../git/GitRunner.js'
 import { GitLocator } from '../git/GitLocator.js'
 import { buildAskpassEnv, ensureAskpassHelper } from '../git/askpass.js'
 
-/** HTTPS-token credentials for a single push. The token never enters argv or config. */
+/**
+ * HTTPS-token credentials for a single remote operation (push, fetch, or pull).
+ * The token never enters argv or config — it is supplied only via the GIT_ASKPASS env.
+ */
 export interface PushAuth {
   username: string
   token: string
@@ -159,37 +162,66 @@ export class GitService {
     })
   }
 
-  async fetch(repoPath: string, remote: string): Promise<void> {
+  async fetch(repoPath: string, remote: string, auth?: PushAuth): Promise<void> {
     await this.runner.run({
-      args: ['fetch', remote],
+      args: [...this.credentialIsolationArgs(auth), 'fetch', remote],
       cwd: repoPath,
       readOnly: false,
       timeoutMs: 60_000,
+      extraEnv: this.askpassEnv(auth),
     })
   }
 
-  async pull(repoPath: string, remote: string, branch: string): Promise<void> {
+  async pull(repoPath: string, remote: string, branch: string, auth?: PushAuth): Promise<void> {
+    // `--ff-only`: integrate the remote ONLY when it is a clean fast-forward. This
+    // keeps the common "local is behind" case working while turning a divergence
+    // into a single, predictable "Not possible to fast-forward" error (mapped to
+    // `divergentBranches`) — instead of git's cryptic "Need to specify how to
+    // reconcile" or a surprise merge commit / conflict a user did not ask for.
+    // A merge/rebase is a deliberate action, not a silent side effect of Pull.
     await this.runner.run({
-      args: ['pull', remote, branch],
+      args: [...this.credentialIsolationArgs(auth), 'pull', '--ff-only', remote, branch],
       cwd: repoPath,
       readOnly: false,
       timeoutMs: 60_000,
+      extraEnv: this.askpassEnv(auth),
     })
   }
 
   async push(repoPath: string, remote: string, branch: string, auth?: PushAuth): Promise<void> {
-    // When token auth is supplied, route the credential through GIT_ASKPASS env only —
-    // the args stay token-free, and nothing is written to the URL or .git/config.
-    const extraEnv = auth
-      ? buildAskpassEnv(ensureAskpassHelper(), auth.username, auth.token)
-      : undefined
     await this.runner.run({
-      args: ['push', remote, branch],
+      args: [...this.credentialIsolationArgs(auth), 'push', remote, branch],
       cwd: repoPath,
       readOnly: false,
       timeoutMs: 60_000,
-      extraEnv,
+      extraEnv: this.askpassEnv(auth),
     })
+  }
+
+  /**
+   * Per-invocation env that supplies HTTPS-token credentials to a remote operation.
+   * When token auth is present the credential is routed through the GIT_ASKPASS env
+   * ONLY — the args stay token-free, and nothing is written to the URL or .git/config.
+   * Used by push, fetch, AND pull so the repo's assigned profile authenticates every
+   * remote operation (not just push); returns undefined for SSH / ambient-credential
+   * remotes, leaving their behavior unchanged.
+   */
+  private askpassEnv(auth?: PushAuth): Record<string, string> | undefined {
+    return auth ? buildAskpassEnv(ensureAskpassHelper(), auth.username, auth.token) : undefined
+  }
+
+  /**
+   * When pushing/fetching/pulling with the assigned profile's token, force git to
+   * IGNORE every inherited credential helper (macOS keychain, `gh`'s git-credential,
+   * etc.) so the per-invocation GIT_ASKPASS token is the ONLY credential source.
+   * Without this a global/host-specific helper could authenticate as the wrong
+   * account — the exact failure GitWarden exists to prevent. An empty `credential.helper`
+   * resets git's *entire* helper list (generic AND host-specific, verified empirically),
+   * so no host needs to be named; this works for github.com and Enterprise alike.
+   * Returns no args when there is no token (SSH / ambient credentials are left intact).
+   */
+  private credentialIsolationArgs(auth?: PushAuth): string[] {
+    return auth ? ['-c', 'credential.helper='] : []
   }
 
   async getBranches(repoPath: string): Promise<GitBranch[]> {

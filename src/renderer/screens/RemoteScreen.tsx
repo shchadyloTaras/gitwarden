@@ -4,7 +4,7 @@ import { useRemoteStore } from '../store/remoteStore'
 import { useAppStore } from '../store/appStore'
 import { safetyCheckService, type SafetyCode } from '../../core/safety/SafetyCheckService'
 import type { GitHubPushContext } from '../../core/safety/SafetyCheckService'
-import { remediationForSafetyCode } from '../../core/safety/remediation'
+import { remediationForGitError, remediationForSafetyCode } from '../../core/safety/remediation'
 import { isHttpsGitHubRemoteUrl } from '../../core/github/remoteUrl'
 import { matchesAnyPattern } from '../../core/safety/branchPatterns'
 import type { GitRemote } from '../../core/types'
@@ -17,11 +17,11 @@ type PushStatus = { hasToken: boolean; tokenInvalid: boolean; effectiveLogin?: s
 
 export default function RemoteScreen(): React.ReactElement {
   const activeRepo = useAppStore((s) => s.activeRepo)
+  const currentBranch = useAppStore((s) => s.currentBranch)
   const { profiles, activeProfileId } = useProfilesStore()
   const {
     repository,
     remotes,
-    currentBranch,
     upstream,
     identity,
     loading,
@@ -67,6 +67,7 @@ export default function RemoteScreen(): React.ReactElement {
       hasToken: pushStatus?.hasToken ?? false,
       tokenInvalid: pushStatus?.tokenInvalid ?? false,
       effectiveLogin: pushStatus?.effectiveLogin,
+      scopes: assignedProfile?.linkedGitHub?.scopes,
     }
   }, [selectedRemote, repository, assignedProfile, pushStatus])
 
@@ -148,6 +149,22 @@ export default function RemoteScreen(): React.ReactElement {
       pushSeenActions.add(rem.action)
       return true
     })
+
+  const retryingWouldReuseAssignedHttpsCredential =
+    lastFailure?.code === 'pushRejectedWrongAccount' &&
+    selectedRemote != null &&
+    isHttpsGitHubRemoteUrl(selectedRemote.url) &&
+    repository?.assignedProfileId != null &&
+    activeProfileId === repository.assignedProfileId
+
+  const recoveryRemediation = retryingWouldReuseAssignedHttpsCredential
+    ? remediationForGitError('authenticationFailed')
+    : lastFailure?.remediation
+
+  const recoveryMessage =
+    retryingWouldReuseAssignedHttpsCredential && assignedProfile
+      ? STR.RECOVERY_RECONNECT_ASSIGNED_GITHUB(assignedProfile.displayName)
+      : lastFailure?.message
 
   return (
     <div
@@ -370,17 +387,18 @@ export default function RemoteScreen(): React.ReactElement {
                 data-testid="remote-error"
                 style={{ color: 'var(--gw-danger, #f87171)', fontSize: '14px' }}
               >
-                {lastFailure.message}
+                {recoveryMessage}
               </div>
-              {lastFailure.remediation && lastFailure.code !== 'dubiousOwnership' && (
+              {recoveryRemediation && lastFailure.code !== 'dubiousOwnership' && (
                 <div style={{ marginTop: '10px' }}>
                   <RemediationButton
-                    remediation={lastFailure.remediation}
+                    remediation={recoveryRemediation}
                     repoPath={repository?.localPath ?? activeRepo?.localPath}
                     assignedProfileId={repository?.assignedProfileId}
                     remote={selectedRemote?.name}
                     branch={currentBranch ?? undefined}
-                    onSuccess={() => {
+                    onSuccess={(result) => {
+                      if (result.deviceCode) return
                       clearMessages()
                       if (activeRepo) void load(activeRepo.localPath, activeRepo)
                     }}

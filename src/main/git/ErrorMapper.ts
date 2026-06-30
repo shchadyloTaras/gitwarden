@@ -31,15 +31,10 @@ export class ErrorMapper {
       }
     }
 
-    // GitHub HTTPS wrong-account / 403 push rejection — the token is VALID but for
-    // the wrong account. Checked BEFORE authenticationFailed so a 403 is diagnosed
-    // as switch-and-retry, not a generic auth failure. (SSH's "permission denied
-    // (publickey)" stays with authenticationFailed below.)
-    if (
-      /remote: Permission to .+ denied to .+/i.test(stderr) ||
-      /The requested URL returned error: 403/i.test(stderr) ||
-      /\berror: 403\b/i.test(stderr)
-    ) {
+    // GitHub names the authenticated actor in this shape when the token is for an
+    // account that cannot push the repo. Keep this distinct from a generic 403:
+    // a generic 403 is often "correct account, token lacks repo/write scope".
+    if (/remote: Permission to .+ denied to .+/i.test(stderr)) {
       return {
         code: 'pushRejectedWrongAccount',
         userMessage:
@@ -49,17 +44,17 @@ export class ErrorMapper {
       }
     }
 
-    // SSH key rejection OR HTTPS token rejection (401 / bad credentials). A valid
-    // token for the WRONG account is handled above as pushRejectedWrongAccount.
+    // SSH key rejection OR HTTPS token/scope rejection (401 / generic 403 / bad
+    // credentials). A named wrong-account denial is handled above.
     if (
-      /authentication failed|could not authenticate|permission denied \(publickey\)|could not read Username|Invalid username or password|\b401\b/i.test(
+      /authentication failed|could not authenticate|permission denied \(publickey\)|could not read Username|Invalid username or password|\b401\b|The requested URL returned error: 403|\berror: 403\b|Write access to repository not granted/i.test(
         stderr
       )
     ) {
       return {
         code: 'authenticationFailed',
         userMessage:
-          'Authentication failed: GitHub rejected your credentials — the token or SSH key may be missing, expired, or revoked. Reconnect GitHub for this profile (or check your SSH key).',
+          'Authentication failed: GitHub rejected your credentials or push permission — the token may be missing repository access, expired, or revoked. Reconnect GitHub for this profile (or check your SSH key).',
         technicalDetails: stderr,
         exitCode,
       }
@@ -138,6 +133,39 @@ export class ErrorMapper {
       return {
         code: 'networkError',
         userMessage: 'A network error occurred. Check your internet connection.',
+        technicalDetails: stderr,
+        exitCode,
+      }
+    }
+
+    // Remote rejected the push because local is behind (non-fast-forward).
+    // The most common form is "! [rejected] <branch> -> <branch> (fetch first)"
+    // or "(non-fast-forward)". Pull first, then push again.
+    if (/\[rejected\]|non-fast-forward|fetch first/i.test(stderr)) {
+      return {
+        code: 'rejectedNonFastForward',
+        userMessage:
+          'Push rejected: the remote branch has commits your local copy does not. Pull the latest changes first, then push again.',
+        technicalDetails: stderr,
+        exitCode,
+      }
+    }
+
+    // Pull could not integrate the remote because the histories diverged. Surfaces
+    // as "Not possible to fast-forward" (our `pull --ff-only`), "Need to specify how
+    // to reconcile divergent branches" (a plain pull), or "refusing to merge
+    // unrelated histories" (independent roots). All mean: a plain pull can't combine
+    // them — the user must merge/rebase. NOT auto-fixable (a merge can conflict), so
+    // this is explain-only, consistent with the app's safety boundary.
+    if (
+      /not possible to fast-forward|need to specify how to reconcile|divergent branches|refusing to merge unrelated histories/i.test(
+        stderr
+      )
+    ) {
+      return {
+        code: 'divergentBranches',
+        userMessage:
+          'Your local branch and the remote have diverged — each has commits the other does not, so they cannot be combined automatically. Bring the remote changes in (merge or rebase) and resolve any conflicts, then push again.',
         technicalDetails: stderr,
         exitCode,
       }

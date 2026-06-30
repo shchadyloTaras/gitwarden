@@ -64,6 +64,7 @@ describe('checkPush — GitHub HTTPS-token matrix', () => {
       hasToken: true,
       assignedLogin: 'alice',
       effectiveLogin: 'alice',
+      scopes: ['repo', 'read:user', 'user:email'],
     })
     expect(result.issues.map((i) => i.code)).not.toContain('GITHUB_ACCOUNT_MISMATCH')
     expect(result.issues.some((i) => i.code.startsWith('GITHUB_'))).toBe(false)
@@ -98,6 +99,19 @@ describe('checkPush — GitHub HTTPS-token matrix', () => {
       tokenInvalid: true,
     })
     const issue = result.issues.find((i) => i.code === 'GITHUB_TOKEN_INVALID')
+    expect(issue?.severity).toBe('blocker')
+    expect(result.canPush).toBe(false)
+  })
+
+  it('SCOPE_MISSING: token verifies identity but cannot push over HTTPS', () => {
+    const result = check({
+      httpsToGitHub: true,
+      hasToken: true,
+      assignedLogin: 'alice',
+      effectiveLogin: 'alice',
+      scopes: ['read:user', 'user:email'],
+    })
+    const issue = result.issues.find((i) => i.code === 'GITHUB_TOKEN_SCOPE_MISSING')
     expect(issue?.severity).toBe('blocker')
     expect(result.canPush).toBe(false)
   })

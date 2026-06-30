@@ -218,6 +218,8 @@ export type GitErrorCode =
   | 'nothingToCommit'
   | 'networkError'
   | 'gitNotFound'
+  | 'rejectedNonFastForward'
+  | 'divergentBranches'
   | 'unknown'
 
 export interface GitCommandError {

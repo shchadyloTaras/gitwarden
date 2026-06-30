@@ -6,6 +6,7 @@ import * as os from 'os'
 import * as path from 'path'
 import { GitLocator } from '../../src/main/git/GitLocator'
 import { GitRunner } from '../../src/main/git/GitRunner'
+import { GitError } from '../../src/main/git/ErrorMapper'
 import { GitService } from '../../src/main/services/GitService'
 import {
   executeRemediation,
@@ -169,6 +170,53 @@ describe('executeRemediation (offline fixtures)', () => {
     const remoteSha = await git(bare, 'rev-parse', branch)
     const localSha = await git(repoPath, 'rev-parse', branch)
     expect(remoteSha).toBe(localSha)
+  })
+
+  it('switch-profile-and-retry-push escalates repeated HTTPS wrong-account rejection to reconnect', async () => {
+    const update = vi.fn(async () => ({}) as AppSettings)
+    const push = vi.fn(async () => {
+      throw new GitError({
+        code: 'pushRejectedWrongAccount',
+        userMessage:
+          "GitHub rejected the push: you're authenticated as a different account than this repository's profile.",
+        technicalDetails:
+          "remote: Permission to octo/repo.git denied to wronguser.\nfatal: unable to access 'https://github.com/octo/repo.git/': The requested URL returned error: 403",
+        exitCode: 128,
+      })
+    })
+    const resolveHttpsAuth = vi.fn(async () => ({ username: 'octo', token: 'secret-token' }))
+    const deps = makeDeps({
+      git: {
+        setLocalIdentity: vi.fn(async () => {}),
+        push,
+        getRemotes: vi.fn(async () => [
+          { name: 'origin', url: 'https://github.com/octo/repo.git', host: 'github.com' },
+        ]),
+      },
+      repositories: { list: vi.fn(async () => [repoRecord(repoPath, 'p1')]) },
+      settings: { update },
+      github: {
+        startDeviceAuth: vi.fn(async () => ({}) as GitHubDeviceCode),
+        resolveHttpsAuth,
+      },
+    })
+
+    const result = await executeRemediation(deps, noopSender, {
+      action: 'switch-profile-and-retry-push',
+      repoPath,
+      remote: 'origin',
+      branch: 'main',
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.remediation?.action).toBe('reconnect-github')
+    expect(result.message).toMatch(/Reconnect GitHub/i)
+    expect(update).toHaveBeenCalledWith({ activeProfileId: 'p1' })
+    expect(resolveHttpsAuth).toHaveBeenCalledWith('p1', 'https://github.com/octo/repo.git')
+    expect(push).toHaveBeenCalledWith(repoPath, 'origin', 'main', {
+      username: 'octo',
+      token: 'secret-token',
+    })
   })
 
   it('switch-profile-and-retry-push on an unassigned repo refuses and never pushes', async () => {

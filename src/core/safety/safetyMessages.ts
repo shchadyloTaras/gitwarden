@@ -16,6 +16,7 @@ export const SAFETY_SEVERITY: Record<SafetyCode, Severity> = {
   GITHUB_ACCOUNT_MISMATCH: 'blocker',
   GITHUB_TOKEN_MISSING: 'blocker',
   GITHUB_TOKEN_INVALID: 'blocker',
+  GITHUB_TOKEN_SCOPE_MISSING: 'blocker',
   GITHUB_NOT_CONNECTED: 'warning',
   STAGED_SECRET_DETECTED: 'blocker',
   PROTECTED_BRANCH_PUSH: 'blocker',
@@ -45,6 +46,8 @@ export const SAFETY_MESSAGES: Record<SafetyCode, string> = {
     'This profile pushes over HTTPS but has no stored GitHub token. Connect GitHub to push.',
   GITHUB_TOKEN_INVALID:
     'The stored GitHub token was rejected (it may have been revoked or expired). Reconnect GitHub to continue.',
+  GITHUB_TOKEN_SCOPE_MISSING:
+    'The linked GitHub token can verify this account but does not have push permission. Reconnect GitHub to grant repository access.',
   GITHUB_NOT_CONNECTED:
     'This profile has no linked GitHub account. Connect GitHub to verify the push account.',
   STAGED_SECRET_DETECTED:

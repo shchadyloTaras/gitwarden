@@ -27,6 +27,11 @@ export const STR = {
   GUARD_OPEN_SAFETY_CENTER: 'Open Safety Center',
   GUARD_OPEN_REPOSITORIES: 'Open Repositories',
 
+  // ── Header branch picker ────────────────────────────────────────────────────
+  BRANCH_LABEL_WORKTREE: (name: string): string => `${name} (worktree)`,
+  BRANCH_CHECKED_OUT_ELSEWHERE_HINT: (path: string): string =>
+    `Already checked out in another worktree at ${path}. Open that folder as its own repository in GitWarden to switch to it there.`,
+
   // ── Navigation ─────────────────────────────────────────────────────────────
   NAV_REPOSITORIES: 'Repositories',
   NAV_STATUS: 'Status',

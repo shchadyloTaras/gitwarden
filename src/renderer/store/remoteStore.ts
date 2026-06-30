@@ -6,12 +6,12 @@ import type {
   GitErrorCode,
 } from '../../core/types'
 import type { Remediation } from '../../core/safety/remediation'
+import { useAppStore } from './appStore'
 
 interface RemoteState {
   repoPath: string | null
   repository: RepositoryRecord | null
   remotes: GitRemote[]
-  currentBranch: string | null
   upstream: string | null
   identity: EffectiveGitIdentity | null
   loading: boolean
@@ -40,7 +40,6 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
   repoPath: null,
   repository: null,
   remotes: [],
-  currentBranch: null,
   upstream: null,
   identity: null,
   loading: false,
@@ -58,7 +57,6 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
       repoPath,
       repository,
       remotes: [],
-      currentBranch: null,
       identity: null,
       successMessage: null,
       lastFailure: null,
@@ -69,9 +67,9 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
         window.api.git.getStatus(repoPath),
         window.api.git.getEffectiveIdentity(repoPath),
       ])
+      const branch = statusRes.ok ? (statusRes.data.branch ?? null) : null
       set({
         remotes: remotesRes.ok ? remotesRes.data : [],
-        currentBranch: statusRes.ok ? (statusRes.data.branch ?? null) : null,
         upstream: statusRes.ok ? (statusRes.data.upstream ?? null) : null,
         identity: identityRes.ok ? identityRes.data : null,
         error: !remotesRes.ok
@@ -82,6 +80,10 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
               ? identityRes.error
               : null,
       })
+      // appStore.currentBranch is the single source of truth for the current branch
+      // (read by GlobalHeader and RemoteScreen alike) — push the live git status into
+      // it rather than keeping a second copy here that could drift out of sync.
+      if (branch) useAppStore.getState().setCurrentBranch(branch)
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) })
     } finally {
@@ -113,7 +115,10 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
       if (!res.ok) throw new Error(res.error)
       // Refresh status after pull
       const statusRes = await window.api.git.getStatus(repoPath)
-      if (statusRes.ok) set({ currentBranch: statusRes.data.branch ?? null })
+      if (statusRes.ok) {
+        const liveBranch = statusRes.data.branch ?? null
+        if (liveBranch) useAppStore.getState().setCurrentBranch(liveBranch)
+      }
       set({ successMessage: `Pulled ${branch} from ${remote}.` })
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) })
