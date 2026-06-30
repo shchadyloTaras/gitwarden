@@ -72,7 +72,7 @@ npm run build    # electron-builder package
 
 ## Build order (dependency-driven)
 
-`0→…→20` (MVP) → `21→27` (GitHub OAuth) → `28→39` (AI Connections) → `52→55a` (AI Chat) → `56→59` (Client Branch Access) → `60→62` (GenUI Blocks) → `46→51` (Landing; live at gitwarden.vercel.app) | partial: `40→45` (Distribution; 43–44 open, gated on signing certs) | DX track: `DX-0→DX-6` (complete, agentic-dx-plan.md)
+`0→…→20` (MVP) → `21→27` (GitHub OAuth) → `28→39` (AI Connections) → `52→55a` (AI Chat) → `56→59` (Client Branch Access) → `60→62` (GenUI Blocks) → `46→51` (Landing; live at gitwarden.vercel.app) | partial: `63→66` (Guard Quick-Fix; 63 done, 64–66 open, guard-quick-fix-plan.md) | partial: `40→45` (Distribution; 43–44 open, gated on signing certs) | DX track: `DX-0→DX-6` (complete, agentic-dx-plan.md)
 
 Logic and infra are built and fully tested before any UI, so the engine is verified headlessly first. The built/partial/unbuilt split above is a **derived view** of the Phase Checklist in `docs/progress-log.md` (authoritative) — re-derive it whenever a phase flips to `[x]`; do not hand-pin completion here. Full status: `docs/progress-log.md`.
 
@@ -118,6 +118,7 @@ This keeps SDD documentation work visible alongside phase progress in the same l
 - **Client Branch Access:** `docs/plans/client-branch-access-plan.md` + `docs/prompts/client-branch-access-prompts.md`
 - **Generative UI Blocks:** `docs/plans/genui-blocks-plan.md` + `docs/prompts/genui-blocks-prompts.md`
 - **Header Guard Badge:** `docs/plans/header-guard-badge-plan.md` + `docs/prompts/header-guard-badge-prompts.md`
+- **Guard Quick-Fix:** `docs/plans/guard-quick-fix-plan.md` + `docs/prompts/guard-quick-fix-prompts.md`
 - **Agentic DX:** `docs/plans/agentic-dx-plan.md` + `docs/prompts/dx-execution-prompts.md`
 - **SDD migration (transient chore):** `docs/plans/sdd-migration-plan.md` + `docs/prompts/sdd-migration-prompts.md` — a one-off, self-deleting track (steps M0–M6) that converts these `docs/plans/` + `docs/prompts/` files into `docs/features/<slug>/` specs and then removes both folders (including itself). Driven from its prompts file, **not** `/new-phase`; absent from the phase tables; M4 removes this very line before M6 deletes the files.
 - **Architecture diagram:** [`docs/architecture/`](docs/architecture/README.md) — core ↔ main ↔ preload ↔ renderer boundaries (PNG + editable `docs/architecture/diagram.excalidraw`)

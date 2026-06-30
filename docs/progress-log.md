@@ -96,6 +96,13 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] Phase 61 — Commit Draft card
 - [x] Phase 62 — Free-text model-chosen blocks (Level 2)
 
+### Guard Quick-Fix feature (plan: `docs/plans/guard-quick-fix-plan.md`, prompts: `docs/prompts/guard-quick-fix-prompts.md`)
+
+- [x] Phase 63 — Remediation Model & Action Contracts
+- [ ] Phase 64 — Push-Failure Diagnosis & Structured IPC Errors
+- [ ] Phase 65 — Executable Fix Actions (main + IPC)
+- [ ] Phase 66 — One-Click Fix UI & Failed-Push Recovery
+
 ### Agentic DX track (plan: `docs/plans/agentic-dx-plan.md`, prompts: `docs/prompts/dx-execution-prompts.md`)
 
 > Not product phases — a separate developer-experience track (steps DX-0…DX-6, no global phase
@@ -124,6 +131,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | AI Connections         | 28–39     | ✅ complete                                                   |
 | AI Chat Redesign       | 52–55a    | ✅ complete                                                   |
 | Generative UI Blocks   | 60–62     | ✅ complete                                                   |
+| Guard Quick-Fix        | 63–66     | 🟡 Phase 63 done; 64–66 open                                  |
 | Client Branch Access   | 56–59     | ✅ complete                                                   |
 | Distribution & Release | 40–45     | 🟡 Phases 40–42, 45 done; 43–44 open (gated on signing certs) |
 | Landing Page           | 46–51     | ✅ complete                                                   |
@@ -946,7 +954,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 ### sdd:clarify gitwarden — 2026-06-28
 
 - Output: `docs/features/gitwarden/spec.md` (CONTEXT.md unchanged — no new terms)
-- Summary: Ambiguity sweep (medium depth) over the spec; clean-context `sdd:devils-advocate` subagent returned 12 build-divergence findings + 1 self-sweep find (safety-event record assumed by KPIs). **12 resolved, 1 deferred.** Resolved: Active Profile auto-switches to Bound on open (overridable) [AC-04b]; wrong author *name* now blocks like email [AC-05/AC-05b]; one-step fix writes the **Bound** Profile, not Active [AC-10]; push match is **host-only** from the remote URL [AC-08]; read/nav ops show identity context but are **not gated** [AC-13]; registration is **add-local only**, clone/init de-scoped [§3, AC-16, US-09, §6 NFR]; "view history" = minimal commit list, no graph/diff [§3, AC-13]; warning-level push = single confirm restating the warning [AC-09b]; hard/soft verdict taxonomy enumerated in §1; **no SSH-config parsing** — key resolution delegated to the ambient SSH agent, account shown assumed/unverified [§6.1]; safety-event record pinned as the KPI-supporting capability [§7]. Deferred: false-positive verdict-rate target → §8 (owner: Product, post-launch).
+- Summary: Ambiguity sweep (medium depth) over the spec; clean-context `sdd:devils-advocate` subagent returned 12 build-divergence findings + 1 self-sweep find (safety-event record assumed by KPIs). **12 resolved, 1 deferred.** Resolved: Active Profile auto-switches to Bound on open (overridable) [AC-04b]; wrong author _name_ now blocks like email [AC-05/AC-05b]; one-step fix writes the **Bound** Profile, not Active [AC-10]; push match is **host-only** from the remote URL [AC-08]; read/nav ops show identity context but are **not gated** [AC-13]; registration is **add-local only**, clone/init de-scoped [§3, AC-16, US-09, §6 NFR]; "view history" = minimal commit list, no graph/diff [§3, AC-13]; warning-level push = single confirm restating the warning [AC-09b]; hard/soft verdict taxonomy enumerated in §1; **no SSH-config parsing** — key resolution delegated to the ambient SSH agent, account shown assumed/unverified [§6.1]; safety-event record pinned as the KPI-supporting capability [§7]. Deferred: false-positive verdict-rate target → §8 (owner: Product, post-launch).
 
 ### 2026-06-28 — /release changelog automation (Slice 1)
 
@@ -958,3 +966,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 ### 2026-06-28 — v0.2.0 released
 
 - Cut release `v0.2.0` (local commit + tag via `/release`). User-facing changes since `v0.1.1`: startup loader and update notifier. `CHANGELOG.md` rolled (`[Unreleased]` → `[0.2.0]` + compare link), `package.json` bumped 0.1.1 → 0.2.0; `npm test` green (645/645). Push of the commit + tag left to the maintainer.
+
+### 2026-06-30 — Phase 63: Remediation Model & Action Contracts
+
+- Built: Pure-core remediation model for Guard Quick-Fix. New `src/core/safety/remediation.ts` classifies each safety issue and each actionable Git failure as **executable** (a one-click in-app fix that never touches global/system state) or **navigate** (open a screen), and is **derived from** the existing `SAFETY_ACTION_BY_CODE` map rather than forking a second code→action table. `EXECUTABLE_ACTIONS` = {`set-local-identity`, `switch-active-profile`, `reconnect-github`, `switch-profile-and-retry-push`}; every other action navigates via a total `Record<NavigateAction, NavTarget>` so the compiler rejects any future action that is neither executable nor given a target (no `default` gap). `remediationForSafetyCode` + `remediationForGitError` (`pushRejectedWrongAccount` → switch-and-retry, `authenticationFailed` → reconnect, `dubiousOwnership` → navigate/explain-only). Added `'switch-profile-and-retry-push'` to `SafetySuggestedAction` and its `ACTION_HINTS` entry; `SAFETY_ACTION_BY_CODE` left unchanged (`GITHUB_ACCOUNT_MISMATCH` still → `reconnect-github`; the new action is wired on the diagnosis side in Phase 64). No IPC, no UI. Also registered the feature (Phase 63–66 checklist rows, Feature Track Status row, AGENTS.md build order + Reference docs).
+- Files: added `src/core/safety/remediation.ts`, `tests/unit/remediation.test.ts`; edited `src/core/ai/types.ts` (+1 union member), `src/core/ai/safetyCopilotMessages.ts` (+1 `ACTION_HINTS` entry); docs `docs/progress-log.md`, `AGENTS.md`, plan/prompts registration (`docs/plans/guard-quick-fix-plan.md`, `docs/prompts/guard-quick-fix-prompts.md`).
+- Tests: Vitest **669/669 passed** (+10 new `remediation.test.ts` — exhaustive over every `SafetyCode`, executable-flag table, navigate targets, each `RemediableGitErrorCode`). `npx tsc --noEmit` clean on `tsconfig.node.json` AND `tsconfig.web.json`; ESLint clean; AI evals 5/5; `core-purity-reviewer` subagent verdict: CLEAN (no forbidden imports; pure data mapping; the only `child_process` text is in a comment).
+- Exit criteria: ✅ met — both `tsc` projects clean; new-file tests green; `src/core/` stays pure; no UI/IPC changes.
+- Notes / follow-ups: `dubiousOwnership` reuses the repositories-routing action purely as a navigation vehicle — its real explanation will be the `GitError.userMessage` attached in Phase 64. Next: **Phase 64** — extend `ErrorMapper` (NEW `pushRejectedWrongAccount`, `dubiousOwnership`; extend existing `authenticationFailed` for HTTPS 401) + additively carry `code`/`remediation` in the `IpcResult` error arm and on the push path.

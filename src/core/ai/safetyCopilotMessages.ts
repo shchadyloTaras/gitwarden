@@ -104,4 +104,6 @@ const ACTION_HINTS: Record<SafetySuggestedAction, string> = {
     'On the Branches screen, switch to an allowed branch or create a new one with the suggested prefix.',
   'edit-push-policy':
     'Open Repositories, select this repo, and add allowed branch patterns in the Push Policy section.',
+  'switch-profile-and-retry-push':
+    'Switch to the repository’s assigned profile and push again with its GitHub account.',
 }

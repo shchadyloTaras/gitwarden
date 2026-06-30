@@ -256,6 +256,11 @@ export type SafetySuggestedAction =
   | 'review-staged-changes'
   | 'switch-branch'
   | 'edit-push-policy'
+  // Guard Quick-Fix (Phase 63): the diagnosis-side executable fix for a failed
+  // wrong-account push — switch to the repo's assigned profile and retry (the
+  // per-push token auto-resolves). The AI still never applies it; it is an
+  // allowlisted control the remediation model marks executable.
+  | 'switch-profile-and-retry-push'
 
 /** Safety Copilot explanation for one SafetyCode (Phase 34). */
 export interface AiSafetyExplanation {
