@@ -12,13 +12,13 @@ feature_size: XL
 
 ## 1. Context
 
-A **Developer** who works across multiple GitHub accounts — primarily an employee with separate **work** and **personal** accounts, and secondarily a contractor handling **client** repositories — routinely risks acting with the wrong identity. The everyday accidents are committing with the wrong author name/email, pushing to the wrong repository, or pushing with the wrong key/account. The danger is two-sided: the **Author Identity** written into the commit *and* the **Transport Identity** that authenticates the push are independent — a Developer can have the correct email and still push with the wrong key or account. Today this mistake is usually noticed only after it has already reached the remote.
+A **Developer** who works across multiple GitHub accounts — primarily an employee with separate **work** and **personal** accounts, and secondarily a contractor handling **client** repositories — routinely risks acting with the wrong identity. The everyday accidents are committing with the wrong author name/email, pushing to the wrong repository, or pushing with the wrong key/account. The danger is two-sided: the **Author Identity** written into the commit _and_ the **Transport Identity** that authenticates the push are independent — a Developer can have the correct email and still push with the wrong key or account. Today this mistake is usually noticed only after it has already reached the remote.
 
-Why now: multi-account development is the norm (one machine spanning employer and personal work), and the cost of a leak is concrete — a personal email embedded in an employer's history, or employer code reaching a remote under a personal account, carries privacy, compliance, and reputational consequences. Existing Git GUIs and do-it-yourself setups treat identity as something the Developer *selects or organizes*, not something the tool *enforces and audits*; none close the three-way binding of commit identity, transport key, and account ownership at the moment of push.
+Why now: multi-account development is the norm (one machine spanning employer and personal work), and the cost of a leak is concrete — a personal email embedded in an employer's history, or employer code reaching a remote under a personal account, carries privacy, compliance, and reputational consequences. Existing Git GUIs and do-it-yourself setups treat identity as something the Developer _selects or organizes_, not something the tool _enforces and audits_; none close the three-way binding of commit identity, transport key, and account ownership at the moment of push.
 
 The committed approach: a **cross-platform desktop application** built around **Profiles**, where each **Repository** is bound to exactly one Profile, the active identity is **continuously visible**, and a **Safety Verdict** is surfaced before every identity-bearing action — **blocking** on hard mismatches and **warning** on soft ones. GitWarden is deliberately a **local convenience-and-visibility guard, not a security boundary**: local checks are bypassable, and the authoritative boundary remains server-side account/branch protection. Where a fact cannot be locally verified — notably the account behind an SSH key — it is presented as **assumed/unverified** rather than asserted, so a green verdict is never mistaken for a server-enforced guarantee.
 
-**Verdict classification (hard = block, soft = warn).** *Hard* mismatches block the action: the Active Profile differs from the Repository's Bound Profile (AC-07); the Effective Identity author name **or** email differs from the Active Profile (AC-05b); the host parsed from the target remote URL is not the Active Profile's expected host (AC-08). *Soft* mismatches warn and allow the action behind a single explicit confirmation: the Effective Identity is inherited from global configuration (AC-11); the account behind the key is assumed/unverified (AC-12). Assumed/unverified facts are never used as a hard block.
+**Verdict classification (hard = block, soft = warn).** _Hard_ mismatches block the action: the Active Profile differs from the Repository's Bound Profile (AC-07); the Effective Identity author name **or** email differs from the Active Profile (AC-05b); the host parsed from the target remote URL is not the Active Profile's expected host (AC-08). _Soft_ mismatches warn and allow the action behind a single explicit confirmation: the Effective Identity is inherited from global configuration (AC-11); the account behind the key is assumed/unverified (AC-12). Assumed/unverified facts are never used as a hard block.
 
 <!-- Traceability / critic overrides: none yet. -->
 
@@ -73,14 +73,14 @@ The committed approach: a **cross-platform desktop application** built around **
 
 ## 6. Non-functional requirements
 
-| Aspect                         | Target (numeric)                                                          | Measurement                                                            |
-| ------------------------------ | ------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| Safety Verdict latency         | Verdict displayed within 300 ms of opening a Repository or staging a change | UI performance test against a fixture Repository                       |
-| Status refresh                 | Status refreshes within 500 ms for a Repository with up to 1,000 changed files | Timed test against a generated fixture                                 |
-| Offline operation              | 100% of identity-safety checks function with no network access            | Full test suite executes offline (no network calls in any test)       |
-| Cross-platform support         | Runs on 3 operating systems (macOS, Linux, Windows)                       | Green CI matrix on all three                                          |
-| Cancellation of long operations| Any fetch/pull/push is cancellable within 1 s of the request        | Integration test asserting the underlying process is terminated       |
-| Secret hygiene                 | 0 secrets or tokens present in logs                                       | Automated log-scan test plus redaction at the logging boundary        |
+| Aspect                          | Target (numeric)                                                               | Measurement                                                     |
+| ------------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------- |
+| Safety Verdict latency          | Verdict displayed within 300 ms of opening a Repository or staging a change    | UI performance test against a fixture Repository                |
+| Status refresh                  | Status refreshes within 500 ms for a Repository with up to 1,000 changed files | Timed test against a generated fixture                          |
+| Offline operation               | 100% of identity-safety checks function with no network access                 | Full test suite executes offline (no network calls in any test) |
+| Cross-platform support          | Runs on 3 operating systems (macOS, Linux, Windows)                            | Green CI matrix on all three                                    |
+| Cancellation of long operations | Any fetch/pull/push is cancellable within 1 s of the request                   | Integration test asserting the underlying process is terminated |
+| Secret hygiene                  | 0 secrets or tokens present in logs                                            | Automated log-scan test plus redaction at the logging boundary  |
 
 ### 6.1 Security / privacy
 
@@ -107,7 +107,7 @@ The committed approach: a **cross-platform desktop application** built around **
 
 ## 8. Open questions
 
-- [ ] Should the app detect and warn on *implausible* Repository↔Profile bindings (e.g. an organisation-named remote bound to a personal Profile), since a mis-binding makes every verdict confidently wrong? Default now: no automatic plausibility check (manual binding only). — owner: Product, due: next feature cycle.
+- [ ] Should the app detect and warn on _implausible_ Repository↔Profile bindings (e.g. an organisation-named remote bound to a personal Profile), since a mis-binding makes every verdict confidently wrong? Default now: no automatic plausibility check (manual binding only). — owner: Product, due: next feature cycle.
 - [ ] How should the app handle non-linear push targets (forks with a separate upstream, multiple remotes, detached HEAD, monorepo/submodule/worktree) where the resolved target may not be what Git actually pushes? Default now: evaluate the single resolved target; advanced topologies out of scope. — owner: Tech Lead, due: design stage.
 - [ ] Should the app verify the authorship of the commits actually being pushed (not just the current configuration), to catch commits authored elsewhere with the wrong identity? Default now: check current identity configuration only. — owner: Product, due: roadmap review.
 - [ ] What privacy-preserving signal (if any) is needed to detect guard bypass/disable patterns in the wild, given there is no telemetry today? Default now: none. — owner: Product, due: post-launch.

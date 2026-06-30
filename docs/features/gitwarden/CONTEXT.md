@@ -10,7 +10,7 @@ Canonical glossary for the GitWarden product spec. Roles and terms here are auth
 
 ### Terms
 
-- **Profile** — a named local Git working identity (e.g. Personal / Work / Client): an author name + email, an expected GitHub account/host, and a reference to an existing SSH key alias. A Profile describes a *working context*, not ownership of a repo.
+- **Profile** — a named local Git working identity (e.g. Personal / Work / Client): an author name + email, an expected GitHub account/host, and a reference to an existing SSH key alias. A Profile describes a _working context_, not ownership of a repo.
 - **Active Profile** — the Profile the Developer currently has selected as in-use.
 - **Bound Profile** — the single Profile a given Repository is assigned to (the identity that Repository is expected to use).
 - **Repository** — a local Git repository registered in the app, optionally bound to a Profile.

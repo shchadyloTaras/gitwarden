@@ -45,18 +45,18 @@ So the migration is **staged, gated, branch-isolated, and per-step committed** �
 
 The **only** path transformation is `docs/plans/<slug>-plan.md` → `docs/features/<slug>/spec.md`. **No slug is renamed** (Appendix B). Each feature folder also gets a `tasks.md` holding the HOW (Appendix C).
 
-| Plan file (`docs/plans/`)         | Slug (unchanged)        | Prompts file (`docs/prompts/`)       | Phase range  | Notes                          |
-| --------------------------------- | ----------------------- | ------------------------------------ | ------------ | ------------------------------ |
-| `gitwarden-plan.md`               | `gitwarden`             | `phase-prompts.md` ⚠️                | 0–20         | MVP Core                       |
-| `github-oauth-plan.md`            | `github-oauth`          | `github-oauth-prompts.md`            | 21–27        | —                              |
-| `ai-integration-plan.md`          | `ai-integration`        | `ai-integration-prompts.md`          | 28–39        | human name "AI Connections"    |
-| `ai-chat-redesign-plan.md`        | `ai-chat-redesign`      | **NONE (inline)** ⚠️                 | 52–55a       | no prompts file — never invent one |
-| `distribution-release-plan.md`    | `distribution-release`  | `distribution-release-prompts.md`    | 40–45        | 🟡 partial (40–42,45 done; 43–44 open) |
-| `landing-page-plan.md`            | `landing-page`          | `landing-page-prompts.md`            | 46–51        | —                              |
-| `client-branch-access-plan.md`    | `client-branch-access`  | `client-branch-access-prompts.md`    | 56–59        | —                              |
-| `genui-blocks-plan.md`            | `genui-blocks`          | `genui-blocks-prompts.md`            | 60–62        | —                              |
-| `agentic-dx-plan.md`              | `agentic-dx`            | `dx-execution-prompts.md` ⚠️         | DX-0–DX-6    | DX track                       |
-| `header-guard-badge-plan.md`      | `header-guard-badge`    | `header-guard-badge-prompts.md`      | **none**     | **special case — not a phased track** |
+| Plan file (`docs/plans/`)      | Slug (unchanged)       | Prompts file (`docs/prompts/`)    | Phase range | Notes                                  |
+| ------------------------------ | ---------------------- | --------------------------------- | ----------- | -------------------------------------- |
+| `gitwarden-plan.md`            | `gitwarden`            | `phase-prompts.md` ⚠️             | 0–20        | MVP Core                               |
+| `github-oauth-plan.md`         | `github-oauth`         | `github-oauth-prompts.md`         | 21–27       | —                                      |
+| `ai-integration-plan.md`       | `ai-integration`       | `ai-integration-prompts.md`       | 28–39       | human name "AI Connections"            |
+| `ai-chat-redesign-plan.md`     | `ai-chat-redesign`     | **NONE (inline)** ⚠️              | 52–55a      | no prompts file — never invent one     |
+| `distribution-release-plan.md` | `distribution-release` | `distribution-release-prompts.md` | 40–45       | 🟡 partial (40–42,45 done; 43–44 open) |
+| `landing-page-plan.md`         | `landing-page`         | `landing-page-prompts.md`         | 46–51       | —                                      |
+| `client-branch-access-plan.md` | `client-branch-access` | `client-branch-access-prompts.md` | 56–59       | —                                      |
+| `genui-blocks-plan.md`         | `genui-blocks`         | `genui-blocks-prompts.md`         | 60–62       | —                                      |
+| `agentic-dx-plan.md`           | `agentic-dx`           | `dx-execution-prompts.md` ⚠️      | DX-0–DX-6   | DX track                               |
+| `header-guard-badge-plan.md`   | `header-guard-badge`   | `header-guard-badge-prompts.md`   | **none**    | **special case — not a phased track**  |
 
 ⚠️ **Prompts-convention exceptions** (these break `run-track.md`'s `docs/prompts/<slug>-prompts.md` formula): `gitwarden`→`phase-prompts.md`, `agentic-dx`→`dx-execution-prompts.md`, `ai-chat-redesign`→inline (no file). M4 must handle these explicitly, never synthesize a path.
 
@@ -66,12 +66,12 @@ The **only** path transformation is `docs/plans/<slug>-plan.md` → `docs/featur
 
 ## 3. The safety model (the gates that protect M6)
 
-| Gate (runs in M5)        | Command / check                                                                                       | Pass condition          |
-| ------------------------ | ----------------------------------------------------------------------------------------------------- | ----------------------- |
-| **A — md completeness**  | `rg -n 'docs/plans\|docs/prompts' -g '*.md' -g '!docs/plans/**' -g '!docs/prompts/**'`                  | **zero lines**          |
-| **B — all-types residual** | `rg -n 'docs/plans\|docs/prompts' -g '!node_modules/**' -g '!dist/**' -g '!docs/plans/**' -g '!docs/prompts/**'` | **zero lines** (catches the 12 `.ts` comments) |
-| **C — forward links**    | every `docs/features/<slug>/spec.md` referenced from an updated file exists on disk **and** any cited section/appendix anchor resolves (no stale `§7.x`/`Phase N`/`Appendix X`) | all resolve             |
-| **D — spec floor**       | each `spec.md` has §1–§8 present, frontmatter `feature_size` matches `.size`, `sdd:critic` passed     | all true                |
+| Gate (runs in M5)          | Command / check                                                                                                                                                                 | Pass condition                                 |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| **A — md completeness**    | `rg -n 'docs/plans\|docs/prompts' -g '*.md' -g '!docs/plans/**' -g '!docs/prompts/**'`                                                                                          | **zero lines**                                 |
+| **B — all-types residual** | `rg -n 'docs/plans\|docs/prompts' -g '!node_modules/**' -g '!dist/**' -g '!docs/plans/**' -g '!docs/prompts/**'`                                                                | **zero lines** (catches the 12 `.ts` comments) |
+| **C — forward links**      | every `docs/features/<slug>/spec.md` referenced from an updated file exists on disk **and** any cited section/appendix anchor resolves (no stale `§7.x`/`Phase N`/`Appendix X`) | all resolve                                    |
+| **D — spec floor**         | each `spec.md` has §1–§8 present, frontmatter `feature_size` matches `.size`, `sdd:critic` passed                                                                               | all true                                       |
 
 **HARD HALT:** if any gate fails, do **not** proceed to M6. Fix and re-run M5.
 
@@ -207,20 +207,20 @@ After M6, on the `chore/sdd-migration` branch: every former plan exists as `docs
 
 **TypeScript source comments (NOT caught by an `*.md` grep — the original blind spot):**
 
-| File:line                                  | Cites                              | Repoint to                              |
-| ------------------------------------------ | ---------------------------------- | --------------------------------------- |
-| `src/main/git/askpass.ts:7`                | `github-oauth-plan.md`             | `docs/features/github-oauth/spec.md`    |
-| `electron/index.ts:91`                     | `github-oauth-plan.md`             | `docs/features/github-oauth/spec.md`    |
-| `src/main/ipc/GitHubAuthCoordinator.ts:7`  | `github-oauth-plan.md`             | `docs/features/github-oauth/spec.md`    |
-| `src/core/schemas.ts:4`                    | `github-oauth-plan.md`             | `docs/features/github-oauth/spec.md`    |
-| `src/core/types.ts:19`                     | `github-oauth-plan.md`             | `docs/features/github-oauth/spec.md`    |
-| `src/core/config/github.ts:5`              | `github-oauth-plan.md`             | `docs/features/github-oauth/spec.md`    |
-| `src/core/config/github.ts:10`             | `github-oauth-plan.md`             | `docs/features/github-oauth/spec.md`    |
-| `src/main/services/HttpClient.ts:6`        | `github-oauth-plan.md`             | `docs/features/github-oauth/spec.md`    |
-| `src/main/services/GitHubApiService.ts:3`  | `github-oauth-plan.md`             | `docs/features/github-oauth/spec.md`    |
-| `src/main/services/FetchHttpClient.ts:6`   | `github-oauth-plan.md`             | `docs/features/github-oauth/spec.md`    |
-| `src/main/services/GitHubAuthService.ts:3` | `github-oauth-plan.md`             | `docs/features/github-oauth/spec.md`    |
-| `src/core/ai/types.ts:7`                   | `ai-integration-plan.md`           | `docs/features/ai-integration/spec.md`  |
+| File:line                                  | Cites                    | Repoint to                             |
+| ------------------------------------------ | ------------------------ | -------------------------------------- |
+| `src/main/git/askpass.ts:7`                | `github-oauth-plan.md`   | `docs/features/github-oauth/spec.md`   |
+| `electron/index.ts:91`                     | `github-oauth-plan.md`   | `docs/features/github-oauth/spec.md`   |
+| `src/main/ipc/GitHubAuthCoordinator.ts:7`  | `github-oauth-plan.md`   | `docs/features/github-oauth/spec.md`   |
+| `src/core/schemas.ts:4`                    | `github-oauth-plan.md`   | `docs/features/github-oauth/spec.md`   |
+| `src/core/types.ts:19`                     | `github-oauth-plan.md`   | `docs/features/github-oauth/spec.md`   |
+| `src/core/config/github.ts:5`              | `github-oauth-plan.md`   | `docs/features/github-oauth/spec.md`   |
+| `src/core/config/github.ts:10`             | `github-oauth-plan.md`   | `docs/features/github-oauth/spec.md`   |
+| `src/main/services/HttpClient.ts:6`        | `github-oauth-plan.md`   | `docs/features/github-oauth/spec.md`   |
+| `src/main/services/GitHubApiService.ts:3`  | `github-oauth-plan.md`   | `docs/features/github-oauth/spec.md`   |
+| `src/main/services/FetchHttpClient.ts:6`   | `github-oauth-plan.md`   | `docs/features/github-oauth/spec.md`   |
+| `src/main/services/GitHubAuthService.ts:3` | `github-oauth-plan.md`   | `docs/features/github-oauth/spec.md`   |
+| `src/core/ai/types.ts:7`                   | `ai-integration-plan.md` | `docs/features/ai-integration/spec.md` |
 
 These 12 are inert comments — deleting the folders does **not** break the build, but they become stale pointers. M4 repoints them; Gate B is what proves none remain.
 
@@ -242,12 +242,12 @@ A faithful migration changes the **path** (`plans/<slug>-plan.md` → `features/
 
 `spec.md` is strictly WHAT+WHY (§1–§8); the SDD validator forbids HOW/implementation detail and forbidden tokens. So plan/prompt content decomposes:
 
-| Content                                          | Home                                                     |
-| ------------------------------------------------ | -------------------------------------------------------- |
-| Problem / goals / non-goals / behavior rules     | `spec.md` §1–§8 (transformed to business-observable AC)  |
-| Per-phase build steps, file lists, exit criteria | `docs/features/<slug>/tasks.md`                          |
-| Architecture / tech choices (future)             | `sad.md` via `sdd:design` + ADRs via `sdd:decide-adr`    |
-| Verification / tests (future)                    | `test-plan.md` via `sdd:plan-tests`                      |
+| Content                                          | Home                                                            |
+| ------------------------------------------------ | --------------------------------------------------------------- |
+| Problem / goals / non-goals / behavior rules     | `spec.md` §1–§8 (transformed to business-observable AC)         |
+| Per-phase build steps, file lists, exit criteria | `docs/features/<slug>/tasks.md`                                 |
+| Architecture / tech choices (future)             | `sad.md` via `sdd:design` + ADRs via `sdd:decide-adr`           |
+| Verification / tests (future)                    | `test-plan.md` via `sdd:plan-tests`                             |
 | Commit/push/progress-log **ritual**              | **stays in `AGENTS.md`** — never copied into a feature artifact |
 
 This migration produces `spec.md` + `tasks.md` only. Running `sdd:design`/`sdd:api`/`sdd:plan-tests` per slug later upgrades a folder to the full pipeline.
