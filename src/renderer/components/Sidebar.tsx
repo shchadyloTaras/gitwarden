@@ -69,6 +69,12 @@ const GROUP_HEADER_ROW_STYLE: React.CSSProperties = {
   padding: '7px 8px 2px 12px',
 }
 
+const SECTION_DIVIDER_STYLE: React.CSSProperties = {
+  height: 1,
+  background: 'var(--gw-border, #27272a)',
+  margin: '6px 12px 5px',
+}
+
 const COLLAPSE_TOGGLE_STYLE: React.CSSProperties = {
   width: 32,
   height: 26,
@@ -91,40 +97,41 @@ const COLLAPSE_ICON_STYLE: React.CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
-  fontSize: 21,
-  lineHeight: 1,
+}
+
+/** Two-pane "toggle sidebar" glyph — the divider sits left of center so the narrow
+ * left pane reads as the rail being toggled, not as a perfectly split panel. */
+function CollapseToggleIcon(): React.ReactElement {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="1.5" y="2.5" width="13" height="11" rx="2" stroke="currentColor" strokeWidth="1.3" />
+      <line x1="6.5" y1="2.5" x2="6.5" y2="13.5" stroke="currentColor" strokeWidth="1.3" />
+    </svg>
+  )
 }
 
 export default function Sidebar({
   width,
   collapsed,
   onToggleCollapse,
-  resizing = false,
 }: {
   width: number
   collapsed: boolean
   onToggleCollapse: () => void
-  resizing?: boolean
 }): React.ReactElement {
   const { activeScreen, navigate } = useAppStore()
   const [labelsVisible, setLabelsVisible] = React.useState(!collapsed)
-  const [widthAnimating, setWidthAnimating] = React.useState(false)
-  const mountedRef = React.useRef(false)
+
+  // True for exactly the one render where `collapsed` flips — computed inline
+  // during render (not in an effect, which would run a commit too late and miss
+  // the width change it's meant to animate). Resize-dragging changes `width`
+  // without `collapsed` ever changing, so this stays false throughout a drag.
+  const prevCollapsedRef = React.useRef(collapsed)
+  const collapseJustToggled = prevCollapsedRef.current !== collapsed
+  prevCollapsedRef.current = collapsed
 
   let lastGroup: string | undefined
   const showExpandedLabels = !collapsed || labelsVisible
-
-  React.useEffect(() => {
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
-    if (mountedRef.current && !reducedMotion) {
-      setWidthAnimating(true)
-      const timer = window.setTimeout(() => setWidthAnimating(false), SIDEBAR_TRANSITION_MS)
-      return () => window.clearTimeout(timer)
-    }
-
-    mountedRef.current = true
-  }, [collapsed])
 
   React.useEffect(() => {
     if (!collapsed) {
@@ -153,7 +160,7 @@ export default function Sidebar({
       style={COLLAPSE_TOGGLE_STYLE}
     >
       <span aria-hidden="true" style={COLLAPSE_ICON_STYLE}>
-        ◫
+        <CollapseToggleIcon />
       </span>
     </button>
   )
@@ -167,36 +174,35 @@ export default function Sidebar({
     if (!showExpandedLabels) {
       if (group === 'manage') {
         return (
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              padding: '2px 0 8px',
-            }}
-          >
-            {renderCollapseToggle()}
-          </div>
+          <>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                padding: '2px 0 8px',
+              }}
+            >
+              {renderCollapseToggle()}
+            </div>
+            <div aria-hidden="true" style={SECTION_DIVIDER_STYLE} />
+          </>
         )
       }
 
       return previousGroup !== undefined ? (
-        <div
-          aria-hidden="true"
-          style={{
-            height: 1,
-            background: 'var(--gw-border, #27272a)',
-            margin: '6px 12px 5px',
-          }}
-        />
+        <div aria-hidden="true" style={SECTION_DIVIDER_STYLE} />
       ) : null
     }
 
     if (group === 'manage') {
       return (
-        <div style={GROUP_HEADER_ROW_STYLE}>
-          <span style={GROUP_LABEL_STYLE}>{GROUP_LABELS[group]}</span>
-          {renderCollapseToggle()}
-        </div>
+        <>
+          <div style={GROUP_HEADER_ROW_STYLE}>
+            <span style={GROUP_LABEL_STYLE}>{GROUP_LABELS[group]}</span>
+            {renderCollapseToggle()}
+          </div>
+          <div aria-hidden="true" style={SECTION_DIVIDER_STYLE} />
+        </>
       )
     }
 
@@ -207,7 +213,7 @@ export default function Sidebar({
 
   return (
     <nav
-      className={`gw-sidebar${widthAnimating && !resizing ? ' gw-sidebar--animated' : ''}`}
+      className={`gw-sidebar${collapseJustToggled ? ' gw-sidebar--animated' : ''}`}
       data-testid="sidebar-nav"
       data-collapsed={collapsed ? 'true' : undefined}
       style={{

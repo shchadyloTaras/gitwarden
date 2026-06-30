@@ -517,7 +517,6 @@ export default function App(): React.ReactElement {
           width={effectiveLeftWidth}
           collapsed={sidebarCollapsed}
           onToggleCollapse={toggleSidebar}
-          resizing={resizingPanel === 'left'}
         />
 
         {!sidebarCollapsed && (
