@@ -337,3 +337,19 @@ export const AiAgenticExecutePayload = z.object({
     })
   ),
 })
+
+// Guard Quick-Fix (Phase 65): the four executable remediations. The action enum
+// mirrors EXECUTABLE_ACTIONS in src/core/safety/remediation.ts — only in-app fixes
+// are accepted here; navigate-only actions are handled by the renderer.
+export const RemediationExecutePayload = z.object({
+  action: z.enum([
+    'set-local-identity',
+    'switch-active-profile',
+    'reconnect-github',
+    'switch-profile-and-retry-push',
+  ]),
+  repoPath: z.string().min(1),
+  profileId: z.string().optional(),
+  remote: z.string().optional(),
+  branch: z.string().optional(),
+})

@@ -100,7 +100,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 
 - [x] Phase 63 — Remediation Model & Action Contracts
 - [x] Phase 64 — Push-Failure Diagnosis & Structured IPC Errors
-- [ ] Phase 65 — Executable Fix Actions (main + IPC)
+- [x] Phase 65 — Executable Fix Actions (main + IPC)
 - [ ] Phase 66 — One-Click Fix UI & Failed-Push Recovery
 
 ### Agentic DX track (plan: `docs/plans/agentic-dx-plan.md`, prompts: `docs/prompts/dx-execution-prompts.md`)
@@ -131,7 +131,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | AI Connections         | 28–39     | ✅ complete                                                   |
 | AI Chat Redesign       | 52–55a    | ✅ complete                                                   |
 | Generative UI Blocks   | 60–62     | ✅ complete                                                   |
-| Guard Quick-Fix        | 63–66     | 🟡 Phases 63–64 done; 65–66 open                              |
+| Guard Quick-Fix        | 63–66     | 🟡 Phases 63–65 done; 66 open                                 |
 | Client Branch Access   | 56–59     | ✅ complete                                                   |
 | Distribution & Release | 40–45     | 🟡 Phases 40–42, 45 done; 43–44 open (gated on signing certs) |
 | Landing Page           | 46–51     | ✅ complete                                                   |
@@ -982,3 +982,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: Vitest **679/679 passed** (+10: 6 new ErrorMapper-code cases + 4 `toIpcFailure` envelope cases). Both `tsc` projects clean; ESLint clean; Prettier clean on all touched files; AI evals 5/5. Reviewers: `core-purity-reviewer` CLEAN (3 core files pure); `safety-reviewer` CLEAN (traced the token path — `technicalDetails`/stderr never crosses to the renderer; only `err.message` + `code` + `remediation` do; additive / non-breaking; no new git authority).
 - Exit criteria: ✅ met — both `tsc` projects clean; error-mapper + `toIpcFailure` tests green; every existing `IpcResult` consumer still compiles (additive); lint clean; no UI.
 - Notes / follow-ups: `toIpcFailure` is the seam Phases 65/66 consume; the recovery banner (Phase 66) reads `remoteStore.lastFailure.remediation`. Next: **Phase 65** — the four executable fix actions behind a Zod-validated `remediation:execute` IPC channel, with offline-fixture integration tests + safety-reviewer.
+
+### 2026-06-30 — Phase 65: Executable Fix Actions (main + IPC)
+
+- Built: The four executable remediations now actually run, behind a Zod-validated `remediation:execute` IPC channel. New dispatcher `src/main/ipc/remediationExecutor.ts` (`executeRemediation(deps, sender, input)`) takes **injected services + a minimal `AuthEventSender`** (NO Electron import) so it is unit-testable against offline fixtures. Dispatch: `set-local-identity` → `git.setLocalIdentity` (`--local` only); `switch-active-profile` → `settings.update({ activeProfileId })`; `reconnect-github` → `github.startDeviceAuth(profileId, sender)` (returns the device code/url); `switch-profile-and-retry-push` → set the assigned profile active, resolve the token via `github.resolveHttpsAuth`, then `git.push` (the existing GIT_ASKPASS path — a push failure throws a `GitError` that `wrap()` re-classifies into a fresh `code`+`remediation`). Guard rails: `RemediationExecutePayload` Zod-restricts `action` to the four executable; an unassigned repo is REFUSED with the `assign-repo-profile` remediation (no push); the token is never logged and never in argv; the credentialed retry-push pins to `repo.assignedProfileId` (ignores a caller-supplied `profileId` — documented inline). Product boundary honored — no `gh`, no `--global`, no ssh-config, no global `safe.directory`. Added the `api.remediation.execute` preload bridge + `window.d.ts` typing + the `RemediationResult` contract type in core.
+- Files: added `src/main/ipc/remediationExecutor.ts`, `tests/unit/remediation-actions.test.ts`; edited `src/core/safety/remediation.ts` (+`RemediationResult`), `src/main/ipc/ipc-schemas.ts` (+`RemediationExecutePayload`), `src/main/ipc/ipc-handlers.ts` (+`remediation:execute` handler), `preload/index.ts` (+bridge), `src/renderer/types/window.d.ts` (+typing).
+- Tests: Vitest **685/685 passed** (+6 integration cases against offline fixtures — real temp repo + a LOCAL bare repo as the remote for the retry-push happy path; device-flow + services mocked). Asserts: set-local-identity writes only `--local`; switch-profile-and-retry-push on a mismatched-but-assigned repo switches the active profile and the push lands in the bare remote (remote sha == local sha); an unassigned repo → `assign-repo-profile` remediation with NO push attempt; reconnect-github returns the device code. Both `tsc` projects clean; ESLint clean; Prettier clean on touched files. Reviewers: `core-purity-reviewer` CLEAN; `safety-reviewer` CLEAN (no global-state writes; token never logged/in-argv — askpass env only; args arrays; retry-push only via the explicit renderer channel + GitRunner serialization; Zod-restricted to the four; flagged a benign `profileId` asymmetry, now documented inline).
+- Exit criteria: ✅ met — each action verified against offline fixtures; `tsc` clean; `npm test` green; safety-reviewer passed.
+- Notes / follow-ups: Feature logic is now complete headlessly (Phases 63–65 green). Next: **Phase 66** (feature-complete stop point) — the `RemediationButton` component, the failed-push recovery banner, and Playwright e2e. ⚠️ Phase 66 edits `CommitScreen.tsx` / the push UI, which a parallel in-progress feature in this working tree is also editing — expect a collision to coordinate.

@@ -15,6 +15,7 @@ import type {
   GitHubAuthStatus,
   GitHubAuthErrorCode,
 } from '../src/core/types.js'
+import type { RemediationResult, ExecutableAction } from '../src/core/safety/remediation.js'
 import type {
   AiConnection,
   AiConnectionKind,
@@ -190,6 +191,15 @@ export const api = {
       invoke('git:cleanFile', { repoPath, filePath }),
     validateGitPath: (gitPath: string): Promise<IpcResult<{ version: string }>> =>
       invoke('git:validateGitPath', { gitPath }),
+  },
+  remediation: {
+    execute: (payload: {
+      action: ExecutableAction
+      repoPath: string
+      profileId?: string
+      remote?: string
+      branch?: string
+    }): Promise<IpcResult<RemediationResult>> => invoke('remediation:execute', payload),
   },
   github: {
     startDeviceAuth: (profileId: string): Promise<IpcResult<GitHubDeviceCode>> =>

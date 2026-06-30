@@ -14,7 +14,11 @@ import type {
   GitHubAuthErrorCode,
   GitErrorCode,
 } from '../../core/types.js'
-import type { Remediation } from '../../core/safety/remediation.js'
+import type {
+  Remediation,
+  RemediationResult,
+  ExecutableAction,
+} from '../../core/safety/remediation.js'
 import type {
   AiConnection,
   AiConnectionKind,
@@ -150,6 +154,15 @@ interface ElectronAPI {
     discardFile(repoPath: string, filePath: string): Promise<IpcResult<void>>
     cleanFile(repoPath: string, filePath: string): Promise<IpcResult<void>>
     validateGitPath(gitPath: string): Promise<IpcResult<{ version: string }>>
+  }
+  remediation: {
+    execute(payload: {
+      action: ExecutableAction
+      repoPath: string
+      profileId?: string
+      remote?: string
+      branch?: string
+    }): Promise<IpcResult<RemediationResult>>
   }
   github: {
     startDeviceAuth(profileId: string): Promise<IpcResult<GitHubDeviceCode>>

@@ -27,6 +27,7 @@ import { maskSecret } from '../../core/ai/credentials.js'
 import type { RepositoryRecord, GitErrorCode } from '../../core/types.js'
 import type { Remediation } from '../../core/safety/remediation.js'
 import { toIpcFailure } from './ipcFailure.js'
+import { executeRemediation } from './remediationExecutor.js'
 import {
   AiConnectionTestResultSchema,
   AiModelInfoSchema,
@@ -49,6 +50,7 @@ import {
   GitSetIdentityPayload,
   GitRemoteOpPayload,
   GitRemoteBranchOpPayload,
+  RemediationExecutePayload,
   GitBranchOpPayload,
   GitCreateBranchPayload,
   GitHistoryPayload,
@@ -343,6 +345,17 @@ export function registerIpcHandlers(services: Services): void {
       const { repoPath, remote, branch } = GitRemoteBranchOpPayload.parse(raw)
       const auth = await resolvePushAuth(services, repoPath, remote)
       return services.git.push(repoPath, remote, branch, auth)
+    })
+  )
+
+  // Guard Quick-Fix (Phase 65): run an executable remediation. Advisory boundary
+  // intact — it fires only on an explicit user click; a retry-push goes through the
+  // normal GitRunner serialization and re-classifies failures via wrap(). event.sender
+  // carries the device-flow progress for reconnect-github.
+  ipcMain.handle('remediation:execute', (event, raw: unknown) =>
+    wrap(async () => {
+      const input = RemediationExecutePayload.parse(raw)
+      return executeRemediation(services, event.sender, input)
     })
   )
 

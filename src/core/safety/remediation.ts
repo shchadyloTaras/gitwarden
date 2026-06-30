@@ -11,6 +11,7 @@
 
 import type { SafetyCode } from './SafetyCheckService.js'
 import type { SafetySuggestedAction } from '../ai/types.js'
+import type { GitHubDeviceCode } from '../types.js'
 import { SAFETY_ACTION_BY_CODE } from '../ai/safetyCopilotMessages.js'
 
 /**
@@ -124,4 +125,18 @@ export function remediationForGitError(code: RemediableGitErrorCode): Remediatio
  */
 export function isRemediableGitErrorCode(code: string): code is RemediableGitErrorCode {
   return Object.prototype.hasOwnProperty.call(GIT_ERROR_ACTION, code)
+}
+
+/**
+ * Result of executing an executable remediation (Phase 65, via the
+ * `remediation:execute` IPC channel). `ok` is true when the in-app action
+ * completed; `deviceCode` carries the GitHub device-flow code/url for
+ * `reconnect-github`; `remediation` + `message` describe a refusal (e.g. a
+ * retry-push on an unassigned repo routes the user to assign a profile first).
+ */
+export interface RemediationResult {
+  ok: boolean
+  deviceCode?: GitHubDeviceCode
+  remediation?: Remediation
+  message?: string
 }
