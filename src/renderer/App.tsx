@@ -51,6 +51,8 @@ const LEFT_PANEL_MIN_WIDTH = 160
 const LEFT_PANEL_MAX_WIDTH = 320
 const RIGHT_PANEL_MIN_WIDTH = 260
 const RIGHT_PANEL_MAX_WIDTH = 520
+const SIDEBAR_COLLAPSED_WIDTH = 52
+const SIDEBAR_COLLAPSED_STORAGE_KEY = 'gitwarden.layout.sidebarCollapsed.v1'
 const STARTUP_LOADER_MIN_MS = 900
 const STARTUP_LOADER_EXIT_MS = 220
 
@@ -156,6 +158,23 @@ function savePanelWidths(widths: PanelWidths): void {
   }
 }
 
+function readSavedSidebarCollapsed(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    return window.localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+
+function saveSidebarCollapsed(collapsed: boolean): void {
+  try {
+    window.localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, collapsed ? 'true' : 'false')
+  } catch {
+    // Layout preference persistence is best-effort.
+  }
+}
+
 function MainContent(): React.ReactElement {
   const screen = useAppStore((s) => s.activeScreen)
 
@@ -215,6 +234,7 @@ export default function App(): React.ReactElement {
   const [panelWidths, setPanelWidths] = useState<PanelWidths>(() =>
     clampPanelWidths(readSavedPanelWidths(), getViewportWidth(), inspectorOpen)
   )
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(readSavedSidebarCollapsed)
 
   const measureShellWidth = useCallback((): number => {
     return shellRef.current?.getBoundingClientRect().width ?? getViewportWidth()
@@ -275,6 +295,12 @@ export default function App(): React.ReactElement {
   useEffect(() => {
     savePanelWidths(panelWidths)
   }, [panelWidths])
+
+  useEffect(() => {
+    saveSidebarCollapsed(sidebarCollapsed)
+  }, [sidebarCollapsed])
+
+  const toggleSidebar = useCallback(() => setSidebarCollapsed((current) => !current), [])
 
   // Auto-select active repo: pick first available when none is active or active was removed
   useEffect(() => {
@@ -463,7 +489,8 @@ export default function App(): React.ReactElement {
   )
 
   const leftPanelMax = getLeftPanelMax(shellWidth, panelWidths.right, inspectorOpen)
-  const rightPanelMax = getRightPanelMax(shellWidth, panelWidths.left)
+  const effectiveLeftWidth = sidebarCollapsed ? SIDEBAR_COLLAPSED_WIDTH : panelWidths.left
+  const rightPanelMax = getRightPanelMax(shellWidth, effectiveLeftWidth)
   const appReady = storesReady && !startupLoaderVisible
 
   return (
@@ -485,19 +512,26 @@ export default function App(): React.ReactElement {
       <GlobalHeader />
 
       <div ref={shellRef} style={{ display: 'flex', flex: 1, minHeight: 0, minWidth: 0 }}>
-        <Sidebar width={panelWidths.left} />
-
-        <PanelResizeHandle
-          side="left"
-          label={STR.LEFT_PANEL_RESIZE_LABEL}
-          testId="left-panel-resize-handle"
-          value={panelWidths.left}
-          min={LEFT_PANEL_MIN_WIDTH}
-          max={leftPanelMax}
-          active={resizingPanel === 'left'}
-          onPointerDown={beginPanelResize}
-          onKeyDown={handleResizeKeyDown}
+        <Sidebar
+          width={effectiveLeftWidth}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={toggleSidebar}
+          resizing={resizingPanel === 'left'}
         />
+
+        {!sidebarCollapsed && (
+          <PanelResizeHandle
+            side="left"
+            label={STR.LEFT_PANEL_RESIZE_LABEL}
+            testId="left-panel-resize-handle"
+            value={panelWidths.left}
+            min={LEFT_PANEL_MIN_WIDTH}
+            max={leftPanelMax}
+            active={resizingPanel === 'left'}
+            onPointerDown={beginPanelResize}
+            onKeyDown={handleResizeKeyDown}
+          />
+        )}
 
         <main
           data-testid="main-content"

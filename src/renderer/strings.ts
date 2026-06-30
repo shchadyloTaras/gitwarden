@@ -13,6 +13,10 @@ export const STR = {
   PROFILES_SPLIT_RESIZE_LABEL: 'Resize profile list',
   STATUS_SPLIT_RESIZE_LABEL: 'Resize changes list',
 
+  // ── Icon-button & header-control labels (aria-label + hover tooltip) ───────
+  SIDEBAR_COLLAPSE: 'Collapse sidebar',
+  SIDEBAR_EXPAND: 'Expand sidebar',
+
   // ── Header guard badge ─────────────────────────────────────────────────────
   // Reports repo/profile/Git-identity alignment only — never commit/push safety.
   GUARD_READY: 'Guard · Ready',

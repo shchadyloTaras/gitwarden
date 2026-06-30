@@ -257,6 +257,19 @@ body {
   outline-offset: -2px;
 }
 
+.gw-sidebar {
+  will-change: auto;
+}
+
+.gw-sidebar--animated {
+  transition:
+    width 0.2s cubic-bezier(0.2, 0, 0, 1),
+    flex-basis 0.2s cubic-bezier(0.2, 0, 0, 1),
+    border-color 0.16s ease,
+    background-color 0.16s ease;
+  will-change: width, flex-basis;
+}
+
 /* Remove default focus ring where we provide custom styling */
 button:focus:not(:focus-visible),
 select:focus:not(:focus-visible),
@@ -329,6 +342,28 @@ button.gw-dd-trigger:hover:not(:disabled) {
 button.gw-dd-trigger:active:not(:disabled) {
   transform: none;
   box-shadow: none;
+}
+
+button.gw-sidebar-collapse-toggle:hover:not(:disabled) {
+  filter: none;
+  transform: none;
+  background: var(--gw-hover-bg);
+  color: var(--gw-text);
+  box-shadow: none;
+}
+
+button.gw-sidebar-collapse-toggle:active:not(:disabled) {
+  filter: none;
+  transform: none;
+  background: var(--gw-surface2);
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gw-sidebar--animated {
+    transition: none;
+    will-change: auto;
+  }
 }
 
 .gw-dd-option {

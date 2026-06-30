@@ -1,5 +1,6 @@
 import React from 'react'
 import { NavScreen, useAppStore } from '../store/appStore'
+import { STR } from '../strings'
 
 interface NavItem {
   screen: NavScreen
@@ -26,17 +27,194 @@ const GROUP_LABELS: Record<string, string> = {
   app: 'APP',
 }
 
-export default function Sidebar({ width }: { width: number }): React.ReactElement {
+const SIDEBAR_TRANSITION_MS = 200
+
+const NAV_BTN_BASE: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  border: 'none',
+  borderRadius: 6,
+  margin: '1px 6px',
+  cursor: 'pointer',
+  fontSize: 14,
+  textAlign: 'left',
+  fontFamily: 'inherit',
+  minWidth: 0,
+}
+
+const ICON_STYLE: React.CSSProperties = {
+  width: 24,
+  height: 24,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 20,
+  lineHeight: 1,
+  flexShrink: 0,
+}
+
+const GROUP_LABEL_STYLE: React.CSSProperties = {
+  fontSize: 14,
+  fontWeight: 700,
+  letterSpacing: '0.08em',
+  color: 'var(--gw-text-dim, #52525b)',
+}
+
+const GROUP_HEADER_ROW_STYLE: React.CSSProperties = {
+  minHeight: 28,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 8,
+  padding: '7px 8px 2px 12px',
+}
+
+const COLLAPSE_TOGGLE_STYLE: React.CSSProperties = {
+  width: 32,
+  height: 26,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'transparent',
+  border: 'none',
+  borderRadius: 4,
+  color: 'var(--gw-text-faint, #71717a)',
+  cursor: 'pointer',
+  padding: 0,
+  fontFamily: 'inherit',
+  flexShrink: 0,
+}
+
+const COLLAPSE_ICON_STYLE: React.CSSProperties = {
+  width: 24,
+  height: 24,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 21,
+  lineHeight: 1,
+}
+
+export default function Sidebar({
+  width,
+  collapsed,
+  onToggleCollapse,
+  resizing = false,
+}: {
+  width: number
+  collapsed: boolean
+  onToggleCollapse: () => void
+  resizing?: boolean
+}): React.ReactElement {
   const { activeScreen, navigate } = useAppStore()
+  const [labelsVisible, setLabelsVisible] = React.useState(!collapsed)
+  const [widthAnimating, setWidthAnimating] = React.useState(false)
+  const mountedRef = React.useRef(false)
 
   let lastGroup: string | undefined
+  const showExpandedLabels = !collapsed || labelsVisible
+
+  React.useEffect(() => {
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    if (mountedRef.current && !reducedMotion) {
+      setWidthAnimating(true)
+      const timer = window.setTimeout(() => setWidthAnimating(false), SIDEBAR_TRANSITION_MS)
+      return () => window.clearTimeout(timer)
+    }
+
+    mountedRef.current = true
+  }, [collapsed])
+
+  React.useEffect(() => {
+    if (!collapsed) {
+      setLabelsVisible(true)
+      return
+    }
+
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reducedMotion) {
+      setLabelsVisible(false)
+      return
+    }
+
+    const timer = window.setTimeout(() => setLabelsVisible(false), SIDEBAR_TRANSITION_MS)
+    return () => window.clearTimeout(timer)
+  }, [collapsed])
+
+  const renderCollapseToggle = (): React.ReactElement => (
+    <button
+      className="gw-sidebar-collapse-toggle"
+      data-testid="sidebar-collapse-toggle"
+      onClick={onToggleCollapse}
+      aria-label={collapsed ? STR.SIDEBAR_EXPAND : STR.SIDEBAR_COLLAPSE}
+      data-tooltip={collapsed ? STR.SIDEBAR_EXPAND : STR.SIDEBAR_COLLAPSE}
+      data-tooltip-pos={collapsed ? 'right' : 'top'}
+      style={COLLAPSE_TOGGLE_STYLE}
+    >
+      <span aria-hidden="true" style={COLLAPSE_ICON_STYLE}>
+        ◫
+      </span>
+    </button>
+  )
+
+  const renderGroupBoundary = (
+    group: NavItem['group'],
+    previousGroup?: string
+  ): React.ReactNode => {
+    if (!group) return null
+
+    if (!showExpandedLabels) {
+      if (group === 'manage') {
+        return (
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              padding: '2px 0 8px',
+            }}
+          >
+            {renderCollapseToggle()}
+          </div>
+        )
+      }
+
+      return previousGroup !== undefined ? (
+        <div
+          aria-hidden="true"
+          style={{
+            height: 1,
+            background: 'var(--gw-border, #27272a)',
+            margin: '6px 12px 5px',
+          }}
+        />
+      ) : null
+    }
+
+    if (group === 'manage') {
+      return (
+        <div style={GROUP_HEADER_ROW_STYLE}>
+          <span style={GROUP_LABEL_STYLE}>{GROUP_LABELS[group]}</span>
+          {renderCollapseToggle()}
+        </div>
+      )
+    }
+
+    return (
+      <div style={{ ...GROUP_LABEL_STYLE, padding: '10px 12px 2px' }}>{GROUP_LABELS[group]}</div>
+    )
+  }
 
   return (
     <nav
+      className={`gw-sidebar${widthAnimating && !resizing ? ' gw-sidebar--animated' : ''}`}
       data-testid="sidebar-nav"
+      data-collapsed={collapsed ? 'true' : undefined}
       style={{
         width,
-        flex: `0 0 ${width}px`,
+        flexGrow: 0,
+        flexShrink: 0,
+        flexBasis: width,
         minWidth: 0,
         background: 'var(--gw-surface, #18181b)',
         borderRight: '1px solid var(--gw-border, #27272a)',
@@ -45,66 +223,63 @@ export default function Sidebar({ width }: { width: number }): React.ReactElemen
         padding: '8px 0',
         boxSizing: 'border-box',
         overflowX: 'hidden',
-        overflowY: 'auto',
       }}
     >
-      {NAV_ITEMS.map((item) => {
-        const showGroupLabel = item.group && item.group !== lastGroup
-        if (item.group) lastGroup = item.group
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        {NAV_ITEMS.map((item) => {
+          const prevGroup = lastGroup
+          const showBoundary = Boolean(item.group && item.group !== lastGroup)
+          if (item.group) lastGroup = item.group
+          const active = activeScreen === item.screen
 
-        return (
-          <React.Fragment key={item.screen}>
-            {showGroupLabel && (
-              <div
+          return (
+            <React.Fragment key={item.screen}>
+              {showBoundary && renderGroupBoundary(item.group, prevGroup)}
+              <button
+                data-testid={`nav-${item.screen}`}
+                onClick={() => navigate(item.screen)}
+                aria-label={collapsed ? item.label : undefined}
+                data-tooltip={collapsed ? item.label : undefined}
+                data-tooltip-pos="right"
                 style={{
-                  padding: '10px 12px 2px',
-                  fontSize: 14,
-                  fontWeight: 700,
-                  letterSpacing: '0.08em',
-                  color: 'var(--gw-text-dim, #52525b)',
+                  ...NAV_BTN_BASE,
+                  gap: showExpandedLabels ? 8 : 0,
+                  justifyContent: showExpandedLabels ? 'flex-start' : 'center',
+                  padding: showExpandedLabels ? '7px 12px' : '8px 0',
+                  background: active ? 'var(--gw-surface2, #27272a)' : 'none',
+                  color: active ? 'var(--gw-text, #f4f4f5)' : 'var(--gw-text-muted, #a1a1aa)',
                 }}
               >
-                {GROUP_LABELS[item.group!]}
-              </div>
-            )}
-            <button
-              data-testid={`nav-${item.screen}`}
-              onClick={() => navigate(item.screen)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '6px 12px',
-                background: activeScreen === item.screen ? 'var(--gw-surface2, #27272a)' : 'none',
-                border: 'none',
-                borderRadius: 6,
-                margin: '1px 6px',
-                cursor: 'pointer',
-                color:
-                  activeScreen === item.screen
-                    ? 'var(--gw-text, #f4f4f5)'
-                    : 'var(--gw-text-muted, #a1a1aa)',
-                fontSize: 14,
-                textAlign: 'left',
-                fontFamily: 'inherit',
-                minWidth: 0,
-              }}
-            >
-              <span style={{ fontSize: 15, width: 18, textAlign: 'center' }}>{item.icon}</span>
-              <span
-                style={{
-                  minWidth: 0,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {item.label}
-              </span>
-            </button>
-          </React.Fragment>
-        )
-      })}
+                <span style={ICON_STYLE}>{item.icon}</span>
+                {showExpandedLabels && (
+                  <span
+                    style={{
+                      minWidth: 0,
+                      opacity: collapsed ? 0 : 1,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      transform: collapsed ? 'translateX(-4px)' : 'translateX(0)',
+                      transition: 'opacity 0.14s ease, transform 0.14s cubic-bezier(0.2, 0, 0, 1)',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {item.label}
+                  </span>
+                )}
+              </button>
+            </React.Fragment>
+          )
+        })}
+      </div>
     </nav>
   )
 }
