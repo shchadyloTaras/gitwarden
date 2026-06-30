@@ -234,7 +234,6 @@ export const STR = {
   AI_CRED_NONE: 'No credential stored for this connection yet.',
   AI_CRED_CHANGE: 'Change key',
   AI_CRED_SAVE_KEY: 'Save key',
-  AI_FETCH_NEEDS_KEY: 'Save an API key to load models.',
   AI_CONN_DELETE_BTN: 'Delete connection',
   AI_CONN_DELETE_CONFIRM: 'Delete this connection and its credential?',
   AI_PREVIEW_HOST: (host: string) => `Destination: ${host}`,
@@ -477,4 +476,6 @@ export const STR = {
     `Enter code ${code} at ${url} to reconnect.`,
   // Failed-push recovery banner.
   RECOVERY_BANNER_TITLE: 'This push needs attention',
+  RECOVERY_RECONNECT_ASSIGNED_GITHUB: (profile: string): string =>
+    `GitHub still rejected the HTTPS push while "${profile}" is already active. Reconnect GitHub for this profile to refresh repository access, then push again.`,
 } as const

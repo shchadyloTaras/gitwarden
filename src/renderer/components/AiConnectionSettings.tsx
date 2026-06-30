@@ -407,7 +407,7 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
                 disabled={credKey.trim().length === 0 || credSaving}
                 onClick={() => void handleSaveCredential()}
                 style={{
-                  ...SUBTLE_BTN,
+                  ...PRIMARY_BTN,
                   flexShrink: 0,
                   opacity: credKey.trim().length === 0 || credSaving ? 0.5 : 1,
                   cursor: credKey.trim().length === 0 || credSaving ? 'not-allowed' : 'pointer',
@@ -437,78 +437,80 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
         )}
       </div>
 
-      {/* Model — the list auto-loads from the provider whenever a key is saved. */}
-      <div
-        style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--gw-border, #27272a)' }}
-      >
-        <label style={LABEL}>{STR.AI_MODEL_LABEL}</label>
-        <p style={{ ...HINT, marginTop: 0, marginBottom: 10 }}>{STR.AI_MODEL_HINT}</p>
-        {modelStatus && (
-          <p data-testid="ai-model-status" style={{ ...HINT, marginTop: 0, marginBottom: 10 }}>
-            {modelStatus}
-          </p>
-        )}
-        {modelsLoading && models.length === 0 ? (
-          <p data-testid="ai-models-loading" style={HINT}>
-            {STR.AI_MODELS_LOADING}
-          </p>
-        ) : models.length > 0 ? (
-          <Dropdown
-            testId="ai-model-select"
-            ariaLabel={STR.AI_MODEL_LABEL}
-            placeholder={STR.AI_MODEL_PLACEHOLDER}
-            value={model}
-            block
-            searchable
-            searchPlaceholder={STR.DROPDOWN_SEARCH_PLACEHOLDER}
-            noMatchesLabel={STR.DROPDOWN_NO_MATCHES}
-            options={modelDropdownOptions(models)}
-            onChange={(v) => {
-              setModel(v)
-              setSaved(false)
-            }}
-            triggerStyle={{ ...INPUT, fontFamily: 'inherit' }}
-          />
-        ) : !credentialMeta ? (
-          <p data-testid="ai-models-needs-key" style={HINT}>
-            {STR.AI_FETCH_NEEDS_KEY}
-          </p>
-        ) : (
-          <input
-            data-testid="ai-edit-model-input"
-            type="text"
-            value={model}
-            onChange={(e) => {
-              setModel(e.target.value)
-              setSaved(false)
-            }}
-            placeholder={STR.AI_MODEL_PLACEHOLDER}
-            style={INPUT}
-          />
-        )}
-        <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button
-            data-testid="ai-save-changes"
-            disabled={!dirty}
-            onClick={() => void handleSaveChanges()}
-            style={{
-              ...PRIMARY_BTN,
-              opacity: dirty ? 1 : 0.5,
-              cursor: dirty ? 'pointer' : 'not-allowed',
-            }}
-          >
-            {STR.BTN_SAVE}
-          </button>
-          {saved && (
-            <span
-              data-testid="ai-saved-msg"
-              style={{ fontSize: 13, color: 'var(--gw-success, #4ade80)' }}
-            >
-              {STR.AI_SAVED}
-            </span>
+      {/* Model — only relevant once a credential is stored; the list auto-loads then. */}
+      {credentialMeta && (
+        <div
+          style={{
+            marginTop: 18,
+            paddingTop: 16,
+            borderTop: '1px solid var(--gw-border, #27272a)',
+          }}
+        >
+          <label style={LABEL}>{STR.AI_MODEL_LABEL}</label>
+          <p style={{ ...HINT, marginTop: 0, marginBottom: 10 }}>{STR.AI_MODEL_HINT}</p>
+          {modelStatus && (
+            <p data-testid="ai-model-status" style={{ ...HINT, marginTop: 0, marginBottom: 10 }}>
+              {modelStatus}
+            </p>
           )}
+          {modelsLoading && models.length === 0 ? (
+            <p data-testid="ai-models-loading" style={HINT}>
+              {STR.AI_MODELS_LOADING}
+            </p>
+          ) : models.length > 0 ? (
+            <Dropdown
+              testId="ai-model-select"
+              ariaLabel={STR.AI_MODEL_LABEL}
+              placeholder={STR.AI_MODEL_PLACEHOLDER}
+              value={model}
+              block
+              searchable
+              searchPlaceholder={STR.DROPDOWN_SEARCH_PLACEHOLDER}
+              noMatchesLabel={STR.DROPDOWN_NO_MATCHES}
+              options={modelDropdownOptions(models)}
+              onChange={(v) => {
+                setModel(v)
+                setSaved(false)
+              }}
+              triggerStyle={{ ...INPUT, fontFamily: 'inherit' }}
+            />
+          ) : (
+            <input
+              data-testid="ai-edit-model-input"
+              type="text"
+              value={model}
+              onChange={(e) => {
+                setModel(e.target.value)
+                setSaved(false)
+              }}
+              placeholder={STR.AI_MODEL_PLACEHOLDER}
+              style={INPUT}
+            />
+          )}
+          <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button
+              data-testid="ai-save-changes"
+              disabled={!dirty}
+              onClick={() => void handleSaveChanges()}
+              style={{
+                ...PRIMARY_BTN,
+                opacity: dirty ? 1 : 0.5,
+                cursor: dirty ? 'pointer' : 'not-allowed',
+              }}
+            >
+              {STR.BTN_SAVE}
+            </button>
+            {saved && (
+              <span
+                data-testid="ai-saved-msg"
+                style={{ fontSize: 13, color: 'var(--gw-success, #4ade80)' }}
+              >
+                {STR.AI_SAVED}
+              </span>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Delete the connection (and its credential). */}
       <div

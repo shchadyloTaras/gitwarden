@@ -194,4 +194,42 @@ test.describe('AI Connections (injected fake credential store)', () => {
     await expect(win.getByTestId('ai-model-status')).toContainText('models available')
     await expect(win.getByTestId('ai-model-select')).toBeVisible()
   })
+
+  test('a connection with no stored credential (e.g. orphaned record) still lets you save a key', async () => {
+    // Create a connection, then drop ONLY the credential while the connection record
+    // survives — reproduces a stale/orphaned connection (e.g. after a credential-store
+    // reset) where the active-connection card renders with no key stored.
+    await win.getByTestId('ai-key-input').fill('sk-or-v1-e2e-orphan0000000000000')
+    await win.getByTestId('ai-save-connection').click()
+    await expect(win.getByTestId('ai-connection-card')).toBeVisible()
+
+    const connectionId = await win.evaluate(async () => {
+      const api = (window as Window & typeof globalThis).api
+      const list = await api.ai.listConnections()
+      const id = list.ok ? list.data.connections[0]?.id : undefined
+      if (id) await api.ai.deleteCredential(id)
+      return id
+    })
+    expect(connectionId).toBeTruthy()
+
+    await win.reload()
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
+    await win.getByTestId('nav-settings').click()
+    await win.getByTestId('settings-tab-ai').click()
+
+    // Still the active-connection card (not the empty setup form) — with no credential,
+    // the Model section stays hidden (no dead disabled "Save" button) and the key input
+    // with its "Save key" action is the only thing offered.
+    await expect(win.getByTestId('ai-connection-card')).toBeVisible()
+    await expect(win.getByTestId('ai-cred-none')).toBeVisible()
+    await expect(win.getByTestId('ai-cred-key-input')).toBeVisible()
+    await expect(win.getByTestId('ai-save-changes')).toHaveCount(0)
+
+    await win.getByTestId('ai-cred-key-input').fill('sk-or-v1-e2e-restored00000000000')
+    await win.getByTestId('ai-cred-save').click()
+
+    // Saving the key restores the credential and the Model section reappears.
+    await expect(win.getByTestId('ai-model-status')).toContainText('models available')
+    await expect(win.getByTestId('ai-save-changes')).toBeVisible()
+  })
 })
