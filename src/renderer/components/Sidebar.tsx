@@ -122,13 +122,26 @@ export default function Sidebar({
   const { activeScreen, navigate } = useAppStore()
   const [labelsVisible, setLabelsVisible] = React.useState(!collapsed)
 
-  // True for exactly the one render where `collapsed` flips — computed inline
-  // during render (not in an effect, which would run a commit too late and miss
-  // the width change it's meant to animate). Resize-dragging changes `width`
-  // without `collapsed` ever changing, so this stays false throughout a drag.
-  const prevCollapsedRef = React.useRef(collapsed)
-  const collapseJustToggled = prevCollapsedRef.current !== collapsed
-  prevCollapsedRef.current = collapsed
+  // The width transition runs only when the user toggles collapse/expand — never
+  // during a resize-drag, which changes `width` without ever touching `collapsed`.
+  // The flag is set in the toggle's click handler rather than derived from a prop
+  // change during render: a render-time derivation (mutating a ref to spot the flip)
+  // is an impure render, so React StrictMode's dev double-invoke dropped it and the
+  // `gw-sidebar--animated` class never reached the committed DOM — the sidebar
+  // snapped in `npm run dev`. An event handler fires once and its setState batches
+  // with the parent's collapse flip into one commit, so the class and the new width
+  // land together, in dev and prod alike.
+  const [animating, setAnimating] = React.useState(false)
+  const animationTimerRef = React.useRef<number | undefined>(undefined)
+
+  React.useEffect(() => () => window.clearTimeout(animationTimerRef.current), [])
+
+  const handleToggleCollapse = React.useCallback(() => {
+    setAnimating(true)
+    window.clearTimeout(animationTimerRef.current)
+    animationTimerRef.current = window.setTimeout(() => setAnimating(false), SIDEBAR_TRANSITION_MS)
+    onToggleCollapse()
+  }, [onToggleCollapse])
 
   let lastGroup: string | undefined
   const showExpandedLabels = !collapsed || labelsVisible
@@ -153,7 +166,7 @@ export default function Sidebar({
     <button
       className="gw-sidebar-collapse-toggle"
       data-testid="sidebar-collapse-toggle"
-      onClick={onToggleCollapse}
+      onClick={handleToggleCollapse}
       aria-label={collapsed ? STR.SIDEBAR_EXPAND : STR.SIDEBAR_COLLAPSE}
       data-tooltip={collapsed ? STR.SIDEBAR_EXPAND : STR.SIDEBAR_COLLAPSE}
       data-tooltip-pos={collapsed ? 'right' : 'top'}
@@ -213,7 +226,7 @@ export default function Sidebar({
 
   return (
     <nav
-      className={`gw-sidebar${collapseJustToggled ? ' gw-sidebar--animated' : ''}`}
+      className={`gw-sidebar${animating ? ' gw-sidebar--animated' : ''}`}
       data-testid="sidebar-nav"
       data-collapsed={collapsed ? 'true' : undefined}
       style={{

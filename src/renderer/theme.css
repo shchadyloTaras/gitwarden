@@ -261,12 +261,13 @@ body {
   will-change: auto;
 }
 
-/* Applied for exactly one render — the one where `collapsed` actually flips and
-   `width` changes with it (computed synchronously in Sidebar.tsx, not via an
-   effect, so the class and the new width land in the same commit). Live-dragging
-   the resize handle changes `width` on every pointermove without `collapsed`
-   changing, so this class is never present then — the drag tracks the pointer
-   1:1 with no transition fighting it. */
+/* Present only while a collapse/expand is animating — Sidebar.tsx sets the flag in
+   the toggle's click handler, so the class and the new width commit together. (A
+   render-time derivation is dropped by React StrictMode's dev double-invoke, so the
+   class never reaches the DOM and the sidebar snaps.) Live-dragging the resize
+   handle changes `width` on every pointermove without ever toggling collapse, so
+   this class is absent during a drag — the drag tracks the pointer 1:1 with no
+   transition fighting it. */
 .gw-sidebar--animated {
   transition:
     width 0.2s cubic-bezier(0.2, 0, 0, 1),
