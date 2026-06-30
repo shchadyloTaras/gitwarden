@@ -27,6 +27,7 @@
   "exclude": [
     "tests/unit/ai-chat-store.test.ts",
     "tests/unit/ai-model-options.test.ts",
-    "tests/unit/app-store-profile-sync.test.ts"
+    "tests/unit/app-store-profile-sync.test.ts",
+    "tests/unit/commit-store.test.ts"
   ]
 }

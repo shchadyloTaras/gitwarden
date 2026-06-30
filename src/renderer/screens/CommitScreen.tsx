@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import { useProfilesStore } from '../store/profilesStore'
 import { useCommitStore } from '../store/commitStore'
 import { useAppStore } from '../store/appStore'
@@ -19,27 +19,24 @@ export default function CommitScreen(): React.ReactElement {
     loading,
     identityLoading,
     commitLoading,
+    draftLoading,
+    draftError,
     error,
     committedHash,
     load,
     setMessage,
     applyLocalIdentity,
     doCommit,
+    draftMessage,
   } = useCommitStore()
 
   const activeProfile = profiles.find((p) => p.id === activeProfileId)
-  const draftCommitMessage = useAiStore((s) => s.draftCommitMessage)
   const loadAi = useAiStore((s) => s.load)
   const aiEnabled = useAiStore((s) => s.aiEnabled)
   const connections = useAiStore((s) => s.connections)
   // AI on the Commit tab is limited to the commit message. It is offered only when a
   // connection exists and AI is enabled; redaction/enablement rules still apply per send.
   const aiAvailable = aiEnabled && connections.length > 0
-
-  // Inline commit-message AI assistant state. One click drafts the message and
-  // writes it straight into the textarea — no preview panel or variant picker.
-  const [draftLoading, setDraftLoading] = useState(false)
-  const [assistantError, setAssistantError] = useState<string | null>(null)
 
   useEffect(() => {
     if (activeRepo) void load(activeRepo.localPath, activeRepo)
@@ -50,10 +47,6 @@ export default function CommitScreen(): React.ReactElement {
   useEffect(() => {
     void loadAi()
   }, [loadAi])
-
-  useEffect(() => {
-    setAssistantError(null)
-  }, [activeRepo?.id, message])
 
   const stagedFiles = useMemo(
     () =>
@@ -91,30 +84,6 @@ export default function CommitScreen(): React.ReactElement {
   const handleCommit = async () => {
     if (!safetyResult?.canCommit || commitLoading) return
     await doCommit(message)
-  }
-
-  // One click: draft the commit message and write the conventional variant (with
-  // body) straight into the textarea. Redaction still happens in the main process;
-  // expensive sends are auto-acknowledged so a large diff never silently fails.
-  const handleDraftMessage = async () => {
-    if (!repository || draftLoading) return
-    setDraftLoading(true)
-    setAssistantError(null)
-    try {
-      const draft = await draftCommitMessage({
-        repositoryId: repository.id,
-        commitMessage: message,
-        expensiveSendAcknowledged: true,
-      })
-      if (draft) {
-        const body = draft.body?.trim()
-        setMessage(body ? `${draft.conventional}\n\n${body}` : draft.conventional)
-      } else setAssistantError(useAiStore.getState().error ?? STR.AI_COMMIT_DRAFT_ERROR)
-    } catch (err) {
-      setAssistantError(err instanceof Error ? err.message : STR.AI_COMMIT_DRAFT_ERROR)
-    } finally {
-      setDraftLoading(false)
-    }
   }
 
   return (
@@ -200,7 +169,7 @@ export default function CommitScreen(): React.ReactElement {
               {aiAvailable && (
                 <button
                   data-testid="ai-commit-draft-toggle"
-                  onClick={() => void handleDraftMessage()}
+                  onClick={() => void draftMessage()}
                   disabled={draftLoading}
                   title={STR.AI_COMMIT_ASSISTANT_HINT}
                   style={{
@@ -238,7 +207,7 @@ export default function CommitScreen(): React.ReactElement {
               }}
             />
 
-            {assistantError && (
+            {draftError && (
               <div
                 data-testid="ai-commit-assistant-error"
                 style={{
@@ -247,7 +216,7 @@ export default function CommitScreen(): React.ReactElement {
                   fontSize: 14,
                 }}
               >
-                {assistantError}
+                {draftError}
               </div>
             )}
           </div>
