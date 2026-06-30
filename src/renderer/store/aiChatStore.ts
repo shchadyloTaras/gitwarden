@@ -9,10 +9,14 @@ import {
 } from '../../core/ai/chatCommands'
 import { normalizeContextPaths } from '../../core/ai/chatContext'
 import { friendlyCapabilityError } from '../../core/ai/capabilityErrors'
+import { buildActiveSafetyIssuesExplanation } from '../../core/ai/safetyCopilot'
+import { safetyCheckService } from '../../core/safety/SafetyCheckService'
 import type { AiAgenticProposal, AiChatTurn } from '../../core/ai/types'
+import type { RepositoryRecord, SafetyIssue } from '../../core/types'
 import { reviewFindingsBlock, commitDraftBlock, type ChatUiBlock } from '../../core/ai/chatBlocks'
 import { useAppStore } from './appStore'
 import { useAiStore } from './aiStore'
+import { useProfilesStore } from './profilesStore'
 import { STR } from '../strings'
 
 export interface ChatMessage {
@@ -334,6 +338,49 @@ function buildHistory(messages: ChatMessage[]): AiChatTurn[] {
     .map((m) => ({ role: m.role, content: m.content }))
 }
 
+/**
+ * Gather the repo's CURRENTLY active safety issues for bare `/explain`. Mirrors
+ * safetyCenterStore.load's gather and applies the same dangling-profile normalization —
+ * kept in sync by hand (as headerGuardStore does) so the chat, header, and Safety Center
+ * can never disagree. Pure engine over read-only git facts: no AI, no config writes.
+ */
+async function loadActiveSafetyIssues(repository: RepositoryRecord): Promise<SafetyIssue[]> {
+  const { profiles, activeProfileId } = useProfilesStore.getState()
+  const activeProfile = profiles.find((p) => p.id === activeProfileId) ?? null
+  const assignedProfile = profiles.find((p) => p.id === repository.assignedProfileId) ?? null
+  const effectiveRepository: RepositoryRecord =
+    repository.assignedProfileId && !assignedProfile
+      ? { ...repository, assignedProfileId: undefined }
+      : repository
+
+  const [identityRes, remotesRes, statusRes] = await Promise.all([
+    window.api.git.getEffectiveIdentity(repository.localPath),
+    window.api.git.getRemotes(repository.localPath),
+    window.api.git.getStatus(repository.localPath),
+  ])
+
+  const identity = identityRes.ok ? identityRes.data : null
+  if (!identity) return [] // no identity facts → nothing to assess; falls back to the hint
+  const remotes = remotesRes.ok ? remotesRes.data : []
+  const currentBranch = statusRes.ok ? (statusRes.data.branch ?? undefined) : undefined
+  const upstream = statusRes.ok ? (statusRes.data.upstream ?? undefined) : undefined
+
+  const identityCheck = safetyCheckService.checkRepositoryIdentity({
+    repository: effectiveRepository,
+    activeProfile: activeProfile ?? undefined,
+    identity,
+  })
+  const pushCheck = safetyCheckService.checkPush({
+    repository: effectiveRepository,
+    activeProfile: activeProfile ?? undefined,
+    identity,
+    remotes,
+    currentBranch,
+    upstream,
+  })
+  return [...identityCheck.issues, ...pushCheck.issues]
+}
+
 async function runCapability(parsed: ParsedChatCommand): Promise<Omit<ChatMessage, 'id'>> {
   const app = useAppStore.getState()
   const ai = useAiStore.getState()
@@ -424,12 +471,14 @@ async function runCapability(parsed: ParsedChatCommand): Promise<Omit<ChatMessag
     case 'explain': {
       const target = parseExplainTarget(parsed.args)
       if (!target) {
+        // Bare `/explain` — explain the repo's CURRENT active safety issues
+        // deterministically (no AI send), consistent with the other zero-arg commands.
+        // `/explain <CODE>` and `/explain <pasted output>` still take the AI paths below.
+        const issues = await loadActiveSafetyIssues(repo)
         return {
           role: 'assistant',
           kind: 'explain',
-          isError: true,
-          content:
-            'Usage: /explain SAFETY_CODE (e.g. IDENTITY_UNSET) or paste failing tool/build output after /explain.',
+          content: buildActiveSafetyIssuesExplanation(issues),
         }
       }
       if (target.kind === 'safety-code' && target.safetyCode) {

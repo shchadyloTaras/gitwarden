@@ -34,6 +34,14 @@ const apiAi = vi.hoisted(() => ({
   onChatStreamEvent: vi.fn(),
 }))
 
+const apiGit = vi.hoisted(() => ({
+  getEffectiveIdentity: vi.fn(),
+  getRemotes: vi.fn(),
+  getStatus: vi.fn(),
+}))
+
+const profilesGetState = vi.hoisted(() => vi.fn(() => ({ profiles: [], activeProfileId: null })))
+
 vi.mock('../../src/renderer/store/aiStore', () => ({
   useAiStore: { getState: aiGetState },
 }))
@@ -42,7 +50,11 @@ vi.mock('../../src/renderer/store/appStore', () => ({
   useAppStore: { getState: appGetState },
 }))
 
-vi.stubGlobal('window', { api: { ai: apiAi } })
+vi.mock('../../src/renderer/store/profilesStore', () => ({
+  useProfilesStore: { getState: profilesGetState },
+}))
+
+vi.stubGlobal('window', { api: { ai: apiAi, git: apiGit } })
 
 import { useAiChatStore } from '../../src/renderer/store/aiChatStore'
 
@@ -108,6 +120,13 @@ describe('aiChatStore slash-commands', () => {
         actionHint: 'Re-run tests locally.',
       },
     })
+    apiGit.getEffectiveIdentity.mockResolvedValue({
+      ok: true,
+      data: { userName: 'Dev', userEmail: 'dev@example.com', emailSource: 'local' },
+    })
+    apiGit.getRemotes.mockResolvedValue({ ok: true, data: [] })
+    apiGit.getStatus.mockResolvedValue({ ok: true, data: { branch: 'main' } })
+    profilesGetState.mockReturnValue({ profiles: [], activeProfileId: null })
   })
 
   it.each([
@@ -188,5 +207,21 @@ describe('aiChatStore slash-commands', () => {
       repositoryId: 'repo-1',
       output: 'npm ERR! test failed',
     })
+  })
+
+  it('explains the current safety issues for bare /explain without an AI send', async () => {
+    await useAiChatStore.getState().send('/explain')
+
+    // No active profile → the engine flags NO_ACTIVE_PROFILE deterministically.
+    const last = useAiChatStore.getState().messages.at(-1)
+    expect(last?.kind).toBe('explain')
+    expect(last?.isError).toBeFalsy()
+    expect(last?.content).toContain('NO_ACTIVE_PROFILE')
+    expect(last?.content).toContain('GitWarden needs an active profile')
+    expect(last?.content).toContain('Tip: run /explain <CODE>')
+
+    // Bare /explain is deterministic — it must NOT hit either AI explain path.
+    expect(aiMethods.explainSafetyIssue).not.toHaveBeenCalled()
+    expect(apiAi.explainToolOutput).not.toHaveBeenCalled()
   })
 })

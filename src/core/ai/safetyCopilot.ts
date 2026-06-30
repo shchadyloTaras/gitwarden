@@ -2,6 +2,7 @@
 // Pure core: works with AI disabled. AI may enhance the explanation text only.
 
 import type { SafetyCode } from '../safety/SafetyCheckService.js'
+import type { SafetyIssue } from '../types.js'
 import {
   SAFETY_ACTION_BY_CODE,
   actionHintFor,
@@ -31,6 +32,33 @@ export const ALL_SAFETY_CODES = [
 
 export function suggestedActionFor(code: SafetyCode) {
   return SAFETY_ACTION_BY_CODE[code]
+}
+
+/**
+ * Bare `/explain` (no argument) overview: explain every CURRENTLY active safety issue
+ * for the repo deterministically — no AI send, works offline. Blockers are listed
+ * before warnings and codes are deduped (the same code can surface in both the identity
+ * and push checks). `/explain <CODE>` still gives the AI-enhanced deep dive on one issue.
+ */
+export function buildActiveSafetyIssuesExplanation(issues: SafetyIssue[]): string {
+  const seen = new Set<string>()
+  const unique = issues.filter((issue) => {
+    if (seen.has(issue.code)) return false
+    seen.add(issue.code)
+    return true
+  })
+  if (unique.length === 0) {
+    return 'No active safety issues for this repository right now. Pass a code (e.g. /explain IDENTITY_UNSET) or paste failing tool/build output after /explain.'
+  }
+  // Stable sort keeps engine order within a severity; blockers float to the top.
+  const ordered = [...unique].sort((a, b) =>
+    a.severity === b.severity ? 0 : a.severity === 'blocker' ? -1 : 1
+  )
+  const sections = ordered.map((issue) => {
+    const explanation = buildDeterministicSafetyExplanation(issue.code as SafetyCode)
+    return `${issue.code}\n${explanation.explanation}\n\nSuggested: ${explanation.actionHint}`
+  })
+  return `${sections.join('\n\n')}\n\nTip: run /explain <CODE> for an AI-enhanced explanation of a single issue.`
 }
 
 /** Deterministic explanation — always available, even with AI disabled. */

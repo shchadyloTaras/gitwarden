@@ -1,13 +1,19 @@
 import { describe, it, expect } from 'vitest'
 import {
   ALL_SAFETY_CODES,
+  buildActiveSafetyIssuesExplanation,
   buildDeterministicSafetyExplanation,
   mergeSafetyExplanation,
   suggestedActionFor,
 } from '../../src/core/ai/safetyCopilot'
 import { explainSafetyIssue, SAFETY_ACTION_BY_CODE } from '../../src/core/ai/safetyCopilotMessages'
 import type { SafetyCode } from '../../src/core/safety/SafetyCheckService'
+import type { SafetyIssue } from '../../src/core/types'
 import { SAFETY_MESSAGES } from '../../src/core/safety/safetyMessages'
+
+function issue(code: SafetyCode, severity: SafetyIssue['severity'] = 'blocker'): SafetyIssue {
+  return { code, severity, message: `msg for ${code}` }
+}
 
 describe('Safety Copilot', () => {
   it('has deterministic explanation copy for every SafetyCode', () => {
@@ -67,5 +73,43 @@ describe('Safety Copilot', () => {
   it('ignores blank AI explanation', () => {
     const deterministic = buildDeterministicSafetyExplanation('IDENTITY_UNSET')
     expect(mergeSafetyExplanation(deterministic, '   ')).toEqual(deterministic)
+  })
+})
+
+describe('buildActiveSafetyIssuesExplanation (bare /explain)', () => {
+  it('returns a friendly hint when there are no active issues', () => {
+    const text = buildActiveSafetyIssuesExplanation([])
+    expect(text).toMatch(/no active safety issues/i)
+    // It points the user at the two ways to use /explain with an argument.
+    expect(text).toContain('/explain')
+  })
+
+  it('explains a single active issue with its deterministic copy and action hint', () => {
+    const expected = buildDeterministicSafetyExplanation('IDENTITY_UNSET')
+    const text = buildActiveSafetyIssuesExplanation([issue('IDENTITY_UNSET')])
+    expect(text).toContain('IDENTITY_UNSET')
+    expect(text).toContain(expected.explanation)
+    expect(text).toContain('Suggested:')
+    expect(text).toContain(expected.actionHint)
+  })
+
+  it('lists blockers before warnings across identity and push issues', () => {
+    const text = buildActiveSafetyIssuesExplanation([
+      issue('EMAIL_FROM_GLOBAL_ONLY', 'warning'),
+      issue('STAGED_SECRET_DETECTED', 'blocker'),
+    ])
+    expect(text).toContain('EMAIL_FROM_GLOBAL_ONLY')
+    expect(text).toContain('STAGED_SECRET_DETECTED')
+    expect(text.indexOf('STAGED_SECRET_DETECTED')).toBeLessThan(
+      text.indexOf('EMAIL_FROM_GLOBAL_ONLY')
+    )
+  })
+
+  it('deduplicates the same code reported by more than one check', () => {
+    const text = buildActiveSafetyIssuesExplanation([
+      issue('IDENTITY_UNSET'),
+      issue('IDENTITY_UNSET'),
+    ])
+    expect(text.match(/IDENTITY_UNSET/g)).toHaveLength(1)
   })
 })
