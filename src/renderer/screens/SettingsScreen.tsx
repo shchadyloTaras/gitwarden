@@ -391,6 +391,7 @@ export default function SettingsScreen(): React.ReactElement {
                   {localDefaultFolder && (
                     <button
                       data-testid="settings-default-folder-clear"
+                      data-tooltip={STR.TT_SETTINGS_FOLDER_CLEAR}
                       onClick={() => {
                         setLocalDefaultFolder('')
                         setDirty(true)
@@ -440,6 +441,7 @@ export default function SettingsScreen(): React.ReactElement {
                   />
                   <button
                     data-testid="settings-git-path-validate"
+                    data-tooltip={STR.TT_SETTINGS_GIT_VALIDATE}
                     disabled={!localGitPath.trim() || validateStatus === 'validating'}
                     onClick={() => void handleValidate()}
                     style={{
@@ -461,6 +463,7 @@ export default function SettingsScreen(): React.ReactElement {
                   {localGitPath && (
                     <button
                       data-testid="settings-git-path-clear"
+                      data-tooltip={STR.TT_SETTINGS_GIT_CLEAR}
                       onClick={() => {
                         setLocalGitPath('')
                         setValidateStatus(null)
@@ -586,7 +589,7 @@ export default function SettingsScreen(): React.ReactElement {
           {showSaveRow && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <span
-                title={dirty ? undefined : 'No changes to save.'}
+                data-tooltip={dirty ? undefined : STR.SETTINGS_SAVE_NO_CHANGES}
                 style={{ display: 'inline-block' }}
               >
                 <button

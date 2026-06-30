@@ -226,6 +226,7 @@ export default function BranchesScreen(): React.ReactElement {
               />
               <button
                 data-testid="branches-create-btn"
+                data-tooltip={STR.TT_BRANCH_CREATE}
                 disabled={!newBranchName.trim()}
                 onClick={() => void handleCreate()}
                 style={{
@@ -310,6 +311,7 @@ export default function BranchesScreen(): React.ReactElement {
                   {!b.isCurrent && !checkedOutElsewhere && (
                     <button
                       data-testid="branches-switch-btn"
+                      data-tooltip={STR.TT_BRANCH_SWITCH}
                       onClick={() => void handleSwitch(b.name)}
                       style={BTN}
                     >
@@ -320,6 +322,7 @@ export default function BranchesScreen(): React.ReactElement {
                   {!b.isCurrent && !checkedOutElsewhere && deleteConfirmBranch !== b.name && (
                     <button
                       data-testid="branches-delete-btn"
+                      data-tooltip={STR.TT_BRANCH_DELETE}
                       onClick={() => setDeleteConfirm(b.name)}
                       style={BTN_DANGER}
                     >

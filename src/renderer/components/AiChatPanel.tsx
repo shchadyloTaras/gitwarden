@@ -547,6 +547,8 @@ function ChatConversation({ onClear }: { onClear: () => void }): React.ReactElem
                   className="gw-chat-icon-btn gw-chat-icon-btn--stop"
                   data-testid="ai-chat-stop"
                   aria-label={STR.CHAT_STOP}
+                  data-tooltip={STR.CHAT_STOP}
+                  data-tooltip-pos="top"
                   onClick={() => void cancel()}
                 >
                   <StopIcon />
@@ -557,6 +559,8 @@ function ChatConversation({ onClear }: { onClear: () => void }): React.ReactElem
                   className="gw-chat-icon-btn gw-chat-icon-btn--send"
                   data-testid="ai-chat-send"
                   aria-label={STR.CHAT_SEND}
+                  data-tooltip={STR.CHAT_SEND}
+                  data-tooltip-pos="top"
                   disabled={!canSend}
                   onClick={() => submit(draft)}
                 >

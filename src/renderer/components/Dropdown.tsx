@@ -29,6 +29,10 @@ interface DropdownProps {
   popupMinWidth?: number
   popupMaxWidth?: number
   triggerStyle?: React.CSSProperties
+  /** Optional hover/focus tooltip on the trigger (uses the global data-tooltip styles). */
+  tooltip?: string
+  /** Tooltip placement; defaults to the global default (top). */
+  tooltipPos?: 'top' | 'bottom' | 'left' | 'right'
   /** Extra class names merged onto the trigger button (after `gw-dd-trigger`). */
   triggerClassName?: string
   /** Override the visible trigger label while keeping `value` for selection state. */
@@ -146,6 +150,8 @@ export default function Dropdown({
   popupMinWidth,
   popupMaxWidth,
   triggerStyle,
+  tooltip,
+  tooltipPos,
   triggerClassName,
   displayValue,
   portaled = true,
@@ -304,6 +310,8 @@ export default function Dropdown({
       aria-haspopup="listbox"
       aria-expanded={open}
       aria-label={ariaLabel}
+      data-tooltip={tooltip || undefined}
+      data-tooltip-pos={tooltipPos}
       disabled={disabled}
       onClick={() => !disabled && setOpen((o) => !o)}
       onKeyDown={onKeyDown}

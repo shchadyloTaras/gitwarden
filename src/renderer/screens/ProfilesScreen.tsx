@@ -399,6 +399,7 @@ export default function ProfilesScreen(): React.ReactElement {
                         <button
                           type="button"
                           data-testid="profile-row-set-active-btn"
+                          data-tooltip={STR.TT_PROFILE_SET_ACTIVE}
                           onClick={() => {
                             void handleSetActiveById(p.id)
                           }}
@@ -427,6 +428,7 @@ export default function ProfilesScreen(): React.ReactElement {
             <div style={{ padding: '8px 12px', borderTop: '1px solid var(--gw-border, #27272a)' }}>
               <button
                 data-testid="profiles-new-btn"
+                data-tooltip={STR.TT_PROFILE_NEW}
                 onClick={startCreate}
                 style={{
                   width: '100%',
@@ -528,6 +530,7 @@ export default function ProfilesScreen(): React.ReactElement {
                       <button
                         type="button"
                         data-testid="github-connect-new-btn"
+                        data-tooltip={STR.TT_PROFILE_CONNECT_GH}
                         onClick={() => {
                           void handleConnectNew()
                         }}
@@ -595,6 +598,7 @@ export default function ProfilesScreen(): React.ReactElement {
                             <button
                               type="button"
                               data-testid="github-reconnect-btn"
+                              data-tooltip={STR.TT_PROFILE_RECONNECT_GH}
                               onClick={() => setConnecting(true)}
                               style={ghSecondaryBtn}
                             >
@@ -603,6 +607,7 @@ export default function ProfilesScreen(): React.ReactElement {
                             <button
                               type="button"
                               data-testid="github-disconnect-btn"
+                              data-tooltip={STR.TT_PROFILE_DISCONNECT_GH}
                               onClick={() => setConfirmDisconnect(true)}
                               style={{ ...ghSecondaryBtn, color: 'var(--gw-danger, #f87171)' }}
                             >
@@ -658,6 +663,7 @@ export default function ProfilesScreen(): React.ReactElement {
                       <button
                         type="button"
                         data-testid="github-connect-btn"
+                        data-tooltip={STR.TT_PROFILE_CONNECT_GH}
                         onClick={() => setConnecting(true)}
                         style={{
                           padding: '6px 14px',
@@ -820,6 +826,7 @@ export default function ProfilesScreen(): React.ReactElement {
                     <button
                       type="button"
                       data-testid="profile-set-active-btn"
+                      data-tooltip={STR.TT_PROFILE_SET_ACTIVE}
                       onClick={() => {
                         void handleSetActive()
                       }}
@@ -863,6 +870,7 @@ export default function ProfilesScreen(): React.ReactElement {
                     <button
                       type="button"
                       data-testid="profile-delete-btn"
+                      data-tooltip={STR.TT_PROFILE_DELETE}
                       onClick={() => setConfirmDelete(true)}
                       disabled={saving}
                       style={{

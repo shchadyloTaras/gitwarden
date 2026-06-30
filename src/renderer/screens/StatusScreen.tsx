@@ -70,12 +70,14 @@ interface ExtraAction {
   testId: string
   onClick(path: string): void
   danger?: boolean
+  tooltip?: string
 }
 
 function FileRow({
   file,
   kindKey,
   actionLabel,
+  actionTooltip,
   actionTestId,
   rowTestId,
   onAction,
@@ -89,6 +91,7 @@ function FileRow({
   file: FileChange
   kindKey: string
   actionLabel: string
+  actionTooltip?: string
   actionTestId: string
   rowTestId: string
   onAction(path: string): void
@@ -134,6 +137,7 @@ function FileRow({
         </span>
         <button
           data-testid={actionTestId}
+          data-tooltip={actionTooltip}
           onClick={(e) => {
             e.stopPropagation()
             onAction(file.path)
@@ -155,6 +159,7 @@ function FileRow({
         {extraAction && !isConfirming && (
           <button
             data-testid={extraAction.testId}
+            data-tooltip={extraAction.tooltip}
             onClick={(e) => {
               e.stopPropagation()
               extraAction.onClick(file.path)
@@ -601,6 +606,7 @@ export default function StatusScreen(): React.ReactElement {
         {activeRepo && (
           <button
             data-testid="status-refresh"
+            data-tooltip={STR.TT_STATUS_REFRESH}
             onClick={() => act(() => loadStatus(activeRepo.localPath))}
             disabled={loading}
             style={{
@@ -707,6 +713,7 @@ export default function StatusScreen(): React.ReactElement {
                             file={f}
                             kindKey={f.indexStatus}
                             actionLabel="Unstage"
+                            actionTooltip={STR.TT_STATUS_UNSTAGE}
                             actionTestId="unstage-btn"
                             rowTestId="staged-file-row"
                             onAction={(p) => act(() => unstageFile(p))}
@@ -743,6 +750,7 @@ export default function StatusScreen(): React.ReactElement {
                             file={f}
                             kindKey={f.worktreeStatus}
                             actionLabel="Stage"
+                            actionTooltip={STR.TT_STATUS_STAGE}
                             actionTestId="stage-btn"
                             rowTestId="unstaged-file-row"
                             onAction={(p) => act(() => stageFile(p))}
@@ -751,6 +759,7 @@ export default function StatusScreen(): React.ReactElement {
                             extraAction={{
                               label: STR.DISCARD_TRACKED_LABEL,
                               testId: 'discard-btn',
+                              tooltip: STR.TT_STATUS_DISCARD,
                               onClick: (p) => {
                                 setConfirmCleanPath(null)
                                 setConfirmDiscardPath(p)
@@ -790,6 +799,7 @@ export default function StatusScreen(): React.ReactElement {
                             file={f}
                             kindKey="untracked"
                             actionLabel="Stage"
+                            actionTooltip={STR.TT_STATUS_STAGE}
                             actionTestId="stage-btn"
                             rowTestId="untracked-file-row"
                             onAction={(p) => act(() => stageFile(p))}
@@ -798,6 +808,7 @@ export default function StatusScreen(): React.ReactElement {
                             extraAction={{
                               label: STR.DELETE_UNTRACKED_LABEL,
                               testId: 'clean-btn',
+                              tooltip: STR.TT_STATUS_DELETE,
                               onClick: (p) => {
                                 setConfirmDiscardPath(null)
                                 setConfirmCleanPath(p)

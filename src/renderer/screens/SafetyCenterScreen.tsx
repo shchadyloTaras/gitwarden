@@ -225,6 +225,7 @@ export default function SafetyCenterScreen(): React.ReactElement {
               >
                 <button
                   data-testid="safety-assign-repo-btn"
+                  data-tooltip={STR.TT_SAFETY_ASSIGN_REPO}
                   onClick={() => void handleAssignToActiveProfile()}
                   disabled={assigning}
                   style={{

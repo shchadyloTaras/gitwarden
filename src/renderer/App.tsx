@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar'
 import RightPanel from './components/RightPanel'
 import OnboardingTour from './components/OnboardingTour'
 import StartupLoader from './components/StartupLoader'
+import TooltipLayer from './components/TooltipLayer'
 import { useAppStore } from './store/appStore'
 import { useProfilesStore } from './store/profilesStore'
 import { useRepositoriesStore } from './store/repositoriesStore'
@@ -571,6 +572,8 @@ export default function App(): React.ReactElement {
       />
 
       {startupLoaderVisible && <StartupLoader exiting={startupLoaderExiting} />}
+
+      <TooltipLayer />
     </div>
   )
 }

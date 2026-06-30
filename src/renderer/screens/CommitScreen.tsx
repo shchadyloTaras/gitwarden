@@ -173,7 +173,7 @@ export default function CommitScreen(): React.ReactElement {
                   data-testid="ai-commit-draft-toggle"
                   onClick={() => void draftMessage()}
                   disabled={draftLoading}
-                  title={STR.AI_COMMIT_ASSISTANT_HINT}
+                  data-tooltip={STR.AI_COMMIT_ASSISTANT_HINT}
                   style={{
                     background: 'none',
                     color: 'var(--gw-accent-text, #a5b4fc)',
@@ -336,13 +336,14 @@ export default function CommitScreen(): React.ReactElement {
           {/* Commit button */}
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <span
-              title={
+              data-tooltip={
                 safetyResult?.canCommit
                   ? undefined
                   : blockers.length > 0
                     ? `Can't commit yet:\n• ${blockers.map((b) => b.message).join('\n• ')}`
                     : 'Stage changes and enter a commit message to commit.'
               }
+              data-tooltip-pos="left"
               style={{ display: 'inline-block' }}
             >
               <button

@@ -143,7 +143,9 @@ export default function GlobalHeader(): React.ReactElement {
       {/* Repo picker */}
       <Dropdown
         testId="header-repo-select"
-        ariaLabel="Active repository"
+        ariaLabel={STR.HEADER_REPO_PICKER}
+        tooltip={STR.HEADER_REPO_PICKER}
+        tooltipPos="bottom"
         placeholder="No repositories"
         value={activeRepo?.id ?? ''}
         options={repos.map((r) => ({ value: r.id, label: r.name }))}
@@ -157,7 +159,9 @@ export default function GlobalHeader(): React.ReactElement {
           <span style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: 14 }}>on</span>
           <Dropdown
             testId="header-branch-select"
-            ariaLabel="Current branch"
+            ariaLabel={STR.HEADER_BRANCH_PICKER}
+            tooltip={STR.HEADER_BRANCH_PICKER}
+            tooltipPos="bottom"
             monospace
             value={currentBranch ?? ''}
             options={localBranches.map((b) => {
@@ -212,6 +216,8 @@ export default function GlobalHeader(): React.ReactElement {
       <button
         data-testid="header-guard-badge"
         aria-label={guardAriaLabel}
+        data-tooltip={guardDestination}
+        data-tooltip-pos="bottom"
         onClick={() => navigate(activeRepo ? 'safety-center' : 'repositories')}
         style={{
           ...GUARD_STYLE[guardState],
@@ -252,7 +258,8 @@ export default function GlobalHeader(): React.ReactElement {
         <button
           data-testid="header-update-button"
           aria-label={STR.UPDATE_BUTTON_ARIA(availableUpdate.version)}
-          title={STR.UPDATE_AVAILABLE(availableUpdate.version)}
+          data-tooltip={STR.UPDATE_AVAILABLE(availableUpdate.version)}
+          data-tooltip-pos="bottom"
           onClick={() => void window.api.shell.openExternal(availableUpdate.url)}
           style={{
             display: 'inline-flex',
@@ -282,6 +289,8 @@ export default function GlobalHeader(): React.ReactElement {
       <button
         data-testid="header-ai-chat"
         aria-label={STR.CHAT_OPEN_LABEL}
+        data-tooltip={STR.CHAT_OPEN_LABEL}
+        data-tooltip-pos="bottom"
         onClick={() => openRightPanel('chat')}
         style={{
           ...HEADER_ACTION_BUTTON_STYLE,
@@ -293,7 +302,9 @@ export default function GlobalHeader(): React.ReactElement {
       </button>
 
       <button
-        aria-label="Toggle inspector"
+        aria-label={STR.INSPECTOR_TOGGLE}
+        data-tooltip={STR.INSPECTOR_TOGGLE}
+        data-tooltip-pos="bottom"
         onClick={toggleInspector}
         style={HEADER_ACTION_BUTTON_STYLE}
       >

@@ -290,6 +290,7 @@ export default function RemoteScreen(): React.ReactElement {
                     <div style={{ display: 'flex', gap: '6px' }}>
                       <button
                         data-testid="remote-op-fetch"
+                        data-tooltip={STR.TT_REMOTE_FETCH}
                         onClick={() => doFetch(remote.name)}
                         disabled={
                           fetchLoading === remote.name || pullLoading !== null || pushLoading
@@ -310,6 +311,7 @@ export default function RemoteScreen(): React.ReactElement {
                       {currentBranch && (
                         <button
                           data-testid="remote-op-pull"
+                          data-tooltip={STR.TT_REMOTE_PULL}
                           onClick={() => doPull(remote.name, currentBranch)}
                           disabled={
                             pullLoading === remote.name || fetchLoading !== null || pushLoading
@@ -331,6 +333,7 @@ export default function RemoteScreen(): React.ReactElement {
                       {currentBranch && (
                         <button
                           data-testid="remote-op-push"
+                          data-tooltip={STR.TT_REMOTE_PUSH}
                           onClick={() => handleOpenPushSheet(remote)}
                           disabled={fetchLoading !== null || pullLoading !== null || pushLoading}
                           style={{

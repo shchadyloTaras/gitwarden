@@ -1,0 +1,92 @@
+/*
+ * Universal tooltip
+ * ─────────────────
+ * Attach to ANY element with a `data-tooltip="…"` attribute; the bubble shows on
+ * hover and on keyboard focus (:focus-visible). The bubble itself is rendered by
+ * <TooltipLayer/> (src/renderer/components/TooltipLayer.tsx) into a single node
+ * portaled to <body> and positioned with getBoundingClientRect — it flips to the
+ * opposite side and clamps into the viewport when there isn't room, so it never
+ * clips at a window edge or inside an `overflow:hidden`/scroll container.
+ *
+ *   <button data-tooltip="Copy path">⧉</button>
+ *   <span data-tooltip="Protected branch" data-tooltip-pos="bottom">main</span>
+ *
+ * data-tooltip-pos="top" (default) | "bottom" | "left" | "right" is the PREFERRED
+ * side; TooltipLayer picks another side if there isn't room.
+ *
+ * Accessibility: the bubble (role="tooltip") is decorative and not announced as a
+ * name. For controls that need an accessible name, also set `aria-label` with the
+ * same text (the icon buttons here do).
+ *
+ * This file only styles the bubble; all positioning is done in TooltipLayer.
+ */
+
+.gw-tip {
+  position: fixed;
+  z-index: 10001;
+  width: max-content;
+  max-width: 280px;
+  padding: 4px 8px;
+  border: 1px solid var(--gw-border-subtle);
+  border-radius: 6px;
+  background: var(--gw-surface2);
+  color: var(--gw-text);
+  box-shadow: 0 2px 8px var(--gw-shadow);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  white-space: pre-line; /* collapse runs of space, but honour explicit "\n" breaks */
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(2px);
+  transition:
+    opacity 0.14s ease,
+    transform 0.14s ease;
+}
+
+.gw-tip--shown {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Arrow — a small triangle nudged along the bubble edge to point at the target. */
+.gw-tip::after {
+  content: '';
+  position: absolute;
+  border: 5px solid transparent;
+}
+.gw-tip--top::after {
+  top: 100%;
+  left: var(--gw-tip-arrow, 50%);
+  transform: translateX(-50%);
+  border-top-color: var(--gw-surface2);
+}
+.gw-tip--bottom::after {
+  bottom: 100%;
+  left: var(--gw-tip-arrow, 50%);
+  transform: translateX(-50%);
+  border-bottom-color: var(--gw-surface2);
+}
+.gw-tip--left::after {
+  left: 100%;
+  top: var(--gw-tip-arrow, 50%);
+  transform: translateY(-50%);
+  border-left-color: var(--gw-surface2);
+}
+.gw-tip--right::after {
+  right: 100%;
+  top: var(--gw-tip-arrow, 50%);
+  transform: translateY(-50%);
+  border-right-color: var(--gw-surface2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gw-tip {
+    transition-duration: 0.01ms;
+    transform: none;
+  }
+  .gw-tip--shown {
+    transform: none;
+  }
+}

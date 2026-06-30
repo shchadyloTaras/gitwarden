@@ -289,6 +289,7 @@ export default function RepositoriesScreen(): React.ReactElement {
             <div style={{ padding: '8px 12px', borderTop: '1px solid var(--gw-border, #27272a)' }}>
               <button
                 data-testid="repos-add-btn"
+                data-tooltip={STR.TT_REPO_ADD}
                 onClick={startAdd}
                 style={{
                   width: '100%',

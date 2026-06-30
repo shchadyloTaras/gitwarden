@@ -14,6 +14,9 @@ export const STR = {
   STATUS_SPLIT_RESIZE_LABEL: 'Resize changes list',
 
   // ── Icon-button & header-control labels (aria-label + hover tooltip) ───────
+  INSPECTOR_TOGGLE: 'Toggle inspector',
+  HEADER_REPO_PICKER: 'Active repository',
+  HEADER_BRANCH_PICKER: 'Current branch',
   SIDEBAR_COLLAPSE: 'Collapse sidebar',
   SIDEBAR_EXPAND: 'Expand sidebar',
 
@@ -94,6 +97,7 @@ export const STR = {
   SETTINGS_SAVE: 'Save Settings',
   SETTINGS_SAVED: 'Settings saved.',
   SETTINGS_SAVE_ERROR: 'Failed to save settings.',
+  SETTINGS_SAVE_NO_CHANGES: 'No changes to save.',
   SETTINGS_GIT_VALID: (version: string) => `Valid — ${version}`,
   SETTINGS_GIT_INVALID: 'Not a valid git executable.',
   SETTINGS_GIT_VALIDATE_HINT: 'Enter a path to validate it, or leave blank to use auto-detect.',
@@ -487,4 +491,29 @@ export const STR = {
   RECOVERY_BANNER_TITLE: 'This push needs attention',
   RECOVERY_RECONNECT_ASSIGNED_GITHUB: (profile: string): string =>
     `GitHub still rejected the HTTPS push while "${profile}" is already active. Reconnect GitHub for this profile to refresh repository access, then push again.`,
+
+  // ── Action tooltips (explanatory hover hints) ─────────────────────────────
+  TT_REMOTE_FETCH:
+    'Download new commits and branches from this remote — your files stay untouched.',
+  TT_REMOTE_PULL: 'Fetch from this remote and merge it into the current branch.',
+  TT_REMOTE_PUSH: 'Upload your local commits to this remote (a safety review runs first).',
+  TT_BRANCH_CREATE: 'Create a new branch from the current one and switch to it.',
+  TT_BRANCH_SWITCH: 'Check out this branch.',
+  TT_BRANCH_DELETE: 'Delete this local branch.',
+  TT_STATUS_REFRESH: 'Re-read the working tree and refresh the lists.',
+  TT_STATUS_STAGE: 'Stage this file — include it in the next commit.',
+  TT_STATUS_UNSTAGE: 'Unstage this file — keep the change but leave it out of the next commit.',
+  TT_STATUS_DISCARD: 'Revert this file to its last committed state. Unsaved edits are lost.',
+  TT_STATUS_DELETE: 'Permanently delete this untracked file from disk — cannot be undone.',
+  TT_PROFILE_SET_ACTIVE: 'Make this the active profile used for new work.',
+  TT_PROFILE_CONNECT_GH: 'Link a GitHub account to auto-fill identity and verify pushes.',
+  TT_PROFILE_RECONNECT_GH: 'Re-authorize this GitHub account (e.g. after the token expired).',
+  TT_PROFILE_DISCONNECT_GH: 'Remove the stored GitHub token from this profile.',
+  TT_PROFILE_DELETE: 'Delete this profile. Repositories assigned to it lose their assignment.',
+  TT_PROFILE_NEW: 'Create a new identity profile.',
+  TT_SETTINGS_GIT_VALIDATE: 'Check that this path points to a working git executable.',
+  TT_SETTINGS_GIT_CLEAR: 'Clear the custom path and auto-detect git from PATH.',
+  TT_SETTINGS_FOLDER_CLEAR: 'Clear the default projects folder.',
+  TT_REPO_ADD: 'Add an existing local repository to GitWarden.',
+  TT_SAFETY_ASSIGN_REPO: 'Assign this repository to a profile so identity can be checked.',
 } as const
