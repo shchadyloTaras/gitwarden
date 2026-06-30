@@ -2,13 +2,15 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useProfilesStore } from '../store/profilesStore'
 import { useRemoteStore } from '../store/remoteStore'
 import { useAppStore } from '../store/appStore'
-import { safetyCheckService } from '../../core/safety/SafetyCheckService'
+import { safetyCheckService, type SafetyCode } from '../../core/safety/SafetyCheckService'
 import type { GitHubPushContext } from '../../core/safety/SafetyCheckService'
+import { remediationForSafetyCode } from '../../core/safety/remediation'
 import { isHttpsGitHubRemoteUrl } from '../../core/github/remoteUrl'
 import { matchesAnyPattern } from '../../core/safety/branchPatterns'
 import type { GitRemote } from '../../core/types'
 import { STR } from '../strings'
 import SafetyIssueRow from '../components/SafetyIssueRow'
+import RemediationButton from '../components/RemediationButton'
 
 /** Renderer-side mirror of the main GitHubPushStatus (token-free). */
 type PushStatus = { hasToken: boolean; tokenInvalid: boolean; effectiveLogin?: string }
@@ -33,6 +35,8 @@ export default function RemoteScreen(): React.ReactElement {
     doPull,
     doRemotePush,
     clearMessages,
+    lastFailure,
+    setLastFailure,
   } = useRemoteStore()
 
   const [showPushSheet, setShowPushSheet] = useState(false)
@@ -132,6 +136,18 @@ export default function RemoteScreen(): React.ReactElement {
 
   const pushBlockers = pushSafetyResult?.issues.filter((i) => i.severity === 'blocker') ?? []
   const pushWarnings = pushSafetyResult?.issues.filter((i) => i.severity === 'warning') ?? []
+
+  // Model-driven one-click fixes for the push issues (dedup by action; skip a navigate
+  // back to this screen) so the user can resolve a push blocker right in the push sheet.
+  const pushSeenActions = new Set<string>()
+  const pushIssueRemediations = [...pushBlockers, ...pushWarnings]
+    .map((i) => remediationForSafetyCode(i.code as SafetyCode))
+    .filter((rem) => {
+      if (rem.kind === 'navigate' && rem.navigateTo === 'remote') return false
+      if (pushSeenActions.has(rem.action)) return false
+      pushSeenActions.add(rem.action)
+      return true
+    })
 
   return (
     <div
@@ -338,14 +354,54 @@ export default function RemoteScreen(): React.ReactElement {
             </div>
           )}
 
-          {/* Error message */}
-          {error && (
+          {/* Failed-push recovery banner (diagnosis + one-click fix), else a plain error. */}
+          {lastFailure ? (
             <div
-              data-testid="remote-error"
-              style={{ color: 'var(--gw-danger, #f87171)', fontSize: '14px', marginBottom: '12px' }}
+              data-testid="remote-recovery-banner"
+              style={{
+                padding: '10px 14px',
+                background: 'var(--gw-danger-bg, #450a0a)',
+                border: '1px solid var(--gw-danger-border, #991b1b)',
+                borderRadius: '4px',
+                marginBottom: '12px',
+              }}
             >
-              {error}
+              <div
+                data-testid="remote-error"
+                style={{ color: 'var(--gw-danger, #f87171)', fontSize: '14px' }}
+              >
+                {lastFailure.message}
+              </div>
+              {lastFailure.remediation && lastFailure.code !== 'dubiousOwnership' && (
+                <div style={{ marginTop: '10px' }}>
+                  <RemediationButton
+                    remediation={lastFailure.remediation}
+                    repoPath={repository?.localPath ?? activeRepo?.localPath}
+                    assignedProfileId={repository?.assignedProfileId}
+                    remote={selectedRemote?.name}
+                    branch={currentBranch ?? undefined}
+                    onSuccess={() => {
+                      clearMessages()
+                      if (activeRepo) void load(activeRepo.localPath, activeRepo)
+                    }}
+                    onFailure={(f) => setLastFailure(f)}
+                  />
+                </div>
+              )}
             </div>
+          ) : (
+            error && (
+              <div
+                data-testid="remote-error"
+                style={{
+                  color: 'var(--gw-danger, #f87171)',
+                  fontSize: '14px',
+                  marginBottom: '12px',
+                }}
+              >
+                {error}
+              </div>
+            )
           )}
         </>
       )}
@@ -452,6 +508,32 @@ export default function RemoteScreen(): React.ReactElement {
                 ))}
                 {pushWarnings.map((issue) => (
                   <SafetyIssueRow key={issue.code} issue={issue} testIdPrefix="remote-push" />
+                ))}
+              </div>
+            )}
+
+            {pushIssueRemediations.length > 0 && (
+              <div
+                data-testid="remote-push-remediations"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  marginBottom: '16px',
+                }}
+              >
+                {pushIssueRemediations.map((rem) => (
+                  <RemediationButton
+                    key={rem.action}
+                    remediation={rem}
+                    repoPath={repository?.localPath ?? activeRepo?.localPath}
+                    assignedProfileId={repository?.assignedProfileId}
+                    remote={selectedRemote?.name}
+                    branch={currentBranch ?? undefined}
+                    onSuccess={() => {
+                      if (activeRepo) void load(activeRepo.localPath, activeRepo)
+                    }}
+                  />
                 ))}
               </div>
             )}

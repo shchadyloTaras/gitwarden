@@ -32,6 +32,8 @@ interface RemoteState {
   doPull(remote: string, branch: string): Promise<void>
   doRemotePush(remote: string, branch: string): Promise<void>
   clearMessages(): void
+  /** Record a (re-diagnosed) push failure — used when a one-click retry fails again. */
+  setLastFailure(failure: RemoteState['lastFailure']): void
 }
 
 export const useRemoteStore = create<RemoteState>((set, get) => ({
@@ -146,5 +148,9 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
 
   clearMessages() {
     set({ error: null, successMessage: null, lastFailure: null })
+  },
+
+  setLastFailure(failure) {
+    set({ lastFailure: failure, error: failure?.message ?? null })
   },
 }))

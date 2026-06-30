@@ -452,4 +452,29 @@ export const STR = {
   UPDATE_NO_RELEASES: 'No published releases yet.',
   UPDATE_ERROR: 'Could not check for updates. Check your connection and try again.',
   UPDATE_DOWNLOAD_BUTTON: 'Download',
+
+  // --- Guard Quick-Fix: one-click remediation (Phase 67) ---
+  REMEDIATION_FIXING: 'Fixing…',
+  REMEDIATION_SET_IDENTITY: (profile: string, name: string, email: string): string =>
+    `Set local identity to "${profile}" (${name} <${email}>)`,
+  REMEDIATION_SET_IDENTITY_GENERIC: 'Set local identity to the active profile',
+  REMEDIATION_LOCAL_ONLY_HINT:
+    'This changes local repository Git config only, not global Git config.',
+  REMEDIATION_SWITCH_PROFILE: (profile: string): string => `Switch to "${profile}"`,
+  REMEDIATION_SWITCH_AND_PUSH: (profile: string): string => `Switch to "${profile}" and push`,
+  REMEDIATION_RECONNECT: 'Reconnect GitHub',
+  REMEDIATION_ASSIGNED_PROFILE_FALLBACK: 'the assigned profile',
+  REMEDIATION_GO_TO: (screen: string): string => `Go to ${screen}`,
+  REMEDIATION_NAV_LABEL: {
+    repositories: 'Repositories',
+    commit: 'Commit',
+    status: 'Status',
+    remote: 'Remote',
+    branches: 'Branches',
+    profiles: 'Profiles',
+  } as Record<string, string>,
+  REMEDIATION_DEVICE_CODE: (code: string, url: string): string =>
+    `Enter code ${code} at ${url} to reconnect.`,
+  // Failed-push recovery banner.
+  RECOVERY_BANNER_TITLE: 'This push needs attention',
 } as const

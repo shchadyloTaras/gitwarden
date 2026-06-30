@@ -3,10 +3,10 @@ import { useProfilesStore } from '../store/profilesStore'
 import { useCommitStore } from '../store/commitStore'
 import { useAppStore } from '../store/appStore'
 import { useAiStore } from '../store/aiStore'
-import { safetyCheckService } from '../../core/safety/SafetyCheckService'
+import { safetyCheckService, type SafetyCode } from '../../core/safety/SafetyCheckService'
+import { remediationForSafetyCode } from '../../core/safety/remediation'
+import RemediationButton from '../components/RemediationButton'
 import { STR } from '../strings'
-
-const IDENTITY_CODES = new Set(['IDENTITY_UNSET', 'EMAIL_MISMATCH', 'EMAIL_FROM_GLOBAL_ONLY'])
 
 export default function CommitScreen(): React.ReactElement {
   const activeRepo = useAppStore((s) => s.activeRepo)
@@ -17,7 +17,6 @@ export default function CommitScreen(): React.ReactElement {
     status,
     identity,
     loading,
-    identityLoading,
     commitLoading,
     draftLoading,
     draftError,
@@ -25,7 +24,6 @@ export default function CommitScreen(): React.ReactElement {
     committedHash,
     load,
     setMessage,
-    applyLocalIdentity,
     doCommit,
     draftMessage,
   } = useCommitStore()
@@ -73,13 +71,17 @@ export default function CommitScreen(): React.ReactElement {
 
   const blockers = safetyResult?.issues.filter((i) => i.severity === 'blocker') ?? []
   const warnings = safetyResult?.issues.filter((i) => i.severity === 'warning') ?? []
-  const hasIdentityIssue = safetyResult?.issues.some((i) => IDENTITY_CODES.has(i.code)) ?? false
-  const canSetIdentity = hasIdentityIssue && !!activeProfile && !identityLoading
-
-  const handleSetIdentity = async () => {
-    if (!activeProfile) return
-    await applyLocalIdentity(activeProfile.gitAuthorName, activeProfile.gitAuthorEmail)
-  }
+  // One remediation per distinct action across the issues (model-driven; replaces the
+  // bespoke "Set local identity" button). Skip a navigate that points back to Commit.
+  const seenRemediationActions = new Set<string>()
+  const issueRemediations = [...blockers, ...warnings]
+    .map((i) => remediationForSafetyCode(i.code as SafetyCode))
+    .filter((rem) => {
+      if (rem.kind === 'navigate' && rem.navigateTo === 'commit') return false
+      if (seenRemediationActions.has(rem.action)) return false
+      seenRemediationActions.add(rem.action)
+      return true
+    })
 
   const handleCommit = async () => {
     if (!safetyResult?.canCommit || commitLoading) return
@@ -270,8 +272,9 @@ export default function CommitScreen(): React.ReactElement {
                   <span>{issue.message}</span>
                 </div>
               ))}
-              {canSetIdentity && (
+              {issueRemediations.length > 0 && (
                 <div
+                  data-testid="commit-remediations"
                   style={{
                     padding: '10px 12px',
                     background: 'var(--gw-accent-soft, #1e1b4b)',
@@ -279,35 +282,25 @@ export default function CommitScreen(): React.ReactElement {
                       blockers.length + warnings.length > 0
                         ? '1px solid var(--gw-accent-soft, #1e1b4b)'
                         : 'none',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px',
                   }}
                 >
-                  <button
-                    data-testid="commit-set-identity-btn"
-                    onClick={handleSetIdentity}
-                    disabled={identityLoading}
-                    style={{
-                      background: 'var(--gw-primary, #2563eb)',
-                      color: 'var(--gw-on-solid, #fff)',
-                      border: 'none',
-                      borderRadius: '4px',
-                      padding: '6px 12px',
-                      fontSize: '14px',
-                      cursor: identityLoading ? 'wait' : 'pointer',
-                    }}
-                  >
-                    {identityLoading
-                      ? 'Setting…'
-                      : `Set local identity to "${activeProfile!.displayName}" (${activeProfile!.gitAuthorName} <${activeProfile!.gitAuthorEmail}>)`}
-                  </button>
-                  <div
-                    style={{
-                      marginTop: '4px',
-                      fontSize: '14px',
-                      color: 'var(--gw-text-dim, #52525b)',
-                    }}
-                  >
-                    This changes local repository Git config only, not global Git config.
-                  </div>
+                  {issueRemediations.map((rem) => (
+                    <RemediationButton
+                      key={rem.action}
+                      remediation={rem}
+                      repoPath={repository?.localPath ?? activeRepo?.localPath}
+                      assignedProfileId={repository?.assignedProfileId}
+                      testId={
+                        rem.action === 'set-local-identity' ? 'commit-set-identity-btn' : undefined
+                      }
+                      onSuccess={() => {
+                        if (activeRepo) void load(activeRepo.localPath, activeRepo)
+                      }}
+                    />
+                  ))}
                 </div>
               )}
             </div>

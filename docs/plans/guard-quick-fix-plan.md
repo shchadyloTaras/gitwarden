@@ -1,8 +1,8 @@
 # Plan — Guard Quick-Fix: one-click remediation for identity, account & push-auth errors
 
-**Status:** 🟡 in progress — Phases 63–65 done; 66–67 open — **derived view**; the authoritative
+**Status:** ✅ complete — Phases 63–67 done — **derived view**; the authoritative
 state is the Phase Checklist in [`docs/progress-log.md`](../progress-log.md).
-**Phases:** 63 → 67 (numbered feature; HEAD is Phase 65). Phase 66 (SSH Transport Binding) was
+**Phases:** 63 → 67 (numbered feature; HEAD is Phase 67). Phase 66 (SSH Transport Binding) was
 inserted after the logic phases; the original UI phase is now Phase 67.
 **Feature-complete stop point:** Phase 67.
 **Prompts:** [`docs/prompts/guard-quick-fix-prompts.md`](../prompts/guard-quick-fix-prompts.md).
