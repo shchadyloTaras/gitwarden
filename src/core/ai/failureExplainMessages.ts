@@ -10,6 +10,8 @@ export const FAILURE_CATEGORY_BY_CODE: Record<GitErrorCode, string> = {
   branchNotFound: 'branch',
   branchCheckedOutElsewhere: 'branch',
   mergeConflict: 'merge',
+  rejectedNonFastForward: 'branch',
+  divergentBranches: 'branch',
   nothingToCommit: 'commit',
   networkError: 'network',
   gitNotFound: 'toolchain',
@@ -25,6 +27,8 @@ export const FAILURE_ACTION_BY_CODE: Record<GitErrorCode, FailureSuggestedAction
   branchNotFound: 'switch-branch',
   branchCheckedOutElsewhere: 'switch-branch',
   mergeConflict: 'resolve-conflicts',
+  rejectedNonFastForward: 'none',
+  divergentBranches: 'none',
   nothingToCommit: 'stage-changes',
   networkError: 'check-network',
   gitNotFound: 'open-settings',
@@ -53,6 +57,10 @@ export function actionHintForFailure(code: GitErrorCode): string {
       return 'Open the worktree that already has this branch checked out, or remove that worktree before switching here.'
     case 'mergeConflict':
       return 'Resolve conflict markers, stage the fixes, then retry your Git action.'
+    case 'rejectedNonFastForward':
+      return 'Pull the latest changes from the remote, then push again.'
+    case 'divergentBranches':
+      return 'Bring the remote changes in (merge or rebase) and resolve any conflicts, then push again.'
     case 'nothingToCommit':
       return 'Stage changes on the Status screen before committing.'
     case 'networkError':

@@ -109,4 +109,5 @@ const ACTION_HINTS: Record<SafetySuggestedAction, string> = {
     'Open Repositories, select this repo, and add allowed branch patterns in the Push Policy section.',
   'switch-profile-and-retry-push':
     'Switch to the repository’s assigned profile and push again with its GitHub account.',
+  'merge-remote-into-local': 'Bring the remote’s changes into your branch with a merge, then push.',
 }

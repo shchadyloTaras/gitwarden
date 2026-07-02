@@ -64,6 +64,8 @@ Look up which track owns phase `$N`:
 | 52–55a      | AI Chat Redesign       |
 | 56–59       | Client Branch Access   |
 | 60–62       | Generative UI Blocks   |
+| 63–67       | Guard Quick-Fix        |
+| 68–71       | Diverged-Branch Merge  |
 | DX-0–DX-6   | Agentic DX             |
 
 Count that track's checklist entries:

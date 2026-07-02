@@ -261,6 +261,11 @@ export type SafetySuggestedAction =
   // per-push token auto-resolves). The AI still never applies it; it is an
   // allowlisted control the remediation model marks executable.
   | 'switch-profile-and-retry-push'
+  // Diverged-Branch Merge (Phase 68): the diagnosis-side executable fix for a
+  // genuinely diverged branch — merge the already-fetched remote-tracking ref
+  // into the local branch, purely locally (no fetch, no push, no auto-resolve
+  // of content conflicts). The AI still never applies it.
+  | 'merge-remote-into-local'
 
 /** Safety Copilot explanation for one SafetyCode (Phase 34). */
 export interface AiSafetyExplanation {

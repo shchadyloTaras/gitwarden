@@ -116,11 +116,28 @@ describe('remediationForGitError', () => {
     expect(r.navigateTo).toBe('repositories')
   })
 
+  it('divergent branches → executable merge-remote-into-local', () => {
+    expect(remediationForGitError('divergentBranches')).toEqual({
+      action: 'merge-remote-into-local',
+      kind: 'executable',
+    })
+  })
+
+  it('merge conflict → navigate/resolve-conflicts → status', () => {
+    expect(remediationForGitError('mergeConflict')).toEqual({
+      action: 'resolve-conflicts',
+      kind: 'navigate',
+      navigateTo: 'status',
+    })
+  })
+
   it('maps every RemediableGitErrorCode to a Remediation', () => {
     const codes: RemediableGitErrorCode[] = [
       'pushRejectedWrongAccount',
       'authenticationFailed',
       'dubiousOwnership',
+      'divergentBranches',
+      'mergeConflict',
     ]
     for (const c of codes) {
       const r = remediationForGitError(c)
@@ -131,12 +148,13 @@ describe('remediationForGitError', () => {
 })
 
 describe('EXECUTABLE_ACTIONS', () => {
-  it('contains exactly the four in-app fixes', () => {
+  it('contains exactly the five in-app fixes', () => {
     const expected: SafetySuggestedAction[] = [
       'set-local-identity',
       'switch-active-profile',
       'reconnect-github',
       'switch-profile-and-retry-push',
+      'merge-remote-into-local',
     ]
     expect(EXECUTABLE_ACTIONS.size).toBe(expected.length)
     for (const a of expected) expect(EXECUTABLE_ACTIONS.has(a)).toBe(true)
@@ -144,5 +162,9 @@ describe('EXECUTABLE_ACTIONS', () => {
 
   it("includes 'switch-profile-and-retry-push'", () => {
     expect(EXECUTABLE_ACTIONS.has('switch-profile-and-retry-push')).toBe(true)
+  })
+
+  it("includes 'merge-remote-into-local'", () => {
+    expect(EXECUTABLE_ACTIONS.has('merge-remote-into-local')).toBe(true)
   })
 })

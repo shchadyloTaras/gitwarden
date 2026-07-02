@@ -112,6 +112,16 @@ export async function executeRemediation(
       }
       return { ok: true }
     }
+    case 'merge-remote-into-local': {
+      // Wired in Phase 70 (Diverged-Branch Merge). Phase 68 widened
+      // ExecutableAction to include this action so the pure-core remediation
+      // model can mark 'divergentBranches' executable; this branch only
+      // satisfies the exhaustive switch above until Phase 70 lands the real
+      // clean-tree-check + local-merge logic. Unreachable today: the
+      // `RemediationExecutePayload` Zod enum (ipc-schemas.ts) does not yet
+      // accept this action, so no caller can reach this case.
+      return { ok: false, message: 'Merging in the remote changes is not yet available.' }
+    }
     default: {
       const _exhaustive: never = action
       return { ok: false, message: `Unsupported action: ${String(_exhaustive)}` }

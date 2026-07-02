@@ -104,6 +104,13 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] Phase 66 — SSH Transport Binding
 - [x] Phase 67 — One-Click Fix UI & Failed-Push Recovery
 
+### Diverged-Branch Merge feature (plan: `docs/plans/divergent-branch-merge-plan.md`, prompts: `docs/prompts/divergent-branch-merge-prompts.md`)
+
+- [x] Phase 68 — Remediation model: make divergence & conflict remediable (pure core)
+- [ ] Phase 69 — GitRunner conflict classification + local merge (main)
+- [ ] Phase 70 — Executable merge remediation (IPC)
+- [ ] Phase 71 — Merge button in the failed-pull recovery banner (renderer + e2e)
+
 ### Agentic DX track (plan: `docs/plans/agentic-dx-plan.md`, prompts: `docs/prompts/dx-execution-prompts.md`)
 
 > Not product phases — a separate developer-experience track (steps DX-0…DX-6, no global phase
@@ -136,6 +143,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | Client Branch Access   | 56–59     | ✅ complete                                                   |
 | Distribution & Release | 40–45     | 🟡 Phases 40–42, 45 done; 43–44 open (gated on signing certs) |
 | Landing Page           | 46–51     | ✅ complete                                                   |
+| Diverged-Branch Merge  | 68–71     | 🟡 Phase 68 done; 69–71 open                                  |
 | Agentic DX             | DX-0–DX-6 | ✅ complete (DX-6 = à la carte; project-factory/sdd deferred) |
 
 ## Progress Log
@@ -1037,3 +1045,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Files: edited `src/renderer/components/Sidebar.tsx` (replaced the impure `prevCollapsedRef` derivation with `animating` state + a click-handler-driven timer), `src/renderer/theme.css` (comment only).
 - Tests: Vitest **720/720 passed**. `electron-vite build` clean (both `tsc` projects). `shell.spec.ts` + `tooltip.spec.ts` in real Electron: **9/9 passed** — the resize test that the rejected `resizing`-prop approach once hung still passes, and the sidebar-collapse tooltip test still passes (no functional regression). ESLint clean; Prettier clean on both touched files. The animation itself is a development-only StrictMode behavior the production-build e2e cannot observe by construction; verified by deterministic root-cause analysis plus the fix making the dev render path identical to the prod path e2e already exercises.
 - Notes / follow-ups: Not a numbered phase. No `src/core`/`src/main`/IPC changes, so core-purity/safety reviewers were not required. Lesson: deriving render output by mutating a ref during render is not StrictMode-safe — prefer event-handler state for "did the user just do X" signals.
+
+### 2026-07-02 — Phase 68: Remediation model: make divergence & conflict remediable (pure core)
+
+- Built: `'merge-remote-into-local'` added to the `SafetySuggestedAction` union (`src/core/ai/types.ts`); `RemediableGitErrorCode` extended with `'divergentBranches'` (→ executable `merge-remote-into-local`) and `'mergeConflict'` (→ navigate `resolve-conflicts` → status); `EXECUTABLE_ACTION_LIST` gains `'merge-remote-into-local'`; `ACTION_HINTS['merge-remote-into-local']` added (`src/core/safety/remediation.ts`, `src/core/ai/safetyCopilotMessages.ts`). **Two pre-existing, unrelated tsc breaks fixed as an approved prerequisite** (both from the already-committed `0c75a8c`, before this track started): (1) `src/core/ai/failureExplainMessages.ts`'s two `Record<GitErrorCode, ...>` maps were missing `rejectedNonFastForward`/`divergentBranches` (added, category `'branch'`, suggested action `'none'`, plus explicit `actionHintForFailure` copy for both); (2) `tests/unit/remote-store-branch-sync.test.ts` was never added to the established renderer-store-test exclude/include split (`tsconfig.node.json` exclude / `tsconfig.web.json` include) — added, following the existing 4-file pattern. Also: widening `ExecutableAction` immediately broke `src/main/ipc/remediationExecutor.ts`'s exhaustive `default: never` switch (a sequencing gap in the plan — Phase 70 was meant to add this case, but the type forces it the moment Phase 68 lands) — per user decision, added a minimal, user-approved stub `case 'merge-remote-into-local'` returning `{ ok: false, message: 'Merging in the remote changes is not yet available.' }`; confirmed unreachable today (`RemediationExecutePayload`'s Zod enum in `ipc-schemas.ts` does not yet accept this action) and replaced with the real clean-tree-check + local-merge logic in Phase 70.
+- Files: edited `src/core/ai/types.ts`, `src/core/safety/remediation.ts`, `src/core/ai/safetyCopilotMessages.ts`, `tests/unit/remediation.test.ts`, `src/core/ai/failureExplainMessages.ts`, `tsconfig.node.json`, `tsconfig.web.json`, `src/main/ipc/remediationExecutor.ts` (stub case only).
+- Tests: Vitest **723/723 passed** (5 new in `remediation.test.ts`: `divergentBranches` → executable `merge-remote-into-local`; `mergeConflict` → navigate `resolve-conflicts`/status; both added to the "maps every RemediableGitErrorCode" list; `EXECUTABLE_ACTIONS` size/membership updated to 5). `npx tsc --noEmit` clean on both `tsconfig.node.json` and `tsconfig.web.json` (previously red on `main` from the pre-existing issues above — now genuinely clean). `npm run lint`: ESLint clean repo-wide; Prettier clean on every file this phase touched (the 6-file pre-existing, unrelated Prettier debt from `.claude/skills/new-feature/**` and `tests/unit/error-mapper.test.ts`, plus one gitignored `.claude/settings.local.json`, is untouched — same precedent as the 2026-07-01 tooltip entry above).
+- Exit criteria: ✅ met — `src/core/` stays pure (core-purity-reviewer: clean, no forbidden imports, no new mutable/global state, no new safety verdicts — only remediation-hint mappings for pre-existing codes); safety-reviewer confirmed the `remediationExecutor.ts` stub is unreachable, logs no secrets, and touches no global/system state.
+- Notes / follow-ups: The remediationExecutor.ts stub case is deliberately dead code, replaced by real logic in Phase 70 — do not extend it further. Phase 69 is next: fix `GitRunner`'s stdout-classification blind spot (a real `git merge` conflict writes `CONFLICT (…)` to stdout, which `ErrorMapper.map()` never sees today) and add `GitService.mergeRemoteBranch`.

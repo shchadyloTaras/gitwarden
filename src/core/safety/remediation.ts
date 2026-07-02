@@ -23,6 +23,8 @@ export type RemediableGitErrorCode =
   | 'pushRejectedWrongAccount' // remote: Permission to X denied to Y / 403 → wrong account
   | 'authenticationFailed' // 401 / token rejected → reconnect GitHub
   | 'dubiousOwnership' // repo dir moved/renamed → explain-only (no global safe.directory)
+  | 'divergentBranches' // local + remote each have a unique commit → offer a local merge
+  | 'mergeConflict' // a merge hit a real content conflict → navigate to Status to finish it
 
 /** How the UI offers the fix: a one-click in-app action, or a navigation. */
 export type RemediationKind = 'executable' | 'navigate'
@@ -54,6 +56,7 @@ const EXECUTABLE_ACTION_LIST = [
   'switch-active-profile', // set the repo's assigned profile active
   'reconnect-github', // launch the device-flow connect for the assigned profile
   'switch-profile-and-retry-push', // switch active profile → re-run push (token follows)
+  'merge-remote-into-local', // merge the already-fetched remote-tracking ref, purely locally
 ] as const satisfies readonly SafetySuggestedAction[]
 
 export type ExecutableAction = (typeof EXECUTABLE_ACTION_LIST)[number]
@@ -106,12 +109,16 @@ export function remediationForSafetyCode(code: SafetyCode): Remediation {
  * GitHub; a moved repo folder is navigate/explain-only — GitWarden will NOT write
  * a global `safe.directory`, so `dubiousOwnership` reuses the repositories-routing
  * action purely as a navigation vehicle and the real explanation is the
- * `GitError`'s `userMessage` (attached in Phase 64).
+ * `GitError`'s `userMessage` (attached in Phase 64). A genuine divergence offers
+ * the local merge action (Phase 69+); a real merge conflict is never
+ * auto-resolved and reuses the existing `resolve-conflicts` → Status navigation.
  */
 const GIT_ERROR_ACTION: Record<RemediableGitErrorCode, SafetySuggestedAction> = {
   pushRejectedWrongAccount: 'switch-profile-and-retry-push',
   authenticationFailed: 'reconnect-github',
   dubiousOwnership: 'assign-repo-profile',
+  divergentBranches: 'merge-remote-into-local',
+  mergeConflict: 'resolve-conflicts',
 }
 
 export function remediationForGitError(code: RemediableGitErrorCode): Remediation {
