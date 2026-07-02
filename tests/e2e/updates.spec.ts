@@ -44,6 +44,18 @@ test.describe('Update notifier', () => {
       await expect(headerBtn).toBeVisible()
       await expect(headerBtn).toContainText('Update')
       await expect(headerBtn).toHaveAttribute('aria-label', /99\.0\.0/)
+
+      // The sidebar footer mirrors the exact same signal, expanded (icon + label).
+      const sidebarBtn = win.getByTestId('sidebar-update-button')
+      await expect(sidebarBtn).toBeVisible()
+      await expect(sidebarBtn).toContainText('Update')
+      await expect(sidebarBtn).toHaveAttribute('aria-label', /99\.0\.0/)
+
+      // Collapsed: the footer button stays present, icon-only, tooltip carries the version.
+      await win.getByTestId('sidebar-collapse-toggle').click()
+      await expect(sidebarBtn).toBeVisible()
+      await expect(sidebarBtn).not.toContainText('Update')
+      await expect(sidebarBtn).toHaveAttribute('data-tooltip', /99\.0\.0/)
     } finally {
       await app.close()
     }
@@ -62,6 +74,7 @@ test.describe('Update notifier', () => {
       await expect(win.getByTestId('settings-update-status')).toContainText('latest version')
       await expect(win.getByTestId('settings-update-download')).toHaveCount(0)
       await expect(win.getByTestId('header-update-button')).toHaveCount(0)
+      await expect(win.getByTestId('sidebar-update-button')).toHaveCount(0)
     } finally {
       await app.close()
     }

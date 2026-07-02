@@ -1,5 +1,6 @@
 import React from 'react'
 import { NavScreen, useAppStore } from '../store/appStore'
+import { useUpdatesStore } from '../store/updatesStore'
 import { STR } from '../strings'
 
 interface NavItem {
@@ -64,9 +65,7 @@ const GROUP_HEADER_ROW_STYLE: React.CSSProperties = {
   minHeight: 28,
   display: 'flex',
   alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: 8,
-  padding: '7px 8px 2px 12px',
+  padding: '7px 12px 8px',
 }
 
 const SECTION_DIVIDER_STYLE: React.CSSProperties = {
@@ -75,73 +74,41 @@ const SECTION_DIVIDER_STYLE: React.CSSProperties = {
   margin: '6px 12px 5px',
 }
 
-const COLLAPSE_TOGGLE_STYLE: React.CSSProperties = {
-  width: 32,
-  height: 26,
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  background: 'transparent',
-  border: 'none',
-  borderRadius: 4,
-  color: 'var(--gw-text-faint, #71717a)',
-  cursor: 'pointer',
-  padding: 0,
-  fontFamily: 'inherit',
+const SIDEBAR_FOOTER_STYLE: React.CSSProperties = {
   flexShrink: 0,
+  borderTop: '1px solid var(--gw-border, #27272a)',
+  padding: '8px',
 }
 
-const COLLAPSE_ICON_STYLE: React.CSSProperties = {
-  width: 24,
-  height: 24,
-  display: 'inline-flex',
+const UPDATE_BUTTON_STYLE: React.CSSProperties = {
+  display: 'flex',
   alignItems: 'center',
-  justifyContent: 'center',
-}
-
-/** Two-pane "toggle sidebar" glyph — the divider sits left of center so the narrow
- * left pane reads as the rail being toggled, not as a perfectly split panel. */
-function CollapseToggleIcon(): React.ReactElement {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <rect x="1.5" y="2.5" width="13" height="11" rx="2" stroke="currentColor" strokeWidth="1.3" />
-      <line x1="6.5" y1="2.5" x2="6.5" y2="13.5" stroke="currentColor" strokeWidth="1.3" />
-    </svg>
-  )
+  gap: 8,
+  width: '100%',
+  height: 32,
+  border: 'none',
+  borderRadius: 6,
+  background: 'var(--gw-accent, #6366f1)',
+  color: 'var(--gw-on-solid, #fff)',
+  fontSize: 13,
+  fontWeight: 600,
+  fontFamily: 'inherit',
+  cursor: 'pointer',
 }
 
 export default function Sidebar({
   width,
   collapsed,
-  onToggleCollapse,
+  animating,
 }: {
   width: number
   collapsed: boolean
-  onToggleCollapse: () => void
+  animating: boolean
 }): React.ReactElement {
   const { activeScreen, navigate } = useAppStore()
   const [labelsVisible, setLabelsVisible] = React.useState(!collapsed)
-
-  // The width transition runs only when the user toggles collapse/expand — never
-  // during a resize-drag, which changes `width` without ever touching `collapsed`.
-  // The flag is set in the toggle's click handler rather than derived from a prop
-  // change during render: a render-time derivation (mutating a ref to spot the flip)
-  // is an impure render, so React StrictMode's dev double-invoke dropped it and the
-  // `gw-sidebar--animated` class never reached the committed DOM — the sidebar
-  // snapped in `npm run dev`. An event handler fires once and its setState batches
-  // with the parent's collapse flip into one commit, so the class and the new width
-  // land together, in dev and prod alike.
-  const [animating, setAnimating] = React.useState(false)
-  const animationTimerRef = React.useRef<number | undefined>(undefined)
-
-  React.useEffect(() => () => window.clearTimeout(animationTimerRef.current), [])
-
-  const handleToggleCollapse = React.useCallback(() => {
-    setAnimating(true)
-    window.clearTimeout(animationTimerRef.current)
-    animationTimerRef.current = window.setTimeout(() => setAnimating(false), SIDEBAR_TRANSITION_MS)
-    onToggleCollapse()
-  }, [onToggleCollapse])
+  const updateResult = useUpdatesStore((s) => s.result)
+  const availableUpdate = updateResult?.status === 'update-available' ? updateResult.release : null
 
   let lastGroup: string | undefined
   const showExpandedLabels = !collapsed || labelsVisible
@@ -162,22 +129,6 @@ export default function Sidebar({
     return () => window.clearTimeout(timer)
   }, [collapsed])
 
-  const renderCollapseToggle = (): React.ReactElement => (
-    <button
-      className="gw-sidebar-collapse-toggle"
-      data-testid="sidebar-collapse-toggle"
-      onClick={handleToggleCollapse}
-      aria-label={collapsed ? STR.SIDEBAR_EXPAND : STR.SIDEBAR_COLLAPSE}
-      data-tooltip={collapsed ? STR.SIDEBAR_EXPAND : STR.SIDEBAR_COLLAPSE}
-      data-tooltip-pos={collapsed ? 'right' : 'top'}
-      style={COLLAPSE_TOGGLE_STYLE}
-    >
-      <span aria-hidden="true" style={COLLAPSE_ICON_STYLE}>
-        <CollapseToggleIcon />
-      </span>
-    </button>
-  )
-
   const renderGroupBoundary = (
     group: NavItem['group'],
     previousGroup?: string
@@ -185,23 +136,6 @@ export default function Sidebar({
     if (!group) return null
 
     if (!showExpandedLabels) {
-      if (group === 'manage') {
-        return (
-          <>
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'center',
-                padding: '2px 0 8px',
-              }}
-            >
-              {renderCollapseToggle()}
-            </div>
-            <div aria-hidden="true" style={SECTION_DIVIDER_STYLE} />
-          </>
-        )
-      }
-
       return previousGroup !== undefined ? (
         <div aria-hidden="true" style={SECTION_DIVIDER_STYLE} />
       ) : null
@@ -209,13 +143,9 @@ export default function Sidebar({
 
     if (group === 'manage') {
       return (
-        <>
-          <div style={GROUP_HEADER_ROW_STYLE}>
-            <span style={GROUP_LABEL_STYLE}>{GROUP_LABELS[group]}</span>
-            {renderCollapseToggle()}
-          </div>
-          <div aria-hidden="true" style={SECTION_DIVIDER_STYLE} />
-        </>
+        <div style={GROUP_HEADER_ROW_STYLE}>
+          <span style={GROUP_LABEL_STYLE}>{GROUP_LABELS[group]}</span>
+        </div>
       )
     }
 
@@ -299,6 +229,37 @@ export default function Sidebar({
           )
         })}
       </div>
+      {availableUpdate && (
+        <div style={SIDEBAR_FOOTER_STYLE}>
+          <button
+            data-testid="sidebar-update-button"
+            onClick={() => void window.api.shell.openExternal(availableUpdate.url)}
+            aria-label={STR.UPDATE_BUTTON_ARIA(availableUpdate.version)}
+            data-tooltip={STR.UPDATE_AVAILABLE(availableUpdate.version)}
+            data-tooltip-pos="right"
+            style={{
+              ...UPDATE_BUTTON_STYLE,
+              justifyContent: showExpandedLabels ? 'flex-start' : 'center',
+              padding: showExpandedLabels ? '0 12px' : '0',
+            }}
+          >
+            <span aria-hidden="true" style={{ fontSize: 13, lineHeight: 1, flexShrink: 0 }}>
+              ↓
+            </span>
+            {showExpandedLabels && (
+              <span
+                style={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {STR.UPDATE_BUTTON_LABEL}
+              </span>
+            )}
+          </button>
+        </div>
+      )}
     </nav>
   )
 }
