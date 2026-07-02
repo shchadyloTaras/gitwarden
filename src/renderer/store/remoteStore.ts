@@ -21,11 +21,21 @@ interface RemoteState {
   error: string | null
   successMessage: string | null
   /**
-   * The last push failure, retaining the structured `code`/`remediation` from the
-   * IPC envelope so the recovery banner (Phase 66) can offer a one-click fix
-   * instead of the opaque error string. Cleared on a new push and on repo load.
+   * The last push OR pull failure, retaining the structured `code`/`remediation`
+   * from the IPC envelope so the recovery banner (Phase 66; Phase 71 extends it to
+   * pull) can offer a one-click fix instead of the opaque error string. `remote`/
+   * `branch` are carried here (not just read from `selectedRemote`, which the push
+   * sheet sets but a pull failure never does) so the banner's fix button has a
+   * target regardless of which action failed. Cleared on a new push/pull and on
+   * repo load.
    */
-  lastFailure: { message: string; code?: GitErrorCode; remediation?: Remediation } | null
+  lastFailure: {
+    message: string
+    code?: GitErrorCode
+    remediation?: Remediation
+    remote?: string
+    branch?: string
+  } | null
 
   load(repoPath: string, repository: RepositoryRecord): Promise<void>
   doFetch(remote: string): Promise<void>
@@ -109,10 +119,25 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
   async doPull(remote, branch) {
     const { repoPath } = get()
     if (!repoPath) return
-    set({ pullLoading: remote, error: null, successMessage: null })
+    set({ pullLoading: remote, error: null, successMessage: null, lastFailure: null })
     try {
       const res = await window.api.git.pull(repoPath, remote, branch)
-      if (!res.ok) throw new Error(res.error)
+      if (!res.ok) {
+        // Retain the structured failure (code + remediation) so the recovery
+        // banner can offer the one-click fix (e.g. merge-remote-into-local for a
+        // genuine divergence) instead of the opaque error string.
+        set({
+          error: res.error,
+          lastFailure: {
+            message: res.error,
+            code: res.code,
+            remediation: res.remediation,
+            remote,
+            branch,
+          },
+        })
+        return
+      }
       // Refresh status after pull
       const statusRes = await window.api.git.getStatus(repoPath)
       if (statusRes.ok) {
@@ -121,7 +146,8 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
       }
       set({ successMessage: `Pulled ${branch} from ${remote}.` })
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) })
+      const message = err instanceof Error ? err.message : String(err)
+      set({ error: message, lastFailure: { message, remote, branch } })
     } finally {
       set({ pullLoading: null })
     }

@@ -398,8 +398,8 @@ export default function RemoteScreen(): React.ReactElement {
                     remediation={recoveryRemediation}
                     repoPath={repository?.localPath ?? activeRepo?.localPath}
                     assignedProfileId={repository?.assignedProfileId}
-                    remote={selectedRemote?.name}
-                    branch={currentBranch ?? undefined}
+                    remote={lastFailure.remote ?? selectedRemote?.name}
+                    branch={lastFailure.branch ?? currentBranch ?? undefined}
                     onSuccess={(result) => {
                       if (result.deviceCode) return
                       clearMessages()

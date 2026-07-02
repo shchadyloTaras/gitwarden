@@ -1,6 +1,6 @@
 # Plan — Diverged-Branch Merge: resolve a fork between local and remote without the terminal
 
-**Status:** ⬜ not started — Phases 68–71 — **derived view**; the authoritative state is the
+**Status:** ✅ complete — Phases 68–71 — **derived view**; the authoritative state is the
 Phase Checklist in [`docs/progress-log.md`](../progress-log.md).
 **Phases:** 68 → 71.
 **Feature-complete stop point:** Phase 71.

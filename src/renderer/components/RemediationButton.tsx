@@ -132,6 +132,13 @@ export default function RemediationButton({
       profileId = assignedProfileId
       label = STR.REMEDIATION_RECONNECT
       break
+    case 'merge-remote-into-local':
+      profileId = undefined // purely local; no profile targeting
+      label =
+        remote && branch
+          ? STR.REMEDIATION_MERGE_REMOTE(remote, branch)
+          : STR.REMEDIATION_MERGE_REMOTE_GENERIC
+      break
   }
 
   // Defensive: disable when the action's required target is missing.
@@ -139,7 +146,8 @@ export default function RemediationButton({
     !repoPath ||
     (remediation.action === 'set-local-identity' && !activeProfile) ||
     (remediation.action === 'switch-active-profile' && !assignedProfileId) ||
-    (remediation.action === 'reconnect-github' && !assignedProfileId)
+    (remediation.action === 'reconnect-github' && !assignedProfileId) ||
+    (remediation.action === 'merge-remote-into-local' && (!remote || !branch))
 
   const run = async () => {
     if (pending || missingTarget || !repoPath) return
@@ -191,6 +199,9 @@ export default function RemediationButton({
       </button>
       {remediation.action === 'set-local-identity' && (
         <div style={HINT}>{STR.REMEDIATION_LOCAL_ONLY_HINT}</div>
+      )}
+      {remediation.action === 'merge-remote-into-local' && (
+        <div style={HINT}>{STR.REMEDIATION_MERGE_LOCAL_ONLY_HINT}</div>
       )}
       {deviceCode && (
         <div data-testid="remediation-device-code" style={HINT}>

@@ -492,6 +492,13 @@ export const STR = {
   RECOVERY_RECONNECT_ASSIGNED_GITHUB: (profile: string): string =>
     `GitHub still rejected the HTTPS push while "${profile}" is already active. Reconnect GitHub for this profile to refresh repository access, then push again.`,
 
+  // --- Diverged-Branch Merge: one-click local merge (Phase 71) ---
+  REMEDIATION_MERGE_REMOTE: (remote: string, branch: string): string =>
+    `Bring in ${remote}/${branch}`,
+  REMEDIATION_MERGE_REMOTE_GENERIC: "Bring in the remote's changes",
+  REMEDIATION_MERGE_LOCAL_ONLY_HINT:
+    'This merges locally only — it does not fetch or push. Push separately once the banner clears.',
+
   // ── Action tooltips (explanatory hover hints) ─────────────────────────────
   TT_REMOTE_FETCH:
     'Download new commits and branches from this remote — your files stay untouched.',
