@@ -30,7 +30,10 @@ export interface RemediationExecuteInput {
 
 /** The narrow service surface the executor needs (injected; mockable in tests). */
 export interface RemediationExecutorDeps {
-  git: Pick<GitService, 'setLocalIdentity' | 'push' | 'getRemotes'>
+  git: Pick<
+    GitService,
+    'setLocalIdentity' | 'push' | 'getRemotes' | 'getStatus' | 'mergeRemoteBranch'
+  >
   repositories: Pick<IRepositoryService, 'list'>
   profiles: Pick<IProfileService, 'get'>
   settings: Pick<ISettingsService, 'update'>
@@ -113,14 +116,36 @@ export async function executeRemediation(
       return { ok: true }
     }
     case 'merge-remote-into-local': {
-      // Wired in Phase 70 (Diverged-Branch Merge). Phase 68 widened
-      // ExecutableAction to include this action so the pure-core remediation
-      // model can mark 'divergentBranches' executable; this branch only
-      // satisfies the exhaustive switch above until Phase 70 lands the real
-      // clean-tree-check + local-merge logic. Unreachable today: the
-      // `RemediationExecutePayload` Zod enum (ipc-schemas.ts) does not yet
-      // accept this action, so no caller can reach this case.
-      return { ok: false, message: 'Merging in the remote changes is not yet available.' }
+      const branch = input.branch
+      if (!branch) return { ok: false, message: 'No branch was provided for the merge.' }
+      const remote = input.remote ?? 'origin'
+      // Clean-tree pre-check: refuse with a clear message rather than letting git
+      // fail with a confusing "local changes would be overwritten."
+      const status = await deps.git.getStatus(repoPath)
+      if (status.files.length > 0) {
+        return {
+          ok: false,
+          message: "Commit or stash your changes before merging in the remote's changes.",
+        }
+      }
+      try {
+        // Purely local: merges the already-fetched <remote>/<branch> tracking
+        // ref. No fetch, no push, no auth — see GitService.mergeRemoteBranch.
+        await deps.git.mergeRemoteBranch(repoPath, remote, branch)
+      } catch (error) {
+        if (error instanceof GitError && error.code === 'mergeConflict') {
+          // A real content conflict is NEVER auto-resolved: the repo is left in
+          // git's standard mid-merge state, and the user is routed to the
+          // existing resolve-conflicts → Status flow to finish the merge.
+          return {
+            ok: false,
+            remediation: remediationForGitError('mergeConflict'),
+            message: error.userMessage,
+          }
+        }
+        throw error
+      }
+      return { ok: true }
     }
     default: {
       const _exhaustive: never = action

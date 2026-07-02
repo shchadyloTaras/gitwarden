@@ -347,6 +347,7 @@ export const RemediationExecutePayload = z.object({
     'switch-active-profile',
     'reconnect-github',
     'switch-profile-and-retry-push',
+    'merge-remote-into-local',
   ]),
   repoPath: z.string().min(1),
   profileId: z.string().optional(),

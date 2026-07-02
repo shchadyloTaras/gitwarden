@@ -12,7 +12,13 @@ import {
   executeRemediation,
   type RemediationExecutorDeps,
 } from '../../src/main/ipc/remediationExecutor'
-import type { Profile, RepositoryRecord, AppSettings, GitHubDeviceCode } from '../../src/core/types'
+import type {
+  Profile,
+  RepositoryRecord,
+  AppSettings,
+  GitHubDeviceCode,
+  GitStatus,
+} from '../../src/core/types'
 
 // Offline fixtures — real git in a temp dir, with a LOCAL bare repo as the "remote".
 // The device-flow + GitHub services are mocked; no network, no real account, no token.
@@ -45,6 +51,8 @@ function makeDeps(over: Partial<RemediationExecutorDeps> = {}): RemediationExecu
       setLocalIdentity: vi.fn(async () => {}),
       push: vi.fn(async () => {}),
       getRemotes: vi.fn(async () => []),
+      getStatus: vi.fn(async () => ({ files: [], ahead: 0, behind: 0 })),
+      mergeRemoteBranch: vi.fn(async () => {}),
     },
     repositories: { list: vi.fn(async () => []) },
     profiles: { get: vi.fn(async () => undefined) },
@@ -192,6 +200,8 @@ describe('executeRemediation (offline fixtures)', () => {
         getRemotes: vi.fn(async () => [
           { name: 'origin', url: 'https://github.com/octo/repo.git', host: 'github.com' },
         ]),
+        getStatus: vi.fn(async () => ({ files: [], ahead: 0, behind: 0 })),
+        mergeRemoteBranch: vi.fn(async () => {}),
       },
       repositories: { list: vi.fn(async () => [repoRecord(repoPath, 'p1')]) },
       settings: { update },
@@ -226,6 +236,8 @@ describe('executeRemediation (offline fixtures)', () => {
         setLocalIdentity: vi.fn(async () => {}),
         push,
         getRemotes: vi.fn(async () => []),
+        getStatus: vi.fn(async () => ({ files: [], ahead: 0, behind: 0 })),
+        mergeRemoteBranch: vi.fn(async () => {}),
       },
       repositories: { list: vi.fn(async () => [repoRecord(repoPath, undefined)]) },
     })
@@ -238,5 +250,117 @@ describe('executeRemediation (offline fixtures)', () => {
     expect(result.ok).toBe(false)
     expect(result.remediation?.action).toBe('assign-repo-profile')
     expect(push).not.toHaveBeenCalled()
+  })
+
+  // ── merge-remote-into-local (Phase 70): the one-click fix for a diverged branch ──
+  // Builds a bare "remote", clones a second worktree that pushes an extra commit,
+  // then commits locally so the two histories diverge — mirrors git-service.test.ts.
+  async function setUpRemoteAhead(): Promise<void> {
+    const remote = path.join(tmpDir, 'remote.git')
+    await execFileAsync('git', ['init', '--bare', '-b', 'main', remote])
+    await git(repoPath, 'checkout', '-b', 'main')
+    await writeFile(path.join(repoPath, 'base.txt'), 'one\n')
+    await git(repoPath, 'add', 'base.txt')
+    await git(repoPath, 'commit', '-m', 'c1')
+    await git(repoPath, 'remote', 'add', 'origin', remote)
+    await git(repoPath, 'push', 'origin', 'main')
+    const other = path.join(tmpDir, 'other')
+    await execFileAsync('git', ['clone', remote, other])
+    await git(other, 'config', 'user.name', 'Other')
+    await git(other, 'config', 'user.email', 'other@example.com')
+    await writeFile(path.join(other, 'base.txt'), 'one\ntwo\n')
+    await git(other, 'commit', '-am', 'remote-ahead')
+    await git(other, 'push', 'origin', 'main')
+  }
+
+  it('merge-remote-into-local merges cleanly when the diverged changes do not conflict', async () => {
+    await setUpRemoteAhead()
+    await writeFile(path.join(repoPath, 'local-only.txt'), 'local addition\n')
+    await git(repoPath, 'add', 'local-only.txt')
+    await git(repoPath, 'commit', '-m', 'local-divergent-clean')
+    // Simulates what a failed `pull --ff-only` already leaves behind: fetched but not integrated.
+    await git(repoPath, 'fetch', 'origin', 'main')
+
+    const deps = makeDeps({ git: service })
+    const result = await executeRemediation(deps, noopSender, {
+      action: 'merge-remote-into-local',
+      repoPath,
+      remote: 'origin',
+      branch: 'main',
+    })
+
+    expect(result.ok).toBe(true)
+    const parents = await git(repoPath, 'show', '-s', '--format=%P', 'HEAD')
+    expect(parents.split(' ')).toHaveLength(2) // a real merge commit
+  })
+
+  it('merge-remote-into-local re-diagnoses a real content conflict to resolve-conflicts, leaving the repo mid-merge', async () => {
+    await setUpRemoteAhead()
+    // Same line 2 of base.txt edited differently on each side → a genuine conflict.
+    await writeFile(path.join(repoPath, 'base.txt'), 'one\nlocal\n')
+    await git(repoPath, 'commit', '-am', 'local-divergent-conflicting')
+    await git(repoPath, 'fetch', 'origin', 'main')
+
+    const deps = makeDeps({ git: service })
+    const result = await executeRemediation(deps, noopSender, {
+      action: 'merge-remote-into-local',
+      repoPath,
+      remote: 'origin',
+      branch: 'main',
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.remediation).toEqual({
+      action: 'resolve-conflicts',
+      kind: 'navigate',
+      navigateTo: 'status',
+    })
+    expect(result.message).toBeTruthy() // git's own conflict userMessage, not a generic error
+
+    // Never auto-resolved: the repo is left in git's standard mid-merge state.
+    const status = await service.getStatus(repoPath)
+    const f = status.files.find((c) => c.path === 'base.txt')
+    expect(f?.indexStatus).toBe('conflicted')
+    expect(f?.worktreeStatus).toBe('conflicted')
+  })
+
+  it('merge-remote-into-local refuses on a dirty working tree without attempting the merge', async () => {
+    const mergeRemoteBranch = vi.fn(async () => {})
+    const deps = makeDeps({
+      git: {
+        setLocalIdentity: vi.fn(async () => {}),
+        push: vi.fn(async () => {}),
+        getRemotes: vi.fn(async () => []),
+        getStatus: vi.fn(
+          async (): Promise<GitStatus> => ({
+            files: [{ path: 'dirty.txt', indexStatus: 'unmodified', worktreeStatus: 'modified' }],
+            ahead: 0,
+            behind: 0,
+          })
+        ),
+        mergeRemoteBranch,
+      },
+    })
+
+    const result = await executeRemediation(deps, noopSender, {
+      action: 'merge-remote-into-local',
+      repoPath,
+      remote: 'origin',
+      branch: 'main',
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.message).toMatch(/commit or stash/i)
+    expect(mergeRemoteBranch).not.toHaveBeenCalled()
+  })
+
+  it('merge-remote-into-local refuses when no branch is provided', async () => {
+    const deps = makeDeps({ git: service })
+    const result = await executeRemediation(deps, noopSender, {
+      action: 'merge-remote-into-local',
+      repoPath,
+    })
+    expect(result.ok).toBe(false)
+    expect(result.message).toMatch(/branch/i)
   })
 })
