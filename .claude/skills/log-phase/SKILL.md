@@ -1,4 +1,5 @@
 ---
+name: log-phase
 description: 'Append the Progress-Log entry and tick the Phase Checklist for a completed phase'
 argument-hint: '<N> <name> — then describe what was built'
 allowed-tools: Read, Edit, Bash(date*)

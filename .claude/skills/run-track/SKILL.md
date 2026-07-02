@@ -1,4 +1,5 @@
 ---
+name: run-track
 description: 'Run a whole feature track phase-by-phase: new-phase → implement → review → verify → eval → log → commit. Stops on any failure, ambiguity, or plan stop-point. Never pushes.'
 argument-hint: '<feature-slug> [--step]'
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash(git*), Bash(npm*), Bash(npx*), Task
@@ -9,7 +10,7 @@ allowed-tools: Read, Write, Edit, Grep, Glob, Bash(git*), Bash(npm*), Bash(npx*)
 This command drives an entire feature track to completion, one phase at a time, by
 orchestrating the four phase commands you already have — `/new-phase`, `/verify-phase`,
 `/log-phase`, `/commit-phase` — plus the subagent reviewers and AI evals. It is a wrapper:
-the four command files in `.claude/commands/` are the **source of truth** for each step;
+the four skill files in `.claude/skills/` are the **source of truth** for each step;
 follow them exactly. This command only adds the loop, the gates between phases, and the
 stop conditions.
 
@@ -88,7 +89,7 @@ Stop points:    <any phases the plan flags as stop points, see LOOP step i>
 
 ### a. NEW-PHASE
 
-Follow `.claude/commands/new-phase.md` for phase N: confirm the previous-phase gate, identify the
+Follow `.claude/skills/new-phase/SKILL.md` for phase N: confirm the previous-phase gate, identify the
 owning plan file, read the plan section and the matching prompt, and output the Goal / Tasks /
 Exit-criteria brief. If `/new-phase` refuses (gate not met), **STOP** — do not improvise around it.
 
@@ -117,7 +118,7 @@ open blocking finding.
 
 ### d. VERIFY
 
-Follow `.claude/commands/verify-phase.md`. Use `/verify-phase --ui` (which adds `npm run e2e`) if
+Follow `.claude/skills/verify-phase/SKILL.md`. Use `/verify-phase --ui` (which adds `npm run e2e`) if
 this is a UI phase; `/verify-phase` otherwise. If the gate prints **GATE FAIL**, **STOP**, report
 the failing step with its output, and do **not** proceed to the next phase (HARD RULE 2).
 
@@ -134,13 +135,13 @@ fixture for that capability must exist before this passes — see WORKFLOW.md DX
 
 ### f. LOG
 
-Follow `.claude/commands/log-phase.md` for phase N: append the Progress Log entry (newest last,
+Follow `.claude/skills/log-phase/SKILL.md` for phase N: append the Progress Log entry (newest last,
 exact format, real Vitest counts), tick the phase's checklist box `[ ]`→`[x]`, and re-derive the
 affected **Feature Track Status** row. `/log-phase` must NOT commit.
 
 ### g. COMMIT
 
-Follow `.claude/commands/commit-phase.md` for phase N. Because of HARD RULE 5, do this in two
+Follow `.claude/skills/commit-phase/SKILL.md` for phase N. Because of HARD RULE 5, do this in two
 separate Bash calls:
 
 1. One Bash call with **no** `git commit` in it — stage everything including the updated

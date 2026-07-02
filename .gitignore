@@ -5,7 +5,7 @@ node_modules/
 dist/
 out/
 build/
-release/
+/release/
 *.tsbuildinfo
 
 # Electron-builder

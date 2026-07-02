@@ -71,6 +71,10 @@ test.describe('Universal data-tooltip', () => {
     const sidebar = win.getByTestId('sidebar-nav')
     const statusNav = win.getByTestId('nav-status')
     const toggle = win.getByTestId('sidebar-collapse-toggle')
+    await expect(
+      win.getByTestId('window-titlebar').getByTestId('sidebar-collapse-toggle')
+    ).toBeVisible()
+    await expect(sidebar.getByTestId('sidebar-collapse-toggle')).toHaveCount(0)
 
     // Expanded: the label is visible and there is no nav tooltip.
     await expect(statusNav).toContainText('Status')

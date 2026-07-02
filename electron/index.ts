@@ -144,6 +144,9 @@ function createWindow(): void {
     width: 1200,
     height: 800,
     title: 'Git Warden',
+    ...(process.platform === 'darwin'
+      ? { titleBarStyle: 'hidden' as const, trafficLightPosition: { x: 16, y: 16 } }
+      : {}),
     ...(IS_E2E_BACKGROUND
       ? { show: false, focusable: false, skipTaskbar: true, paintWhenInitiallyHidden: true }
       : {}),

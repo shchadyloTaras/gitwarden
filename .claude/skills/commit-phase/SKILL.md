@@ -1,4 +1,5 @@
 ---
+name: commit-phase
 description: "Commit exactly 'Phase N: <name>' with the project trailer. Refuses on red tests or a missing Progress Log entry. Never pushes."
 argument-hint: '<N> <phase name...>'
 allowed-tools: Bash(npm test), Bash(git add*), Bash(git commit*), Bash(git status), Read, Bash(grep*)

@@ -53,9 +53,51 @@ const LEFT_PANEL_MAX_WIDTH = 320
 const RIGHT_PANEL_MIN_WIDTH = 260
 const RIGHT_PANEL_MAX_WIDTH = 520
 const SIDEBAR_COLLAPSED_WIDTH = 52
+const SIDEBAR_TRANSITION_MS = 200
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'gitwarden.layout.sidebarCollapsed.v1'
 const STARTUP_LOADER_MIN_MS = 900
 const STARTUP_LOADER_EXIT_MS = 220
+
+const COLLAPSE_TOGGLE_STYLE: React.CSSProperties = {
+  width: 32,
+  height: 28,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'transparent',
+  border: 'none',
+  borderRadius: 4,
+  color: 'var(--gw-text-faint, #71717a)',
+  cursor: 'pointer',
+  padding: 0,
+  fontFamily: 'inherit',
+  flexShrink: 0,
+}
+
+const COLLAPSE_ICON_STYLE: React.CSSProperties = {
+  width: 24,
+  height: 24,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+}
+
+/** Two-pane "toggle sidebar" glyph — the divider sits left of center so the narrow
+ * left pane reads as the rail being toggled, not as a perfectly split panel. */
+function CollapseToggleIcon(): React.ReactElement {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="1.5" y="2.5" width="13" height="11" rx="2" stroke="currentColor" strokeWidth="1.3" />
+      <line x1="6.5" y1="2.5" x2="6.5" y2="13.5" stroke="currentColor" strokeWidth="1.3" />
+    </svg>
+  )
+}
+
+function readIsMacPlatform(): boolean {
+  if (typeof navigator === 'undefined') return false
+
+  return /mac/i.test(navigator.platform) || /Mac OS X/i.test(navigator.userAgent)
+}
 
 function applyTheme(appearance: string): void {
   const root = document.documentElement
@@ -205,6 +247,7 @@ function MainContent(): React.ReactElement {
 
 export default function App(): React.ReactElement {
   const shellRef = useRef<HTMLDivElement | null>(null)
+  const sidebarAnimationTimerRef = useRef<number | undefined>(undefined)
   const loaderStartedAt = useRef(Date.now())
   const load = useProfilesStore((s) => s.load)
   const loadRepos = useRepositoriesStore((s) => s.load)
@@ -236,6 +279,8 @@ export default function App(): React.ReactElement {
     clampPanelWidths(readSavedPanelWidths(), getViewportWidth(), inspectorOpen)
   )
   const [sidebarCollapsed, setSidebarCollapsed] = useState(readSavedSidebarCollapsed)
+  const [sidebarAnimating, setSidebarAnimating] = useState(false)
+  const [isMacTitlebar] = useState(readIsMacPlatform)
 
   const measureShellWidth = useCallback((): number => {
     return shellRef.current?.getBoundingClientRect().width ?? getViewportWidth()
@@ -301,7 +346,18 @@ export default function App(): React.ReactElement {
     saveSidebarCollapsed(sidebarCollapsed)
   }, [sidebarCollapsed])
 
-  const toggleSidebar = useCallback(() => setSidebarCollapsed((current) => !current), [])
+  useEffect(() => () => window.clearTimeout(sidebarAnimationTimerRef.current), [])
+
+  const toggleSidebar = useCallback(() => {
+    // Set the animation flag in the click event so StrictMode commits it with the width change.
+    setSidebarAnimating(true)
+    window.clearTimeout(sidebarAnimationTimerRef.current)
+    sidebarAnimationTimerRef.current = window.setTimeout(
+      () => setSidebarAnimating(false),
+      SIDEBAR_TRANSITION_MS
+    )
+    setSidebarCollapsed((current) => !current)
+  }, [])
 
   // Auto-select active repo: pick first available when none is active or active was removed
   useEffect(() => {
@@ -510,13 +566,34 @@ export default function App(): React.ReactElement {
         overflow: 'hidden',
       }}
     >
+      <div
+        className={`gw-window-titlebar${isMacTitlebar ? ' gw-window-titlebar--mac' : ''}`}
+        data-testid="window-titlebar"
+      >
+        <div className="gw-window-titlebar-leading">
+          <button
+            className="gw-sidebar-collapse-toggle gw-titlebar-sidebar-toggle"
+            data-testid="sidebar-collapse-toggle"
+            onClick={toggleSidebar}
+            aria-label={sidebarCollapsed ? STR.SIDEBAR_EXPAND : STR.SIDEBAR_COLLAPSE}
+            data-tooltip={sidebarCollapsed ? STR.SIDEBAR_EXPAND : STR.SIDEBAR_COLLAPSE}
+            data-tooltip-pos="bottom"
+            style={COLLAPSE_TOGGLE_STYLE}
+          >
+            <span aria-hidden="true" style={COLLAPSE_ICON_STYLE}>
+              <CollapseToggleIcon />
+            </span>
+          </button>
+        </div>
+      </div>
+
       <GlobalHeader />
 
       <div ref={shellRef} style={{ display: 'flex', flex: 1, minHeight: 0, minWidth: 0 }}>
         <Sidebar
           width={effectiveLeftWidth}
           collapsed={sidebarCollapsed}
-          onToggleCollapse={toggleSidebar}
+          animating={sidebarAnimating}
         />
 
         {!sidebarCollapsed && (

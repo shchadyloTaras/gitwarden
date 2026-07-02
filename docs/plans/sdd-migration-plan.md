@@ -8,7 +8,7 @@
 
 A standalone **migration track**, not a product track. It uses a **local step counter `M0…M6`** (like the Agentic DX track's `DX-N`), **not** the global phase counter — so it never pollutes the product Phase Checklist. Same plan conventions as the rest of the repo: each step has a **Goal**, **Tasks**, and an explicit **Exit criteria** gate.
 
-**Driving these steps:** copy-paste the matching `M-N` prompt from `docs/prompts/sdd-migration-prompts.md`. **`/new-phase` does not work here** — this track is intentionally absent from the `new-phase.md` / `log-phase.md` phase→plan tables (see §0.1), so drive it from the prompts file directly.
+**Driving these steps:** copy-paste the matching `M-N` prompt from `docs/prompts/sdd-migration-prompts.md`. **`/new-phase` does not work here** — this track is intentionally absent from the `new-phase` / `log-phase` skills' phase→plan tables (see §0.1), so drive it from the prompts file directly.
 
 **Self-consuming scaffolding (read this twice):** this plan and its prompts file **live inside `docs/plans/` and `docs/prompts/`** — the very folders step **M6** deletes. That is intentional: when the migration completes, its own scaffolding is consumed along with the rest. Therefore:
 
@@ -18,7 +18,7 @@ A standalone **migration track**, not a product track. It uses a **local step co
 
 ### 0.1 Why this track is NOT wired into the phase tables
 
-The product convention lists every plan+prompts pair in `AGENTS.md` "Reference docs", the `new-phase.md` phase→plan table, the `log-phase.md` phase→track table, and the progress-log checklist. This migration track is **deliberately excluded** from all of them — exactly as `header-guard-badge` (a non-phased fix) is excluded — because it owns no global phases and self-deletes on completion. Wiring it in would only create references that M6 immediately invalidates. Its sole footprint is this plan, its prompts, and the M6 `## Documentation` log entry.
+The product convention lists every plan+prompts pair in `AGENTS.md` "Reference docs", the `new-phase` skill's phase→plan table, the `log-phase` skill's phase→track table, and the progress-log checklist. This migration track is **deliberately excluded** from all of them — exactly as `header-guard-badge` (a non-phased fix) is excluded — because it owns no global phases and self-deletes on completion. Wiring it in would only create references that M6 immediately invalidates. Its sole footprint is this plan, its prompts, and the M6 `## Documentation` log entry.
 
 ### 0.2 Verifiability principle (mirrors the rest of the repo)
 
@@ -33,7 +33,7 @@ The repo's `docs/plans/` + `docs/prompts/` layout predates SDD. SDD's `docs/feat
 But this is a **destructive change on an actively-developed repo with deep dependencies**, surfaced by a prior recon pass:
 
 - **12 references live in TypeScript source comments**, not Markdown (Appendix A) — a naïve `*.md`-only grep is blind to them.
-- **Cross-plan narrative links** between plan bodies, and **three operational command files** (`new-phase.md`, `log-phase.md`, `run-track.md`) encode plan/prompt paths and slug→path conventions.
+- **Cross-plan narrative links** between plan bodies, and **three operational skill files** (`new-phase`, `log-phase`, `run-track`) encode plan/prompt paths and slug→path conventions.
 - **A second prose copy** of three prompt paths sits in `AGENTS.md` outside the Reference-docs block.
 - **Renaming slugs** (the first instinct) multiplies breakage for zero benefit (Appendix B).
 
@@ -138,9 +138,9 @@ The doomed dirs are excluded by glob in Gates A/B precisely because this plan + 
 - `README.md`, `SECURITY.md`, `CONTRIBUTING.md`, `DECISIONS.md`.
 - `docs/progress-log.md` — **grep the whole file:** per-track sub-headings **and** inline body-prose refs (superseded-by notes, past file-list lines).
 - `docs/code-graph-mcp.md`; `landing/README.md` (relative `../docs/plans/…` form); **all 8 `docs/adr/*` `source:` frontmatter lines** (mapping in Appendix A).
-- `.claude/commands/new-phase.md` — rewrite the table to a single `docs/features/<slug>/spec.md` column (**derive `<slug>` from the existing plan basename** — the table has no slug column); **preserve the `52–55a` and `DX-0–DX-6` literal ranges**.
-- `.claude/commands/log-phase.md` — reconcile its phase→track NAME table (names, not paths; won't surface in a path grep).
-- `.claude/commands/run-track.md` — rewrite the RESOLVE convention to `docs/features/<slug>/spec.md` (drop the prompts-path concept); preserve the three §2 exceptions. **`sdd-migration` is never a run-track target** — do not add it to the resolver; it is driven only from its prompts file.
+- `.claude/skills/new-phase/SKILL.md` — rewrite the table to a single `docs/features/<slug>/spec.md` column (**derive `<slug>` from the existing plan basename** — the table has no slug column); **preserve the `52–55a` and `DX-0–DX-6` literal ranges**.
+- `.claude/skills/log-phase/SKILL.md` — reconcile its phase→track NAME table (names, not paths; won't surface in a path grep).
+- `.claude/skills/run-track/SKILL.md` — rewrite the RESOLVE convention to `docs/features/<slug>/spec.md` (drop the prompts-path concept); preserve the three §2 exceptions. **`sdd-migration` is never a run-track target** — do not add it to the resolver; it is driven only from its prompts file.
 - **Cross-plan narrative links** carried into the new `spec.md`/`tasks.md` bodies → `docs/features/<other>/spec.md`.
 - **The 12 `.ts` source comments** (Appendix A) — 11 → `docs/features/github-oauth/spec.md`, 1 → `docs/features/ai-integration/spec.md`.
 - **Anchors:** when a repointed ref cites a plan `§7.x` / `Phase N` / `Appendix X`, **drop or remap** it to the SDD section (or `tasks.md`) — plan numbering does not survive the transform (Appendix A).
@@ -183,7 +183,7 @@ Make edits **idempotent** (re-running finds nothing to change rather than double
 
 ## 5. Acceptance Criteria (migration-level)
 
-After M6, on the `chore/sdd-migration` branch: every former plan exists as `docs/features/<slug>/spec.md` (slug unchanged) with §1–§8, zero forbidden tokens in §5, both AC coverage floors met, `feature_size` matching `.size`, and a passed `sdd:critic`; each feature has a `tasks.md` carrying the plan + prompt HOW; `docs/architecture-map.md` and `docs/roadmap.md` exist with the Distribution partial preserved; **Gate B (all file types) returns zero residual references** — including the 12 `.ts` comments, the 8 `docs/adr/*` `source:` lines, `docs/code-graph-mcp.md`, `landing/README.md`, `log-phase.md`, the AGENTS.md second prose copy, progress-log body prose, and all cross-plan links; every repointed link resolves on disk with no stale section anchor; `docs/plans/` and `docs/prompts/` are removed via `git rm` in an isolated, revertable commit; the migration is recorded as a `## Documentation` entry; nothing was pushed or merged. **Recovery:** any step is revertable via git because the new artifacts were committed (M3) before the source was removed (M6).
+After M6, on the `chore/sdd-migration` branch: every former plan exists as `docs/features/<slug>/spec.md` (slug unchanged) with §1–§8, zero forbidden tokens in §5, both AC coverage floors met, `feature_size` matching `.size`, and a passed `sdd:critic`; each feature has a `tasks.md` carrying the plan + prompt HOW; `docs/architecture-map.md` and `docs/roadmap.md` exist with the Distribution partial preserved; **Gate B (all file types) returns zero residual references** — including the 12 `.ts` comments, the 8 `docs/adr/*` `source:` lines, `docs/code-graph-mcp.md`, `landing/README.md`, `.claude/skills/log-phase/SKILL.md`, the AGENTS.md second prose copy, progress-log body prose, and all cross-plan links; every repointed link resolves on disk with no stale section anchor; `docs/plans/` and `docs/prompts/` are removed via `git rm` in an isolated, revertable commit; the migration is recorded as a `## Documentation` entry; nothing was pushed or merged. **Recovery:** any step is revertable via git because the new artifacts were committed (M3) before the source was removed (M6).
 
 ---
 
@@ -200,7 +200,7 @@ After M6, on the `chore/sdd-migration` branch: every former plan exists as `docs
 - `docs/code-graph-mcp.md` (≈ line 10) → `docs/features/agentic-dx/spec.md`.
 - `landing/README.md` (≈ lines 12–13, relative `../docs/plans/…` form) → both links to `docs/features/landing-page/spec.md`.
 - **All 8 ADRs** under `docs/adr/` carry a `source:` frontmatter line → repoint each: `0001`,`0002`,`0003`,`0005`,`0006` → `docs/features/gitwarden/spec.md`; `0004` → `github-oauth`; `0007` → `ai-integration`; `0008` → `ai-chat-redesign`.
-- `.claude/commands/new-phase.md` (table), `.claude/commands/log-phase.md` (phase→track NAME table), `.claude/commands/run-track.md` (RESOLVE convention rewrite).
+- `.claude/skills/new-phase/SKILL.md` (table), `.claude/skills/log-phase/SKILL.md` (phase→track NAME table), `.claude/skills/run-track/SKILL.md` (RESOLVE convention rewrite).
 - Cross-plan links inside plan bodies (now carried into `spec.md`/`tasks.md`).
 
 **Stale anchors (a transform hazard, handle in M4):** many of these refs cite a plan **section/appendix/phase anchor** — ADR `source:` lines (`§7.1`, `§7.3`, `§1.1`, `Appendix B–D`), the 12 `.ts` comments (`§6 Phase 23/24/25/27`, `Appendix A–D`), `code-graph-mcp.md` (`§Step DX-6`). Plan numbering does **not** survive the transform to SDD §1–§8. When repointing, **drop or remap the anchor** to the corresponding SDD section (or to `tasks.md` for HOW/phase anchors) — never leave a pointer claiming a `§7.x`/`Phase N`/`Appendix X` that no longer exists. Gate C checks anchors, not just file existence (§3).
@@ -230,9 +230,9 @@ These 12 are inert comments — deleting the folders does **not** break the buil
 
 The first-instinct rename (`ai-integration`→`ai-connections`, `distribution-release`→`distribution`, `ai-chat-redesign`→`ai-chat`) buys nothing and multiplies breakage:
 
-- `run-track.md` resolves paths **from the slug** — a rename changes the lookup key and 404s `/run-track`.
+- the `run-track` skill resolves paths **from the slug** — a rename changes the lookup key and 404s `/run-track`.
 - Dense cross-plan links (`"the AI plan (docs/plans/ai-integration-plan.md)"`) appear in several plan bodies; a rename must rewrite every one atomically.
-- `AGENTS.md` Reference-docs + operating-workflow line, `progress-log.md` headings, the `new-phase.md` table — all key on the slug/basename.
+- `AGENTS.md` Reference-docs + operating-workflow line, `progress-log.md` headings, the `new-phase` skill's table — all key on the slug/basename.
 
 A faithful migration changes the **path** (`plans/<slug>-plan.md` → `features/<slug>/spec.md`) and, if desired, the human **display name** in prose/tables — but **never the slug/basename**.
 

@@ -1,4 +1,5 @@
 ---
+name: new-phase
 description: 'Scaffold a new phase: read its plan section and prompt, check previous phase gate, show Goal/Tasks/Exit'
 argument-hint: '<phase-number-or-DX-N>'
 allowed-tools: Read, Bash(grep*), Bash(git log*)

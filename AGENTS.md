@@ -120,6 +120,7 @@ This keeps SDD documentation work visible alongside phase progress in the same l
 - **Header Guard Badge:** `docs/plans/header-guard-badge-plan.md` + `docs/prompts/header-guard-badge-prompts.md`
 - **Guard Quick-Fix:** `docs/plans/guard-quick-fix-plan.md` + `docs/prompts/guard-quick-fix-prompts.md`
 - **Diverged-Branch Merge:** `docs/plans/divergent-branch-merge-plan.md` + `docs/prompts/divergent-branch-merge-prompts.md`
+- **Sidebar Update Button:** `docs/plans/sidebar-update-button-plan.md` + `docs/prompts/sidebar-update-button-prompts.md`
 - **Agentic DX:** `docs/plans/agentic-dx-plan.md` + `docs/prompts/dx-execution-prompts.md`
 - **SDD migration (transient chore):** `docs/plans/sdd-migration-plan.md` + `docs/prompts/sdd-migration-prompts.md` — a one-off, self-deleting track (steps M0–M6) that converts these `docs/plans/` + `docs/prompts/` files into `docs/features/<slug>/` specs and then removes both folders (including itself). Driven from its prompts file, **not** `/new-phase`; absent from the phase tables; M4 removes this very line before M6 deletes the files.
 - **Architecture diagram:** [`docs/architecture/`](docs/architecture/README.md) — core ↔ main ↔ preload ↔ renderer boundaries (PNG + editable `docs/architecture/diagram.excalidraw`)

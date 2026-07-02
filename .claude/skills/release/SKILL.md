@@ -1,4 +1,5 @@
 ---
+name: release
 description: 'Draft the app CHANGELOG for a release from commits since the last tag, bump the version, and make the release commit + tag locally. Never pushes.'
 argument-hint: '[major|minor|patch] (optional — overrides the suggested bump)'
 allowed-tools: Bash(npm test), Bash(npm run release:changelog*), Bash(git status), Bash(git diff*), Bash(git log*), Bash(git add*), Bash(git commit*), Bash(git tag*), Read, Edit

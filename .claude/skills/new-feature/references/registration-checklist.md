@@ -55,14 +55,14 @@ Placeholders: `<slug>` (kebab, e.g. `commit-templates`) · `<Feature>` (Title Ca
    … → `<N>→<NN>` (<Feature>)
    ```
 
-7. **`.claude/commands/new-phase.md` → the phase-range → plan/prompts table** (the markdown table
+7. **`.claude/skills/new-phase/SKILL.md` → the phase-range → plan/prompts table** (the markdown table
    under "Step 2"). Add a row:
    ```
    | <N>–<NN>    | `docs/plans/<slug>-plan.md`         | `docs/prompts/<slug>-prompts.md`         |
    ```
    Without this row, `/new-phase <N>` cannot find the plan — and `/run-track` calls `/new-phase`.
 
-8. **`.claude/commands/log-phase.md` → the phase-range → Track table** (under "Step 4"). Add a row:
+8. **`.claude/skills/log-phase/SKILL.md` → the phase-range → Track table** (under "Step 4"). Add a row:
    ```
    | <N>–<NN>    | <Feature>              |
    ```

@@ -60,8 +60,8 @@ anchors + templates lives in **`references/registration-checklist.md`** — foll
 | 4 | `docs/progress-log.md` → Feature Track Status (row, `⬜`) |
 | 5 | `AGENTS.md` → Reference docs (bullet) |
 | 6 | `AGENTS.md` → Build order (extend chain) |
-| 7 | `.claude/commands/new-phase.md` → phase-range→plan table (row) |
-| 8 | `.claude/commands/log-phase.md` → phase-range→Track table (row) |
+| 7 | `.claude/skills/new-phase/SKILL.md` → phase-range→plan table (row) |
+| 8 | `.claude/skills/log-phase/SKILL.md` → phase-range→Track table (row) |
 
 ## Anti-hallucination rule (load-bearing)
 

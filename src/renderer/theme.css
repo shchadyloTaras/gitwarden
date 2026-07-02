@@ -257,6 +257,49 @@ body {
   outline-offset: -2px;
 }
 
+.gw-window-titlebar {
+  display: flex;
+  align-items: center;
+  height: 48px;
+  flex-shrink: 0;
+  min-width: 0;
+  background: var(--gw-surface, #18181b);
+  user-select: none;
+  -webkit-app-region: drag;
+}
+
+:root[data-theme='light'] .gw-window-titlebar {
+  background: #ffffff;
+}
+
+.gw-window-titlebar--mac {
+  padding-left: 88px;
+}
+
+.gw-window-titlebar-leading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  height: 100%;
+}
+
+.gw-window-titlebar button,
+.gw-window-titlebar [role='button'],
+.gw-window-titlebar input,
+.gw-window-titlebar textarea,
+.gw-window-titlebar select {
+  -webkit-app-region: no-drag;
+}
+
+.gw-titlebar-sidebar-toggle {
+  margin-right: 10px;
+}
+
+.gw-global-header {
+  min-width: 0;
+}
+
 .gw-sidebar {
   will-change: auto;
 }

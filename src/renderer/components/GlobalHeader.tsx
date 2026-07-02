@@ -109,6 +109,7 @@ export default function GlobalHeader(): React.ReactElement {
 
   return (
     <header
+      className="gw-global-header"
       data-testid="global-header"
       style={{
         display: 'flex',

@@ -100,9 +100,9 @@ Appendix A is the verified known set (a checklist over the grep), not a replacem
 - docs/code-graph-mcp.md (~line 10) -> docs/features/agentic-dx/spec.md.
 - landing/README.md (~lines 12-13, relative ../docs/plans/... form) -> both links to docs/features/landing-page/spec.md.
 - All 8 docs/adr/*.md `source:` frontmatter lines: 0001,0002,0003,0005,0006 -> gitwarden; 0004 -> github-oauth; 0007 -> ai-integration; 0008 -> ai-chat-redesign (all to docs/features/<slug>/spec.md).
-- .claude/commands/new-phase.md — rewrite the table to a single docs/features/<slug>/spec.md column; DERIVE <slug> from the existing plan basename (the table has no slug column); PRESERVE the literal ranges 52–55a and DX-0–DX-6.
-- .claude/commands/log-phase.md — reconcile its phase->track NAME table (names, not paths; won't appear in a path grep).
-- .claude/commands/run-track.md — REWRITE the RESOLVE convention to docs/features/<slug>/spec.md (drop the prompts-path concept); preserve the 3 exceptions (gitwarden, agentic-dx, ai-chat-redesign). sdd-migration is NEVER a run-track target — do not add it to the resolver.
+- .claude/skills/new-phase/SKILL.md — rewrite the table to a single docs/features/<slug>/spec.md column; DERIVE <slug> from the existing plan basename (the table has no slug column); PRESERVE the literal ranges 52–55a and DX-0–DX-6.
+- .claude/skills/log-phase/SKILL.md — reconcile its phase->track NAME table (names, not paths; won't appear in a path grep).
+- .claude/skills/run-track/SKILL.md — REWRITE the RESOLVE convention to docs/features/<slug>/spec.md (drop the prompts-path concept); preserve the 3 exceptions (gitwarden, agentic-dx, ai-chat-redesign). sdd-migration is NEVER a run-track target — do not add it to the resolver.
 - Cross-plan narrative links in the new spec.md/tasks.md bodies -> docs/features/<other>/spec.md.
 - The 12 .ts source comments (Appendix A table) — 11 -> docs/features/github-oauth/spec.md, 1 (src/core/ai/types.ts:7) -> docs/features/ai-integration/spec.md.
 - ANCHORS: when a repointed ref cites a plan §7.x / Phase N / Appendix X (ADR source: lines, the .ts comments, code-graph-mcp.md), DROP or remap it to the SDD section (or tasks.md for HOW/phase anchors) — plan numbering does not survive the transform. Never leave a pointer claiming a section that no longer exists.

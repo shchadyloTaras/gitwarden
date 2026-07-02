@@ -1,4 +1,5 @@
 ---
+name: verify-phase
 description: 'Run the full phase gate: both tsc projects, vitest, lint, and optionally e2e'
 argument-hint: '[--ui]'
 allowed-tools: Bash(npx tsc*), Bash(npm run lint), Bash(npm test), Bash(npm run e2e)
