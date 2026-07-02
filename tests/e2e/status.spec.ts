@@ -151,4 +151,53 @@ test.describe('Status & Staging UI', () => {
     await expect(win.getByTestId('staged-list')).toContainText('world.txt', { timeout: 10000 })
     await expect(win.getByTestId('unstaged-list')).toContainText('world.txt')
   })
+
+  test('switching branch via the header dropdown refreshes status without navigating away', async () => {
+    const branchRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'gw-status-branch-'))
+    execSync('git init -b main', { cwd: branchRepo, stdio: 'pipe' })
+    execSync('git config user.email "test@test.com"', { cwd: branchRepo, stdio: 'pipe' })
+    execSync('git config user.name "Test"', { cwd: branchRepo, stdio: 'pipe' })
+    fs.writeFileSync(path.join(branchRepo, 'base.txt'), 'base\n')
+    execSync('git add base.txt', { cwd: branchRepo, stdio: 'pipe' })
+    execSync('git commit -m "init"', { cwd: branchRepo, stdio: 'pipe' })
+    execSync('git checkout -b feature-a', { cwd: branchRepo, stdio: 'pipe' })
+    execSync('git checkout main', { cwd: branchRepo, stdio: 'pipe' })
+
+    try {
+      await win.evaluate(async (repoPath: string) => {
+        return (window as Window & typeof globalThis).api.repositories.create({
+          name: 'status-branch-fixture',
+          localPath: repoPath,
+          isFavorite: false,
+        })
+      }, branchRepo)
+
+      await win.reload()
+      await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
+
+      await win.getByTestId('nav-status').click()
+      await expect(win.getByTestId('screen-status')).toBeVisible()
+      await expect(win.getByTestId('untracked-list')).toContainText('No untracked files', {
+        timeout: 10000,
+      })
+
+      // A file appears in the working tree AFTER the initial load — not through the app —
+      // simulating the real-world case where the tree changed underneath the open screen.
+      fs.writeFileSync(path.join(branchRepo, 'stale-check.txt'), 'x\n')
+
+      // Switch branch via the HEADER dropdown while staying on the Status screen.
+      await win.getByTestId('header-branch-select').click()
+      await win.getByTestId('header-branch-select-option-feature-a').click()
+      await expect(win.getByTestId('header-branch-select')).toContainText('feature-a', {
+        timeout: 10000,
+      })
+
+      // Status must refresh for the newly active branch, showing the file that appeared.
+      await expect(win.getByTestId('untracked-list')).toContainText('stale-check.txt', {
+        timeout: 10000,
+      })
+    } finally {
+      fs.rmSync(branchRepo, { recursive: true, force: true })
+    }
+  })
 })

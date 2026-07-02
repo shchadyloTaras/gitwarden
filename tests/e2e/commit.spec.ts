@@ -182,4 +182,54 @@ test.describe('Commit Flow', () => {
       .trim()
     expect(authorName).toBe('Alice Dev')
   })
+
+  test('switching branch via the header dropdown refreshes staged changes without navigating away', async () => {
+    const branchRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'gw-commit-branch-'))
+    execSync('git init -b main', { cwd: branchRepo, stdio: 'pipe' })
+    execSync('git config user.email "test@test.com"', { cwd: branchRepo, stdio: 'pipe' })
+    execSync('git config user.name "Test"', { cwd: branchRepo, stdio: 'pipe' })
+    fs.writeFileSync(path.join(branchRepo, 'base.txt'), 'base\n')
+    execSync('git add base.txt', { cwd: branchRepo, stdio: 'pipe' })
+    execSync('git commit -m "init"', { cwd: branchRepo, stdio: 'pipe' })
+    execSync('git checkout -b feature-a', { cwd: branchRepo, stdio: 'pipe' })
+    execSync('git checkout main', { cwd: branchRepo, stdio: 'pipe' })
+
+    try {
+      await win.evaluate(async (repoPath: string) => {
+        return (window as Window & typeof globalThis).api.repositories.create({
+          name: 'commit-branch-fixture',
+          localPath: repoPath,
+          isFavorite: false,
+        })
+      }, branchRepo)
+
+      await win.reload()
+      await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
+
+      await win.getByTestId('nav-commit').click()
+      await expect(win.getByTestId('screen-commit')).toBeVisible()
+      await expect(win.getByTestId('commit-staged-summary')).toContainText('No staged changes', {
+        timeout: 10000,
+      })
+
+      // Stage a brand-new file directly on disk — not through the app — simulating the
+      // real-world case where the index changed underneath the open screen.
+      fs.writeFileSync(path.join(branchRepo, 'new-file.txt'), 'x\n')
+      execSync('git add new-file.txt', { cwd: branchRepo, stdio: 'pipe' })
+
+      // Switch branch via the HEADER dropdown while staying on the Commit screen.
+      await win.getByTestId('header-branch-select').click()
+      await win.getByTestId('header-branch-select-option-feature-a').click()
+      await expect(win.getByTestId('header-branch-select')).toContainText('feature-a', {
+        timeout: 10000,
+      })
+
+      // Staged summary must refresh for the newly active branch, showing the new file.
+      await expect(win.getByTestId('commit-staged-summary')).toContainText('new-file.txt', {
+        timeout: 10000,
+      })
+    } finally {
+      fs.rmSync(branchRepo, { recursive: true, force: true })
+    }
+  })
 })

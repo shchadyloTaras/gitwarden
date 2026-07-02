@@ -15,11 +15,12 @@ const ROW: React.CSSProperties = {
 
 export default function HistoryScreen(): React.ReactElement {
   const activeRepo = useAppStore((s) => s.activeRepo)
+  const currentBranch = useAppStore((s) => s.currentBranch)
   const { commits, loading, loadingMore, error, hasMore, load, loadMore } = useHistoryStore()
 
   useEffect(() => {
     if (activeRepo) void load(activeRepo.localPath, activeRepo)
-  }, [activeRepo, load])
+  }, [activeRepo, currentBranch, load])
 
   return (
     <div

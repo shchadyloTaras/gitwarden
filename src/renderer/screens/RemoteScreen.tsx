@@ -52,7 +52,7 @@ export default function RemoteScreen(): React.ReactElement {
 
   useEffect(() => {
     if (activeRepo) void load(activeRepo.localPath, activeRepo)
-  }, [load, activeRepo])
+  }, [load, activeRepo, currentBranch])
 
   // The GitHub HTTPS-token push context for the selected remote — only engaged for an
   // HTTPS GitHub remote, so SSH/file remotes are unaffected.

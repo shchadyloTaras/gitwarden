@@ -10,6 +10,7 @@ import { STR } from '../strings'
 
 export default function CommitScreen(): React.ReactElement {
   const activeRepo = useAppStore((s) => s.activeRepo)
+  const currentBranch = useAppStore((s) => s.currentBranch)
   const { profiles, activeProfileId } = useProfilesStore()
   const {
     repository,
@@ -38,7 +39,7 @@ export default function CommitScreen(): React.ReactElement {
 
   useEffect(() => {
     if (activeRepo) void load(activeRepo.localPath, activeRepo)
-  }, [load, activeRepo])
+  }, [load, activeRepo, currentBranch])
 
   // Keep the AI enablement/connection state fresh so the commit-message affordance
   // reflects what the user set up in the AI Chat panel / Settings.

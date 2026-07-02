@@ -329,4 +329,90 @@ test.describe('Safety Center', () => {
     await expect(win.getByTestId('remote-push-confirm-btn')).toBeDisabled()
     await expect(win.getByTestId('remote-push-issue-REMOTE_HOST_MISMATCH')).toBeVisible()
   })
+
+  test('switching branch via the header dropdown recomputes the push-safety verdict', async () => {
+    const bareRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'gw-safety-branch-bare-'))
+    execSync('git init --bare', { cwd: bareRepo, stdio: 'pipe' })
+
+    const workRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'gw-safety-branch-work-'))
+    execSync('git init -b main', { cwd: workRepo, stdio: 'pipe' })
+    execSync('git config user.email "alice@example.com"', { cwd: workRepo, stdio: 'pipe' })
+    execSync('git config user.name "Alice Dev"', { cwd: workRepo, stdio: 'pipe' })
+    fs.writeFileSync(path.join(workRepo, 'init.txt'), 'initial\n')
+    execSync('git add init.txt', { cwd: workRepo, stdio: 'pipe' })
+    execSync('git commit -m "initial"', { cwd: workRepo, stdio: 'pipe' })
+    execSync(`git remote add origin "${bareRepo}"`, { cwd: workRepo, stdio: 'pipe' })
+    execSync('git push origin main', { cwd: workRepo, stdio: 'pipe' })
+
+    execSync('git checkout -b feature-a', { cwd: workRepo, stdio: 'pipe' })
+    execSync('git checkout main', { cwd: workRepo, stdio: 'pipe' })
+
+    try {
+      const profileId = await win.evaluate(async () => {
+        const api = (window as Window & typeof globalThis).api
+        const res = await api.profiles.create({
+          displayName: 'Alice',
+          gitAuthorName: 'Alice Dev',
+          gitAuthorEmail: 'alice@example.com',
+          githubUsername: 'alice',
+          authenticationMethod: 'ssh',
+          expectedRemoteHosts: [],
+        })
+        return res.ok ? res.data.id : null
+      })
+      expect(profileId).toBeTruthy()
+
+      await win.evaluate(async (id: string) => {
+        const api = (window as Window & typeof globalThis).api
+        await api.settings.update({ activeProfileId: id })
+      }, profileId as string)
+
+      await win.evaluate(
+        async ([repoPath, pId]: [string, string]) => {
+          const api = (window as Window & typeof globalThis).api
+          await api.repositories.create({
+            name: 'safety-branch-fixture',
+            localPath: repoPath,
+            assignedProfileId: pId,
+            isFavorite: false,
+            pushPolicy: {
+              mode: 'branchScoped',
+              allowedBranchPatterns: ['feature-a'],
+              blockedBranchPatterns: ['main'],
+            },
+          })
+        },
+        [workRepo, profileId as string]
+      )
+
+      await win.reload()
+      await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
+
+      // Start on the ALLOWED branch.
+      await win.getByTestId('header-branch-select').click()
+      await win.getByTestId('header-branch-select-option-feature-a').click()
+      await expect(win.getByTestId('header-branch-select')).toContainText('feature-a', {
+        timeout: 10000,
+      })
+
+      await win.getByTestId('nav-safety-center').click()
+      await expect(win.getByTestId('screen-safety-center')).toBeVisible()
+      await expect(win.getByTestId('safety-can-push')).toContainText('Yes', { timeout: 10000 })
+
+      // Switch to the BLOCKED branch via the header dropdown while staying on Safety Center.
+      await win.getByTestId('header-branch-select').click()
+      await win.getByTestId('header-branch-select-option-main').click()
+      await expect(win.getByTestId('header-branch-select')).toContainText('main', {
+        timeout: 10000,
+      })
+
+      // The verdict must flip for the newly active (blocked) branch, not stay stuck on
+      // feature-a's stale "Yes".
+      await expect(win.getByTestId('safety-can-push')).toContainText('No', { timeout: 10000 })
+      await expect(win.getByTestId('safety-branch-access-verdict')).toContainText('blocked')
+    } finally {
+      fs.rmSync(workRepo, { recursive: true, force: true })
+      fs.rmSync(bareRepo, { recursive: true, force: true })
+    }
+  })
 })

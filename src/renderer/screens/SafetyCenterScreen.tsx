@@ -78,6 +78,10 @@ const VALUE: React.CSSProperties = {
 
 export default function SafetyCenterScreen(): React.ReactElement {
   const activeRepo = useAppStore((s) => s.activeRepo)
+  // Live branch from the app-wide store (updated the instant a switch succeeds) — used only
+  // to retrigger the load effect below; the checks themselves read the store's own
+  // `currentBranch`, fetched together with identityCheck/pushCheck in the same load() call.
+  const liveCurrentBranch = useAppStore((s) => s.currentBranch)
   const setActiveRepo = useAppStore((s) => s.setActiveRepo)
   const updateRepo = useRepositoriesStore((s) => s.updateRepo)
   const { profiles, activeProfileId } = useProfilesStore()
@@ -101,7 +105,7 @@ export default function SafetyCenterScreen(): React.ReactElement {
 
   useEffect(() => {
     if (activeRepo) void load(activeRepo.localPath, activeRepo, activeProfile_, profiles)
-  }, [activeRepo, activeProfile_, load, profiles])
+  }, [activeRepo, liveCurrentBranch, activeProfile_, load, profiles])
 
   // Deduplicate issues from both checks, preserving order (identity first, then push-only)
   const allIssues = useMemo(() => {

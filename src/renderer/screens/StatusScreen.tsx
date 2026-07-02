@@ -498,6 +498,7 @@ function DiffPanel({
 
 export default function StatusScreen(): React.ReactElement {
   const activeRepo = useAppStore((s) => s.activeRepo)
+  const currentBranch = useAppStore((s) => s.currentBranch)
   const { status, loading, error, loadStatus, stageFile, unstageFile, stageAll, unstageAll } =
     useStatusStore()
 
@@ -516,7 +517,7 @@ export default function StatusScreen(): React.ReactElement {
     if (activeRepo) {
       void loadStatus(activeRepo.localPath)
     }
-  }, [activeRepo, loadStatus])
+  }, [activeRepo, currentBranch, loadStatus])
 
   // Load diff whenever selected file or mode changes
   useEffect(() => {

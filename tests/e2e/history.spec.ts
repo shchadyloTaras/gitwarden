@@ -176,4 +176,55 @@ test.describe('History', () => {
       fs.rmSync(bigRepo, { recursive: true, force: true })
     }
   })
+
+  test('switching branch via the header dropdown refreshes the commit list without navigating away', async () => {
+    const branchRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'gw-history-branch-'))
+    execSync('git init -b main', { cwd: branchRepo, stdio: 'pipe' })
+    execSync('git config user.email "alice@example.com"', { cwd: branchRepo, stdio: 'pipe' })
+    execSync('git config user.name "Alice Dev"', { cwd: branchRepo, stdio: 'pipe' })
+    fs.writeFileSync(path.join(branchRepo, 'base.txt'), 'base\n')
+    execSync('git add base.txt', { cwd: branchRepo, stdio: 'pipe' })
+    execSync('git commit -m "base commit"', { cwd: branchRepo, stdio: 'pipe' })
+
+    execSync('git checkout -b feature-a', { cwd: branchRepo, stdio: 'pipe' })
+    fs.writeFileSync(path.join(branchRepo, 'a.txt'), 'a\n')
+    execSync('git add a.txt', { cwd: branchRepo, stdio: 'pipe' })
+    execSync('git commit -m "feature-a commit"', { cwd: branchRepo, stdio: 'pipe' })
+
+    execSync('git checkout main', { cwd: branchRepo, stdio: 'pipe' })
+
+    try {
+      await win.evaluate(async (repoPath: string) => {
+        const api = (window as Window & typeof globalThis).api
+        await api.repositories.create({
+          name: 'history-branch-fixture',
+          localPath: repoPath,
+          isFavorite: false,
+        })
+      }, branchRepo)
+
+      await win.reload()
+      await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
+
+      await win.getByTestId('nav-history').click()
+      await expect(win.getByTestId('screen-history')).toBeVisible()
+      await expect(win.getByTestId('history-commit-list')).toBeVisible({ timeout: 10_000 })
+      await expect(win.getByTestId('history-commit-row')).toHaveCount(1, { timeout: 10_000 })
+      await expect(win.getByTestId('history-commit-list')).toContainText('base commit')
+
+      // Switch branch via the HEADER dropdown — not the Branches screen — while staying
+      // on the History screen the whole time (no navigation, no reload).
+      await win.getByTestId('header-branch-select').click()
+      await win.getByTestId('header-branch-select-option-feature-a').click()
+      await expect(win.getByTestId('header-branch-select')).toContainText('feature-a', {
+        timeout: 10000,
+      })
+
+      // History must reflect feature-a's 2 commits, not main's stale 1.
+      await expect(win.getByTestId('history-commit-row')).toHaveCount(2, { timeout: 10_000 })
+      await expect(win.getByTestId('history-commit-list')).toContainText('feature-a commit')
+    } finally {
+      fs.rmSync(branchRepo, { recursive: true, force: true })
+    }
+  })
 })
