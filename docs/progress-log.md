@@ -107,7 +107,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 ### Diverged-Branch Merge feature (plan: `docs/plans/divergent-branch-merge-plan.md`, prompts: `docs/prompts/divergent-branch-merge-prompts.md`)
 
 - [x] Phase 68 — Remediation model: make divergence & conflict remediable (pure core)
-- [ ] Phase 69 — GitRunner conflict classification + local merge (main)
+- [x] Phase 69 — GitRunner conflict classification + local merge (main)
 - [ ] Phase 70 — Executable merge remediation (IPC)
 - [ ] Phase 71 — Merge button in the failed-pull recovery banner (renderer + e2e)
 
@@ -143,7 +143,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | Client Branch Access   | 56–59     | ✅ complete                                                   |
 | Distribution & Release | 40–45     | 🟡 Phases 40–42, 45 done; 43–44 open (gated on signing certs) |
 | Landing Page           | 46–51     | ✅ complete                                                   |
-| Diverged-Branch Merge  | 68–71     | 🟡 Phase 68 done; 69–71 open                                  |
+| Diverged-Branch Merge  | 68–71     | 🟡 Phases 68–69 done; 70–71 open                              |
 | Agentic DX             | DX-0–DX-6 | ✅ complete (DX-6 = à la carte; project-factory/sdd deferred) |
 
 ## Progress Log
@@ -1053,3 +1053,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: Vitest **723/723 passed** (5 new in `remediation.test.ts`: `divergentBranches` → executable `merge-remote-into-local`; `mergeConflict` → navigate `resolve-conflicts`/status; both added to the "maps every RemediableGitErrorCode" list; `EXECUTABLE_ACTIONS` size/membership updated to 5). `npx tsc --noEmit` clean on both `tsconfig.node.json` and `tsconfig.web.json` (previously red on `main` from the pre-existing issues above — now genuinely clean). `npm run lint`: ESLint clean repo-wide; Prettier clean on every file this phase touched (the 6-file pre-existing, unrelated Prettier debt from `.claude/skills/new-feature/**` and `tests/unit/error-mapper.test.ts`, plus one gitignored `.claude/settings.local.json`, is untouched — same precedent as the 2026-07-01 tooltip entry above).
 - Exit criteria: ✅ met — `src/core/` stays pure (core-purity-reviewer: clean, no forbidden imports, no new mutable/global state, no new safety verdicts — only remediation-hint mappings for pre-existing codes); safety-reviewer confirmed the `remediationExecutor.ts` stub is unreachable, logs no secrets, and touches no global/system state.
 - Notes / follow-ups: The remediationExecutor.ts stub case is deliberately dead code, replaced by real logic in Phase 70 — do not extend it further. Phase 69 is next: fix `GitRunner`'s stdout-classification blind spot (a real `git merge` conflict writes `CONFLICT (…)` to stdout, which `ErrorMapper.map()` never sees today) and add `GitService.mergeRemoteBranch`.
+
+### 2026-07-02 — Phase 69: GitRunner conflict classification + local merge (main)
+
+- Built: Fixed the stdout-classification blind spot — `GitRunner.execute()` previously classified only `stderr` on a non-zero exit, but a real `git merge` conflict writes `CONFLICT (…)` to **stdout** with empty stderr, so it fell through to `unknown`. Now `ErrorMapper.map()` is called against `[stderr, stdoutText].filter(Boolean).join('\n')` — both streams combined for classification — while the existing secret-safe `console.error` diagnostic log (stderr-only) is unchanged. Added `GitService.mergeRemoteBranch(repoPath, remote, branch)`: runs `git merge --no-edit <remote>/<branch>` with **no `auth`/`extraEnv`** — it integrates the already-fetched local remote-tracking ref, so it is purely local (no network call, no credential env), matching the plan's "local merge only" boundary. `ErrorMapper`'s existing `/CONFLICT \(/` matcher needed no changes — the fix was entirely in `GitRunner` feeding it the right text.
+- Files: edited `src/main/git/GitRunner.ts`, `src/main/services/GitService.ts`, `tests/integration/git-service.test.ts` (+2 new tests).
+- Tests: Vitest **725/725 passed** (2 new integration tests against real offline temp repos with a local bare-repo remote: (1) "merges cleanly when the diverged changes do not conflict" — local commits an unrelated file, remote pushes to `base.txt`, `mergeRemoteBranch` resolves and produces a real 2-parent merge commit with both files' content present; (2) "rejects a merge as `mergeConflict` on a real content conflict, leaving the repo mid-merge" — same line of `base.txt` edited on both sides, `mergeRemoteBranch` rejects with `GitError.code === 'mergeConflict'` **despite empty stderr** (confirmed in the test's captured `[GitRunner]` log line), `.git/MERGE_HEAD` exists, and `getStatus` reports the file `conflicted` on both index/worktree — the regression proof for the stdout fix). `npx tsc --noEmit` clean on both tsconfigs. `npm run lint`: ESLint clean repo-wide; Prettier clean on every touched file (same 7-file pre-existing/unrelated debt untouched, per the established precedent).
+- Exit criteria: ✅ met — safety-reviewer confirmed args stay an array, `GitRunner` remains the only spawn caller, no secret/credential material can leak via the combined stdout+stderr classification text (the token only ever reaches git via `GIT_ASKPASS` env, never argv/stdout/stderr), and `mergeRemoteBranch` sets no credential env / makes no network call. No UI.
+- Notes / follow-ups: Phase 68's `remediationExecutor.ts` stub case (`merge-remote-into-local` → `{ ok: false, message: 'Merging in the remote changes is not yet available.' }`) is now replaced by real logic in Phase 70, which wires `mergeRemoteBranch` + a clean-tree pre-check behind the `remediation:execute` IPC channel.

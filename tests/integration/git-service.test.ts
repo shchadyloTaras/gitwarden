@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest'
-import { mkdtemp, realpath, rm, writeFile } from 'fs/promises'
+import { mkdtemp, realpath, rm, stat, writeFile } from 'fs/promises'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import * as os from 'os'
@@ -208,6 +208,47 @@ describe('GitService.getStatus integration', () => {
     // Local has NO commit of its own → a fast-forward is possible and must succeed.
     await expect(service.pull(repoPath, 'origin', 'main')).resolves.toBeUndefined()
     expect(await git(repoPath, 'show', '-s', '--format=%s', 'HEAD')).toBe('remote-ahead')
+  })
+
+  // ── mergeRemoteBranch (Phase 69): the one-click fix for a diverged branch ──
+  it('merges cleanly when the diverged changes do not conflict', async () => {
+    await setUpRemoteAhead()
+    // Local commits an UNRELATED file → diverges from remote, but nothing overlaps.
+    await writeFile(path.join(repoPath, 'local-only.txt'), 'local addition\n')
+    await git(repoPath, 'add', 'local-only.txt')
+    await git(repoPath, 'commit', '-m', 'local-divergent-clean')
+    // Simulates what a failed `pull --ff-only` already leaves behind: the remote
+    // tracking ref fetched, but not integrated. mergeRemoteBranch takes it from there.
+    await git(repoPath, 'fetch', 'origin', 'main')
+
+    await expect(service.mergeRemoteBranch(repoPath, 'origin', 'main')).resolves.toBeUndefined()
+
+    const parents = await git(repoPath, 'show', '-s', '--format=%P', 'HEAD')
+    expect(parents.split(' ')).toHaveLength(2) // a real merge commit
+    expect(await git(repoPath, 'show', 'HEAD:base.txt')).toBe('one\ntwo')
+    expect(await git(repoPath, 'show', 'HEAD:local-only.txt')).toBe('local addition')
+  })
+
+  it('rejects a merge as mergeConflict on a real content conflict, leaving the repo mid-merge', async () => {
+    await setUpRemoteAhead()
+    // Same line 2 of base.txt edited differently on each side → a genuine content conflict.
+    await writeFile(path.join(repoPath, 'base.txt'), 'one\nlocal\n')
+    await git(repoPath, 'commit', '-am', 'local-divergent-conflicting')
+    await git(repoPath, 'fetch', 'origin', 'main')
+
+    // Regression proof for the GitRunner stdout-classification fix: a real `git merge`
+    // conflict writes "CONFLICT (…)" to stdout (empty stderr), which used to fall
+    // through to `unknown` before GitRunner fed stdout into ErrorMapper too.
+    await expect(service.mergeRemoteBranch(repoPath, 'origin', 'main')).rejects.toMatchObject({
+      code: 'mergeConflict',
+    } satisfies Partial<GitError>)
+
+    // The repo is left in git's standard mid-merge state — no auto-resolution.
+    await expect(stat(path.join(repoPath, '.git', 'MERGE_HEAD'))).resolves.toBeDefined()
+    const status = await service.getStatus(repoPath)
+    const f = status.files.find((c) => c.path === 'base.txt')
+    expect(f?.indexStatus).toBe('conflicted')
+    expect(f?.worktreeStatus).toBe('conflicted')
   })
 
   it('reports when delete is blocked because the branch is checked out in another worktree', async () => {

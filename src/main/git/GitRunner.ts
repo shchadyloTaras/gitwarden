@@ -114,7 +114,12 @@ export class GitRunner {
           console.error(
             `[GitRunner] git ${inv.args.join(' ')} failed (exit ${exitCode}):\n${stderr.trim()}`
           )
-          reject(ErrorMapper.map(stderr, exitCode))
+          // Some failures (e.g. a real `git merge` conflict's "CONFLICT (…)") are
+          // written to stdout, not stderr — classify against both streams so they
+          // aren't misclassified as `unknown`. Still secret-safe: same guarantee as
+          // above applies to stdout.
+          const stdoutText = stdout.toString('utf8')
+          reject(ErrorMapper.map([stderr, stdoutText].filter(Boolean).join('\n'), exitCode))
           return
         }
 

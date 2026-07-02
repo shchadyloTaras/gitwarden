@@ -199,6 +199,25 @@ export class GitService {
   }
 
   /**
+   * Merge the already-fetched `<remote>/<branch>` tracking ref into the current
+   * local branch (Diverged-Branch Merge, Phase 69). Purely local: NO `auth`
+   * param, no credential env, no network call — it integrates the ref that a
+   * prior `pull --ff-only` already fetched. `--no-edit` accepts git's default
+   * merge message so a GUI user is never dropped into an editor. A real content
+   * conflict rejects with a `GitError` (code `mergeConflict`, thanks to the
+   * GitRunner stdout-classification fix above) and leaves the repo in git's
+   * standard mid-merge state — this method does NOT catch or resolve it.
+   */
+  async mergeRemoteBranch(repoPath: string, remote: string, branch: string): Promise<void> {
+    await this.runner.run({
+      args: ['merge', '--no-edit', `${remote}/${branch}`],
+      cwd: repoPath,
+      readOnly: false,
+      timeoutMs: 60_000,
+    })
+  }
+
+  /**
    * Per-invocation env that supplies HTTPS-token credentials to a remote operation.
    * When token auth is present the credential is routed through the GIT_ASKPASS env
    * ONLY — the args stay token-free, and nothing is written to the URL or .git/config.
