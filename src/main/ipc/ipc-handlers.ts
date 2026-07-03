@@ -29,6 +29,7 @@ import type { Remediation } from '../../core/safety/remediation.js'
 import { toIpcFailure } from './ipcFailure.js'
 import { executeRemediation } from './remediationExecutor.js'
 import { getReturnState, returnLastCommit, returnUnpushed } from './uncommitExecutor.js'
+import { runGitMerge } from './gitMergeHandler.js'
 import { reconcileAssignedProfileRemote } from './remoteReconcile.js'
 import {
   AiConnectionTestResultSchema,
@@ -394,6 +395,15 @@ export function registerIpcHandlers(services: Services): void {
     wrap(async () => {
       const { repoPath, branch } = GitBranchOpPayload.parse(raw)
       return services.git.deleteBranch(repoPath, branch)
+    })
+  )
+
+  // Merge a Branch (Phase 83): local `branch` merged into the currently checked-out
+  // branch — logic lives in runGitMerge (electron-free, unit-tested directly).
+  ipcMain.handle('git:merge', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath, branch } = GitBranchOpPayload.parse(raw)
+      return runGitMerge(services, repoPath, branch)
     })
   )
 

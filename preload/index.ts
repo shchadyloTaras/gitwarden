@@ -181,6 +181,8 @@ export const api = {
       invoke('git:createBranch', { repoPath, name }),
     deleteBranch: (repoPath: string, branch: string): Promise<IpcResult<void>> =>
       invoke('git:deleteBranch', { repoPath, branch }),
+    merge: (repoPath: string, branch: string): Promise<IpcResult<void>> =>
+      invoke('git:merge', { repoPath, branch }),
     getCommitHistory: (
       repoPath: string,
       limit: number,
