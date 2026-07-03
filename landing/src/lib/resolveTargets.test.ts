@@ -50,7 +50,7 @@ describe('resolveTargets — target fields + all-downloads grouping', () => {
       ext: '.dmg',
       filename: 'GitWarden-0.1.0-arm64.dmg',
       sizeBytes: 98123456,
-      url: 'https://github.com/shchadyloTaras/gitwarden/releases/download/v0.1.0/GitWarden-0.1.0-arm64.dmg',
+      url: 'https://github.com/shchadyloTaras/gitwarden-releases/releases/download/v0.1.0/GitWarden-0.1.0-arm64.dmg',
     })
   })
 

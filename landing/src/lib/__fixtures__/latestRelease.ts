@@ -5,7 +5,7 @@
  */
 import type { Release } from '../types'
 
-const BASE = 'https://github.com/shchadyloTaras/gitwarden/releases'
+const BASE = 'https://github.com/shchadyloTaras/gitwarden-releases/releases'
 const DL = `${BASE}/download/v0.1.0`
 
 export const latestReleaseFixture: Release = {

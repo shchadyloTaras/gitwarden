@@ -95,6 +95,10 @@ test.describe('accessibility (axe smoke — core-cut a11y gate)', () => {
   test('home route has no critical or serious WCAG A/AA violations', async ({ page }) => {
     await page.goto('/')
     await expect(page.getByTestId('hero-primary')).toBeVisible() // let the island settle
+    // Let the hero's scroll-reveal fade-in animation finish before scanning — otherwise axe can
+    // sample a mid-animation frame (partial opacity) and flag a false contrast violation on
+    // whatever text is still fading in, even though the settled page is fully WCAG-AA compliant.
+    await expect(page.getByTestId('hero')).toHaveCSS('opacity', '1')
     const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()
     const serious = results.violations.filter(
       (v) => v.impact === 'critical' || v.impact === 'serious'

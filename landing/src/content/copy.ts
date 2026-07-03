@@ -79,7 +79,6 @@ export const copy = {
       { label: 'FAQ', href: '#faq' },
       { label: 'Docs', href: '/docs' },
     ],
-    github: 'GitHub',
     themeToggleLabel: 'Toggle light and dark theme',
     skipToContent: 'Skip to content',
   },
@@ -149,7 +148,7 @@ export const copy = {
     items: [
       {
         q: 'Is it safe?',
-        a: 'Yes. GitWarden is open source under the MIT license and sends no telemetry. It only ever changes your repository’s local Git settings — never your global configuration.',
+        a: 'Yes. GitWarden sends no telemetry, and it only ever changes your repository’s local Git settings — never your global configuration.',
       },
       {
         q: 'Why does my computer warn me on first launch?',
@@ -157,7 +156,7 @@ export const copy = {
       },
       {
         q: 'Is it free?',
-        a: 'Completely. GitWarden is free and open source — no accounts, no payment, no license keys.',
+        a: 'GitWarden is free to download and use today — no accounts, no payment, no license keys.',
       },
       {
         q: 'Which file should I download?',
@@ -171,10 +170,9 @@ export const copy = {
     tagline: 'Safe multi-account Git for the desktop.',
     latestPrefix: 'Latest release:',
     noRelease: 'View releases on GitHub',
-    license: 'Open source under the MIT license.',
+    license: '© 2026 Taras Shchadylo. All rights reserved.',
     links: {
       support: 'Support',
-      github: 'GitHub repository',
       releases: 'Releases',
       security: 'Security policy',
       license: 'License',

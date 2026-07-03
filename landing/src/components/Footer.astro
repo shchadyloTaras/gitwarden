@@ -1,12 +1,6 @@
 ---
 import { copy } from '../content/copy'
-import {
-  REPO_URL,
-  RELEASES_URL,
-  SECURITY_URL,
-  LICENSE_URL,
-  SUPPORT_MAILTO_URL,
-} from '../lib/config'
+import { RELEASES_URL, SECURITY_URL, LICENSE_URL, SUPPORT_MAILTO_URL } from '../lib/config'
 import type { ResolvedTargets } from '../lib/types'
 
 interface Props {
@@ -16,7 +10,6 @@ interface Props {
 const { resolved } = Astro.props
 const links = [
   { label: copy.footer.links.support, href: SUPPORT_MAILTO_URL },
-  { label: copy.footer.links.github, href: REPO_URL },
   { label: copy.footer.links.releases, href: RELEASES_URL },
   { label: copy.footer.links.security, href: SECURITY_URL },
   { label: copy.footer.links.license, href: LICENSE_URL },

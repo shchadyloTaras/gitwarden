@@ -1,6 +1,5 @@
 ---
 import { copy } from '../content/copy'
-import { REPO_URL } from '../lib/config'
 ---
 
 <header class="site-header">
@@ -11,7 +10,6 @@ import { REPO_URL } from '../lib/config'
     </a>
     <nav class="header-nav" aria-label="Primary">
       {copy.nav.links.map((l) => <a href={l.href}>{l.label}</a>)}
-      <a href={REPO_URL} rel="noopener" target="_blank">{copy.nav.github}</a>
       <button
         type="button"
         class="theme-toggle"

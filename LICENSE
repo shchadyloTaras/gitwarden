@@ -1,21 +1,25 @@
-MIT License
+Copyright (c) 2026 Taras Shchadylo. All rights reserved.
 
-Copyright (c) 2026 Taras Shchadylo
+This repository and its contents (source code, documentation, and assets) are proprietary
+and confidential. No license is granted to use, copy, modify, merge, publish, distribute,
+sublicense, or sell this source code, in whole or in part, except as explicitly permitted
+in a separate written agreement with the copyright holder.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+⚠️ PLACEHOLDER NOTICE: this is a temporary, non-final license notice. It will be replaced
+with fuller proprietary license terms as the project moves toward monetization.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Prior open-source releases. Versions of this source code published before this notice was
+adopted were licensed under the MIT License. This relicense applies prospectively only —
+it does not revoke rights already granted under the MIT License to anyone who lawfully
+obtained a copy of the source code prior to this change. Those existing copies remain
+usable under the terms of the MIT License they were originally distributed with.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+Compiled, pre-built distributions of this software are made available separately, under
+their own license, at https://github.com/shchadyloTaras/gitwarden-releases.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHOR OR COPYRIGHT HOLDER BE LIABLE
+FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.

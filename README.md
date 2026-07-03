@@ -1,7 +1,6 @@
 # GitWarden
 
-[![Release](https://img.shields.io/github/v/release/shchadyloTaras/gitwarden?label=release)](https://github.com/shchadyloTaras/gitwarden/releases/latest)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/shchadyloTaras/gitwarden-releases?label=release)](https://github.com/shchadyloTaras/gitwarden-releases/releases/latest)
 
 A cross-platform desktop Git GUI focused on **safe multi-account GitHub usage** — it prevents committing or pushing with the wrong profile, author name, email, SSH key, or repository.
 
@@ -11,7 +10,7 @@ Built around **profiles** (e.g. Personal / Work / Client). Each repository is as
 
 **Easiest:** the [download site](https://gitwarden.vercel.app) detects your OS and links the right installer in one click.
 
-Prefer to choose yourself? Grab it from the [GitHub Releases page](https://github.com/shchadyloTaras/gitwarden/releases/latest):
+Prefer to choose yourself? Grab it from the [GitHub Releases page](https://github.com/shchadyloTaras/gitwarden-releases/releases/latest):
 
 | Platform                  | File                        | Install                                                   |
 | ------------------------- | --------------------------- | --------------------------------------------------------- |
@@ -73,4 +72,4 @@ Signing (Phase 43) is optional; absent `CSC_LINK` / `APPLE_ID` secrets the workf
 
 ## License
 
-[MIT](LICENSE).
+Proprietary — see [LICENSE](LICENSE). Compiled binaries are distributed separately under their own terms; see [gitwarden-releases](https://github.com/shchadyloTaras/gitwarden-releases).
