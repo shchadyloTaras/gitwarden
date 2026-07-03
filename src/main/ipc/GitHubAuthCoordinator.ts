@@ -52,6 +52,12 @@ export interface AuthEventSender {
 export interface IGitHubAuthCoordinator {
   startDeviceAuth(profileId: string, sender: AuthEventSender): Promise<GitHubDeviceCode>
   cancelDeviceAuth(profileId: string, sender: AuthEventSender): void
+  /**
+   * Ask the live flow (if any) for one immediate bypass poll — used when the user returns
+   * to the app so "Checking with GitHub…" can flip to Connected without waiting out the
+   * next scheduled poll. A no-op when no flow is live for this profile.
+   */
+  refreshDeviceAuth(profileId: string): void
   disconnect(profileId: string): Promise<void>
   getLinkedAccount(profileId: string): Promise<LinkedGitHubAccount | undefined>
   /** Token-side facts for the push safety check (renderer-safe — no token). */
@@ -127,6 +133,11 @@ export class GitHubAuthCoordinator implements IGitHubAuthCoordinator {
     if (this.abort(profileId)) {
       this.emit(sender, { profileId, status: 'idle' })
     }
+  }
+
+  refreshDeviceAuth(profileId: string): void {
+    if (!this.controllers.has(profileId)) return
+    this.auth.requestImmediatePoll()
   }
 
   async disconnect(profileId: string): Promise<void> {

@@ -32,6 +32,9 @@ export const GITHUB_DEVICE_GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:device
 /** RFC 8628 §3.5: on `slow_down` with no new interval, raise it by 5 seconds. */
 const SLOW_DOWN_INCREMENT_SEC = 5
 
+/** Minimum time since the last poll before a bypass poke (`requestImmediatePoll`) is honored. */
+const IMMEDIATE_POLL_FLOOR_MS = 1000
+
 const JSON_HEADERS: Record<string, string> = { Accept: 'application/json' }
 
 /** Raw access token plus the scopes GitHub actually granted. */
@@ -43,6 +46,13 @@ export interface DeviceTokenResult {
 export interface IGitHubAuthService {
   requestDeviceCode(scopes: string[]): Promise<GitHubDeviceCode>
   pollForToken(signal: AbortSignal): Promise<DeviceTokenResult>
+  /**
+   * Ask the in-flight poll to cut its current wait short for ONE immediate ("bypass") poll.
+   * No-op when no poll is waiting. Rate-guarded internally: at most one bypass per current
+   * interval window, and never within a small floor of the last poll — so a burst of pokes
+   * cannot hammer GitHub (worst case: an occasional single `slow_down`).
+   */
+  requestImmediatePoll(): void
 }
 
 /** Injectable wait seam — defaults to a real timer; honors the AbortSignal. */
@@ -88,6 +98,12 @@ export class GitHubAuthService implements IGitHubAuthService {
   /** The in-flight device code; held in main, never exposed to the renderer. */
   private pending: PendingDeviceFlow | undefined
 
+  /** Resolver for the current inter-poll wait, armed only while one is in flight. */
+  private wake: (() => void) | undefined
+  private lastPollAt: number | undefined
+  private lastBypassAt: number | undefined
+  private currentIntervalMs = 0
+
   constructor(
     private readonly http: HttpClient,
     private readonly clientId: string = GITHUB_CLIENT_ID,
@@ -132,6 +148,10 @@ export class GitHubAuthService implements IGitHubAuthService {
       throw new GitHubAuthError('unknown', 'pollForToken called before requestDeviceCode.')
     }
     let intervalSec = pending.intervalSec
+    // Fresh polling loop: no bypass poke should carry rate-limit state over from a prior flow.
+    this.lastPollAt = undefined
+    this.lastBypassAt = undefined
+    this.currentIntervalMs = intervalSec * 1000
     // The device code is only valid for `expires_in`. Bound the loop by that deadline so
     // a sustained outage — where GitHub never gets a chance to return `expired_token` —
     // can't poll forever.
@@ -141,6 +161,7 @@ export class GitHubAuthService implements IGitHubAuthService {
       this.throwIfAborted(signal)
 
       const outcome = await this.pollOnce(pending.deviceCode)
+      this.lastPollAt = this.now()
 
       if (outcome.kind === 'token') {
         this.pending = undefined
@@ -155,6 +176,7 @@ export class GitHubAuthService implements IGitHubAuthService {
       // 'pending', 'slowDown', and 'transient' all just keep polling — a transient hiccup
       // (network blip, non-2xx, unparseable body) must NOT abandon the flow and force the
       // user to restart sign-in.
+      this.currentIntervalMs = intervalSec * 1000
 
       if (this.now() >= deadline) {
         this.pending = undefined
@@ -164,8 +186,41 @@ export class GitHubAuthService implements IGitHubAuthService {
         )
       }
 
-      await this.sleep(intervalSec * 1000, signal)
+      await this.waitInterval(this.currentIntervalMs, signal)
     }
+  }
+
+  /**
+   * Ask the current inter-poll wait (if any) to resolve immediately for one bypass poll.
+   * A no-op when no poll is waiting, when fewer than `IMMEDIATE_POLL_FLOOR_MS` have passed
+   * since the last poll, or when less than a full interval has passed since the last bypass
+   * (at most one bypass per interval window).
+   */
+  requestImmediatePoll(): void {
+    if (!this.wake) return
+    const now = this.now()
+    if (now - (this.lastPollAt ?? -Infinity) < IMMEDIATE_POLL_FLOOR_MS) return
+    if (now - (this.lastBypassAt ?? -Infinity) < this.currentIntervalMs) return
+    this.lastBypassAt = now
+    this.wake()
+  }
+
+  /** Waits `ms`, racing the injected `sleep` against a re-armable wake (see `requestImmediatePoll`). */
+  private waitInterval(ms: number, signal: AbortSignal): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      let settled = false
+      const finish = (run: () => void): void => {
+        if (settled) return
+        settled = true
+        this.wake = undefined
+        run()
+      }
+      this.wake = () => finish(resolve)
+      this.sleep(ms, signal).then(
+        () => finish(resolve),
+        (error: unknown) => finish(() => reject(error))
+      )
+    })
   }
 
   /**

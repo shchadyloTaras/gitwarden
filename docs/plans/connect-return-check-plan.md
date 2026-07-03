@@ -1,7 +1,7 @@
 # Plan — Connect-Return Check: the Connect-GitHub modal wakes up the moment you come back
 
-**Status:** ⬜ not started — Phases 80–81 — **derived view**; the authoritative state is the
-Phase Checklist in [`docs/progress-log.md`](../progress-log.md).
+**Status:** 🟡 in progress — Phase 80 ✅ done, Phase 81 open — **derived view**; the authoritative
+state is the Phase Checklist in [`docs/progress-log.md`](../progress-log.md).
 **Phases:** 80 → 81.
 **Feature-complete stop point:** Phase 81.
 **Prompts:** [`docs/prompts/connect-return-check-prompts.md`](../prompts/connect-return-check-prompts.md).

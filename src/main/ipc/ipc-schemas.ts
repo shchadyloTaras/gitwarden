@@ -105,6 +105,7 @@ export const GitHistoryPayload = z.object({
 export const GitHubProfilePayload = z.object({ profileId: z.string().min(1) })
 export const GitHubStartDeviceAuthPayload = GitHubProfilePayload
 export const GitHubCancelDeviceAuthPayload = GitHubProfilePayload
+export const GitHubRefreshDeviceAuthPayload = GitHubProfilePayload
 export const GitHubDisconnectPayload = GitHubProfilePayload
 export const GitHubGetLinkedAccountPayload = GitHubProfilePayload
 export const GitHubGetPushContextPayload = GitHubProfilePayload

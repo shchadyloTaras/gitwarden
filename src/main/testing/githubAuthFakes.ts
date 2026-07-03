@@ -32,14 +32,43 @@ export const FAKE_ACCESS_TOKEN = 'gho_FAKEtoken000000000000000000000000'
 export const FAKE_GRANTED_SCOPES = ['repo', 'read:user', 'user:email']
 
 class FakeGitHubAuthService implements IGitHubAuthService {
+  /** Resolver for the current wait, armed only while `pollForToken` is waiting. */
+  private wake: (() => void) | undefined
+
   async requestDeviceCode(_scopes: string[]): Promise<GitHubDeviceCode> {
     return FAKE_DEVICE_CODE
   }
 
-  /** Simulates the user authorizing after one interval; aborts promptly on cancel. */
+  /**
+   * Simulates the user authorizing after one interval; aborts promptly on cancel. A
+   * `requestImmediatePoll()` poke resolves the wait immediately, mirroring the real
+   * service's bypass-poll behavior — this is what the Phase 81 e2e exercises to prove
+   * "Checking with GitHub…" flips to Connected on return without waiting out the interval.
+   */
   async pollForToken(signal: AbortSignal): Promise<DeviceTokenResult> {
-    await abortableDelay(FAKE_DEVICE_CODE.intervalSec * 1000, signal)
+    await this.waitForIntervalOrPoke(FAKE_DEVICE_CODE.intervalSec * 1000, signal)
     return { accessToken: FAKE_ACCESS_TOKEN, scopes: [...FAKE_GRANTED_SCOPES] }
+  }
+
+  requestImmediatePoll(): void {
+    this.wake?.()
+  }
+
+  private waitForIntervalOrPoke(ms: number, signal: AbortSignal): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      let settled = false
+      const finish = (run: () => void): void => {
+        if (settled) return
+        settled = true
+        this.wake = undefined
+        run()
+      }
+      this.wake = () => finish(resolve)
+      abortableDelay(ms, signal).then(
+        () => finish(resolve),
+        (error: unknown) => finish(() => reject(error))
+      )
+    })
   }
 }
 

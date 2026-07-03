@@ -173,6 +173,7 @@ interface ElectronAPI {
   github: {
     startDeviceAuth(profileId: string): Promise<IpcResult<GitHubDeviceCode>>
     cancelDeviceAuth(profileId: string): Promise<IpcResult<null>>
+    refreshDeviceAuth(profileId: string): Promise<IpcResult<null>>
     disconnect(profileId: string): Promise<IpcResult<null>>
     getLinkedAccount(profileId: string): Promise<IpcResult<LinkedGitHubAccount | null>>
     getPushContext(profileId: string): Promise<IpcResult<GitHubPushStatus>>

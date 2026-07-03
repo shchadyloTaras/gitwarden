@@ -59,6 +59,7 @@ import {
   GitValidatePathPayload,
   GitHubStartDeviceAuthPayload,
   GitHubCancelDeviceAuthPayload,
+  GitHubRefreshDeviceAuthPayload,
   GitHubDisconnectPayload,
   GitHubGetLinkedAccountPayload,
   GitHubGetPushContextPayload,
@@ -462,6 +463,15 @@ export function registerIpcHandlers(services: Services): void {
     wrap(async () => {
       const { profileId } = GitHubCancelDeviceAuthPayload.parse(raw)
       services.github.cancelDeviceAuth(profileId, event.sender)
+      return null
+    })
+  )
+
+  // "Checking with GitHub…" on return (Phase 80): one guarded bypass poll, no new emit.
+  ipcMain.handle('github:refreshDeviceAuth', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { profileId } = GitHubRefreshDeviceAuthPayload.parse(raw)
+      services.github.refreshDeviceAuth(profileId)
       return null
     })
   )

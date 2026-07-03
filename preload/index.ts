@@ -215,6 +215,8 @@ export const api = {
       invoke('github:startDeviceAuth', { profileId }),
     cancelDeviceAuth: (profileId: string): Promise<IpcResult<null>> =>
       invoke('github:cancelDeviceAuth', { profileId }),
+    refreshDeviceAuth: (profileId: string): Promise<IpcResult<null>> =>
+      invoke('github:refreshDeviceAuth', { profileId }),
     disconnect: (profileId: string): Promise<IpcResult<null>> =>
       invoke('github:disconnect', { profileId }),
     getLinkedAccount: (profileId: string): Promise<IpcResult<LinkedGitHubAccount | null>> =>
