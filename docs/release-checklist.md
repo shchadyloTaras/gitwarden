@@ -33,7 +33,8 @@ git push origin v<new>
 - [x] Guard job passes: tag matches `v${package.json version}`.
 - [x] All three matrix jobs (macOS, Windows, Linux) go green.
 - [x] A **draft** GitHub Release is created at
-      `https://github.com/shchadyloTaras/gitwarden/releases` with these five artifacts:
+      `https://github.com/shchadyloTaras/gitwarden-releases/releases` (the public storefront —
+      see `docs/plans/private-source-distribution-plan.md`) with these five artifacts:
   - `GitWarden-<ver>-arm64.dmg`
   - `GitWarden-<ver>-x64.dmg`
   - `GitWarden-Setup-<ver>.exe`

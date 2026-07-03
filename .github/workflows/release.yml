@@ -75,7 +75,7 @@ jobs:
         if: steps.signing.outputs.available == 'true'
         run: npx electron-builder --publish always
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
@@ -86,7 +86,7 @@ jobs:
         if: steps.signing.outputs.available == 'false'
         run: npx electron-builder --publish always
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
           # No certificate → force an explicit unsigned build (never pass the empty CSC_LINK).
           CSC_IDENTITY_AUTO_DISCOVERY: false
 

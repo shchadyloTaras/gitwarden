@@ -15,7 +15,7 @@ files:
 publish:
   provider: github
   owner: shchadyloTaras
-  repo: gitwarden
+  repo: gitwarden-releases
   releaseType: draft
 mac:
   category: public.app-category.developer-tools

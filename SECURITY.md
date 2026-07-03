@@ -179,3 +179,17 @@ party.** These rules are **non-negotiable** like the rules above.
     they send, since redaction is conservative and best-effort, not a guarantee. Streaming chat
     (`ai:chatStreamEvent`) is response-direction only and never bypasses request-side redaction;
     it carries plain assistant prose, not structured outputs.
+
+## Release automation (cross-repo publish)
+
+Added with the Private-Source Distribution feature (`docs/plans/private-source-distribution-plan.md`
+§"Phase 73"). The source repo (`gitwarden`) is private; CI still runs there, but installers publish
+to the public storefront (`gitwarden-releases`), which needs a token scoped to a repo other than the
+one Actions runs in — the built-in `GITHUB_TOKEN` cannot write cross-repo.
+
+24. **`RELEASES_REPO_TOKEN` is a narrowly-scoped fine-grained PAT, never a classic all-repos token.**
+    Resource owner `shchadyloTaras`; **repository access limited to `gitwarden-releases` only**;
+    permission **Contents: Read and write** (nothing else); ~1-year expiry with a renewal reminder.
+    It is stored as a GitHub Actions **secret** on the `gitwarden` repo (`RELEASES_REPO_TOKEN`) and
+    is never committed, never logged, and never printed in workflow output — both `release.yml`
+    publish steps reference it only as `${{ secrets.RELEASES_REPO_TOKEN }}`.

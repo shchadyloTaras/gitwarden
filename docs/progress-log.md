@@ -114,7 +114,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 ### Private-Source Distribution feature (plan: `docs/plans/private-source-distribution-plan.md`, prompts: `docs/prompts/private-source-distribution-prompts.md`)
 
 - [x] Phase 72 — Public storefront + v0.2.0 migration
-- [ ] Phase 73 — Cross-repo publish automation
+- [x] Phase 73 — Cross-repo publish automation
 - [ ] Phase 74 — Landing repoint + license/marketing realignment
 - [ ] Phase 75 — Privatization + end-to-end verification
 
@@ -176,7 +176,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | Distribution & Release | 40–45     | 🟡 Phases 40–42, 45 done; 43–44 open (gated on signing certs) |
 | Landing Page           | 46–51     | ✅ complete                                                   |
 | Diverged-Branch Merge  | 68–71     | ✅ complete                                                   |
-| Private-Source Distribution | 72–75 | 🟡 Phase 72 done; 73–75 open                                 |
+| Private-Source Distribution | 72–75 | 🟡 Phases 72–73 done; 74–75 open                              |
 | Uncommit to Working Changes | 76–79 | ⬜ not started                                               |
 | Connect-Return Check   | 80–81     | ⬜ not started                                                |
 | Merge a Branch         | 82–84     | ⬜ not started                                                |
@@ -1137,3 +1137,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: n/a — ops/docs phase with verification-based exit criteria, no Vitest/Playwright surface touched. `bash -n` clean on the new script.
 - Exit criteria: ✅ met — `gitwarden-releases` has `README.md` + a proprietary `LICENSE` (not MIT) + `SECURITY.md`, and no source files; a `v0.2.0` release is **published** (not draft) on `gitwarden-releases` carrying all 5 installers (`GitWarden-0.2.0-arm64.dmg`, `-x64.dmg`, `GitWarden-Setup-0.2.0.exe`, `GitWarden-0.2.0.AppImage`, `gitwarden_0.2.0_amd64.deb`) plus blockmaps/update-feed files; each installer's `browser_download_url` verified HTTP 200 for an unauthenticated `curl`.
 - Notes / follow-ups: `migrate-release.sh` needed one fix mid-phase — the initial draft used `"${DRAFT_FLAG[@]}"` to expand an optional, sometimes-empty array under `set -u`, which throws "unbound variable" on macOS's default `/bin/bash` (3.2.57 — this bug is only fixed in bash 4.4+); rewrote the publish/draft branch as an explicit `if`/`else` instead of an array to stay bash-3.2-safe, then re-ran clean. The storefront release was created **published**, not draft, per the plan's "Open questions" lean (no reason to hold as draft — `gitwarden` stays public until Phase 75, so there's no exposure gap). Next: Phase 73 (cross-repo CI publish automation — electron-builder + release workflow repointed at `gitwarden-releases` via a fine-grained PAT) and Phase 74 (landing repoint). `gitwarden` privatization (Phase 75) remains last and untouched.
+
+### 2026-07-03 — Phase 73: Cross-repo publish automation
+
+- Built: repointed `electron-builder.yml`'s `publish.repo` from `gitwarden` to `gitwarden-releases`; repointed both `release.yml` publish steps' `GH_TOKEN` from the built-in `GITHUB_TOKEN` to `secrets.RELEASES_REPO_TOKEN`; documented the token's exact scope in `SECURITY.md` (new rule 24 — fine-grained PAT, owner `shchadyloTaras`, `gitwarden-releases`-only, `Contents: Read and write`, ~1-year expiry, never committed/logged); updated `docs/release-checklist.md`'s "draft release" step to point at the storefront.
+- Files: edited `electron-builder.yml`, `.github/workflows/release.yml`, `SECURITY.md`, `docs/release-checklist.md`.
+- Tests: n/a — CI config phase with a verification-based exit criterion (a real local cross-repo publish), no Vitest/Playwright surface touched. `npm run lint` clean on all four touched files (pre-existing Prettier debt on unrelated `.claude/**` and in-flight docs files, per established precedent, is untouched).
+- Exit criteria: ✅ met — config targets `gitwarden-releases` and `RELEASES_REPO_TOKEN`; no token value anywhere in the repo; the maintainer created a fine-grained PAT (scoped to `gitwarden-releases` only, Contents: RW) and ran a local single-OS `GH_TOKEN=<PAT> npx electron-builder --publish always`, which landed its build on `gitwarden-releases` and left `gitwarden` untouched — proving the cross-repo publish path works.
+- Notes / follow-ups: **Incident during the local test-publish, caught and fixed same session.** The test ran against the tag `v0.2.0`, which already had a *published* 11-asset release on `gitwarden-releases` from Phase 72. `electron-builder`'s GitHub publisher (with `releaseType: draft`) recreated that release fresh rather than appending to it: the existing release was replaced by a new **Draft** carrying only the 5 assets a single-OS macOS build produces (`arm64.dmg`, `x64.dmg` + blockmaps + `latest-mac.yml`), silently dropping the Windows/Linux installers and un-publishing the storefront's live v0.2.0. Recovered by `gh release delete v0.2.0 -R shchadyloTaras/gitwarden-releases --yes --cleanup-tag` followed by a clean re-run of `scripts/migrate-release.sh v0.2.0`; verified afterward — 11 assets restored, release published (not draft), all 5 installer URLs re-confirmed HTTP 200. **Lesson for any future local publish test:** electron-builder's `--publish always` against an *existing* tag is not additive — it can replace/downgrade a real release. A future ad-hoc cross-repo test should use a disposable tag (e.g. `v0.0.0-test`), not a tag that already carries a real published release. Next: Phase 74 (landing repoint + license/marketing realignment — the one phase with a normal automated Vitest/Playwright gate). `gitwarden` privatization (Phase 75) remains last and untouched.
