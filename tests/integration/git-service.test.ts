@@ -251,6 +251,55 @@ describe('GitService.getStatus integration', () => {
     expect(f?.worktreeStatus).toBe('conflicted')
   })
 
+  // ── Unstaging in a repo with no commits (unborn HEAD) — Phase 88 regression ──
+  // `git restore --staged` restores the index from HEAD; a freshly-init'd repo has no
+  // HEAD, so it dies with "could not resolve HEAD" (exit 128), which the ErrorMapper
+  // maps to the generic "An unexpected Git error occurred." the user hit after Init +
+  // Stage All. unstageAll/unstageFile must unstage cleanly whether or not HEAD exists.
+  it('unstageAll unstages every file in a repo with no commits (unborn HEAD)', async () => {
+    await writeFile(path.join(repoPath, 'a.ts'), 'a')
+    await writeFile(path.join(repoPath, 'b.ts'), 'b')
+    await git(repoPath, 'add', '-A')
+
+    await expect(service.unstageAll(repoPath)).resolves.toBeUndefined()
+
+    const status = await service.getStatus(repoPath)
+    expect(status.files).toHaveLength(2)
+    for (const f of status.files) {
+      expect(f.indexStatus).toBe('untracked')
+    }
+  })
+
+  it('unstageFile unstages one file, leaving the rest staged, in an unborn-HEAD repo', async () => {
+    await writeFile(path.join(repoPath, 'keep.ts'), 'k')
+    await writeFile(path.join(repoPath, 'drop.ts'), 'd')
+    await git(repoPath, 'add', '-A')
+
+    await expect(service.unstageFile(repoPath, 'drop.ts')).resolves.toBeUndefined()
+
+    const status = await service.getStatus(repoPath)
+    expect(status.files.find((c) => c.path === 'drop.ts')?.indexStatus).toBe('untracked')
+    expect(status.files.find((c) => c.path === 'keep.ts')?.indexStatus).toBe('added')
+  })
+
+  it('unstageAll still unstages a staged change once the repo has commits (regression)', async () => {
+    await writeFile(path.join(repoPath, 'base.ts'), 'v1')
+    await git(repoPath, 'add', 'base.ts')
+    await git(repoPath, 'commit', '-m', 'init')
+    // Stage a modification of the tracked file plus a brand-new file.
+    await writeFile(path.join(repoPath, 'base.ts'), 'v2')
+    await writeFile(path.join(repoPath, 'new.ts'), 'n')
+    await git(repoPath, 'add', '-A')
+
+    await service.unstageAll(repoPath)
+
+    const status = await service.getStatus(repoPath)
+    const base = status.files.find((c) => c.path === 'base.ts')
+    expect(base?.indexStatus).toBe('unmodified') // staged modification reverted to HEAD
+    expect(base?.worktreeStatus).toBe('modified') // worktree edit preserved
+    expect(status.files.find((c) => c.path === 'new.ts')?.indexStatus).toBe('untracked')
+  })
+
   it('reports when delete is blocked because the branch is checked out in another worktree', async () => {
     await writeFile(path.join(repoPath, 'init.txt'), 'initial\n')
     await git(repoPath, 'add', 'init.txt')

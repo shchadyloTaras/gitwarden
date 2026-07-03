@@ -3,6 +3,19 @@ import type { GitStatus, EffectiveGitIdentity, RepositoryRecord } from '../../co
 import { useAiStore } from './aiStore'
 import { STR } from '../strings'
 
+/**
+ * A commit-message draft, tracked per repository so it survives switching repos
+ * (i.e. switching GitHub accounts — each account owns different repos). A draft is
+ * bound to the repo it was started for; when the user returns to that repo the
+ * entry is surfaced: a still-running draft resumes the "Drafting…" indicator, a
+ * finished one lands in the message box, an error is shown. This is what keeps a
+ * draft from silently vanishing when you start it, switch account, and come back.
+ */
+type DraftEntry =
+  | { status: 'loading' }
+  | { status: 'ready'; message: string }
+  | { status: 'error'; error: string }
+
 interface CommitState {
   repoPath: string | null
   repository: RepositoryRecord | null
@@ -13,16 +26,21 @@ interface CommitState {
   identityLoading: boolean
   commitLoading: boolean
   /**
-   * True while an AI commit-message draft is in flight. This lives in the store
-   * (not in CommitScreen's React state) on purpose: the screen unmounts when the
-   * user switches tabs, so a component-local flag would silently vanish mid-draft
-   * and the "Drafting…" affordance would disappear even though the request is
-   * still running. Keeping it here lets the indicator survive navigating away and
-   * back.
+   * True while an AI commit-message draft is in flight FOR THE ACTIVE REPO. It is
+   * always derived from `draftsByRepo` (on `load`, and by `draftMessage` as the
+   * draft progresses), so it can never get stuck: navigating away and back
+   * re-derives it from the active repo's tracked draft instead of leaving a stale
+   * flag that would block every future click via the in-flight guard.
    */
   draftLoading: boolean
-  /** Last AI draft failure, surfaced under the message box. Cleared on edit/repo switch. */
+  /** Last AI draft failure for the active repo, surfaced under the message box. */
   draftError: string | null
+  /**
+   * In-flight / finished drafts keyed by repository id. Lets a draft started on one
+   * repo be picked back up when the user returns to that repo after switching
+   * accounts, instead of being silently discarded by the repo-mismatch guard.
+   */
+  draftsByRepo: Record<string, DraftEntry>
   error: string | null
   committedHash: string | null
 
@@ -30,7 +48,7 @@ interface CommitState {
   setMessage(message: string): void
   applyLocalIdentity(name: string, email: string): Promise<void>
   doCommit(message: string): Promise<void>
-  /** Draft the commit message with AI and write the result into `message`. */
+  /** Draft the commit message with AI; result lands on this repo (now or on return). */
   draftMessage(): Promise<void>
 }
 
@@ -45,14 +63,16 @@ export const useCommitStore = create<CommitState>((set, get) => ({
   commitLoading: false,
   draftLoading: false,
   draftError: null,
+  draftsByRepo: {},
   error: null,
   committedHash: null,
 
   async load(repoPath, repository) {
     // CommitScreen calls load() on every mount, so this also runs when the user
-    // navigates back to the tab. Only clear an in-flight draft when the repo
-    // actually changes — a same-repo remount must preserve the "Drafting…" state.
-    const repoChanged = get().repository?.id !== repository.id
+    // navigates back to the tab (or back from another account's repo). Reconcile
+    // the AI-draft affordance to THIS repo's tracked draft: resume a running one,
+    // surface a finished one into the box, show an error — never leave it stuck.
+    const entry = get().draftsByRepo[repository.id]
     set({
       loading: true,
       error: null,
@@ -61,8 +81,18 @@ export const useCommitStore = create<CommitState>((set, get) => ({
       status: null,
       identity: null,
       committedHash: null,
-      ...(repoChanged ? { draftLoading: false, draftError: null } : {}),
+      draftLoading: entry?.status === 'loading',
+      draftError: entry?.status === 'error' ? entry.error : null,
+      ...(entry?.status === 'ready' ? { message: entry.message } : {}),
     })
+    // A surfaced (finished or errored) draft is consumed; a running one stays tracked.
+    if (entry && entry.status !== 'loading') {
+      set((s) => {
+        const draftsByRepo = { ...s.draftsByRepo }
+        delete draftsByRepo[repository.id]
+        return { draftsByRepo }
+      })
+    }
     try {
       const [statusRes, identityRes] = await Promise.all([
         window.api.git.getStatus(repoPath),
@@ -117,31 +147,50 @@ export const useCommitStore = create<CommitState>((set, get) => ({
   },
 
   async draftMessage() {
-    const { repository, message, draftLoading } = get()
-    if (!repository || draftLoading) return
-    // Capture the repo this draft is for: the request may outlive a repo switch,
-    // and we must never write repo A's draft into repo B's message box.
+    const { repository, message } = get()
+    if (!repository) return
     const repoId = repository.id
-    set({ draftLoading: true, draftError: null })
+    // Per-repo in-flight guard: don't double-fire for the same repo, but a draft
+    // for another repo may run concurrently.
+    if (get().draftsByRepo[repoId]?.status === 'loading') return
+
+    // Record this draft's progress and reconcile the visible affordance. The result
+    // is written into the box only while its repo is active — so it never lands in
+    // the wrong repo — and when the user is elsewhere it is stashed under
+    // draftsByRepo for load() to surface on return, instead of being silently lost.
+    const record = (entry: DraftEntry): void =>
+      set((s) => {
+        const active = s.repository?.id === repoId
+        const draftsByRepo = { ...s.draftsByRepo }
+        if (active && entry.status !== 'loading') delete draftsByRepo[repoId]
+        else draftsByRepo[repoId] = entry
+        if (!active) return { draftsByRepo }
+        if (entry.status === 'loading')
+          return { draftsByRepo, draftLoading: true, draftError: null }
+        if (entry.status === 'ready')
+          return { draftsByRepo, draftLoading: false, draftError: null, message: entry.message }
+        return { draftsByRepo, draftLoading: false, draftError: entry.error }
+      })
+
+    record({ status: 'loading' })
     try {
       const draft = await useAiStore.getState().draftCommitMessage({
         repositoryId: repoId,
         commitMessage: message,
         expensiveSendAcknowledged: true,
       })
-      if (get().repository?.id !== repoId) return
       if (draft) {
         const body = draft.body?.trim()
-        set({ message: body ? `${draft.conventional}\n\n${body}` : draft.conventional })
+        const drafted = body ? `${draft.conventional}\n\n${body}` : draft.conventional
+        record({ status: 'ready', message: drafted })
       } else {
-        set({ draftError: useAiStore.getState().error ?? STR.AI_COMMIT_DRAFT_ERROR })
+        record({ status: 'error', error: useAiStore.getState().error ?? STR.AI_COMMIT_DRAFT_ERROR })
       }
     } catch (err) {
-      if (get().repository?.id === repoId) {
-        set({ draftError: err instanceof Error ? err.message : STR.AI_COMMIT_DRAFT_ERROR })
-      }
-    } finally {
-      if (get().repository?.id === repoId) set({ draftLoading: false })
+      record({
+        status: 'error',
+        error: err instanceof Error ? err.message : STR.AI_COMMIT_DRAFT_ERROR,
+      })
     }
   },
 }))

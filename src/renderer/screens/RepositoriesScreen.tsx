@@ -61,6 +61,11 @@ export default function RepositoriesScreen(): React.ReactElement {
   const [initUrlError, setInitUrlError] = useState<string | null>(null)
   const [initNestedWarning, setInitNestedWarning] = useState<string | null>(null)
   const [initSaving, setInitSaving] = useState(false)
+  // True only after a *real* Validate & Add failure on a non-empty path (the folder exists but
+  // isn't a Git repo). The empty-path input guard is NOT a validation failure, so it must never
+  // surface the Initialize affordance — there is nothing to initialize. Gating the init section on
+  // this flag (rather than the generic `error`) is what keeps the button hidden for the empty path.
+  const [initEligible, setInitEligible] = useState(false)
   const [initPending, setInitPending] = useState<{
     repo: RepositoryRecord
     remoteError: string
@@ -101,6 +106,7 @@ export default function RepositoriesScreen(): React.ReactElement {
     setInitUrlError(null)
     setInitNestedWarning(null)
     setInitPending(null)
+    setInitEligible(false)
   }
 
   function startAdd() {
@@ -132,6 +138,8 @@ export default function RepositoriesScreen(): React.ReactElement {
       selectRepo(repo)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
+      // A non-empty path that failed git validation — offer to initialize it.
+      setInitEligible(true)
     } finally {
       setSaving(false)
     }
@@ -145,6 +153,8 @@ export default function RepositoriesScreen(): React.ReactElement {
   async function handleInitialize() {
     const profile = profiles.find((p) => p.id === activeProfileId)
     if (!profile) return
+    const trimmedPath = addPath.trim()
+    if (!trimmedPath) return
 
     setInitUrlError(null)
     setInitNestedWarning(null)
@@ -157,7 +167,7 @@ export default function RepositoriesScreen(): React.ReactElement {
     setInitSaving(true)
     try {
       const { repo, remoteError } = await initializeRepository(
-        addPath.trim(),
+        trimmedPath,
         trimmedUrl || undefined,
         { name: profile.gitAuthorName, email: profile.gitAuthorEmail },
         profile.id
@@ -483,7 +493,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                   </button>
                 </div>
 
-                {error && (
+                {initEligible && (
                   <div
                     data-testid="repo-init-section"
                     style={{ display: 'flex', flexDirection: 'column', gap: 10 }}

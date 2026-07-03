@@ -95,9 +95,17 @@ export class GitService {
     await this.runner.run({ args: ['add', '--', filePath], cwd: repoPath, readOnly: false })
   }
 
+  /**
+   * Unstage via `git reset`, not `git restore --staged`: `restore` reads the index
+   * back from HEAD, so in a freshly-init'd repo with no commits (unborn HEAD) it dies
+   * with "could not resolve HEAD" (surfaced to the user as the generic "unexpected Git
+   * error" after Init + Stage All). `git reset [-- <path>]` treats an unborn HEAD as the
+   * empty tree, so it unstages cleanly whether or not any commit exists — and behaves
+   * identically to `restore --staged` once HEAD is present. Path after `--`.
+   */
   async unstageFile(repoPath: string, filePath: string): Promise<void> {
     await this.runner.run({
-      args: ['restore', '--staged', '--', filePath],
+      args: ['reset', '--', filePath],
       cwd: repoPath,
       readOnly: false,
     })
@@ -107,9 +115,11 @@ export class GitService {
     await this.runner.run({ args: ['add', '-A'], cwd: repoPath, readOnly: false })
   }
 
+  /** Unstage everything. Bare `git reset` resets the whole index to HEAD (or the empty
+   * tree on an unborn HEAD); see `unstageFile` for why `restore --staged` is unsafe here. */
   async unstageAll(repoPath: string): Promise<void> {
     await this.runner.run({
-      args: ['restore', '--staged', '--', '.'],
+      args: ['reset'],
       cwd: repoPath,
       readOnly: false,
     })

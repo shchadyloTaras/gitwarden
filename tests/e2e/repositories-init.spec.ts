@@ -170,4 +170,20 @@ test.describe('Initialize Repository (Phase 88)', () => {
     }
     expect(fs.existsSync(path.join(subfolder, '.git'))).toBe(false)
   })
+
+  test('does NOT offer Initialize when the path is empty (empty-path guard, not a validation failure)', async () => {
+    await win.getByTestId('nav-repositories').click()
+    await expect(win.getByTestId('screen-repositories')).toBeVisible()
+    await win.getByTestId('repos-add-btn').click()
+
+    // Press Validate & Add with an empty path — this is a client-side input guard, NOT a
+    // git-validation failure, so there is nothing to initialize.
+    await win.getByTestId('repo-validate-btn').click()
+    await expect(win.getByTestId('repo-error')).toBeVisible({ timeout: 5000 })
+
+    // The Initialize affordance must stay hidden: there is no folder to turn into a repo.
+    await expect(win.getByTestId('repo-init-section')).not.toBeVisible()
+    await expect(win.getByTestId('repo-init-btn')).not.toBeVisible()
+    await expect(win.getByTestId('repo-init-no-profile-hint')).not.toBeVisible()
+  })
 })

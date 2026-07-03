@@ -49,6 +49,7 @@ function reset(): void {
     commitLoading: false,
     draftLoading: false,
     draftError: null,
+    draftsByRepo: {},
     error: null,
     committedHash: null,
   })
@@ -163,5 +164,77 @@ describe('commitStore AI draft', () => {
     void useCommitStore.getState().draftMessage()
     void useCommitStore.getState().draftMessage()
     expect(aiMethods.draftCommitMessage).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('commitStore AI draft survives switching accounts / repos mid-draft', () => {
+  beforeEach(() => {
+    reset()
+    aiStoreError = null
+    vi.clearAllMocks()
+    apiGit.getStatus.mockResolvedValue({ ok: true, data: { branch: 'main', files: [] } })
+    apiGit.getEffectiveIdentity.mockResolvedValue({ ok: true, data: { name: 'A', email: 'a@b.c' } })
+  })
+
+  it('applies a draft that finished while you were on another repo when you return', async () => {
+    // The reported bug: start a draft, switch GitHub account (→ different repo),
+    // come back — the draft must NOT be silently lost.
+    useCommitStore.setState({ repository: repo('A'), message: '' })
+    let resolveDraft: (v: unknown) => void = () => {}
+    aiMethods.draftCommitMessage.mockImplementation(
+      () => new Promise((r) => (resolveDraft = r as (v: unknown) => void))
+    )
+
+    const pending = useCommitStore.getState().draftMessage()
+    expect(useCommitStore.getState().draftLoading).toBe(true)
+
+    // Switch to repo B (the other account's repo). B has no draft of its own.
+    await useCommitStore.getState().load('/B', repo('B'))
+    expect(useCommitStore.getState().draftLoading).toBe(false)
+
+    // Repo A's draft fully returns WHILE we're on B — it must be stashed for A,
+    // never written into B's message box.
+    resolveDraft({ conventional: 'feat: for A', plain: 'p', summary: 's', body: 'Body' })
+    await pending
+    expect(useCommitStore.getState().message).toBe('')
+
+    // Return to A — the finished draft appears in the box, no stuck loading.
+    await useCommitStore.getState().load('/A', repo('A'))
+    expect(useCommitStore.getState().message).toBe('feat: for A\n\nBody')
+    expect(useCommitStore.getState().draftLoading).toBe(false)
+  })
+
+  it('resumes the Drafting indicator when you return to a repo whose draft is still running', async () => {
+    useCommitStore.setState({ repository: repo('A'), message: '' })
+    aiMethods.draftCommitMessage.mockImplementation(() => new Promise(() => {}))
+
+    void useCommitStore.getState().draftMessage()
+    expect(useCommitStore.getState().draftLoading).toBe(true)
+
+    // Switch away to B, then back to A while A's draft is still generating.
+    await useCommitStore.getState().load('/B', repo('B'))
+    expect(useCommitStore.getState().draftLoading).toBe(false)
+
+    await useCommitStore.getState().load('/A', repo('A'))
+    expect(useCommitStore.getState().draftLoading).toBe(true)
+  })
+
+  it('surfaces an error draft on return instead of losing it', async () => {
+    useCommitStore.setState({ repository: repo('A'), message: '' })
+    aiStoreError = 'rate limited'
+    let resolveDraft: (v: unknown) => void = () => {}
+    aiMethods.draftCommitMessage.mockImplementation(
+      () => new Promise((r) => (resolveDraft = r as (v: unknown) => void))
+    )
+
+    const pending = useCommitStore.getState().draftMessage()
+    await useCommitStore.getState().load('/B', repo('B'))
+
+    resolveDraft(null)
+    await pending
+
+    await useCommitStore.getState().load('/A', repo('A'))
+    expect(useCommitStore.getState().draftError).toBe('rate limited')
+    expect(useCommitStore.getState().draftLoading).toBe(false)
   })
 })
