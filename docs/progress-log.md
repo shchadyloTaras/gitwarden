@@ -111,6 +111,38 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] Phase 70 — Executable merge remediation (IPC)
 - [x] Phase 71 — Merge button in the failed-pull recovery banner (renderer + e2e)
 
+### Private-Source Distribution feature (plan: `docs/plans/private-source-distribution-plan.md`, prompts: `docs/prompts/private-source-distribution-prompts.md`)
+
+- [x] Phase 72 — Public storefront + v0.2.0 migration
+- [ ] Phase 73 — Cross-repo publish automation
+- [ ] Phase 74 — Landing repoint + license/marketing realignment
+- [ ] Phase 75 — Privatization + end-to-end verification
+
+### Uncommit to Working Changes feature (plan: `docs/plans/uncommit-to-changes-plan.md`, prompts: `docs/prompts/uncommit-to-changes-prompts.md`)
+
+- [ ] Phase 76 — Uncommit eligibility model (pure core)
+- [ ] Phase 77 — GitService: reset + unpushed/state gathering (main)
+- [ ] Phase 78 — Return-commit executor + IPC (main + IPC)
+- [ ] Phase 79 — History screen: markers + return actions (renderer + e2e)
+
+### Connect-Return Check feature (plan: `docs/plans/connect-return-check-plan.md`, prompts: `docs/prompts/connect-return-check-prompts.md`)
+
+- [ ] Phase 80 — Wakeable poll + rate-limit-conscious immediate re-check (main + IPC)
+- [ ] Phase 81 — "Checking with GitHub…" on return + return polish (renderer + e2e)
+
+### Merge a Branch feature (plan: `docs/plans/merge-branch-plan.md`, prompts: `docs/prompts/merge-branch-prompts.md`)
+
+- [ ] Phase 82 — Local branch merge in GitService (main)
+- [ ] Phase 83 — git:merge channel + clean-tree pre-check (main + IPC)
+- [ ] Phase 84 — Merge action on the Branches screen (renderer + e2e)
+
+### Initialize Repository feature (plan: `docs/plans/initialize-repository-plan.md`, prompts: `docs/prompts/initialize-repository-prompts.md`)
+
+- [ ] Phase 85 — Git remote URL validator (pure core)
+- [ ] Phase 86 — Init, connect, nested-guard, push -u (main + IPC)
+- [ ] Phase 87 — Empty-repo (unborn HEAD) tolerance (main)
+- [ ] Phase 88 — Inline Initialize panel + land on Commit (renderer + e2e)
+
 ### Agentic DX track (plan: `docs/plans/agentic-dx-plan.md`, prompts: `docs/prompts/dx-execution-prompts.md`)
 
 > Not product phases — a separate developer-experience track (steps DX-0…DX-6, no global phase
@@ -144,6 +176,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | Distribution & Release | 40–45     | 🟡 Phases 40–42, 45 done; 43–44 open (gated on signing certs) |
 | Landing Page           | 46–51     | ✅ complete                                                   |
 | Diverged-Branch Merge  | 68–71     | ✅ complete                                                   |
+| Private-Source Distribution | 72–75 | 🟡 Phase 72 done; 73–75 open                                 |
+| Uncommit to Working Changes | 76–79 | ⬜ not started                                               |
+| Connect-Return Check   | 80–81     | ⬜ not started                                                |
+| Merge a Branch         | 82–84     | ⬜ not started                                                |
+| Initialize Repository  | 85–88     | ⬜ not started                                                |
 | Agentic DX             | DX-0–DX-6 | ✅ complete (DX-6 = à la carte; project-factory/sdd deferred) |
 
 ## Progress Log
@@ -1092,3 +1129,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: Each new e2e test switches branch via the **header dropdown** while remaining on the target screen (no navigation, no reload) and asserts the data reflects the new branch: History (2 branches, differing commit counts — 1 vs 2 commits) confirmed RED (stuck on 1) → GREEN; Status (an untracked file created on disk *after* the initial load, then a same-repo branch switch) confirmed RED (still "No untracked files") → GREEN; Commit (a file staged on disk after the initial load) confirmed RED (still "No staged changes") → GREEN; Safety Center (`pushPolicy` with `feature-a` allowed / `main` blocked, switching from the allowed to the blocked branch) confirmed RED (`safety-can-push` stuck on "✓ Yes") → GREEN. Full regression run: Playwright **24/24 passed** across `history/status/commit/safety-center/remote/branches/push-policy.spec.ts` (the pre-existing `branches.spec.ts` "updates the Remote screen" test still passes unchanged). Vitest **729/729 passed** (no unit-testable surface touched — pure renderer `useEffect` deps, no store logic changed). `npx tsc --noEmit` clean on both `tsconfig.node.json` and `tsconfig.web.json`. `npm run lint`: ESLint clean repo-wide; Prettier clean on every touched file (same pre-existing, unrelated Prettier debt on `.claude/**` and `tests/unit/error-mapper.test.ts` untouched, per established precedent).
 - Exit criteria: ✅ met — all 4 new regression tests pass, full affected-area e2e suite green, no regressions. UI-only diff (no `src/core`/`src/main`/IPC changes), so core-purity/safety reviewers were not required per the maker≠checker rule.
 - Notes / follow-ups: Not a numbered phase — a cross-screen consistency bug fix, same precedent as the Phase 68/71/sidebar `Fix:` entries above. **Known, deliberately unfixed edge case**: `RemoteScreen`'s `upstream` staleness can only produce an observably wrong verdict in a narrow multi-remote scenario (two remotes, each branch tracking a different one as upstream, with an owner/repo push-policy mismatch) — `resolvePushTarget` falls back to the sole/preferred remote whenever there's only one remote, so the common single-remote case was never actually wrong. Fixed the dependency array anyway for consistency (same one-line pattern, zero risk), but did not build the elaborate dual-remote fixture needed to exercise it in e2e — disclosed here rather than silently claimed as tested. AI Chat panel is **not** branch- or repo-scoped by design (conversation persists across switches); flagged to the user as a separate design question, out of scope for this fix.
+
+### 2026-07-03 — Phase 72: Public storefront + v0.2.0 migration
+
+- Built: `gitwarden-releases` public storefront repo (README.md, proprietary LICENSE placeholder, SECURITY.md — no source) and `scripts/migrate-release.sh`, a repeatable helper that copies an already-built release's assets byte-for-byte from `gitwarden` to `gitwarden-releases` via `gh release download`/`gh release create` (no rebuild, refuses to run if the destination release already exists). Migrated `v0.2.0`: all 11 release assets (5 installers + blockmaps + electron-builder update-feed yml files) copied to a new, published `v0.2.0` release on the storefront.
+- Files: added `scripts/migrate-release.sh` (this repo, executable). `README.md`, `LICENSE`, `SECURITY.md` committed directly to the separate `gitwarden-releases` repo (out-of-tree, per plan — not in this repo's diff).
+- Tests: n/a — ops/docs phase with verification-based exit criteria, no Vitest/Playwright surface touched. `bash -n` clean on the new script.
+- Exit criteria: ✅ met — `gitwarden-releases` has `README.md` + a proprietary `LICENSE` (not MIT) + `SECURITY.md`, and no source files; a `v0.2.0` release is **published** (not draft) on `gitwarden-releases` carrying all 5 installers (`GitWarden-0.2.0-arm64.dmg`, `-x64.dmg`, `GitWarden-Setup-0.2.0.exe`, `GitWarden-0.2.0.AppImage`, `gitwarden_0.2.0_amd64.deb`) plus blockmaps/update-feed files; each installer's `browser_download_url` verified HTTP 200 for an unauthenticated `curl`.
+- Notes / follow-ups: `migrate-release.sh` needed one fix mid-phase — the initial draft used `"${DRAFT_FLAG[@]}"` to expand an optional, sometimes-empty array under `set -u`, which throws "unbound variable" on macOS's default `/bin/bash` (3.2.57 — this bug is only fixed in bash 4.4+); rewrote the publish/draft branch as an explicit `if`/`else` instead of an array to stay bash-3.2-safe, then re-ran clean. The storefront release was created **published**, not draft, per the plan's "Open questions" lean (no reason to hold as draft — `gitwarden` stays public until Phase 75, so there's no exposure gap). Next: Phase 73 (cross-repo CI publish automation — electron-builder + release workflow repointed at `gitwarden-releases` via a fine-grained PAT) and Phase 74 (landing repoint). `gitwarden` privatization (Phase 75) remains last and untouched.
