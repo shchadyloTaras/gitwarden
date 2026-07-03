@@ -1,8 +1,8 @@
 # Changelog
 
-## [Unreleased]
+## Unreleased
 
-## [0.3.0] — 2026-07-03
+## 0.3.0 — 2026-07-03
 
 ### Added
 
@@ -44,14 +44,14 @@
 - GitHub token scope validation and git error handling improved.
 - AI settings: "Save key" is now the primary action, and the Model section stays hidden until a credential exists.
 
-## [0.2.0] — 2026-06-28
+## 0.2.0 — 2026-06-28
 
 ### Added
 
 - Startup loader: a brief launch screen shown while GitWarden initializes.
 - Update notifier: GitWarden now checks GitHub for a newer version on launch and shows an Update button in the header when one is available. A new Updates section in Settings lets you check on demand and open the download page; new versions are installed manually.
 
-## [0.1.1] — 2026-06-28
+## 0.1.1 — 2026-06-28
 
 ### Fixed
 
@@ -59,7 +59,7 @@
 - Branch switch/delete errors for worktree-checked-out branches now explain the actual worktree conflict instead of showing a generic or misleading branch error.
 - Branch deletion now refreshes stale branch lists and treats already-missing local branches as a safe no-op.
 
-## [0.1.0] — 2026-06-27
+## 0.1.0 — 2026-06-27
 
 ### Added
 
@@ -119,8 +119,3 @@
 **Agentic DX (DX-0–DX-5)**
 
 - Docs reconciliation, executable guardrails (hooks + `settings.json`), slash commands, subagent reviewers, AI evals, agent-agnostic shareability.
-
-[0.3.0]: https://github.com/shchadyloTaras/gitwarden/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/shchadyloTaras/gitwarden/compare/v0.1.1...v0.2.0
-[0.1.1]: https://github.com/shchadyloTaras/gitwarden/compare/v0.1.0...v0.1.1
-[0.1.0]: https://github.com/shchadyloTaras/gitwarden/releases/tag/v0.1.0

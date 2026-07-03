@@ -12,6 +12,8 @@ GitWarden is a desktop Git app that keeps your GitHub identities straight. If yo
 
 - **One profile per repository** — assign each repository to a Personal, Work, or Client profile
 - **Checks before every commit and push** — verifies your name, email, SSH key, and remote against the assigned profile
+- **Fixes push and pull problems for you** — when a push or pull fails, GitWarden explains why and offers one-click fixes: switch to the right profile and retry, set the upstream, or merge a diverged branch
+- **Everyday Git without the command line** — create and merge branches, undo your most recent commit back to working changes, and turn a plain folder into a new Git repository
 - **Identity always visible** — the active profile and a safety badge appear in the app header at all times
 - **Connects to GitHub** — sign in with your GitHub account so pushes go through the right identity
 - **Optional AI assistant** — commit message help, change review, and a chat panel; advisory only, never runs Git for you

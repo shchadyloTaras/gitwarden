@@ -120,59 +120,52 @@ describe('nextVersion', () => {
 
 import { rollUnreleased } from '../../src/core/changelog/render'
 
-const REPO = 'https://github.com/shchadyloTaras/gitwarden'
 const SAMPLE = `# Changelog
 
-## [Unreleased]
+## Unreleased
 
 ### Added
 
 - New thing.
 
-## [0.1.1] — 2026-06-28
+## 0.1.1 — 2026-06-28
 
 ### Fixed
 
 - Old fix.
-
-[0.1.1]: ${REPO}/compare/v0.1.0...v0.1.1
-[0.1.0]: ${REPO}/releases/tag/v0.1.0
 `
 
 describe('rollUnreleased', () => {
-  it('renames [Unreleased] to a dated version, re-opens an empty [Unreleased], and adds the link', () => {
-    const { text, alreadyRolled } = rollUnreleased(SAMPLE, '0.2.0', '2026-06-30', REPO, 'v0.1.1')
+  it('renames Unreleased to a dated version and re-opens an empty Unreleased', () => {
+    const { text, alreadyRolled } = rollUnreleased(SAMPLE, '0.2.0', '2026-06-30')
     expect(alreadyRolled).toBe(false)
-    expect(text).toContain('## [Unreleased]\n\n## [0.2.0] — 2026-06-30')
+    expect(text).toContain('## Unreleased\n\n## 0.2.0 — 2026-06-30')
     expect(text).toContain('### Added\n\n- New thing.')
-    expect(text).toContain(`[0.2.0]: ${REPO}/compare/v0.1.1...v0.2.0\n[0.1.1]:`)
-    // exactly one [Unreleased] heading
-    expect(text.match(/^## \[Unreleased\]/gm)?.length).toBe(1)
-    // the freshly re-opened [Unreleased] is empty — next heading after it is [0.2.0]
-    expect(text).toContain('## [Unreleased]\n\n## [0.2.0]')
-    // section order: [Unreleased] → [0.2.0] → [0.1.1]
-    const idxUnreleased = text.indexOf('## [Unreleased]')
-    const idx020 = text.indexOf('## [0.2.0]')
-    const idx011 = text.indexOf('## [0.1.1]')
+    // version headings are plain text — no reference-link brackets, no compare links (private repo)
+    expect(text).not.toContain('[0.2.0]')
+    expect(text).not.toMatch(/\]:\s*https?:/)
+    // exactly one Unreleased heading
+    expect(text.match(/^## Unreleased/gm)?.length).toBe(1)
+    // the freshly re-opened Unreleased is empty — next heading after it is 0.2.0
+    expect(text).toContain('## Unreleased\n\n## 0.2.0')
+    // section order: Unreleased → 0.2.0 → 0.1.1
+    const idxUnreleased = text.indexOf('## Unreleased')
+    const idx020 = text.indexOf('## 0.2.0')
+    const idx011 = text.indexOf('## 0.1.1')
     expect(idxUnreleased).toBeLessThan(idx020)
     expect(idx020).toBeLessThan(idx011)
   })
 
   it('is idempotent when the version section already exists', () => {
-    const once = rollUnreleased(SAMPLE, '0.2.0', '2026-06-30', REPO, 'v0.1.1').text
-    const twice = rollUnreleased(once, '0.2.0', '2026-06-30', REPO, 'v0.1.1')
+    const once = rollUnreleased(SAMPLE, '0.2.0', '2026-06-30').text
+    const twice = rollUnreleased(once, '0.2.0', '2026-06-30')
     expect(twice.alreadyRolled).toBe(true)
     expect(twice.text).toBe(once)
   })
 
-  it('uses a release-tag link when there is no previous tag (first release)', () => {
-    const { text } = rollUnreleased(SAMPLE, '0.2.0', '2026-06-30', REPO, '')
-    expect(text).toContain(`[0.2.0]: ${REPO}/releases/tag/v0.2.0`)
-  })
-
-  it('throws when there is no [Unreleased] heading', () => {
-    expect(() =>
-      rollUnreleased('# Changelog\n\n## [0.1.0] — x\n', '0.2.0', 'd', REPO, 'v0.1.0')
-    ).toThrow(/Unreleased/)
+  it('throws when there is no Unreleased heading', () => {
+    expect(() => rollUnreleased('# Changelog\n\n## 0.1.0 — x\n', '0.2.0', 'd')).toThrow(
+      /Unreleased/
+    )
   })
 })

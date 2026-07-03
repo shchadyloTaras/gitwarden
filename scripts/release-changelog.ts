@@ -40,15 +40,9 @@ function tagExists(tag: string): boolean {
   }
 }
 
-function pkg(): { version: string; repoUrl: string } {
-  const data = JSON.parse(readFileSync(PKG, 'utf8')) as {
-    version: string
-    repository?: { url?: string }
-  }
-  const repoUrl = String(data.repository?.url ?? '')
-    .replace(/^git\+/, '')
-    .replace(/\.git$/, '')
-  return { version: String(data.version), repoUrl }
+function pkg(): { version: string } {
+  const data = JSON.parse(readFileSync(PKG, 'utf8')) as { version: string }
+  return { version: String(data.version) }
 }
 
 function collectAppCommits(): { tag: string; commits: ReturnType<typeof parseGitLog> } {
@@ -97,9 +91,8 @@ function cmdApply(version: string): void {
     console.error(`REFUSED: tag v${version} already exists.`)
     process.exit(1)
   }
-  const { repoUrl } = pkg()
   const date = new Date().toISOString().slice(0, 10)
-  const result = rollUnreleased(readFileSync(CHANGELOG, 'utf8'), version, date, repoUrl, lastTag())
+  const result = rollUnreleased(readFileSync(CHANGELOG, 'utf8'), version, date)
   if (result.alreadyRolled) {
     console.log(`CHANGELOG already has [${version}] — nothing to apply.`)
     return

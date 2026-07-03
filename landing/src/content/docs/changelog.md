@@ -6,16 +6,58 @@ order: 9
 
 # Changelog
 
-## [Unreleased]
+## Unreleased
 
-## [0.2.0] — 2026-06-28
+## 0.3.0 — 2026-07-03
+
+### Added
+
+**Push-failure quick fix (Phases 63–67)**
+
+- One-Click Fix: when a push fails, GitWarden now diagnoses the cause and offers executable fix actions right in the failure banner (switch to the correct profile and retry, set the upstream, and more).
+- SSH transport binding: pushes over SSH use the key bound to the repo's profile.
+
+**Recover from diverged branches (Phases 68–71)**
+
+- When a pull fails because your branch and the remote have diverged, the recovery banner now offers a Merge action to reconcile them; genuine merge conflicts are detected and surfaced instead of a generic error.
+
+**Undo a commit (Phases 76–79)**
+
+- Uncommit: return your most recent unpushed commit back to working changes. The History screen marks unpushed commits and offers return actions.
+
+**Re-check with GitHub on return (Phases 80–81)**
+
+- When you switch back to GitWarden, it re-checks your GitHub status ("Checking with GitHub…") with rate-limit-conscious polling, so the safety picture stays current.
+
+**Merge a branch (Phases 82–84)**
+
+- Merge a local branch into the current one directly from the Branches screen, with a clean-working-tree pre-check and conflict detection.
+
+**Initialize a repository (Phases 85–88)**
+
+- Turn a plain folder into a Git repository from inside GitWarden: an inline Initialize panel writes your `--local` identity, optionally connects a remote, guards against initializing inside an existing repo, and lands you on the Commit screen. Empty repositories (no commits yet) are handled throughout.
+
+- Collapsible sidebar with a toggle control.
+- Update button in the sidebar footer.
+- Universal tooltip system with explanatory coverage across the app.
+- AI chat: a bare `/explain` now summarizes the active safety issues.
+
+### Fixed
+
+- Unstaging is now robust on a brand-new repository that has no commits yet (unborn HEAD).
+- Your AI commit draft is now preserved across tab and repository switches.
+- Screens no longer go stale after switching branches in place.
+- GitHub token scope validation and git error handling improved.
+- AI settings: "Save key" is now the primary action, and the Model section stays hidden until a credential exists.
+
+## 0.2.0 — 2026-06-28
 
 ### Added
 
 - Startup loader: a brief launch screen shown while GitWarden initializes.
 - Update notifier: GitWarden now checks GitHub for a newer version on launch and shows an Update button in the header when one is available. A new Updates section in Settings lets you check on demand and open the download page; new versions are installed manually.
 
-## [0.1.1] — 2026-06-28
+## 0.1.1 — 2026-06-28
 
 ### Fixed
 
@@ -23,7 +65,7 @@ order: 9
 - Branch switch/delete errors for worktree-checked-out branches now explain the actual worktree conflict instead of showing a generic or misleading branch error.
 - Branch deletion now refreshes stale branch lists and treats already-missing local branches as a safe no-op.
 
-## [0.1.0] — 2026-06-27
+## 0.1.0 — 2026-06-27
 
 ### Added
 
@@ -83,7 +125,3 @@ order: 9
 **Agentic DX (DX-0–DX-5)**
 
 - Docs reconciliation, executable guardrails (hooks + `settings.json`), slash commands, subagent reviewers, AI evals, agent-agnostic shareability.
-
-[0.2.0]: https://github.com/shchadyloTaras/gitwarden/compare/v0.1.1...v0.2.0
-[0.1.1]: https://github.com/shchadyloTaras/gitwarden/compare/v0.1.0...v0.1.1
-[0.1.0]: https://github.com/shchadyloTaras/gitwarden/releases/tag/v0.1.0
