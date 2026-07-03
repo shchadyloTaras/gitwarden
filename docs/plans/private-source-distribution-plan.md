@@ -1,7 +1,7 @@
 # Plan — Private-Source Distribution: keep the app downloadable while the source goes private
 
-**Status:** 🟡 in progress — Phases 72–74 done, 75 open — **derived view**; the authoritative
-state is the Phase Checklist in [`docs/progress-log.md`](../progress-log.md).
+**Status:** ✅ complete — Phases 72–75 all done — **derived view**; the authoritative state is
+the Phase Checklist in [`docs/progress-log.md`](../progress-log.md).
 **Phases:** 72 → 75.
 **Feature-complete stop point:** Phase 75.
 **Prompts:** [`docs/prompts/private-source-distribution-prompts.md`](../prompts/private-source-distribution-prompts.md).
