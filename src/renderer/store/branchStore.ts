@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import type { GitBranch, RepositoryRecord } from '../../core/types'
+import type { RemediationFailure } from '../components/RemediationButton'
 import { useAppStore } from './appStore'
+import { STR } from '../strings'
 
 interface BranchState {
   repoPath: string | null
@@ -10,12 +12,16 @@ interface BranchState {
   error: string | null
   successMessage: string | null
   deleteConfirmBranch: string | null
+  mergeConfirmBranch: string | null
+  mergeConflict: RemediationFailure | null
 
   load(repoPath: string, repository: RepositoryRecord): Promise<void>
   doSwitch(branch: string): Promise<void>
   doCreate(name: string): Promise<void>
   doDelete(branch: string): Promise<void>
+  doMerge(branch: string): Promise<void>
   setDeleteConfirm(branch: string | null): void
+  setMergeConfirm(branch: string | null): void
   clearMessages(): void
   clear(): void
 }
@@ -33,6 +39,8 @@ export const useBranchStore = create<BranchState>((set, get) => ({
   error: null,
   successMessage: null,
   deleteConfirmBranch: null,
+  mergeConfirmBranch: null,
+  mergeConflict: null,
 
   async load(repoPath, repository) {
     set({ loading: true, error: null, repoPath, repository, branches: [], successMessage: null })
@@ -101,15 +109,55 @@ export const useBranchStore = create<BranchState>((set, get) => ({
     }
   },
 
+  async doMerge(branch) {
+    const { repoPath, repository, branches } = get()
+    if (!repoPath || !repository) return
+    const current = branches.find((b) => b.isCurrent)?.name ?? branch
+    set({
+      error: null,
+      successMessage: null,
+      mergeConfirmBranch: null,
+      mergeConflict: null,
+    })
+    try {
+      const res = await window.api.git.merge(repoPath, branch)
+      if (!res.ok) {
+        if (res.remediation) {
+          set({ mergeConflict: { message: res.error, remediation: res.remediation } })
+          return
+        }
+        throw new Error(res.error)
+      }
+      const updated = await refreshBranches(repoPath)
+      if (updated) set({ branches: updated })
+      set({ successMessage: STR.BRANCH_MERGE_SUCCESS(branch, current) })
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) })
+    }
+  },
+
   setDeleteConfirm(branch) {
     set({ deleteConfirmBranch: branch })
   },
 
+  setMergeConfirm(branch) {
+    set({ mergeConfirmBranch: branch })
+  },
+
   clearMessages() {
-    set({ error: null, successMessage: null })
+    set({ error: null, successMessage: null, mergeConflict: null })
   },
 
   clear() {
-    set({ branches: [], repoPath: null, repository: null, error: null, successMessage: null })
+    set({
+      branches: [],
+      repoPath: null,
+      repository: null,
+      error: null,
+      successMessage: null,
+      deleteConfirmBranch: null,
+      mergeConfirmBranch: null,
+      mergeConflict: null,
+    })
   },
 }))

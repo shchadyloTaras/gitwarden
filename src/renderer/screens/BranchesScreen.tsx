@@ -4,6 +4,7 @@ import { useAppStore } from '../store/appStore'
 import { matchesAnyPattern } from '../../core/safety/branchPatterns'
 import type { GitBranch } from '../../core/types'
 import { STR } from '../strings'
+import RemediationButton from '../components/RemediationButton'
 
 const ROW: React.CSSProperties = {
   display: 'flex',
@@ -57,12 +58,16 @@ export default function BranchesScreen(): React.ReactElement {
     error,
     successMessage,
     deleteConfirmBranch,
+    mergeConfirmBranch,
+    mergeConflict,
     repoPath,
     load,
     doSwitch,
     doCreate,
     doDelete,
+    doMerge,
     setDeleteConfirm,
+    setMergeConfirm,
   } = useBranchStore()
 
   const [newBranchName, setNewBranchName] = useState('')
@@ -84,6 +89,10 @@ export default function BranchesScreen(): React.ReactElement {
 
   async function handleDelete(branch: string): Promise<void> {
     await doDelete(branch)
+  }
+
+  async function handleMerge(branch: string): Promise<void> {
+    await doMerge(branch)
   }
 
   const localBranches = branches.filter((b) => !b.isRemote)
@@ -177,6 +186,27 @@ export default function BranchesScreen(): React.ReactElement {
               }}
             >
               {successMessage}
+            </div>
+          )}
+
+          {mergeConflict && (
+            <div
+              data-testid="branches-merge-remediation"
+              style={{
+                margin: '12px 16px',
+                padding: '8px 12px',
+                background: 'var(--gw-danger-bg, #450a0a)',
+                border: '1px solid var(--gw-danger-solid, #dc2626)',
+                borderRadius: 4,
+                fontSize: 14,
+              }}
+            >
+              <div style={{ color: 'var(--gw-danger, #f87171)', marginBottom: 8 }}>
+                {mergeConflict.message}
+              </div>
+              {mergeConflict.remediation && (
+                <RemediationButton remediation={mergeConflict.remediation} />
+              )}
             </div>
           )}
 
@@ -323,7 +353,10 @@ export default function BranchesScreen(): React.ReactElement {
                     <button
                       data-testid="branches-delete-btn"
                       data-tooltip={STR.TT_BRANCH_DELETE}
-                      onClick={() => setDeleteConfirm(b.name)}
+                      onClick={() => {
+                        setDeleteConfirm(b.name)
+                        setMergeConfirm(null)
+                      }}
                       style={BTN_DANGER}
                     >
                       Delete
@@ -348,6 +381,42 @@ export default function BranchesScreen(): React.ReactElement {
                         style={BTN}
                       >
                         Cancel
+                      </button>
+                    </>
+                  )}
+
+                  {!b.isCurrent && currentBranch && mergeConfirmBranch !== b.name && (
+                    <button
+                      data-testid="branches-merge-btn"
+                      data-tooltip={STR.TT_BRANCH_MERGE}
+                      onClick={() => {
+                        setMergeConfirm(b.name)
+                        setDeleteConfirm(null)
+                      }}
+                      style={BTN_PRIMARY}
+                    >
+                      {STR.BRANCH_MERGE_BUTTON(currentBranch)}
+                    </button>
+                  )}
+
+                  {!b.isCurrent && currentBranch && mergeConfirmBranch === b.name && (
+                    <>
+                      <span style={{ fontSize: 14, color: 'var(--gw-accent, #6366f1)' }}>
+                        {STR.BRANCH_MERGE_CONFIRM(b.name, currentBranch)}
+                      </span>
+                      <button
+                        data-testid="branches-merge-confirm-btn"
+                        onClick={() => void handleMerge(b.name)}
+                        style={{ ...BTN_PRIMARY, fontWeight: 600 }}
+                      >
+                        {STR.BRANCH_MERGE_CONFIRM_YES}
+                      </button>
+                      <button
+                        data-testid="branches-merge-cancel-btn"
+                        onClick={() => setMergeConfirm(null)}
+                        style={BTN}
+                      >
+                        {STR.BRANCH_MERGE_CANCEL}
                       </button>
                     </>
                   )}

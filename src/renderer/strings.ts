@@ -459,6 +459,15 @@ export const STR = {
   BRANCH_BADGE_BLOCKED: 'blocked',
   BRANCH_BADGE_SUGGESTED_PREFIX: (prefix: string): string => `Suggested prefix: ${prefix}`,
 
+  // ── Merge a Branch: local branch → current branch, one click (Phase 84) ────
+  BRANCH_MERGE_BUTTON: (current: string): string => `Merge into ${current}`,
+  BRANCH_MERGE_CONFIRM: (branch: string, current: string): string =>
+    `Merge ${branch} into ${current}?`,
+  BRANCH_MERGE_CONFIRM_YES: 'Yes, merge',
+  BRANCH_MERGE_CANCEL: 'Cancel',
+  BRANCH_MERGE_SUCCESS: (branch: string, current: string): string =>
+    `Merged ${branch} into ${current}.`,
+
   // ── Inspector ──────────────────────────────────────────────────────────────
   INSPECTOR_TITLE: 'Inspector',
   INSPECTOR_NO_PROFILE: 'No profile selected',
@@ -527,6 +536,8 @@ export const STR = {
   TT_BRANCH_CREATE: 'Create a new branch from the current one and switch to it.',
   TT_BRANCH_SWITCH: 'Check out this branch.',
   TT_BRANCH_DELETE: 'Delete this local branch.',
+  TT_BRANCH_MERGE:
+    "Merge this branch into the branch you're on. Local only — never pushes or fetches.",
   TT_STATUS_REFRESH: 'Re-read the working tree and refresh the lists.',
   TT_STATUS_STAGE: 'Stage this file — include it in the next commit.',
   TT_STATUS_UNSTAGE: 'Unstage this file — keep the change but leave it out of the next commit.',
