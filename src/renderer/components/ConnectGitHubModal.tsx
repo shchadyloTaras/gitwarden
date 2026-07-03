@@ -4,6 +4,11 @@ import { STR } from '../strings'
 
 type Status = 'starting' | 'awaitingUser' | 'authorized' | 'denied' | 'expired' | 'error'
 
+/** Ignore extra focus/visibility events within this window of the last trigger. */
+const RETURN_CHECK_DEBOUNCE_MS = 1000
+/** How long "Checking…" stays up before settling back to "Waiting…" if no event arrives. */
+const CHECKING_FALLBACK_MS = 2000
+
 interface ConnectGitHubModalProps {
   profileId: string
   /** The @login once authorized — drives the success message. */
@@ -28,7 +33,9 @@ export default function ConnectGitHubModal({
   const [deviceCode, setDeviceCode] = useState<GitHubDeviceCode | null>(null)
   const [authorizedLogin, setAuthorizedLogin] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [checking, setChecking] = useState(false)
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const checkingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Keep the latest callback without re-subscribing the event listener.
   const onAuthorizedRef = useRef(onAuthorized)
   onAuthorizedRef.current = onAuthorized
@@ -44,6 +51,9 @@ export default function ConnectGitHubModal({
 
     const unsubscribe = window.api.github.onAuthEvent((event) => {
       if (cancelled || event.profileId !== profileId) return
+      // Any progress clears a "Checking…" spinner started by a return-focus poke.
+      if (checkingTimeoutRef.current) clearTimeout(checkingTimeoutRef.current)
+      setChecking(false)
       switch (event.status) {
         case 'awaitingUser':
           setStatus('awaitingUser')
@@ -104,6 +114,43 @@ export default function ConnectGitHubModal({
       if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
     }
   }, [])
+
+  // The instant the window regains focus (or the tab becomes visible) while we're still
+  // waiting on the user, ask main for one immediate bypass poll and show an active
+  // "Checking…" state — instead of leaving the static "Waiting…" line up for however long
+  // is left of the current poll interval. Debounced so a burst of focus/visibility events
+  // (e.g. alt-tabbing around) triggers at most one poke.
+  useEffect(() => {
+    let debounced = false
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null
+
+    function triggerReturnCheck(): void {
+      if (debounced) return
+      debounced = true
+      debounceTimer = setTimeout(() => {
+        debounced = false
+      }, RETURN_CHECK_DEBOUNCE_MS)
+
+      if (statusRef.current !== 'awaitingUser') return
+      setChecking(true)
+      void window.api.github.refreshDeviceAuth(profileId)
+      if (checkingTimeoutRef.current) clearTimeout(checkingTimeoutRef.current)
+      checkingTimeoutRef.current = setTimeout(() => setChecking(false), CHECKING_FALLBACK_MS)
+    }
+
+    function onVisibilityChange(): void {
+      if (document.visibilityState === 'visible') triggerReturnCheck()
+    }
+
+    window.addEventListener('focus', triggerReturnCheck)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => {
+      window.removeEventListener('focus', triggerReturnCheck)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      if (debounceTimer) clearTimeout(debounceTimer)
+      if (checkingTimeoutRef.current) clearTimeout(checkingTimeoutRef.current)
+    }
+  }, [profileId])
 
   function handleOpenGitHub(): void {
     if (deviceCode) void window.api.shell.openExternal(deviceCode.verificationUri)
@@ -174,7 +221,10 @@ export default function ConnectGitHubModal({
                 {copied ? STR.GITHUB_MODAL_COPIED : STR.GITHUB_MODAL_COPY_BTN}
               </button>
             </div>
-            <p style={{ ...bodyStyle, marginTop: 12 }}>{STR.GITHUB_MODAL_WAITING}</p>
+            <p data-testid="github-connect-waiting-line" style={{ ...bodyStyle, marginTop: 12 }}>
+              {checking ? STR.GITHUB_MODAL_CHECKING : STR.GITHUB_MODAL_WAITING}
+            </p>
+            <p style={hintStyle}>{STR.GITHUB_MODAL_NO_ACCOUNT_HINT}</p>
           </div>
         )}
 
@@ -241,6 +291,9 @@ export default function ConnectGitHubModal({
                 type="button"
                 data-testid="github-connect-retry"
                 onClick={handleRetry}
+                // Autofocus keeps it the obvious next action for a code that expired during a
+                // long signup detour — the user returns straight to the primary CTA.
+                autoFocus={status === 'expired'}
                 style={primaryBtn}
               >
                 {STR.GITHUB_MODAL_RETRY_BTN}
@@ -299,6 +352,13 @@ const bodyStyle: React.CSSProperties = {
   color: 'var(--gw-text-muted, #a1a1aa)',
   fontSize: 14,
   lineHeight: 1.55,
+}
+
+const hintStyle: React.CSSProperties = {
+  margin: '8px 0 0',
+  color: 'var(--gw-text-dim, #52525b)',
+  fontSize: 12,
+  lineHeight: 1.5,
 }
 
 const codeRowStyle: React.CSSProperties = {

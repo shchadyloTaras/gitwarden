@@ -80,6 +80,19 @@ const IS_E2E_BACKGROUND = process.env['GITWARDEN_E2E_BACKGROUND'] === '1'
 /** True for update-notifier e2e — fake update service so no real GitHub call happens. */
 const IS_E2E_FAKE_UPDATES = process.env['GITWARDEN_E2E_FAKE_UPDATES'] === '1'
 
+/**
+ * Test-only knobs for the fake device flow's poll interval and bypass-poke behavior
+ * (Phase 81's Connect-Return Check e2e drives both a "poke authorizes" and a "poke finds
+ * nothing new yet" scenario against the same fake). No effect outside GITWARDEN_E2E_FAKE_GITHUB.
+ */
+const E2E_FAKE_GITHUB_INTERVAL_SEC = process.env['GITWARDEN_E2E_FAKE_GITHUB_INTERVAL_SEC']
+  ? Number(process.env['GITWARDEN_E2E_FAKE_GITHUB_INTERVAL_SEC'])
+  : undefined
+const E2E_FAKE_GITHUB_POKE_AUTHORIZES =
+  process.env['GITWARDEN_E2E_FAKE_GITHUB_POKE_AUTHORIZES'] !== '0'
+const E2E_FAKE_GITHUB_OUTCOME =
+  process.env['GITWARDEN_E2E_FAKE_GITHUB_OUTCOME'] === 'expire' ? 'expire' : 'authorize'
+
 const IS_DEV_RENDERER = isDevRenderer()
 
 // Vite dev/HMR needs 'unsafe-eval', which triggers Electron's CSP security warning.
@@ -105,7 +118,11 @@ function buildGitHubAuthDeps(
   userDataPath: string
 ): GitHubAuthCoordinatorDeps {
   if (IS_E2E_FAKE_GITHUB) {
-    const fakes = createGitHubAuthTestServices()
+    const fakes = createGitHubAuthTestServices({
+      intervalSec: E2E_FAKE_GITHUB_INTERVAL_SEC,
+      pokeAuthorizes: E2E_FAKE_GITHUB_POKE_AUTHORIZES,
+      outcome: E2E_FAKE_GITHUB_OUTCOME,
+    })
     return { ...fakes, profiles, openExternal, scopes: GITHUB_OAUTH_SCOPES }
   }
 

@@ -10,6 +10,7 @@
 import type { GitHubAccount, GitHubDeviceCode } from '../../core/types.js'
 import type { IGitHubAuthService, DeviceTokenResult } from '../services/GitHubAuthService.js'
 import { abortableDelay } from '../services/GitHubAuthService.js'
+import { GitHubAuthError } from '../services/GitHubAuthError.js'
 import type { IGitHubApiService } from '../services/GitHubApiService.js'
 import type { ITokenStore } from '../storage/TokenStore.js'
 
@@ -31,26 +32,64 @@ export const FAKE_PRIMARY_EMAIL = 'octocat@users.noreply.github.com'
 export const FAKE_ACCESS_TOKEN = 'gho_FAKEtoken000000000000000000000000'
 export const FAKE_GRANTED_SCOPES = ['repo', 'read:user', 'user:email']
 
+/**
+ * A poke doesn't resolve in the same tick — it simulates the round-trip of the one real
+ * bypass poll a `requestImmediatePoll()` triggers, so the renderer's "Checking…" state is
+ * actually observable (e2e-relevant) instead of flashing for a single microtask.
+ */
+const POKE_ROUNDTRIP_MS = 400
+
+export interface GitHubAuthFakeOptions {
+  /** Overrides FAKE_DEVICE_CODE.intervalSec (seconds) for this flow. */
+  intervalSec?: number
+  /**
+   * Whether `requestImmediatePoll()` actually resolves the wait early. Default true.
+   * Set false to simulate "GitHub still says pending" — a poke finds nothing new, which is
+   * what the Phase 81 e2e uses to exercise the renderer's checking→waiting fallback timeout.
+   */
+  pokeAuthorizes?: boolean
+  /** 'expire' rejects the poll with `expiredToken` instead of waiting — for the Phase 81
+   *  e2e's "expired code shows a prominent Try Again" scenario. Default 'authorize'. */
+  outcome?: 'authorize' | 'expire'
+}
+
 class FakeGitHubAuthService implements IGitHubAuthService {
   /** Resolver for the current wait, armed only while `pollForToken` is waiting. */
   private wake: (() => void) | undefined
+  private readonly intervalSec: number
+  private readonly pokeAuthorizes: boolean
+  private readonly outcome: 'authorize' | 'expire'
+
+  constructor(options: GitHubAuthFakeOptions = {}) {
+    this.intervalSec = options.intervalSec ?? FAKE_DEVICE_CODE.intervalSec
+    this.pokeAuthorizes = options.pokeAuthorizes ?? true
+    this.outcome = options.outcome ?? 'authorize'
+  }
 
   async requestDeviceCode(_scopes: string[]): Promise<GitHubDeviceCode> {
-    return FAKE_DEVICE_CODE
+    return { ...FAKE_DEVICE_CODE, intervalSec: this.intervalSec }
   }
 
   /**
    * Simulates the user authorizing after one interval; aborts promptly on cancel. A
-   * `requestImmediatePoll()` poke resolves the wait immediately, mirroring the real
-   * service's bypass-poll behavior — this is what the Phase 81 e2e exercises to prove
-   * "Checking with GitHub…" flips to Connected on return without waiting out the interval.
+   * `requestImmediatePoll()` poke resolves the wait immediately (when `pokeAuthorizes`),
+   * mirroring the real service's bypass-poll behavior — this is what the Phase 81 e2e
+   * exercises to prove "Checking with GitHub…" flips to Connected on return without
+   * waiting out the interval.
    */
   async pollForToken(signal: AbortSignal): Promise<DeviceTokenResult> {
-    await this.waitForIntervalOrPoke(FAKE_DEVICE_CODE.intervalSec * 1000, signal)
+    if (this.outcome === 'expire') {
+      throw new GitHubAuthError(
+        'expiredToken',
+        'The device code expired before authorization completed.'
+      )
+    }
+    await this.waitForIntervalOrPoke(this.intervalSec * 1000, signal)
     return { accessToken: FAKE_ACCESS_TOKEN, scopes: [...FAKE_GRANTED_SCOPES] }
   }
 
   requestImmediatePoll(): void {
+    if (!this.pokeAuthorizes) return
     this.wake?.()
   }
 
@@ -63,7 +102,12 @@ class FakeGitHubAuthService implements IGitHubAuthService {
         this.wake = undefined
         run()
       }
-      this.wake = () => finish(resolve)
+      this.wake = () => {
+        abortableDelay(POKE_ROUNDTRIP_MS, signal).then(
+          () => finish(resolve),
+          (error: unknown) => finish(() => reject(error))
+        )
+      }
       abortableDelay(ms, signal).then(
         () => finish(resolve),
         (error: unknown) => finish(() => reject(error))
@@ -105,9 +149,11 @@ export interface GitHubAuthTestServices {
   tokens: ITokenStore
 }
 
-export function createGitHubAuthTestServices(): GitHubAuthTestServices {
+export function createGitHubAuthTestServices(
+  options: GitHubAuthFakeOptions = {}
+): GitHubAuthTestServices {
   return {
-    auth: new FakeGitHubAuthService(),
+    auth: new FakeGitHubAuthService(options),
     api: new FakeGitHubApiService(),
     tokens: new FakeTokenStore(),
   }

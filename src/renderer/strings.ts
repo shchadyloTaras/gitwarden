@@ -198,6 +198,8 @@ export const STR = {
   GITHUB_MODAL_STARTING: 'Requesting a device code…',
   GITHUB_MODAL_ENTER_CODE: 'Enter this code at github.com/login/device:',
   GITHUB_MODAL_WAITING: 'Waiting for you to authorize on GitHub…',
+  GITHUB_MODAL_CHECKING: 'Checking with GitHub…',
+  GITHUB_MODAL_NO_ACCOUNT_HINT: "No GitHub account yet? Create one — we'll keep waiting.",
   GITHUB_MODAL_OPEN_BTN: 'Open GitHub',
   GITHUB_MODAL_COPY_BTN: 'Copy',
   GITHUB_MODAL_COPIED: 'Copied!',
