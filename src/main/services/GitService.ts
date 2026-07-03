@@ -128,6 +128,48 @@ export class GitService {
     return { hash: result.stdout.toString('utf8').trim() }
   }
 
+  /**
+   * `git init -b main` run with `cwd: repoPath` (not `git init <path>`) so a
+   * non-existent/typo'd path fails on spawn instead of creating a phantom folder
+   * (Initialize Repository, Phase 86). `-b main` makes the default branch
+   * deterministic rather than inheriting the user's `init.defaultBranch`.
+   */
+  async initRepository(repoPath: string): Promise<void> {
+    await this.runner.run({
+      args: ['init', '-b', 'main'],
+      cwd: repoPath,
+      readOnly: false,
+    })
+  }
+
+  /** `git remote add <name> <url>` — `url` is a single array element, never shell-interpolated. */
+  async addRemote(repoPath: string, name: string, url: string): Promise<void> {
+    await this.runner.run({
+      args: ['remote', 'add', name, url],
+      cwd: repoPath,
+      readOnly: false,
+    })
+  }
+
+  /**
+   * The git-reported toplevel of the repo enclosing `repoPath`, or `null` if `repoPath`
+   * is not inside any git working tree — the nested-repo guard for the Initialize flow
+   * (Initialize Repository, Phase 86). The caller compares this (after `fs.realpath`)
+   * against `repoPath` itself to detect "already inside an existing repo."
+   */
+  async findEnclosingToplevel(repoPath: string): Promise<string | null> {
+    try {
+      const result = await this.runner.run({
+        args: ['rev-parse', '--show-toplevel'],
+        cwd: repoPath,
+        readOnly: true,
+      })
+      return result.stdout.toString('utf8').trim()
+    } catch {
+      return null
+    }
+  }
+
   async setLocalIdentity(repoPath: string, name: string, email: string): Promise<void> {
     await this.runner.run({
       args: ['config', '--local', 'user.name', name],
@@ -189,14 +231,35 @@ export class GitService {
     })
   }
 
+  /**
+   * `-u` is added only when the current branch has no upstream yet, so the first push
+   * after connecting a remote (Initialize Repository, Phase 86) wires tracking exactly
+   * like GitHub's own "git push -u origin main" — behavior is unchanged once an upstream
+   * already exists.
+   */
   async push(repoPath: string, remote: string, branch: string, auth?: PushAuth): Promise<void> {
+    const hasUpstream = await this.hasUpstream(repoPath)
+    const pushArgs = hasUpstream ? ['push', remote, branch] : ['push', '-u', remote, branch]
     await this.runner.run({
-      args: [...this.credentialIsolationArgs(auth), 'push', remote, branch],
+      args: [...this.credentialIsolationArgs(auth), ...pushArgs],
       cwd: repoPath,
       readOnly: false,
       timeoutMs: 60_000,
       extraEnv: this.askpassEnv(auth),
     })
+  }
+
+  private async hasUpstream(repoPath: string): Promise<boolean> {
+    try {
+      await this.runner.run({
+        args: ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'],
+        cwd: repoPath,
+        readOnly: true,
+      })
+      return true
+    } catch {
+      return false
+    }
   }
 
   /**

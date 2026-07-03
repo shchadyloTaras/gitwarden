@@ -114,8 +114,9 @@ describe('GitService.push token wiring — no token leaks', () => {
     expect(pushCall).toBeTruthy()
 
     // 1) The token is NOT in argv; a token push also isolates from inherited
-    //    credential helpers so the assigned account can't be overridden.
-    expect(pushCall!.args).toEqual(['-c', 'credential.helper=', 'push', 'origin', 'main'])
+    //    credential helpers so the assigned account can't be overridden. `-u` is
+    //    present because this fixture's branch has no upstream yet (Phase 86).
+    expect(pushCall!.args).toEqual(['-c', 'credential.helper=', 'push', '-u', 'origin', 'main'])
     expect(JSON.stringify(pushCall!.args)).not.toContain(TOKEN)
 
     // 2) The token IS carried in the per-invocation env (the only allowed channel).
@@ -134,11 +135,12 @@ describe('GitService.push token wiring — no token leaks', () => {
 
   it('an SSH/no-auth push carries no credential env or helper-reset at all', async () => {
     // No auth → no GIT_ASKPASS, no token env, and NO credential.helper reset (ambient
-    // SSH / credential flows are left exactly as the user configured them).
+    // SSH / credential flows are left exactly as the user configured them). `-u` is
+    // present because this fixture's branch has no upstream yet (Phase 86).
     await expect(service.push(repoPath, 'origin', 'main')).rejects.toBeTruthy()
     const pushCall = calls.find((c) => c.args.includes('push'))
     expect(pushCall?.extraEnv).toBeUndefined()
-    expect(pushCall!.args).toEqual(['push', 'origin', 'main'])
+    expect(pushCall!.args).toEqual(['push', '-u', 'origin', 'main'])
   })
 
   // fetch/pull must authenticate as the assigned profile too — not only push —

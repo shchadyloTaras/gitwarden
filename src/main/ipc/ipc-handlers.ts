@@ -30,6 +30,7 @@ import { toIpcFailure } from './ipcFailure.js'
 import { executeRemediation } from './remediationExecutor.js'
 import { getReturnState, returnLastCommit, returnUnpushed } from './uncommitExecutor.js'
 import { runGitMerge } from './gitMergeHandler.js'
+import { runGitInitialize } from './gitInitializeHandler.js'
 import { reconcileAssignedProfileRemote } from './remoteReconcile.js'
 import {
   AiConnectionTestResultSchema,
@@ -51,6 +52,7 @@ import {
   GitDiffPayload,
   GitCommitPayload,
   GitSetIdentityPayload,
+  GitInitializePayload,
   GitRemoteOpPayload,
   GitRemoteBranchOpPayload,
   RemediationExecutePayload,
@@ -325,6 +327,15 @@ export function registerIpcHandlers(services: Services): void {
     wrap(async () => {
       const { repoPath, name, email } = GitSetIdentityPayload.parse(raw)
       return services.git.setLocalIdentity(repoPath, name, email)
+    })
+  )
+
+  // Initialize Repository (Phase 86): nested-check -> init -> local identity -> optional
+  // remote add, logic lives in runGitInitialize (electron-free, unit-tested directly).
+  ipcMain.handle('git:initializeRepository', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath, remoteUrl, identityName, identityEmail } = GitInitializePayload.parse(raw)
+      return runGitInitialize(services, repoPath, remoteUrl, identityName, identityEmail)
     })
   )
 

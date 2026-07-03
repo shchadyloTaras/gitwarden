@@ -165,6 +165,13 @@ export const api = {
       invoke('git:commit', { repoPath, message }),
     setLocalIdentity: (repoPath: string, name: string, email: string): Promise<IpcResult<void>> =>
       invoke('git:setLocalIdentity', { repoPath, name, email }),
+    initializeRepository: (params: {
+      repoPath: string
+      remoteUrl?: string
+      identityName: string
+      identityEmail: string
+    }): Promise<IpcResult<{ name: string; remoteUrl?: string; remoteError?: string }>> =>
+      invoke('git:initializeRepository', params),
     getRemotes: (repoPath: string): Promise<IpcResult<GitRemote[]>> =>
       invoke('git:getRemotes', { repoPath }),
     fetch: (repoPath: string, remote: string): Promise<IpcResult<void>> =>

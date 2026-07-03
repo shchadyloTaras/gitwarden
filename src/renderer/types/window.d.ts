@@ -143,6 +143,12 @@ interface ElectronAPI {
     getDiff(repoPath: string, filePath: string, staged: boolean): Promise<IpcResult<string>>
     commit(repoPath: string, message: string): Promise<IpcResult<{ hash: string }>>
     setLocalIdentity(repoPath: string, name: string, email: string): Promise<IpcResult<void>>
+    initializeRepository(params: {
+      repoPath: string
+      remoteUrl?: string
+      identityName: string
+      identityEmail: string
+    }): Promise<IpcResult<{ name: string; remoteUrl?: string; remoteError?: string }>>
     getRemotes(repoPath: string): Promise<IpcResult<GitRemote[]>>
     fetch(repoPath: string, remote: string): Promise<IpcResult<void>>
     pull(repoPath: string, remote: string, branch: string): Promise<IpcResult<void>>
