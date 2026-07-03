@@ -8,6 +8,7 @@ import type {
   GitCommit,
 } from '../../core/types.js'
 import { parsePorcelainV2 } from '../../core/parsers/PorcelainParser.js'
+import type { UncommitContext } from '../../core/history/uncommit.js'
 import type { GitRunner } from '../git/GitRunner.js'
 import { GitLocator } from '../git/GitLocator.js'
 import { buildAskpassEnv, ensureAskpassHelper } from '../git/askpass.js'
@@ -341,6 +342,143 @@ export class GitService {
       })
     }
     return commits
+  }
+
+  /**
+   * Count of commits in `<remote>/<branch>..HEAD` — the "unpushed" set (Uncommit to Working
+   * Changes, Phase 77). Mirrors `getCommitsAhead`'s no-tracking-ref fallback (finding 1 of the
+   * plan): when the remote-tracking ref doesn't exist yet (first push), every local commit on
+   * HEAD counts as unpushed and `hasUpstream` reports `false` so callers can distinguish "0
+   * commits ahead of a real upstream" from "no upstream to compare against."
+   */
+  async getUnpushedCount(
+    repoPath: string,
+    remote: string,
+    branch: string
+  ): Promise<{ count: number; hasUpstream: boolean }> {
+    try {
+      const result = await this.runner.run({
+        args: ['rev-list', '--count', `${remote}/${branch}..HEAD`],
+        cwd: repoPath,
+        readOnly: true,
+      })
+      return { count: Number(result.stdout.toString('utf8').trim()), hasUpstream: true }
+    } catch {
+      return { count: await this.countLocalCommits(repoPath), hasUpstream: false }
+    }
+  }
+
+  private async countLocalCommits(repoPath: string): Promise<number> {
+    const result = await this.runner.run({
+      args: ['rev-list', '--count', 'HEAD'],
+      cwd: repoPath,
+      readOnly: true,
+    })
+    return Number(result.stdout.toString('utf8').trim())
+  }
+
+  /** True iff HEAD has ≥2 parents (a merge commit). */
+  private async isHeadMerge(repoPath: string): Promise<boolean> {
+    const result = await this.runner.run({
+      args: ['rev-list', '--parents', '-n', '1', 'HEAD'],
+      cwd: repoPath,
+      readOnly: true,
+    })
+    const tokens = result.stdout.toString('utf8').trim().split(/\s+/).filter(Boolean)
+    return tokens.length >= 3 // HEAD's own hash + 2 or more parent hashes
+  }
+
+  /** True iff HEAD has no parent (the root commit — `HEAD~1` doesn't resolve). */
+  private async isHeadRoot(repoPath: string): Promise<boolean> {
+    return !(await this.refExists(repoPath, 'HEAD~1'))
+  }
+
+  /** True iff there is a merge commit anywhere in `HEAD~n..HEAD`. */
+  private async hasMergeInRange(repoPath: string, n: number): Promise<boolean> {
+    const result = await this.runner.run({
+      args: ['rev-list', '--merges', `HEAD~${n}..HEAD`],
+      cwd: repoPath,
+      readOnly: true,
+    })
+    return result.stdout.toString('utf8').trim().length > 0
+  }
+
+  /** True iff a merge, rebase, or cherry-pick is currently in progress. */
+  private async isInProgressOp(repoPath: string): Promise<boolean> {
+    for (const ref of ['MERGE_HEAD', 'REBASE_HEAD', 'CHERRY_PICK_HEAD']) {
+      if (await this.refExists(repoPath, ref)) return true
+    }
+    return false
+  }
+
+  private async refExists(repoPath: string, ref: string): Promise<boolean> {
+    try {
+      await this.runner.run({
+        args: ['rev-parse', '--verify', '-q', ref],
+        cwd: repoPath,
+        readOnly: true,
+      })
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  /**
+   * Assembles the read-only snapshot the pure `evaluateUncommit` decides on (Uncommit to Working
+   * Changes, Phase 76/77). Derives the upstream remote/branch from `getStatus`'s `upstream` field
+   * (e.g. `"origin/main"`) rather than requiring the caller to pass them, so a single `getStatus`
+   * call also answers the clean-tree and detached-HEAD questions. `rangeHasMerge` is only
+   * evaluated when there is a real upstream and at least one unpushed commit — with no upstream,
+   * `HEAD~unpushedCount` may not resolve, and the "return all unpushed" action is refused
+   * `no-upstream-for-all` before `rangeHasMerge` would matter anyway.
+   */
+  async getUncommitContext(repoPath: string): Promise<UncommitContext> {
+    const status = await this.getStatus(repoPath)
+    const workingTreeClean = status.files.length === 0
+    const detachedHead = status.branch === undefined
+
+    const slash = status.upstream?.indexOf('/') ?? -1
+    const { count: unpushedCount, hasUpstream } =
+      status.upstream && slash > 0
+        ? await this.getUnpushedCount(
+            repoPath,
+            status.upstream.slice(0, slash),
+            status.upstream.slice(slash + 1)
+          )
+        : { count: await this.countLocalCommits(repoPath), hasUpstream: false }
+
+    const [headIsMerge, headIsRoot, inProgressOp, rangeHasMerge] = await Promise.all([
+      this.isHeadMerge(repoPath),
+      this.isHeadRoot(repoPath),
+      this.isInProgressOp(repoPath),
+      hasUpstream && unpushedCount >= 1 ? this.hasMergeInRange(repoPath, unpushedCount) : false,
+    ])
+
+    return {
+      unpushedCount,
+      hasUpstream,
+      workingTreeClean,
+      headIsMerge,
+      headIsRoot,
+      rangeHasMerge,
+      inProgressOp,
+      detachedHead,
+    }
+  }
+
+  /**
+   * Moves HEAD (and the index) to `target` while leaving the working tree untouched, so the
+   * commits between `target` and the old HEAD reappear as unstaged changes (Uncommit to Working
+   * Changes, Phase 77). Callers pass a validated `` `HEAD~${n}` `` — never free-form user text —
+   * so this stays a safe array element (AGENTS.md rule #3), same as every other GitService call.
+   */
+  async resetMixed(repoPath: string, target: string): Promise<void> {
+    await this.runner.run({
+      args: ['reset', '--mixed', target],
+      cwd: repoPath,
+      readOnly: false,
+    })
   }
 
   async discardFile(repoPath: string, filePath: string): Promise<void> {
