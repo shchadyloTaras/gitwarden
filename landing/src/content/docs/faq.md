@@ -8,7 +8,7 @@ order: 8
 
 ## Is it safe to use?
 
-Yes. GitWarden is open source under the MIT licence — the full source is on [GitHub](https://github.com/shchadyloTaras/gitwarden). It only modifies your repository's **local** Git configuration (`user.name`, `user.email`) and never touches your global Git config. No telemetry is collected and no data leaves your machine unless you have added an AI connection and triggered a feature that uses it.
+Yes. GitWarden only modifies your repository's **local** Git configuration (`user.name`, `user.email`) and never touches your global Git config. No telemetry is collected and no data leaves your machine unless you have added an AI connection and triggered a feature that uses it.
 
 ## Why does macOS or Windows warn me on first launch?
 
@@ -18,7 +18,7 @@ The [Installation guide](/docs/installation) walks through allowing it — on ma
 
 ## Is it free?
 
-Completely. GitWarden is free and open source — no accounts required (unless you opt in to GitHub Connect), no subscription, no licence key.
+Completely. GitWarden is free — no accounts required (unless you opt in to GitHub Connect), no subscription, no licence key.
 
 ## Which installer should I download?
 
