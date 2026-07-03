@@ -6,6 +6,12 @@ interface RepositoriesState {
   loading: boolean
   load(): Promise<void>
   addRepository(localPath: string): Promise<RepositoryRecord>
+  initializeRepository(
+    localPath: string,
+    remoteUrl: string | undefined,
+    identity: { name: string; email: string },
+    profileId: string
+  ): Promise<{ repo: RepositoryRecord; remoteError?: string }>
   updateRepo(id: string, patch: Partial<Omit<RepositoryRecord, 'id'>>): Promise<void>
   removeRepo(id: string): Promise<void>
 }
@@ -41,6 +47,28 @@ export const useRepositoriesStore = create<RepositoriesState>((set) => ({
     if (!createRes.ok) throw new Error(createRes.error)
     set((s) => ({ repos: [...s.repos, createRes.data] }))
     return createRes.data
+  },
+
+  async initializeRepository(localPath, remoteUrl, identity, profileId) {
+    const initRes = await window.api.git.initializeRepository({
+      repoPath: localPath,
+      remoteUrl,
+      identityName: identity.name,
+      identityEmail: identity.email,
+    })
+    if (!initRes.ok) throw new Error(initRes.error)
+    const { name, remoteUrl: connectedRemoteUrl, remoteError } = initRes.data
+
+    const createRes = await window.api.repositories.create({
+      name,
+      localPath,
+      remoteUrl: connectedRemoteUrl,
+      assignedProfileId: profileId,
+      isFavorite: false,
+    })
+    if (!createRes.ok) throw new Error(createRes.error)
+    set((s) => ({ repos: [...s.repos, createRes.data] }))
+    return { repo: createRes.data, remoteError }
   },
 
   async updateRepo(id, patch) {

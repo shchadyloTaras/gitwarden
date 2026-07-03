@@ -1,11 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react'
 import type { RepositoryRecord } from '../../core/types'
+import { isValidGitRemoteUrl } from '../../core/remoteUrl'
 import { useRepositoriesStore } from '../store/repositoriesStore'
 import { useProfilesStore } from '../store/profilesStore'
 import { useAppStore } from '../store/appStore'
 import Dropdown from '../components/Dropdown'
 import ResizableMainSplit from '../components/ResizableMainSplit'
 import { STR } from '../strings'
+
+// Must match the phrase gitInitializeHandler.ts's nested-repo throw always contains —
+// there is no structured error code for this pre-check (it never reaches GitError),
+// so the friendly STR copy is shown in its place instead of the raw backend message.
+const NESTED_REPO_ERROR_MARKER = 'already inside a Git repository'
 
 type Mode = 'idle' | 'add' | 'edit'
 
@@ -41,13 +47,24 @@ function editFormFromRepo(r: RepositoryRecord): EditForm {
 }
 
 export default function RepositoriesScreen(): React.ReactElement {
-  const { repos, addRepository, updateRepo, removeRepo } = useRepositoriesStore()
+  const { repos, addRepository, initializeRepository, updateRepo, removeRepo } =
+    useRepositoriesStore()
   const { profiles, activeProfileId } = useProfilesStore()
   const setActiveRepo = useAppStore((s) => s.setActiveRepo)
+  const navigate = useAppStore((s) => s.navigate)
 
   const [mode, setMode] = useState<Mode>('idle')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [addPath, setAddPath] = useState('')
+  const [initMode, setInitMode] = useState(false)
+  const [initRemoteUrl, setInitRemoteUrl] = useState('')
+  const [initUrlError, setInitUrlError] = useState<string | null>(null)
+  const [initNestedWarning, setInitNestedWarning] = useState<string | null>(null)
+  const [initSaving, setInitSaving] = useState(false)
+  const [initPending, setInitPending] = useState<{
+    repo: RepositoryRecord
+    remoteError: string
+  } | null>(null)
   const [editForm, setEditForm] = useState<EditForm>({
     name: '',
     assignedProfileId: '',
@@ -78,12 +95,21 @@ export default function RepositoriesScreen(): React.ReactElement {
     setActiveRepo(r)
   }
 
+  function resetInitState() {
+    setInitMode(false)
+    setInitRemoteUrl('')
+    setInitUrlError(null)
+    setInitNestedWarning(null)
+    setInitPending(null)
+  }
+
   function startAdd() {
     setSelectedId(null)
     setAddPath('')
     setMode('add')
     setError(null)
     setSuccessMessage(null)
+    resetInitState()
   }
 
   async function handleBrowse() {
@@ -94,6 +120,7 @@ export default function RepositoriesScreen(): React.ReactElement {
   async function handleValidateAndAdd() {
     setError(null)
     setSuccessMessage(null)
+    resetInitState()
     const trimmed = addPath.trim()
     if (!trimmed) {
       setError('Enter or browse to a repository path.')
@@ -107,6 +134,48 @@ export default function RepositoriesScreen(): React.ReactElement {
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
       setSaving(false)
+    }
+  }
+
+  function finishInitialize(repo: RepositoryRecord) {
+    setActiveRepo(repo)
+    navigate('commit')
+  }
+
+  async function handleInitialize() {
+    const profile = profiles.find((p) => p.id === activeProfileId)
+    if (!profile) return
+
+    setInitUrlError(null)
+    setInitNestedWarning(null)
+    const trimmedUrl = initRemoteUrl.trim()
+    if (trimmedUrl && !isValidGitRemoteUrl(trimmedUrl)) {
+      setInitUrlError(STR.INITIALIZE_REPO_INVALID_URL)
+      return
+    }
+
+    setInitSaving(true)
+    try {
+      const { repo, remoteError } = await initializeRepository(
+        addPath.trim(),
+        trimmedUrl || undefined,
+        { name: profile.gitAuthorName, email: profile.gitAuthorEmail },
+        profile.id
+      )
+      if (remoteError) {
+        setInitPending({ repo, remoteError })
+      } else {
+        finishInitialize(repo)
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      if (message.includes(NESTED_REPO_ERROR_MARKER)) {
+        setInitNestedWarning(STR.INITIALIZE_REPO_NESTED_WARNING)
+      } else {
+        setError(message)
+      }
+    } finally {
+      setInitSaving(false)
     }
   }
 
@@ -413,6 +482,152 @@ export default function RepositoriesScreen(): React.ReactElement {
                     Cancel
                   </button>
                 </div>
+
+                {error && (
+                  <div
+                    data-testid="repo-init-section"
+                    style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
+                  >
+                    {!initMode &&
+                      (activeProfile ? (
+                        <button
+                          type="button"
+                          data-testid="repo-init-btn"
+                          onClick={() => setInitMode(true)}
+                          style={{
+                            alignSelf: 'flex-start',
+                            padding: '6px 14px',
+                            background: 'none',
+                            border: '1px solid var(--gw-primary, #2563eb)',
+                            borderRadius: 4,
+                            color: 'var(--gw-primary, #2563eb)',
+                            cursor: 'pointer',
+                            fontSize: 14,
+                            fontWeight: 600,
+                          }}
+                        >
+                          {STR.INITIALIZE_REPO_BUTTON}
+                        </button>
+                      ) : (
+                        <div
+                          data-testid="repo-init-no-profile-hint"
+                          style={{ fontSize: 14, color: 'var(--gw-text-dim, #52525b)' }}
+                        >
+                          {STR.INITIALIZE_REPO_NO_PROFILE_HINT}
+                        </div>
+                      ))}
+
+                    {initMode && activeProfile && (
+                      <div
+                        data-testid="repo-init-panel"
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 10,
+                          padding: '10px 12px',
+                          border: '1px solid var(--gw-border, #27272a)',
+                          borderRadius: 4,
+                        }}
+                      >
+                        {initNestedWarning && (
+                          <div
+                            data-testid="repo-init-nested-warning"
+                            style={{ fontSize: 14, color: 'var(--gw-warning, #fbbf24)' }}
+                          >
+                            {initNestedWarning}
+                          </div>
+                        )}
+
+                        {initPending ? (
+                          <>
+                            <div
+                              data-testid="repo-init-remote-note"
+                              style={{ fontSize: 14, color: 'var(--gw-warning, #fbbf24)' }}
+                            >
+                              {STR.INITIALIZE_REPO_REMOTE_NOTE(initPending.remoteError)}
+                            </div>
+                            <button
+                              type="button"
+                              data-testid="repo-init-continue-btn"
+                              onClick={() => finishInitialize(initPending.repo)}
+                              style={{
+                                alignSelf: 'flex-start',
+                                padding: '6px 14px',
+                                background: 'var(--gw-primary, #2563eb)',
+                                border: 'none',
+                                borderRadius: 4,
+                                color: 'var(--gw-on-solid, #fff)',
+                                cursor: 'pointer',
+                                fontSize: 14,
+                                fontWeight: 600,
+                              }}
+                            >
+                              {STR.INITIALIZE_REPO_CONTINUE_BUTTON}
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <Field label={STR.INITIALIZE_REPO_URL_LABEL}>
+                              <input
+                                data-testid="repo-init-url-input"
+                                value={initRemoteUrl}
+                                onChange={(e) => {
+                                  setInitRemoteUrl(e.target.value)
+                                  setInitUrlError(null)
+                                }}
+                                placeholder={STR.INITIALIZE_REPO_URL_PLACEHOLDER}
+                                style={inputStyle}
+                              />
+                            </Field>
+
+                            {initUrlError && (
+                              <div
+                                data-testid="repo-init-url-error"
+                                style={{ fontSize: 14, color: 'var(--gw-danger, #f87171)' }}
+                              >
+                                {initUrlError}
+                              </div>
+                            )}
+
+                            <div
+                              data-testid="repo-init-identity-line"
+                              style={{ fontSize: 14, color: 'var(--gw-text-muted, #a1a1aa)' }}
+                            >
+                              {STR.INITIALIZE_REPO_IDENTITY_LINE(
+                                activeProfile.displayName,
+                                activeProfile.gitAuthorEmail
+                              )}
+                            </div>
+
+                            <button
+                              type="button"
+                              data-testid="repo-init-submit-btn"
+                              onClick={() => {
+                                void handleInitialize()
+                              }}
+                              disabled={initSaving}
+                              style={{
+                                alignSelf: 'flex-start',
+                                padding: '6px 18px',
+                                background: 'var(--gw-primary, #2563eb)',
+                                border: 'none',
+                                borderRadius: 4,
+                                color: 'var(--gw-on-solid, #fff)',
+                                cursor: initSaving ? 'wait' : 'pointer',
+                                fontSize: 14,
+                                fontWeight: 600,
+                              }}
+                            >
+                              {initSaving
+                                ? STR.INITIALIZE_REPO_SUBMITTING
+                                : STR.INITIALIZE_REPO_SUBMIT_BUTTON}
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 

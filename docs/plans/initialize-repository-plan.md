@@ -1,6 +1,6 @@
 # Plan — Initialize Repository: turn a plain folder into a Git repo (and connect it to GitHub) without the terminal
 
-**Status:** ⬜ not started — Phases 85–88 — **derived view**; the authoritative state is the
+**Status:** ✅ complete — Phases 85–88 — **derived view**; the authoritative state is the
 Phase Checklist in [`docs/progress-log.md`](../progress-log.md).
 **Phases:** 85 → 88.
 **Feature-complete stop point:** Phase 88.

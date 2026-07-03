@@ -68,6 +68,22 @@ export const STR = {
   REPOSITORY_PATH_COPY: 'Copy path',
   REPOSITORY_PATH_COPIED: 'Copied',
 
+  // ── Initialize Repository (Phase 88) ──────────────────────────────────────
+  INITIALIZE_REPO_BUTTON: 'Initialize Git repository',
+  INITIALIZE_REPO_NO_PROFILE_HINT: 'Select or create a profile first.',
+  INITIALIZE_REPO_URL_LABEL: 'GitHub URL (optional)',
+  INITIALIZE_REPO_URL_PLACEHOLDER: 'https://github.com/owner/repo.git',
+  INITIALIZE_REPO_IDENTITY_LINE: (name: string, email: string): string =>
+    `Identity: ${name} (${email})`,
+  INITIALIZE_REPO_INVALID_URL: "That doesn't look like a valid Git remote URL.",
+  INITIALIZE_REPO_SUBMIT_BUTTON: 'Initialize',
+  INITIALIZE_REPO_SUBMITTING: 'Initializing…',
+  INITIALIZE_REPO_NESTED_WARNING:
+    'This folder is already inside an existing Git repository. Choose a different folder.',
+  INITIALIZE_REPO_REMOTE_NOTE: (detail: string): string =>
+    `The repository was initialized, but the GitHub remote could not be connected: ${detail}`,
+  INITIALIZE_REPO_CONTINUE_BUTTON: 'Continue to Commit',
+
   // ── Settings screen ────────────────────────────────────────────────────────
   SETTINGS_TITLE: 'Settings',
   SETTINGS_TAB_GENERAL: 'General',
