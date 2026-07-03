@@ -12,6 +12,7 @@ import type { UncommitContext } from '../../core/history/uncommit.js'
 import type { GitRunner } from '../git/GitRunner.js'
 import { GitLocator } from '../git/GitLocator.js'
 import { buildAskpassEnv, ensureAskpassHelper } from '../git/askpass.js'
+import { GitError } from '../git/ErrorMapper.js'
 
 /**
  * HTTPS-token credentials for a single remote operation (push, fetch, or pull).
@@ -374,8 +375,21 @@ export class GitService {
     await this.runner.run({ args: ['branch', '-D', name], cwd: repoPath, readOnly: false })
   }
 
+  /**
+   * A freshly-init'd repo with no commits (unborn HEAD) makes `git log` exit non-zero
+   * with "does not have any commits yet" — that specific case returns `[]` instead of
+   * throwing (Initialize Repository, Phase 87), mirroring `getCommitsAhead`'s
+   * no-tracking-ref fallback below. Any other error still propagates.
+   */
   async getCommitHistory(repoPath: string, limit: number, skip: number): Promise<GitCommit[]> {
-    return this.queryCommitLog(repoPath, ['-n', String(limit), '--skip', String(skip)])
+    try {
+      return await this.queryCommitLog(repoPath, ['-n', String(limit), '--skip', String(skip)])
+    } catch (err) {
+      if (err instanceof GitError && /does not have any commits yet/i.test(err.technicalDetails)) {
+        return []
+      }
+      throw err
+    }
   }
 
   /** Commits on HEAD not yet on remote/branch — used for Push Brief (Phase 35). */
