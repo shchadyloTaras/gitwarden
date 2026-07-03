@@ -138,7 +138,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 
 ### Initialize Repository feature (plan: `docs/plans/initialize-repository-plan.md`, prompts: `docs/prompts/initialize-repository-prompts.md`)
 
-- [ ] Phase 85 — Git remote URL validator (pure core)
+- [x] Phase 85 — Git remote URL validator (pure core)
 - [ ] Phase 86 — Init, connect, nested-guard, push -u (main + IPC)
 - [ ] Phase 87 — Empty-repo (unborn HEAD) tolerance (main)
 - [ ] Phase 88 — Inline Initialize panel + land on Commit (renderer + e2e)
@@ -180,7 +180,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | Uncommit to Working Changes | 76–79 | ✅ complete                                                   |
 | Connect-Return Check   | 80–81     | ✅ complete                                                   |
 | Merge a Branch         | 82–84     | ✅ complete                                                   |
-| Initialize Repository  | 85–88     | ⬜ not started                                                |
+| Initialize Repository  | 85–88     | 🟡 Phase 85 done; 86–88 open                                  |
 | Agentic DX             | DX-0–DX-6 | ✅ complete (DX-6 = à la carte; project-factory/sdd deferred) |
 
 ## Progress Log
@@ -1234,3 +1234,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - Tests: new suite **4/4 passed** — a repo with a feature branch ahead of a clean current branch shows "Merge into main" on the feature row; clicking it then confirming folds the branch in, shows the success banner, and the merged file lands on `HEAD`; a conflicting merge (both branches edit the same line) re-diagnoses to a "Go to Status" button, which lands on Status with the file shown conflicted (`!` badge) and `.git/MERGE_HEAD` present (no auto-resolution); a dirty working tree refuses with the clean-tree message in the existing `branches-error` banner, leaving `HEAD` unchanged and no `MERGE_HEAD`; the Merge action is completely absent (`toHaveCount(0)`) on a detached HEAD. Full Playwright suite: **113/113 passed** (109 pre-existing + 4 new; 2 flaked on the first pass in unrelated specs — `ai-connections.spec.ts` and `shell.spec.ts` — both reproduced identically against the pre-Phase-84 baseline via `git stash`, confirming they are pre-existing and untouched by this phase, and both passed clean on isolated reruns). `npm test`: **Vitest 768/768 passed** (unchanged — no new unit tests, per plan). `npx tsc --noEmit` clean on both tsconfigs. `npm run lint` clean (new e2e spec passed through Prettier; same pre-existing unrelated warnings elsewhere, untouched). No reviewer subagent required — UI-only diff, no `src/core/`, `src/main/git`, `src/main/security`, `src/main/ai`, or IPC/preload changes.
 - Exit criteria: ✅ met — all four Playwright scenarios pass (clean merge, conflict → Status, dirty-tree refusal, detached-HEAD hide); `npm test`, `npm run e2e`, `npm run lint` all green; no hard-coded user-facing strings.
 - Notes / follow-ups: **Merge a Branch feature is now complete (Phases 82–84, all ✅)** — this was the feature-complete stop point per the plan. The plan's two "Open questions (resolve at kickoff)" are resolved by this implementation: the dirty-tree refusal is message-only (no Status/Commit link, matching the MVP lean), and the Merge button sits alongside the "In worktree" badge rather than being omitted there. `docs/plans/merge-branch-plan.md`'s `Status:` header updated to ✅ complete alongside this entry. Next per AGENTS.md build order: **Initialize Repository (85–88)** — its entry gate (this phase) is now ✅.
+
+### 2026-07-03 — Phase 85: Git remote URL validator (pure core)
+
+- Built: `isValidGitRemoteUrl(url: string): boolean` in a new dependency-free `src/core/remoteUrl.ts` — a format-only check with no network/filesystem access. Accepts `https://`/`http://`/`ssh://`/`file://` URLs (scheme + non-whitespace body), scp-like `user@host:path` (covers `git@github.com:owner/repo.git`), POSIX absolute paths (`/…`), and best-effort Windows forms (drive `C:\…`/`C:/…` and UNC `\\host\share`). Rejects the empty string and any string containing whitespace (covering whitespace-only and leading/trailing-padded otherwise-valid URLs, per the plan's "strings containing spaces or newlines" rule) and a bare `host/owner/repo` with no scheme. No `.git` suffix requirement.
+- Files: new `src/core/remoteUrl.ts`; new `tests/unit/remote-url.test.ts`.
+- Tests: new suite **16/16 passed** (10 accepted-form cases, 6 rejected-form cases). Full `npm test`: **Vitest 784/784 passed**. `npx tsc --noEmit` clean on both tsconfigs. `npm run lint` clean (Prettier initially flagged the new file's semicolons against repo style; fixed with `prettier --write` before committing). **core-purity-reviewer** subagent passed: zero imports in `remoteUrl.ts` — no `child_process`/`fs`/electron/DOM/Zod/Node built-ins, single self-contained function.
+- Exit criteria: ✅ met — tsc clean, Vitest table covers every accepted/rejected form from the plan, core stays pure, lint clean. No IPC, no UI, per plan.
+- Notes / follow-ups: This is the first of the logic-only checkpoints (85–87) before Phase 88's UI. Next: **Phase 86 — Init, connect, nested-guard, push `-u` (main + IPC)**, which adds `GitService.initRepository`/`addRemote`, the nested-repo check, the push `-u` tweak, and the `git:initializeRepository` orchestrator IPC that Phase 88's renderer will call — this validator is what that renderer form uses to reject an obvious non-URL before calling the orchestrator.
