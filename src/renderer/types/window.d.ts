@@ -19,6 +19,7 @@ import type {
   RemediationResult,
   ExecutableAction,
 } from '../../core/safety/remediation.js'
+import type { UncommitReturnState, UncommitActionResult } from '../../core/history/uncommit.js'
 import type {
   AiConnection,
   AiConnectionKind,
@@ -154,6 +155,11 @@ interface ElectronAPI {
     discardFile(repoPath: string, filePath: string): Promise<IpcResult<void>>
     cleanFile(repoPath: string, filePath: string): Promise<IpcResult<void>>
     validateGitPath(gitPath: string): Promise<IpcResult<{ version: string }>>
+  }
+  history: {
+    getReturnState(repoPath: string): Promise<IpcResult<UncommitReturnState>>
+    returnLastCommit(repoPath: string): Promise<IpcResult<UncommitActionResult>>
+    returnUnpushed(repoPath: string): Promise<IpcResult<UncommitActionResult>>
   }
   remediation: {
     execute(payload: {

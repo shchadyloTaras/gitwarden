@@ -16,6 +16,7 @@ import type {
   GitHubAuthErrorCode,
 } from '../src/core/types.js'
 import type { RemediationResult, ExecutableAction } from '../src/core/safety/remediation.js'
+import type { UncommitReturnState, UncommitActionResult } from '../src/core/history/uncommit.js'
 import type {
   AiConnection,
   AiConnectionKind,
@@ -191,6 +192,14 @@ export const api = {
       invoke('git:cleanFile', { repoPath, filePath }),
     validateGitPath: (gitPath: string): Promise<IpcResult<{ version: string }>> =>
       invoke('git:validateGitPath', { gitPath }),
+  },
+  history: {
+    getReturnState: (repoPath: string): Promise<IpcResult<UncommitReturnState>> =>
+      invoke('history:getReturnState', { repoPath }),
+    returnLastCommit: (repoPath: string): Promise<IpcResult<UncommitActionResult>> =>
+      invoke('history:returnLastCommit', { repoPath }),
+    returnUnpushed: (repoPath: string): Promise<IpcResult<UncommitActionResult>> =>
+      invoke('history:returnUnpushed', { repoPath }),
   },
   remediation: {
     execute: (payload: {

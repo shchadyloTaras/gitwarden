@@ -40,6 +40,18 @@ export interface UncommitEligibility {
   refusals: { last?: UncommitRefusal; all?: UncommitRefusal }
 }
 
+/** Shape of the `history:getReturnState` IPC read (Phase 78) — shared by main and preload. */
+export interface UncommitReturnState {
+  eligibility: UncommitEligibility
+  unpushedCount: number
+}
+
+/** Shape of `history:returnLastCommit` / `history:returnUnpushed` (Phase 78). */
+export interface UncommitActionResult {
+  ok: boolean
+  message?: string
+}
+
 /**
  * Global blocks (detached HEAD / in-progress op / dirty tree) refuse BOTH actions with the same
  * refusal. Beyond that, "last" and "all" are evaluated independently against their own rules.

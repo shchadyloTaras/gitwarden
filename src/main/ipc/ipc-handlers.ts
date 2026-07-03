@@ -28,6 +28,7 @@ import type { RepositoryRecord, GitErrorCode } from '../../core/types.js'
 import type { Remediation } from '../../core/safety/remediation.js'
 import { toIpcFailure } from './ipcFailure.js'
 import { executeRemediation } from './remediationExecutor.js'
+import { getReturnState, returnLastCommit, returnUnpushed } from './uncommitExecutor.js'
 import { reconcileAssignedProfileRemote } from './remoteReconcile.js'
 import {
   AiConnectionTestResultSchema,
@@ -399,6 +400,30 @@ export function registerIpcHandlers(services: Services): void {
     wrap(async () => {
       const { repoPath, limit, skip } = GitHistoryPayload.parse(raw)
       return services.git.getCommitHistory(repoPath, limit, skip)
+    })
+  )
+
+  // Uncommit to Working Changes (Phase 78): return an unpushed commit to the working
+  // tree as unstaged changes. User-initiated, dedicated channels — NOT the
+  // remediation.ts ExecutableAction model (see uncommitExecutor.ts header).
+  ipcMain.handle('history:getReturnState', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath } = GitRepoPathPayload.parse(raw)
+      return getReturnState(services, { repoPath })
+    })
+  )
+
+  ipcMain.handle('history:returnLastCommit', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath } = GitRepoPathPayload.parse(raw)
+      return returnLastCommit(services, { repoPath })
+    })
+  )
+
+  ipcMain.handle('history:returnUnpushed', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath } = GitRepoPathPayload.parse(raw)
+      return returnUnpushed(services, { repoPath })
     })
   )
 
