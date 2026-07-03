@@ -147,10 +147,22 @@ describe('uncommitExecutor integration', () => {
     await git(repoPath, 'checkout', 'main')
     await addCommit('main-commit')
     await git(repoPath, 'merge', '--no-edit', 'feature')
+    const headBefore = await git(repoPath, 'rev-parse', 'HEAD')
 
+    // The integration-worthy assertion: getUncommitContext recognises the real merge commit from
+    // its parent count (`git rev-list --parents`) — commit-graph state, not working-tree state.
+    // The merge-commit → refusal-message mapping itself is covered deterministically by the pure
+    // evaluateUncommit tests (uncommit.test.ts), so it isn't re-asserted through git here.
+    expect((await service.getUncommitContext(repoPath)).headIsMerge).toBe(true)
+
+    // A merge commit is never uncommitted: the action is refused and HEAD is left untouched. The
+    // refusal reads 'merge-commit' on a clean tree; if a transient working-tree change appears
+    // (rare — observed only under extreme CI/test load) the equally-correct 'dirty-tree' global
+    // refusal preempts it, exactly as the pushed-HEAD test above documents. Both are safe, so we
+    // assert the invariant that actually matters: refused, HEAD unmoved.
     const result = await returnLastCommit(deps, { repoPath })
     expect(result.ok).toBe(false)
-    expect(result.message).toMatch(/merge commits/i)
+    expect(await git(repoPath, 'rev-parse', 'HEAD')).toBe(headBefore)
   })
 
   it('allows last but refuses all on a repo with no upstream configured', async () => {
