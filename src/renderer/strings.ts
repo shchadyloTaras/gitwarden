@@ -167,6 +167,24 @@ export const STR = {
   DELETE_UNTRACKED_BODY:
     'This file is untracked. Deleting it removes it from disk permanently — it cannot be recovered from Git.',
 
+  // ── History screen — return an unpushed commit to working changes (Phase 79) ──
+  HISTORY_UNPUSHED_MARKER: 'Unpushed',
+  HISTORY_RETURN_LAST_LABEL: 'Return last commit',
+  HISTORY_RETURN_ALL_LABEL: (count: number): string => `Return all ${count} unpushed commits`,
+  HISTORY_RETURN_CONFIRM_PROMPT: 'Return this to your working changes?',
+  HISTORY_RETURN_CONFIRM_BTN: 'Yes, return it',
+  HISTORY_RETURN_CANCEL_BTN: 'Cancel',
+  HISTORY_RETURN_REASSURANCE: 'Your changes stay in your working area — nothing is deleted.',
+  HISTORY_REFUSAL: {
+    'nothing-unpushed': "There's nothing unpushed to return.",
+    'dirty-tree': 'Commit or discard your current changes first.',
+    'root-commit': "The repository's first commit can't be returned this way.",
+    'merge-commit': "Merge commits can't be returned this way.",
+    'detached-head': 'Switch to a branch first.',
+    'in-progress-op': 'Finish the merge, rebase, or cherry-pick in progress first.',
+    'no-upstream-for-all': 'This branch has never been pushed — try "Return last commit" instead.',
+  } as Record<string, string>,
+
   // ── Connect GitHub (OAuth Device Flow) ─────────────────────────────────────
   GITHUB_SECTION_LABEL: 'GitHub Account',
   GITHUB_CONNECT_BTN: 'Connect GitHub',

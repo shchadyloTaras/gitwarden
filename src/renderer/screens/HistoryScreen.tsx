@@ -1,7 +1,9 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useHistoryStore } from '../store/historyStore'
 import { useAppStore } from '../store/appStore'
 import { STR } from '../strings'
+
+type ConfirmAction = 'last' | 'all' | null
 
 const ROW: React.CSSProperties = {
   display: 'grid',
@@ -13,14 +15,105 @@ const ROW: React.CSSProperties = {
   fontSize: 14,
 }
 
+function ReturnConfirm({
+  action,
+  onConfirm,
+  onCancel,
+  disabled,
+}: {
+  action: 'last' | 'all'
+  onConfirm: () => void
+  onCancel: () => void
+  disabled: boolean
+}): React.ReactElement {
+  return (
+    <div
+      data-testid={`history-return-${action}-confirm-panel`}
+      style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}
+    >
+      <span style={{ fontSize: 14, color: 'var(--gw-text-muted, #a1a1aa)' }}>
+        {STR.HISTORY_RETURN_CONFIRM_PROMPT}
+      </span>
+      <span style={{ fontSize: 14, color: 'var(--gw-text-faint, #71717a)' }}>
+        {STR.HISTORY_RETURN_REASSURANCE}
+      </span>
+      <button
+        data-testid={`history-return-${action}-confirm`}
+        disabled={disabled}
+        onClick={onConfirm}
+        style={{
+          flexShrink: 0,
+          padding: '4px 12px',
+          background: 'var(--gw-accent, #6366f1)',
+          border: 'none',
+          borderRadius: 4,
+          color: '#fff',
+          cursor: disabled ? 'default' : 'pointer',
+          fontSize: 14,
+          fontWeight: 600,
+        }}
+      >
+        {disabled ? 'Returning…' : STR.HISTORY_RETURN_CONFIRM_BTN}
+      </button>
+      <button
+        data-testid={`history-return-${action}-cancel`}
+        disabled={disabled}
+        onClick={onCancel}
+        style={{
+          flexShrink: 0,
+          padding: '4px 12px',
+          background: 'none',
+          border: '1px solid var(--gw-surface3, #3f3f46)',
+          borderRadius: 4,
+          color: 'var(--gw-text-muted, #a1a1aa)',
+          cursor: disabled ? 'default' : 'pointer',
+          fontSize: 14,
+        }}
+      >
+        {STR.HISTORY_RETURN_CANCEL_BTN}
+      </button>
+    </div>
+  )
+}
+
 export default function HistoryScreen(): React.ReactElement {
   const activeRepo = useAppStore((s) => s.activeRepo)
   const currentBranch = useAppStore((s) => s.currentBranch)
-  const { commits, loading, loadingMore, error, hasMore, load, loadMore } = useHistoryStore()
+  const {
+    commits,
+    loading,
+    loadingMore,
+    error,
+    hasMore,
+    eligibility,
+    unpushedCount,
+    returning,
+    returnError,
+    load,
+    loadMore,
+    returnLast,
+    returnAllUnpushed,
+    clearReturnError,
+  } = useHistoryStore()
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null)
 
   useEffect(() => {
     if (activeRepo) void load(activeRepo.localPath, activeRepo)
   }, [activeRepo, currentBranch, load])
+
+  function startConfirm(action: 'last' | 'all'): void {
+    clearReturnError()
+    setConfirmAction(action)
+  }
+
+  async function confirmReturn(): Promise<void> {
+    if (confirmAction === 'last') await returnLast()
+    else if (confirmAction === 'all') await returnAllUnpushed()
+    setConfirmAction(null)
+  }
+
+  const lastRefusal = eligibility?.refusals.last
+  const allRefusal = eligibility?.refusals.all
 
   return (
     <div
@@ -83,6 +176,109 @@ export default function HistoryScreen(): React.ReactElement {
             </div>
           )}
 
+          {returnError && (
+            <div
+              data-testid="history-return-error"
+              style={{
+                margin: '12px 16px',
+                padding: '8px 12px',
+                background: 'var(--gw-danger-bg, #450a0a)',
+                border: '1px solid var(--gw-danger-solid, #dc2626)',
+                borderRadius: 4,
+                fontSize: 14,
+                color: 'var(--gw-danger, #f87171)',
+              }}
+            >
+              {returnError}
+            </div>
+          )}
+
+          {/* Return-to-working-changes panel (Uncommit to Working Changes, Phase 79) */}
+          {unpushedCount >= 1 && (
+            <div
+              data-testid="history-return-panel"
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+                margin: '12px 16px',
+                padding: '10px 12px',
+                background: 'var(--gw-surface2, #27272a)',
+                border: '1px solid var(--gw-surface3, #3f3f46)',
+                borderRadius: 6,
+              }}
+            >
+              {confirmAction ? (
+                <ReturnConfirm
+                  action={confirmAction}
+                  disabled={returning}
+                  onConfirm={() => void confirmReturn()}
+                  onCancel={() => setConfirmAction(null)}
+                />
+              ) : (
+                <>
+                  {eligibility?.canReturnLast ? (
+                    <button
+                      data-testid="history-return-last"
+                      onClick={() => startConfirm('last')}
+                      style={{
+                        alignSelf: 'flex-start',
+                        padding: '4px 12px',
+                        background: 'none',
+                        border: '1px solid var(--gw-surface3, #3f3f46)',
+                        borderRadius: 4,
+                        color: 'var(--gw-text, #f4f4f5)',
+                        cursor: 'pointer',
+                        fontSize: 14,
+                      }}
+                    >
+                      {STR.HISTORY_RETURN_LAST_LABEL}
+                    </button>
+                  ) : (
+                    lastRefusal && (
+                      <span
+                        data-testid="history-return-last-refusal"
+                        style={{ fontSize: 14, color: 'var(--gw-text-muted, #a1a1aa)' }}
+                      >
+                        {STR.HISTORY_REFUSAL[lastRefusal]}
+                      </span>
+                    )
+                  )}
+
+                  {unpushedCount > 1 &&
+                    (eligibility?.canReturnAllUnpushed ? (
+                      <button
+                        data-testid="history-return-all"
+                        onClick={() => startConfirm('all')}
+                        style={{
+                          alignSelf: 'flex-start',
+                          padding: '4px 12px',
+                          background: 'none',
+                          border: '1px solid var(--gw-surface3, #3f3f46)',
+                          borderRadius: 4,
+                          color: 'var(--gw-text, #f4f4f5)',
+                          cursor: 'pointer',
+                          fontSize: 14,
+                        }}
+                      >
+                        {STR.HISTORY_RETURN_ALL_LABEL(unpushedCount)}
+                      </button>
+                    ) : (
+                      allRefusal &&
+                      allRefusal !== lastRefusal && (
+                        <span
+                          data-testid="history-return-all-refusal"
+                          style={{ fontSize: 14, color: 'var(--gw-text-muted, #a1a1aa)' }}
+                        >
+                          {STR.HISTORY_REFUSAL[allRefusal]}
+                        </span>
+                      )
+                    ))}
+                </>
+              )}
+            </div>
+          )}
+
           {commits.length === 0 && !error && (
             <div style={{ padding: 24, color: 'var(--gw-text-faint, #71717a)', fontSize: 14 }}>
               No commits found in this repository.
@@ -111,52 +307,79 @@ export default function HistoryScreen(): React.ReactElement {
 
           {/* Commit rows */}
           <div data-testid="history-commit-list">
-            {commits.map((c) => (
-              <div key={c.fullHash} data-testid="history-commit-row" style={ROW}>
-                <span
-                  style={{
-                    fontFamily: 'monospace',
-                    fontSize: 14,
-                    color: 'var(--gw-accent, #6366f1)',
-                    flexShrink: 0,
-                  }}
-                >
-                  {c.shortHash}
-                </span>
-                <span
-                  style={{
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    color: 'var(--gw-text, #f4f4f5)',
-                  }}
-                  title={c.message}
-                >
-                  {c.message}
-                </span>
-                <span
-                  style={{
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    color: 'var(--gw-text-muted, #a1a1aa)',
-                    fontSize: 14,
-                  }}
-                  title={c.authorEmail}
-                >
-                  {c.authorName}
-                </span>
-                <span
-                  style={{
-                    color: 'var(--gw-text-faint, #71717a)',
-                    fontSize: 14,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {new Date(c.date).toLocaleDateString()}
-                </span>
-              </div>
-            ))}
+            {commits.map((c, idx) => {
+              const isUnpushed = idx < unpushedCount
+              return (
+                <div key={c.fullHash} data-testid="history-commit-row" style={ROW}>
+                  <span
+                    style={{
+                      fontFamily: 'monospace',
+                      fontSize: 14,
+                      color: 'var(--gw-accent, #6366f1)',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {c.shortHash}
+                  </span>
+                  <span
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {isUnpushed && (
+                      <span
+                        data-testid="history-unpushed-marker"
+                        style={{
+                          flexShrink: 0,
+                          fontSize: 14,
+                          padding: '0 6px',
+                          borderRadius: 3,
+                          background: 'var(--gw-surface3, #3f3f46)',
+                          color: 'var(--gw-text-muted, #a1a1aa)',
+                        }}
+                      >
+                        {STR.HISTORY_UNPUSHED_MARKER}
+                      </span>
+                    )}
+                    <span
+                      style={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        color: 'var(--gw-text, #f4f4f5)',
+                      }}
+                      title={c.message}
+                    >
+                      {c.message}
+                    </span>
+                  </span>
+                  <span
+                    style={{
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      color: 'var(--gw-text-muted, #a1a1aa)',
+                      fontSize: 14,
+                    }}
+                    title={c.authorEmail}
+                  >
+                    {c.authorName}
+                  </span>
+                  <span
+                    style={{
+                      color: 'var(--gw-text-faint, #71717a)',
+                      fontSize: 14,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {new Date(c.date).toLocaleDateString()}
+                  </span>
+                </div>
+              )
+            })}
           </div>
 
           {/* Load more */}

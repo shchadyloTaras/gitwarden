@@ -1,6 +1,6 @@
 # Plan — Uncommit to Working Changes: pull an unpushed commit back into your changes to redo it
 
-**Status:** ⬜ not started — Phases 76–79 — **derived view**; the authoritative state is the
+**Status:** ✅ complete — Phases 76–79 — **derived view**; the authoritative state is the
 Phase Checklist in [`docs/progress-log.md`](../progress-log.md).
 **Phases:** 76 → 79.
 **Feature-complete stop point:** Phase 79.
