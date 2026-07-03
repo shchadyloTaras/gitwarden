@@ -1,7 +1,7 @@
 # Plan — Merge a Branch: fold one local branch into the branch you're on, without the terminal
 
-**Status:** ⬜ not started — Phases 82–84 — **derived view**; the authoritative state is the
-Phase Checklist in [`docs/progress-log.md`](../progress-log.md).
+**Status:** 🟡 partial — Phase 82 done; 83–84 open — **derived view**; the authoritative state is
+the Phase Checklist in [`docs/progress-log.md`](../progress-log.md).
 **Phases:** 82 → 84.
 **Feature-complete stop point:** Phase 84.
 **Prompts:** [`docs/prompts/merge-branch-prompts.md`](../prompts/merge-branch-prompts.md).

@@ -200,22 +200,31 @@ export class GitService {
   }
 
   /**
-   * Merge the already-fetched `<remote>/<branch>` tracking ref into the current
-   * local branch (Diverged-Branch Merge, Phase 69). Purely local: NO `auth`
-   * param, no credential env, no network call — it integrates the ref that a
-   * prior `pull --ff-only` already fetched. `--no-edit` accepts git's default
-   * merge message so a GUI user is never dropped into an editor. A real content
-   * conflict rejects with a `GitError` (code `mergeConflict`, thanks to the
-   * GitRunner stdout-classification fix above) and leaves the repo in git's
-   * standard mid-merge state — this method does NOT catch or resolve it.
+   * Merge `ref` into the current branch (Merge a Branch, Phase 82). Purely
+   * local: NO `auth` param, no credential env, no network call. `--no-edit`
+   * accepts git's default merge message so a GUI user is never dropped into an
+   * editor. A real content conflict rejects with a `GitError` (code
+   * `mergeConflict`, thanks to the GitRunner stdout-classification fix above)
+   * and leaves the repo in git's standard mid-merge state — this method does
+   * NOT catch or resolve it.
    */
-  async mergeRemoteBranch(repoPath: string, remote: string, branch: string): Promise<void> {
+  async mergeBranch(repoPath: string, ref: string): Promise<void> {
     await this.runner.run({
-      args: ['merge', '--no-edit', `${remote}/${branch}`],
+      args: ['merge', '--no-edit', ref],
       cwd: repoPath,
       readOnly: false,
       timeoutMs: 60_000,
     })
+  }
+
+  /**
+   * Merge the already-fetched `<remote>/<branch>` tracking ref into the current
+   * local branch (Diverged-Branch Merge, Phase 69). Delegates to `mergeBranch`
+   * so both flows share one merge code path and one conflict-classification
+   * behaviour.
+   */
+  async mergeRemoteBranch(repoPath: string, remote: string, branch: string): Promise<void> {
+    return this.mergeBranch(repoPath, `${remote}/${branch}`)
   }
 
   /**
