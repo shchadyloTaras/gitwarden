@@ -8,6 +8,12 @@ order: 9
 
 ## Unreleased
 
+## 0.4.1 — 2026-07-04
+
+### Fixed
+
+- Update notifications work again: the app now checks the public releases page for new versions. Versions 0.3.0–0.4.0 were checking the old, now-private location and silently found nothing — so they never showed the sidebar Update button or a new version on the Updates screen. Install this version manually once; from here on new releases are picked up automatically.
+
 ## 0.4.0 — 2026-07-04
 
 ### Changed
