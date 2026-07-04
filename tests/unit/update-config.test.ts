@@ -13,7 +13,11 @@ describe('update source coordinates', () => {
   })
 
   it('mirrors the electron-builder publish target, so installs check where CI publishes', () => {
-    const yml = readFileSync(resolve(process.cwd(), 'electron-builder.yml'), 'utf8')
+    // normalize CRLF: Windows CI checks the file out with \r\n, which breaks the \n-anchored regexes
+    const yml = readFileSync(resolve(process.cwd(), 'electron-builder.yml'), 'utf8').replace(
+      /\r\n/g,
+      '\n'
+    )
     const publishBlock = /^publish:\n(?:[ \t]+\S.*\n)+/m.exec(yml)?.[0] ?? ''
     expect(/^[ \t]+owner:\s*(\S+)$/m.exec(publishBlock)?.[1]).toBe(GITHUB_REPO_OWNER)
     expect(/^[ \t]+repo:\s*(\S+)$/m.exec(publishBlock)?.[1]).toBe(GITHUB_REPO_NAME)

@@ -19,10 +19,11 @@ describe('landing changelog copy', () => {
   // commit ships the new version's entry to the site. A stale committed copy means the landing
   // changelog silently lags one release behind (the v0.4.0 regression).
   it('committed copy is in sync with the root CHANGELOG.md', () => {
-    const rootChangelog = readFileSync(path.join(process.cwd(), 'CHANGELOG.md'), 'utf8')
-    const copy = readFileSync(
-      path.join(process.cwd(), 'landing/src/content/docs/changelog.md'),
-      'utf8'
+    // normalize CRLF: Windows CI checks both files out with \r\n while the renderer emits \n
+    const lf = (s: string): string => s.replace(/\r\n/g, '\n')
+    const rootChangelog = lf(readFileSync(path.join(process.cwd(), 'CHANGELOG.md'), 'utf8'))
+    const copy = lf(
+      readFileSync(path.join(process.cwd(), 'landing/src/content/docs/changelog.md'), 'utf8')
     )
     expect(
       copy,
