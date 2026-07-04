@@ -8,6 +8,12 @@ order: 9
 
 ## Unreleased
 
+## 0.4.2 — 2026-07-04
+
+### Fixed
+
+- Clearer branch errors: trying to create a branch with an invalid name (for example one with a space, a leading dash, or `..`) or a name that already exists now explains exactly what's wrong instead of showing "An unexpected Git error occurred."
+
 ## 0.4.1 — 2026-07-04
 
 ### Fixed
