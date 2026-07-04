@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.4.0 — 2026-07-04
+
+### Changed
+
+- Profiles-first sidebar: the MANAGE section now lists Profiles above Repositories, matching the setup order — every repository is assigned to a profile.
+- Repositories stays locked with a gentle "Add a profile first" hint until you create your first profile; it unlocks instantly when you do. On a fresh start the app opens on Profiles.
+- Keyboard navigation (Cmd/Ctrl+1–9) follows the sidebar's visual order, and the header guard badge points you to Profiles when none exist yet.
+
 ## 0.3.0 — 2026-07-03
 
 ### Added
