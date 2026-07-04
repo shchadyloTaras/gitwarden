@@ -29,6 +29,7 @@ export const STR = {
   GUARD_NOT_CHECKED: 'Guard · Not checked',
   GUARD_OPEN_SAFETY_CENTER: 'Open Safety Center',
   GUARD_OPEN_REPOSITORIES: 'Open Repositories',
+  GUARD_OPEN_PROFILES: 'Open Profiles',
 
   // ── Header branch picker ────────────────────────────────────────────────────
   BRANCH_LABEL_WORKTREE: (name: string): string => `${name} (worktree)`,
@@ -37,6 +38,9 @@ export const STR = {
 
   // ── Navigation ─────────────────────────────────────────────────────────────
   NAV_REPOSITORIES: 'Repositories',
+  // Shown under the locked Repositories nav item while no profiles exist —
+  // profiles come first so every repository gets an identity to be assigned to.
+  NAV_REPOSITORIES_LOCKED_HINT: 'Add a profile first',
   NAV_STATUS: 'Status',
   NAV_COMMIT: 'Commit',
   NAV_REMOTE: 'Remote',

@@ -130,6 +130,14 @@ test.describe('Initialize Repository (Phase 88)', () => {
     const targetDir = path.join(tmpRoot, 'no-profile-repo')
     fs.mkdirSync(targetDir, { recursive: true })
 
+    // A profile must exist to unlock the Repositories nav item, but it stays
+    // NOT active — the Initialize gate under test is the missing *active* profile.
+    await win.evaluate(async (input: ProfileInput) => {
+      await (window as Window & typeof globalThis).api.profiles.create(input)
+    }, profileFixture('personal'))
+    await win.reload()
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
+
     await win.getByTestId('nav-repositories').click()
     await expect(win.getByTestId('screen-repositories')).toBeVisible()
     await win.getByTestId('repos-add-btn').click()
@@ -172,6 +180,13 @@ test.describe('Initialize Repository (Phase 88)', () => {
   })
 
   test('does NOT offer Initialize when the path is empty (empty-path guard, not a validation failure)', async () => {
+    // Unlock the Repositories nav item (it is locked while no profiles exist).
+    await win.evaluate(async (input: ProfileInput) => {
+      await (window as Window & typeof globalThis).api.profiles.create(input)
+    }, profileFixture('personal'))
+    await win.reload()
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
+
     await win.getByTestId('nav-repositories').click()
     await expect(win.getByTestId('screen-repositories')).toBeVisible()
     await win.getByTestId('repos-add-btn').click()

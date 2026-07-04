@@ -1,5 +1,6 @@
 import React from 'react'
 import { NavScreen, useAppStore } from '../store/appStore'
+import { useProfilesStore } from '../store/profilesStore'
 import { useUpdatesStore } from '../store/updatesStore'
 import { STR } from '../strings'
 
@@ -10,9 +11,11 @@ interface NavItem {
   group?: 'git' | 'manage' | 'app'
 }
 
+// Profiles precede Repositories: a repo can only be assigned to an existing profile,
+// so the sidebar mirrors the setup order (and Repositories stays locked until then).
 const NAV_ITEMS: NavItem[] = [
-  { screen: 'repositories', label: 'Repositories', icon: '⊟', group: 'manage' },
   { screen: 'profiles', label: 'Profiles', icon: '◎', group: 'manage' },
+  { screen: 'repositories', label: 'Repositories', icon: '⊟', group: 'manage' },
   { screen: 'status', label: 'Status', icon: '≡', group: 'git' },
   { screen: 'commit', label: 'Commit', icon: '✓', group: 'git' },
   { screen: 'remote', label: 'Remote', icon: '↑', group: 'git' },
@@ -41,6 +44,13 @@ const NAV_BTN_BASE: React.CSSProperties = {
   textAlign: 'left',
   fontFamily: 'inherit',
   minWidth: 0,
+}
+
+const NAV_LABEL_LINE_STYLE: React.CSSProperties = {
+  maxWidth: '100%',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
 }
 
 const ICON_STYLE: React.CSSProperties = {
@@ -106,6 +116,7 @@ export default function Sidebar({
   animating: boolean
 }): React.ReactElement {
   const { activeScreen, navigate } = useAppStore()
+  const hasProfiles = useProfilesStore((s) => s.profiles.length > 0)
   const [labelsVisible, setLabelsVisible] = React.useState(!collapsed)
   const updateResult = useUpdatesStore((s) => s.result)
   const availableUpdate = updateResult?.status === 'update-available' ? updateResult.release : null
@@ -189,6 +200,12 @@ export default function Sidebar({
           const showBoundary = Boolean(item.group && item.group !== lastGroup)
           if (item.group) lastGroup = item.group
           const active = activeScreen === item.screen
+          // Repositories stays inert until the first profile exists — every repo needs
+          // a profile to be assigned to, so the sidebar walks the user to Profiles first.
+          const locked = item.screen === 'repositories' && !hasProfiles
+          const collapsedTooltip = locked
+            ? `${item.label} — ${STR.NAV_REPOSITORIES_LOCKED_HINT}`
+            : item.label
 
           return (
             <React.Fragment key={item.screen}>
@@ -196,16 +213,24 @@ export default function Sidebar({
               <button
                 data-testid={`nav-${item.screen}`}
                 onClick={() => navigate(item.screen)}
-                aria-label={collapsed ? item.label : undefined}
-                data-tooltip={collapsed ? item.label : undefined}
+                disabled={locked}
+                aria-label={collapsed ? collapsedTooltip : undefined}
+                data-tooltip={collapsed ? collapsedTooltip : undefined}
                 data-tooltip-pos="right"
                 style={{
                   ...NAV_BTN_BASE,
                   gap: showExpandedLabels ? 8 : 0,
                   justifyContent: showExpandedLabels ? 'flex-start' : 'center',
                   padding: showExpandedLabels ? '7px 12px' : '8px 0',
+                  // Soften the global button:disabled 0.4 so the locked hint stays legible;
+                  // the dim color below already reads as inactive.
+                  opacity: locked ? 0.85 : 1,
                   background: active ? 'var(--gw-surface2, #27272a)' : 'none',
-                  color: active ? 'var(--gw-text, #f4f4f5)' : 'var(--gw-text-muted, #a1a1aa)',
+                  color: locked
+                    ? 'var(--gw-text-dim, #52525b)'
+                    : active
+                      ? 'var(--gw-text, #f4f4f5)'
+                      : 'var(--gw-text-muted, #a1a1aa)',
                 }}
               >
                 <span style={ICON_STYLE}>{item.icon}</span>
@@ -213,15 +238,28 @@ export default function Sidebar({
                   <span
                     style={{
                       minWidth: 0,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
                       opacity: collapsed ? 0 : 1,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
                       transform: collapsed ? 'translateX(-4px)' : 'translateX(0)',
                       transition: 'opacity 0.14s ease, transform 0.14s cubic-bezier(0.2, 0, 0, 1)',
-                      whiteSpace: 'nowrap',
                     }}
                   >
-                    {item.label}
+                    <span style={NAV_LABEL_LINE_STYLE}>{item.label}</span>
+                    {locked && (
+                      <span
+                        data-testid={`nav-${item.screen}-locked-hint`}
+                        style={{
+                          ...NAV_LABEL_LINE_STYLE,
+                          fontSize: 11,
+                          marginTop: 1,
+                          color: 'var(--gw-text-dim, #52525b)',
+                        }}
+                      >
+                        {STR.NAV_REPOSITORIES_LOCKED_HINT}
+                      </span>
+                    )}
                   </span>
                 )}
               </button>

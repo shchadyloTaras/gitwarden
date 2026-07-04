@@ -148,11 +148,24 @@ test.describe('Header guard badge', () => {
     await expect(win.getByTestId('screen-safety-center')).toBeVisible()
   })
 
-  test('with no active repo the guard reads Not checked and routes to Repositories', async () => {
-    // beforeEach left no repos → no active repo → neutral chip.
+  test('with no active repo the guard reads Not checked and routes to setup', async () => {
+    // beforeEach left no repos AND no profiles → no active repo → neutral chip.
     await expect(win.getByTestId('header-guard-badge')).toHaveText(/Guard.*Not checked/)
 
-    // Navigate away, then click the guard — it must route back to Repositories.
+    // With zero profiles Repositories is locked, so the guard routes to Profiles.
+    await win.getByTestId('nav-settings').click()
+    await expect(win.getByTestId('screen-settings')).toBeVisible()
+
+    await win.getByTestId('header-guard-badge').click()
+    await expect(win.getByTestId('screen-profiles')).toBeVisible()
+
+    // Once a profile exists (still no repo), the guard routes to Repositories again.
+    await win.evaluate(async (input: ProfileInput) => {
+      await (window as Window & typeof globalThis).api.profiles.create(input)
+    }, profileFixture('alice'))
+    await win.reload()
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
+
     await win.getByTestId('nav-settings').click()
     await expect(win.getByTestId('screen-settings')).toBeVisible()
 

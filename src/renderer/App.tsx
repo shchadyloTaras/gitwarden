@@ -24,7 +24,10 @@ import SafetyCenterScreen from './screens/SafetyCenterScreen'
 import SettingsScreen from './screens/SettingsScreen'
 import { STR } from './strings'
 
+// Cmd/Ctrl+1–9 targets, kept in the sidebar's visual order (Profiles before
+// Repositories — repos are assigned to profiles, so profiles come first).
 const NAV_ORDER: NavScreen[] = [
+  'profiles',
   'repositories',
   'status',
   'commit',
@@ -32,7 +35,6 @@ const NAV_ORDER: NavScreen[] = [
   'branches',
   'history',
   'safety-center',
-  'profiles',
   'settings',
 ]
 
@@ -288,9 +290,14 @@ export default function App(): React.ReactElement {
 
   useEffect(() => {
     Promise.all([load(), loadRepos(), loadSettings()])
-      .then(() => setStoresReady(true))
+      .then(() => {
+        // First-run landing: with no profiles yet, Repositories is locked, so start
+        // the session on Profiles — the screen the user must visit first anyway.
+        if (useProfilesStore.getState().profiles.length === 0) navigate('profiles')
+        setStoresReady(true)
+      })
       .catch((err: unknown) => console.error('[App] store init failed:', err))
-  }, [load, loadRepos, loadSettings])
+  }, [load, loadRepos, loadSettings, navigate])
 
   // Background update check on launch — kept off the storesReady path so a slow network never
   // delays the shell. Skipped under Playwright (navigator.webdriver) so the e2e suite makes no
@@ -406,7 +413,11 @@ export default function App(): React.ReactElement {
       const idx = parseInt(e.key, 10) - 1
       if (idx >= 0 && idx < NAV_ORDER.length) {
         e.preventDefault()
-        navigate(NAV_ORDER[idx])
+        const target = NAV_ORDER[idx]
+        // Repositories is locked until a profile exists — the shortcut stays inert
+        // just like its disabled sidebar item.
+        if (target === 'repositories' && useProfilesStore.getState().profiles.length === 0) return
+        navigate(target)
       }
     }
     window.addEventListener('keydown', onKeyDown)

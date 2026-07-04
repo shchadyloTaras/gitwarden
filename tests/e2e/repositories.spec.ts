@@ -67,8 +67,8 @@ test.describe('Repository management', () => {
     await cleanupAll(win)
     await win.reload()
     await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
-    await win.getByTestId('nav-repositories').click()
-    await expect(win.getByTestId('screen-repositories')).toBeVisible()
+    // Repositories is locked while no profiles exist, so each test seeds its own
+    // profiles first and opens the Repositories screen itself.
   })
 
   test.afterEach(async () => {
@@ -167,6 +167,15 @@ test.describe('Repository management', () => {
 
   test('rejects an invalid (non-git) path', async () => {
     const nonGitDir = os.tmpdir()
+
+    // A profile must exist for the Repositories nav item to unlock.
+    await win.evaluate(async (input: ProfileInput) => {
+      await (window as Window & typeof globalThis).api.profiles.create(input)
+    }, profileFixture('personal'))
+    await win.reload()
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
+    await win.getByTestId('nav-repositories').click()
+    await expect(win.getByTestId('screen-repositories')).toBeVisible()
 
     await win.getByTestId('repos-add-btn').click()
     await win.getByTestId('repo-path-input').fill(nonGitDir)

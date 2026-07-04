@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react'
 import { useAppStore } from '../store/appStore'
+import type { NavScreen } from '../store/appStore'
 import { useProfilesStore, profileColor } from '../store/profilesStore'
 import { useRepositoriesStore } from '../store/repositoriesStore'
 import { useBranchStore } from '../store/branchStore'
@@ -102,7 +103,14 @@ export default function GlobalHeader(): React.ReactElement {
   // so it is composed here rather than stored). The leading "Guard · " prefix is dropped so
   // the spoken state reads naturally, e.g. "Guard status: Blocked, 2 issues. Open Safety Center."
   const guardStateWord = GUARD_LABEL[guardState].replace('Guard · ', '')
-  const guardDestination = activeRepo ? STR.GUARD_OPEN_SAFETY_CENTER : STR.GUARD_OPEN_REPOSITORIES
+  // With no active repo the guard routes to setup — Repositories normally, but Profiles
+  // while none exist yet (Repositories is locked until the first profile is created).
+  const guardFallbackScreen: NavScreen = profiles.length === 0 ? 'profiles' : 'repositories'
+  const guardDestination = activeRepo
+    ? STR.GUARD_OPEN_SAFETY_CENTER
+    : guardFallbackScreen === 'profiles'
+      ? STR.GUARD_OPEN_PROFILES
+      : STR.GUARD_OPEN_REPOSITORIES
   const guardAriaLabel = `Guard status: ${guardStateWord}, ${guardIssueCount} issue${
     guardIssueCount === 1 ? '' : 's'
   }. ${guardDestination}.`
@@ -219,7 +227,7 @@ export default function GlobalHeader(): React.ReactElement {
         aria-label={guardAriaLabel}
         data-tooltip={guardDestination}
         data-tooltip-pos="bottom"
-        onClick={() => navigate(activeRepo ? 'safety-center' : 'repositories')}
+        onClick={() => navigate(activeRepo ? 'safety-center' : guardFallbackScreen)}
         style={{
           ...GUARD_STYLE[guardState],
           fontSize: 14,
