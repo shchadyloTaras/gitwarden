@@ -8,6 +8,9 @@ import sitemap from '@astrojs/sitemap'
 
 // Sync the root CHANGELOG.md into src/content/docs/changelog.md so it renders
 // as a static docs page without manually duplicating content.
+// Must stay byte-identical to renderLandingChangelog() in src/core/changelog/render.ts —
+// `release-changelog apply|sync-landing` writes the same file during /release, and
+// tests/integration/release-changelog.test.ts pins the committed copy to that rendering.
 const rootDir = fileURLToPath(new URL('..', import.meta.url))
 const landingDir = fileURLToPath(new URL('.', import.meta.url))
 

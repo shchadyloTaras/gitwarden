@@ -118,7 +118,15 @@ describe('nextVersion', () => {
   })
 })
 
-import { rollUnreleased } from '../../src/core/changelog/render'
+import { rollUnreleased, renderLandingChangelog } from '../../src/core/changelog/render'
+
+describe('renderLandingChangelog', () => {
+  it('wraps the changelog body in the landing docs frontmatter', () => {
+    expect(renderLandingChangelog('\n\n# Changelog\n\n## Unreleased\n')).toBe(
+      '---\ntitle: Changelog\ndescription: Full version history for GitWarden.\norder: 9\n---\n\n# Changelog\n\n## Unreleased\n'
+    )
+  })
+})
 
 const SAMPLE = `# Changelog
 

@@ -10,6 +10,26 @@ import {
   FIELD_SEP,
   RECORD_SEP,
 } from '../../src/core/changelog/commits'
+import { renderLandingChangelog } from '../../src/core/changelog/render'
+import { readFileSync } from 'fs'
+
+describe('landing changelog copy', () => {
+  // The landing docs page renders a synced copy of the root CHANGELOG.md. The astro build
+  // regenerates it, and `release-changelog apply` refreshes it during /release so the release
+  // commit ships the new version's entry to the site. A stale committed copy means the landing
+  // changelog silently lags one release behind (the v0.4.0 regression).
+  it('committed copy is in sync with the root CHANGELOG.md', () => {
+    const rootChangelog = readFileSync(path.join(process.cwd(), 'CHANGELOG.md'), 'utf8')
+    const copy = readFileSync(
+      path.join(process.cwd(), 'landing/src/content/docs/changelog.md'),
+      'utf8'
+    )
+    expect(
+      copy,
+      'landing/src/content/docs/changelog.md is stale — run: npm run release:changelog -- sync-landing'
+    ).toBe(renderLandingChangelog(rootChangelog))
+  })
+})
 
 const execFileAsync = promisify(execFile)
 

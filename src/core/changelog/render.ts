@@ -25,3 +25,13 @@ export function rollUnreleased(changelogText: string, version: string, date: str
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
+
+/**
+ * Render the landing-docs copy of the changelog (landing/src/content/docs/changelog.md):
+ * the root CHANGELOG.md body under the docs-collection frontmatter. Must stay byte-identical
+ * to syncChangelog() in landing/astro.config.mjs — the astro build regenerates the same file,
+ * and tests/integration/release-changelog.test.ts pins the committed copy to this rendering.
+ */
+export function renderLandingChangelog(changelogText: string): string {
+  return `---\ntitle: Changelog\ndescription: Full version history for GitWarden.\norder: 9\n---\n\n${changelogText.trimStart()}`
+}

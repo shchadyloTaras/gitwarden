@@ -4,7 +4,8 @@
 // The exact logic lives in src/core/changelog (unit-tested); this file is only git + filesystem
 // glue. It NEVER commits, tags, or pushes — the /release slash command (and the human) do that.
 import { execFileSync } from 'node:child_process'
-import { readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { dirname } from 'node:path'
 import {
   parseGitLog,
   filterAppCommits,
@@ -13,11 +14,12 @@ import {
   FIELD_SEP,
   RECORD_SEP,
 } from '../src/core/changelog/commits'
-import { rollUnreleased } from '../src/core/changelog/render'
+import { rollUnreleased, renderLandingChangelog } from '../src/core/changelog/render'
 
 const root = process.cwd()
 const CHANGELOG = `${root}/CHANGELOG.md`
 const PKG = `${root}/package.json`
+const LANDING_CHANGELOG = `${root}/landing/src/content/docs/changelog.md`
 
 function git(args: string[]): string {
   return execFileSync('git', args, { cwd: root, encoding: 'utf8' })
@@ -103,7 +105,16 @@ function cmdApply(version: string): void {
     `$1${version}$2`
   )
   writeFileSync(PKG, pkgRaw)
-  console.log(`Applied v${version} to CHANGELOG.md and package.json.`)
+  syncLandingChangelog()
+  console.log(`Applied v${version} to CHANGELOG.md, package.json, and the landing changelog.`)
+}
+
+// Refresh the committed landing copy of the changelog so the release commit ships the new
+// version's entry to the site (the astro build regenerates the same file — see
+// syncChangelog() in landing/astro.config.mjs; tests/integration pins the two in sync).
+function syncLandingChangelog(): void {
+  if (!existsSync(dirname(LANDING_CHANGELOG))) return // repo without the landing package
+  writeFileSync(LANDING_CHANGELOG, renderLandingChangelog(readFileSync(CHANGELOG, 'utf8')))
 }
 
 const [cmd, arg] = process.argv.slice(2)
@@ -111,7 +122,10 @@ if (cmd === 'collect') {
   cmdCollect()
 } else if (cmd === 'apply' && arg) {
   cmdApply(arg)
+} else if (cmd === 'sync-landing') {
+  syncLandingChangelog()
+  console.log('Synced CHANGELOG.md into landing/src/content/docs/changelog.md.')
 } else {
-  console.error('Usage: release-changelog.ts (collect | apply <version>)')
+  console.error('Usage: release-changelog.ts (collect | apply <version> | sync-landing)')
   process.exit(1)
 }

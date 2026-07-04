@@ -5,8 +5,10 @@ argument-hint: '[major|minor|patch] (optional — overrides the suggested bump)'
 allowed-tools: Bash(npm test), Bash(npm run release:changelog*), Bash(git status), Bash(git diff*), Bash(git log*), Bash(git add*), Bash(git commit*), Bash(git tag*), Read, Edit
 ---
 
-Build a release **locally** for the app (`CHANGELOG.md`), excluding landing changes. The final
-`git push` is always the human's — this command never pushes.
+Build a release **locally** for the app (`CHANGELOG.md`). Landing feature commits are excluded
+from the version decision, but the landing's changelog page copy IS refreshed as part of the
+release (Step 6), so the site ships the new version's entry. The final `git push` is always
+the human's — this command never pushes.
 
 ## Step 1 — Gate: clean working tree
 
@@ -61,14 +63,15 @@ date — Step 6 does that. Use Edit.
 npm run release:changelog -- apply <version>
 ```
 
-Renames `[Unreleased]` → `[<version>] — <date>`, re-opens an empty `[Unreleased]`, adds the compare
-link, and bumps `package.json`. If it prints `already has [<version>]`, the section was already
-rolled — continue.
+Renames `## Unreleased` → `## <version> — <date>` (plain-text headings — no compare links, the
+source repo is private), re-opens an empty `## Unreleased`, bumps `package.json`, and refreshes
+`landing/src/content/docs/changelog.md` (the landing docs copy of the changelog). If it prints
+`already has [<version>]`, the section was already rolled — continue.
 
 ## Step 7 — Review the diff (human checkpoint 2)
 
 ```bash
-git diff -- CHANGELOG.md package.json
+git diff -- CHANGELOG.md package.json landing/src/content/docs/changelog.md
 ```
 
 Show the diff. Apply any wording tweaks the human requests with Edit.
@@ -84,7 +87,7 @@ with a one-line summary) using Edit. This is a real release record, not a phase 
 Stage first (the hook reads the index before the commit runs), then commit, then tag:
 
 ```bash
-git add CHANGELOG.md package.json docs/progress-log.md
+git add CHANGELOG.md package.json docs/progress-log.md landing/src/content/docs/changelog.md
 ```
 
 ```bash
@@ -109,6 +112,13 @@ Print the version, then STOP and report exactly:
 ```
 Release v<version> staged locally (commit + tag). To publish, run:
   git push origin <branch> && git push origin v<version>
+
+After CI builds the draft release, two manual steps IN THIS ORDER:
+  1. Promote (publish) the draft on github.com/shchadyloTaras/gitwarden-releases —
+     installed apps only see the update once the draft is published.
+  2. Redeploy the landing on Vercel. The deploy triggered by the push runs BEFORE
+     the draft is promoted, so its static hero/download links still embed the
+     previous release; only a rebuild after promotion picks up v<version>.
 ```
 
 ## Step 11 — Never push

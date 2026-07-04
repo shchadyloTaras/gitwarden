@@ -20,9 +20,11 @@ export const GITHUB_CLIENT_ID = 'Ov23liMJ2oRxygjRi84h'
 export const GITHUB_OAUTH_SCOPES = ['repo', 'read:user', 'user:email'] as const
 
 /**
- * The public GitHub repository that hosts GitWarden releases. Used by the update
- * notifier to query the latest published release (mirrors the publish target in
- * the builder config and `repository` in package.json). Not secret.
+ * The public storefront repository that hosts GitWarden releases. Used by the update
+ * notifier to query the latest published release; MUST mirror the `publish` target in
+ * the repo-root builder config (guarded by tests/unit/update-config.test.ts). The source
+ * repo (`gitwarden`) is private and hosts no releases — pointing there makes the update
+ * check 404 and every install look permanently up to date. Not secret.
  */
 export const GITHUB_REPO_OWNER = 'shchadyloTaras'
-export const GITHUB_REPO_NAME = 'gitwarden'
+export const GITHUB_REPO_NAME = 'gitwarden-releases'

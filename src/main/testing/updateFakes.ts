@@ -19,7 +19,7 @@ export function createUpdateTestService(): IUpdateService {
             tag: 'v99.0.0',
             version: '99.0.0',
             name: 'GitWarden 99.0.0',
-            url: 'https://github.com/shchadyloTaras/gitwarden/releases/latest',
+            url: 'https://github.com/shchadyloTaras/gitwarden-releases/releases/latest',
           },
         })
       }
