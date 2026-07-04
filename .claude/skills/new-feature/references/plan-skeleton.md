@@ -42,7 +42,7 @@ real `file:line` links and the **consequence** for this feature:
 - **In:** the bullets this feature delivers.
 - **Out / Non-goals:** what it deliberately does NOT do.
 
-## <Optional: the new contract / model>   ← only for logic-heavy features
+## <Optional: the new contract / model> ← only for logic-heavy features
 
 The new pure-core type/contract the phases consume (e.g. a new `src/core/...` module sketch).
 
@@ -63,7 +63,7 @@ relevant Playwright spec. State the gate precisely — it's what `/verify-phase`
 
 ---
 
-## Phase <N+1> — …    (repeat per phase)
+## Phase <N+1> — … (repeat per phase)
 
 ## Acceptance criteria (feature)
 

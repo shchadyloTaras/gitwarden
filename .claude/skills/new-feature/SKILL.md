@@ -12,8 +12,8 @@ real codebase, and **registers it everywhere `/run-track` looks** so the feature
 drivable phase-by-phase. This is the GitWarden analogue of `sdd:specify` — it writes the artifacts
 **and** runs the registration "sync-hooks."
 
-**Core principle:** a feature plan is only useful if (a) its code grounding is *real* and (b) it's
-registered in *every* place the workflow reads. Both are easy to fake and easy to under-count —
+**Core principle:** a feature plan is only useful if (a) its code grounding is _real_ and (b) it's
+registered in _every_ place the workflow reads. Both are easy to fake and easy to under-count —
 this skill makes both verifiable.
 
 ## When to use
@@ -53,15 +53,15 @@ Follow in order. **Stop at step 7 for review before touching any shared doc.**
 `/run-track` and `/new-phase` resolve a feature through all of these. The full contract with exact
 anchors + templates lives in **`references/registration-checklist.md`** — follow it literally.
 
-| # | Target |
-|---|--------|
-| 1–2 | NEW `docs/plans/<slug>-plan.md` + `docs/prompts/<slug>-prompts.md` |
-| 3 | `docs/progress-log.md` → Phase Checklist (feature heading + `[ ]` rows) |
-| 4 | `docs/progress-log.md` → Feature Track Status (row, `⬜`) |
-| 5 | `AGENTS.md` → Reference docs (bullet) |
-| 6 | `AGENTS.md` → Build order (extend chain) |
-| 7 | `.claude/skills/new-phase/SKILL.md` → phase-range→plan table (row) |
-| 8 | `.claude/skills/log-phase/SKILL.md` → phase-range→Track table (row) |
+| #   | Target                                                                  |
+| --- | ----------------------------------------------------------------------- |
+| 1–2 | NEW `docs/plans/<slug>-plan.md` + `docs/prompts/<slug>-prompts.md`      |
+| 3   | `docs/progress-log.md` → Phase Checklist (feature heading + `[ ]` rows) |
+| 4   | `docs/progress-log.md` → Feature Track Status (row, `⬜`)               |
+| 5   | `AGENTS.md` → Reference docs (bullet)                                   |
+| 6   | `AGENTS.md` → Build order (extend chain)                                |
+| 7   | `.claude/skills/new-phase/SKILL.md` → phase-range→plan table (row)      |
+| 8   | `.claude/skills/log-phase/SKILL.md` → phase-range→Track table (row)     |
 
 ## Anti-hallucination rule (load-bearing)
 
@@ -83,14 +83,14 @@ unverifiable reference is worse than none: delete it or replace it with a verifi
 
 ## Common mistakes
 
-| Mistake | Fix |
-|---|---|
-| Registration deferred to "Phase 1 will do it" | Skill registers **up front** (step 8) so `/run-track` works immediately. |
-| Missed `log-phase.md` table (item 8) | It's the most-forgotten one — even the repo drifted on it. Always do all 8. |
-| Phase-1 prompt re-instructs registration | Omit it — already done. The one deliberate diff from older prompts. |
-| Guessed/stale `file:line` | Read-verify every reference this run. |
-| Wrong phase numbers | Number from `HEAD+1`, where HEAD = highest `Phase NN` in the Phase Checklist. |
-| Generated docs in Ukrainian | Plan + prompts are **English** (house style); converse with the user in their language. |
+| Mistake                                       | Fix                                                                                     |
+| --------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Registration deferred to "Phase 1 will do it" | Skill registers **up front** (step 8) so `/run-track` works immediately.                |
+| Missed `log-phase.md` table (item 8)          | It's the most-forgotten one — even the repo drifted on it. Always do all 8.             |
+| Phase-1 prompt re-instructs registration      | Omit it — already done. The one deliberate diff from older prompts.                     |
+| Guessed/stale `file:line`                     | Read-verify every reference this run.                                                   |
+| Wrong phase numbers                           | Number from `HEAD+1`, where HEAD = highest `Phase NN` in the Phase Checklist.           |
+| Generated docs in Ukrainian                   | Plan + prompts are **English** (house style); converse with the user in their language. |
 
 ## References
 

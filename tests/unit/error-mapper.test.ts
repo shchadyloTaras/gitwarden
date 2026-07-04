@@ -151,10 +151,7 @@ describe('ErrorMapper', () => {
   })
 
   it('maps non-fast-forward push rejection (non-fast-forward wording)', () => {
-    const err = ErrorMapper.map(
-      '! [rejected]        main -> main (non-fast-forward)',
-      1
-    )
+    const err = ErrorMapper.map('! [rejected]        main -> main (non-fast-forward)', 1)
     expect(err.code).toBe('rejectedNonFastForward')
   })
 

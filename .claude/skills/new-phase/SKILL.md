@@ -27,24 +27,24 @@ Do not proceed.
 
 Use `AGENTS.md` "Reference docs" section to map the phase number to its plan + prompts file:
 
-| Phase range | Plan file                                   | Prompts file                                     |
-| ----------- | ------------------------------------------- | ------------------------------------------------ |
-| 0–20        | `docs/plans/gitwarden-plan.md`              | `docs/prompts/phase-prompts.md`                  |
-| 21–27       | `docs/plans/github-oauth-plan.md`           | `docs/prompts/github-oauth-prompts.md`           |
-| 28–39       | `docs/plans/ai-integration-plan.md`         | `docs/prompts/ai-integration-prompts.md`         |
-| 40–45       | `docs/plans/distribution-release-plan.md`   | `docs/prompts/distribution-release-prompts.md`   |
-| 46–51       | `docs/plans/landing-page-plan.md`           | `docs/prompts/landing-page-prompts.md`           |
-| 52–55a      | `docs/plans/ai-chat-redesign-plan.md`       | (inline)                                         |
-| 56–59       | `docs/plans/client-branch-access-plan.md`   | `docs/prompts/client-branch-access-prompts.md`   |
-| 60–62       | `docs/plans/genui-blocks-plan.md`           | `docs/prompts/genui-blocks-prompts.md`           |
-| 63–67       | `docs/plans/guard-quick-fix-plan.md`        | `docs/prompts/guard-quick-fix-prompts.md`        |
-| 68–71       | `docs/plans/divergent-branch-merge-plan.md` | `docs/prompts/divergent-branch-merge-prompts.md` |
+| Phase range | Plan file                                        | Prompts file                                          |
+| ----------- | ------------------------------------------------ | ----------------------------------------------------- |
+| 0–20        | `docs/plans/gitwarden-plan.md`                   | `docs/prompts/phase-prompts.md`                       |
+| 21–27       | `docs/plans/github-oauth-plan.md`                | `docs/prompts/github-oauth-prompts.md`                |
+| 28–39       | `docs/plans/ai-integration-plan.md`              | `docs/prompts/ai-integration-prompts.md`              |
+| 40–45       | `docs/plans/distribution-release-plan.md`        | `docs/prompts/distribution-release-prompts.md`        |
+| 46–51       | `docs/plans/landing-page-plan.md`                | `docs/prompts/landing-page-prompts.md`                |
+| 52–55a      | `docs/plans/ai-chat-redesign-plan.md`            | (inline)                                              |
+| 56–59       | `docs/plans/client-branch-access-plan.md`        | `docs/prompts/client-branch-access-prompts.md`        |
+| 60–62       | `docs/plans/genui-blocks-plan.md`                | `docs/prompts/genui-blocks-prompts.md`                |
+| 63–67       | `docs/plans/guard-quick-fix-plan.md`             | `docs/prompts/guard-quick-fix-prompts.md`             |
+| 68–71       | `docs/plans/divergent-branch-merge-plan.md`      | `docs/prompts/divergent-branch-merge-prompts.md`      |
 | 72–75       | `docs/plans/private-source-distribution-plan.md` | `docs/prompts/private-source-distribution-prompts.md` |
-| 76–79       | `docs/plans/uncommit-to-changes-plan.md`    | `docs/prompts/uncommit-to-changes-prompts.md`    |
-| 80–81       | `docs/plans/connect-return-check-plan.md`   | `docs/prompts/connect-return-check-prompts.md`   |
-| 82–84       | `docs/plans/merge-branch-plan.md`           | `docs/prompts/merge-branch-prompts.md`           |
-| 85–88       | `docs/plans/initialize-repository-plan.md`  | `docs/prompts/initialize-repository-prompts.md`  |
-| DX-0–DX-6   | `docs/plans/agentic-dx-plan.md`             | `docs/prompts/dx-execution-prompts.md`           |
+| 76–79       | `docs/plans/uncommit-to-changes-plan.md`         | `docs/prompts/uncommit-to-changes-prompts.md`         |
+| 80–81       | `docs/plans/connect-return-check-plan.md`        | `docs/prompts/connect-return-check-prompts.md`        |
+| 82–84       | `docs/plans/merge-branch-plan.md`                | `docs/prompts/merge-branch-prompts.md`                |
+| 85–88       | `docs/plans/initialize-repository-plan.md`       | `docs/prompts/initialize-repository-prompts.md`       |
+| DX-0–DX-6   | `docs/plans/agentic-dx-plan.md`                  | `docs/prompts/dx-execution-prompts.md`                |
 
 ## Step 3 — Read the plan section and prompts
 

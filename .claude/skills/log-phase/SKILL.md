@@ -55,24 +55,24 @@ Change `[ ]` to `[x]` using the Edit tool.
 
 Look up which track owns phase `$N`:
 
-| Phase range | Track                  |
-| ----------- | ---------------------- |
-| 0–20        | MVP Core               |
-| 21–27       | GitHub OAuth           |
-| 28–39       | AI Connections         |
-| 40–45       | Distribution & Release |
-| 46–51       | Landing Page           |
-| 52–55a      | AI Chat Redesign       |
-| 56–59       | Client Branch Access   |
-| 60–62       | Generative UI Blocks   |
-| 63–67       | Guard Quick-Fix        |
-| 68–71       | Diverged-Branch Merge  |
+| Phase range | Track                       |
+| ----------- | --------------------------- |
+| 0–20        | MVP Core                    |
+| 21–27       | GitHub OAuth                |
+| 28–39       | AI Connections              |
+| 40–45       | Distribution & Release      |
+| 46–51       | Landing Page                |
+| 52–55a      | AI Chat Redesign            |
+| 56–59       | Client Branch Access        |
+| 60–62       | Generative UI Blocks        |
+| 63–67       | Guard Quick-Fix             |
+| 68–71       | Diverged-Branch Merge       |
 | 72–75       | Private-Source Distribution |
 | 76–79       | Uncommit to Working Changes |
-| 80–81       | Connect-Return Check   |
-| 82–84       | Merge a Branch         |
-| 85–88       | Initialize Repository  |
-| DX-0–DX-6   | Agentic DX             |
+| 80–81       | Connect-Return Check        |
+| 82–84       | Merge a Branch              |
+| 85–88       | Initialize Repository       |
+| DX-0–DX-6   | Agentic DX                  |
 
 Count that track's checklist entries:
 

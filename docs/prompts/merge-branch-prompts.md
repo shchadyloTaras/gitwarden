@@ -17,7 +17,7 @@ conflict case), and a local **bare** repo as the remote only where a push is exe
 Background facts (already verified against the tree — don't re-litigate):
 
 - A local merge primitive is 90% built: `GitService.mergeRemoteBranch` runs `git merge --no-edit
-  <remote>/<branch>` — purely local, no auth, `--no-edit`, and a real conflict rejects with a
+<remote>/<branch>` — purely local, no auth, `--no-edit`, and a real conflict rejects with a
   `GitError` code `mergeConflict` (GitService.ts:201-218). Add a sibling `mergeBranch(repoPath, ref)`
   and make `mergeRemoteBranch` delegate to it.
 - The branch IPC pattern is a thin Zod-validated `wrap()` per channel: `git:switchBranch` /

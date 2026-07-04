@@ -222,8 +222,8 @@ explicit Initialize click is the action — no second modal).
   with `['push', '-u', remote, branch]`, else keep `['push', remote, branch]`. Auth/env unchanged
   ([GitService.ts:191-199](../../src/main/services/GitService.ts)).
 - **Orchestrator IPC `git:initializeRepository`** — new `GitInitializePayload =
-  { repoPath: string, remoteUrl?: string, identityName: z.string().min(1),
-  identityEmail: z.string().min(1) }` in [ipc-schemas.ts](../../src/main/ipc/ipc-schemas.ts). Handler
+{ repoPath: string, remoteUrl?: string, identityName: z.string().min(1),
+identityEmail: z.string().min(1) }` in [ipc-schemas.ts](../../src/main/ipc/ipc-schemas.ts). Handler
   (copy the `wrap(...)` shape of `git:validateRepository`,
   [ipc-handlers.ts:272-277](../../src/main/ipc/ipc-handlers.ts)): (1) nested-check → if inside an
   existing repo, throw a plain-language error naming the enclosing toplevel; (2) `initRepository`;
@@ -290,8 +290,8 @@ rule.
 - **`repositoriesStore`** ([repositoriesStore.ts:30-44](../../src/renderer/store/repositoriesStore.ts)):
   add `initializeRepository(localPath, remoteUrl, identity, profileId)` mirroring `addRepository` —
   call `window.api.git.initializeRepository({ repoPath: localPath, remoteUrl, identityName,
-  identityEmail })`; on success call `repositories.create({ name, localPath, remoteUrl,
-  assignedProfileId: profileId, isFavorite: false })` (finding 4), push into `repos`, and return
+identityEmail })`; on success call `repositories.create({ name, localPath, remoteUrl,
+assignedProfileId: profileId, isFavorite: false })` (finding 4), push into `repos`, and return
   `{ repo, remoteError? }`.
 - **`RepositoriesScreen`** ([RepositoriesScreen.tsx:328-417](../../src/renderer/screens/RepositoriesScreen.tsx)):
   in add mode, after a failed Validate & Add, render an **"Initialize Git repository"** button. Clicking

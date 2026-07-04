@@ -65,7 +65,7 @@ Then run the standard progress footer.
 
 ---
 
-## Phase <N+1> — …   (repeat per phase)
+## Phase <N+1> — … (repeat per phase)
 ````
 
 ## Rules

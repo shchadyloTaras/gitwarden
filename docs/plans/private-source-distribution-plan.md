@@ -187,7 +187,7 @@ public. No source, no CI, no landing change yet.
 - Migrate `v0.2.0` by **copying the existing built assets** from the current `gitwarden` release to a
   new `v0.2.0` release on `gitwarden-releases` (same version, new URL). A small maintainer-run script
   under `scripts/` (e.g. `scripts/migrate-release.sh`) may wrap `gh release download <tag> -R
-  shchadyloTaras/gitwarden` → `gh release create <tag> -R shchadyloTaras/gitwarden-releases <files>`
+shchadyloTaras/gitwarden` → `gh release create <tag> -R shchadyloTaras/gitwarden-releases <files>`
   so the step is repeatable and auditable. Draft releases `v0.1.0`/`v0.1.1` are **not** migrated
   (they stay private).
 
@@ -221,10 +221,10 @@ publish. Honors AGENTS.md rule #5 (never log secrets).
 
 - Point electron-builder at the storefront: in [electron-builder.yml:15-19](../../electron-builder.yml)
   change `repo: gitwarden` → `repo: gitwarden-releases` (keep `owner`, `provider`, `releaseType:
-  draft`).
+draft`).
 - Rewire the workflow token: in [release.yml:74-91](../../.github/workflows/release.yml) change both
   publish steps' `GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}` → `GH_TOKEN: ${{
-  secrets.RELEASES_REPO_TOKEN }}` (a new secret name). Leave the guard job, the signing detection,
+secrets.RELEASES_REPO_TOKEN }}` (a new secret name). Leave the guard job, the signing detection,
   the matrix, the `contents: write` permission, and the `refresh-landing` job unchanged.
 - Document the token in `SECURITY.md` (root) / the release docs: a **fine-grained PAT**, resource
   owner `shchadyloTaras`, **repository access limited to `gitwarden-releases` only**, permission
@@ -239,7 +239,7 @@ token value.)
 - Config review: `electron-builder.yml` targets `gitwarden-releases`; `release.yml` uses
   `RELEASES_REPO_TOKEN` in both publish steps; no token value is present anywhere in the repo.
 - Cross-repo publish proven **once**, cheaply: a single-OS local `npx electron-builder --publish
-  always` (with `GH_TOKEN=<PAT>` in the maintainer's shell) creates a **draft** release/asset on
+always` (with `GH_TOKEN=<PAT>` in the maintainer's shell) creates a **draft** release/asset on
   `gitwarden-releases` — **not** on `gitwarden` — then the throwaway draft/asset is deleted. (A full
   `v*` test tag is the alternative but costs the whole ~150–220-min matrix; prefer the local check.)
 - `npm run lint` clean (YAML/format) for the touched config files.

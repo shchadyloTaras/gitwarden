@@ -26,7 +26,7 @@ Background facts (already verified against the tree — don't re-litigate):
   array args, URL-as-data, GitService.ts:152-163). Identity-from-a-profile is already solved:
   `setLocalIdentity` writes `--local` user.name/email only (GitService.ts:130-141) and
   remediationExecutor.ts:71 already does `setLocalIdentity(repoPath, profile.gitAuthorName,
-  profile.gitAuthorEmail)`; identity fields are `Profile.gitAuthorName`/`gitAuthorEmail`
+profile.gitAuthorEmail)`; identity fields are `Profile.gitAuthorName`/`gitAuthorEmail`
   (core/types.ts:3-16).
 - `repositories.create` accepts `assignedProfileId` (RepositoryCreatePayload =
   RepositoryRecordSchema.omit({id}), ipc-schemas.ts:34-35; RepositoryService.ts:32-38) — the new repo

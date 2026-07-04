@@ -14,7 +14,7 @@ phase**, the progress-log entry written **before** the commit.
 actions** on GitHub (creating a fine-grained PAT, uploading release assets, flipping repo
 visibility, publishing releases) that an agent cannot and must not perform or fake. In each phase:
 do the **in-repo code/config** parts yourself, then **clearly hand the manual steps to the
-maintainer** and mark the phase's exit as *pending the maintainer's action* rather than claiming it
+maintainer** and mark the phase's exit as _pending the maintainer's action_ rather than claiming it
 done. Only **Phase 74** has a normal green-test gate (the `landing/` suites).
 
 **Prerequisites / offline note:** the `landing/` tests run offline (Vitest mocks the GitHub API; the
@@ -32,7 +32,7 @@ Background facts (already verified against the tree — don't re-litigate):
   repo `gitwarden` / `releaseType: draft` (`electron-builder.yml:15-19`). `repo` must move to
   `gitwarden-releases`.
 - **The workflow uses the built-in `GITHUB_TOKEN`.** Both publish steps pass `GH_TOKEN: ${{
-  secrets.GITHUB_TOKEN }}` (`.github/workflows/release.yml:74-83,85-91`); trigger is tag `v*`
+secrets.GITHUB_TOKEN }}` (`.github/workflows/release.yml:74-83,85-91`); trigger is tag `v*`
   (`:3-7`); a `refresh-landing` job curls a Vercel hook (`:93-109`). `GITHUB_TOKEN` can't write
   cross-repo → needs a fine-grained PAT scoped to `gitwarden-releases`, passed as `GH_TOKEN`.
 - **The landing derives every link from one config.** `OWNER`/`REPO` (`landing/src/lib/config.ts:10-11`)

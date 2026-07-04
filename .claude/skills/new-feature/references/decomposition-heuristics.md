@@ -7,10 +7,11 @@ How to turn a feature into phases and assign their numbers. Propose the result t
 
 **Default: phased** — the feature takes new global phase numbers and registers fully (all 8 items).
 
-**Non-phased fix** — only for a *small, single-surface* change (a few files, one layer, no new
+**Non-phased fix** — only for a _small, single-surface_ change (a few files, one layer, no new
 core contract). Example precedent: `header-guard-badge` shipped as a non-phased fix, **excluded
 from the global phase counter** and absent from the `/new-phase` + `/log-phase` tables. If you
 judge a feature is non-phased:
+
 - It does NOT consume global phase numbers and is NOT added to the Phase Checklist as `Phase N`
   rows, the Feature Track Status table, or the two command tables (items 4, 7, 8 are skipped).
 - It still gets a plan + prompts pair (items 1–2) and an `AGENTS.md` Reference-docs bullet (item 5),
@@ -39,6 +40,7 @@ Decompose so every layer ships green before the layer above it. Typical 3–5 ph
    the "feature-complete stop point"** (the plan's top matter + `/run-track` halts after it).
 
 Rules of thumb:
+
 - One new pure-core contract → its own phase 1.
 - Anything touching git execution, secrets, or remote/destructive ops → cite the AGENTS.md rule it
   honors in that phase's Exit criteria (#1 pure core, #2 GitRunner only, #3 array args, #4 `--local`

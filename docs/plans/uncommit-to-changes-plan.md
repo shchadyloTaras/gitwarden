@@ -51,7 +51,7 @@ Verified against the current tree before writing this plan. Each finding is a cl
    (never string-interpolated into a shell — args stay an array, honoring rule #3).
 
 3. **`HEAD~N` is the correct, divergence-safe reset target — not the upstream ref.** Resetting to
-   `<remote>/<branch>` would misbehave on a *diverged* branch (it would adopt the remote's unique
+   `<remote>/<branch>` would misbehave on a _diverged_ branch (it would adopt the remote's unique
    commits into the working-tree diff). Peeling exactly `N` local commits with `HEAD~N` returns
    precisely the unpushed changes and can never move the branch pointer past the last pushed commit.
    **Consequence:** the target is `HEAD~1` for "return last" and `HEAD~<ahead>` for "return all
@@ -154,25 +154,30 @@ A new pure module `src/core/history/uncommit.ts` — decision-only, no Node/DOM,
 ```ts
 // src/core/history/uncommit.ts
 export interface UncommitContext {
-  unpushedCount: number      // commits in <remote>/<branch>..HEAD; when no upstream, count of local
-                             // commits is NOT used for "all" (see hasUpstream)
-  hasUpstream: boolean       // is there a remote-tracking branch to define "pushed" against?
-  workingTreeClean: boolean  // getStatus(...).files.length === 0
-  headIsMerge: boolean       // HEAD has ≥2 parents
-  headIsRoot: boolean        // HEAD has no parent (HEAD~1 doesn't resolve)
-  rangeHasMerge: boolean     // any commit in HEAD~unpushedCount..HEAD is a merge (for "all")
-  inProgressOp: boolean      // mid-merge/rebase/cherry-pick
-  detachedHead: boolean      // HEAD is not on a branch
+  unpushedCount: number // commits in <remote>/<branch>..HEAD; when no upstream, count of local
+  // commits is NOT used for "all" (see hasUpstream)
+  hasUpstream: boolean // is there a remote-tracking branch to define "pushed" against?
+  workingTreeClean: boolean // getStatus(...).files.length === 0
+  headIsMerge: boolean // HEAD has ≥2 parents
+  headIsRoot: boolean // HEAD has no parent (HEAD~1 doesn't resolve)
+  rangeHasMerge: boolean // any commit in HEAD~unpushedCount..HEAD is a merge (for "all")
+  inProgressOp: boolean // mid-merge/rebase/cherry-pick
+  detachedHead: boolean // HEAD is not on a branch
 }
 
 export type UncommitRefusal =
-  | 'nothing-unpushed' | 'dirty-tree' | 'root-commit' | 'merge-commit'
-  | 'detached-head' | 'in-progress-op' | 'no-upstream-for-all'
+  | 'nothing-unpushed'
+  | 'dirty-tree'
+  | 'root-commit'
+  | 'merge-commit'
+  | 'detached-head'
+  | 'in-progress-op'
+  | 'no-upstream-for-all'
 
 export interface UncommitEligibility {
   canReturnLast: boolean
   canReturnAllUnpushed: boolean
-  returnAllCount: number                 // = unpushedCount when canReturnAllUnpushed
+  returnAllCount: number // = unpushedCount when canReturnAllUnpushed
   refusals: { last?: UncommitRefusal; all?: UncommitRefusal }
 }
 

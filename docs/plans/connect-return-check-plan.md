@@ -16,19 +16,19 @@ they already did their part — which reads as "stuck / did it not work?".
 
 This feature makes the modal **react to your return**. The instant the app window regains focus, it
 shows an active **"Checking with GitHub…"** spinner and asks GitHub once, right then, whether
-authorization is done — so in the common case (you came back *because* you just authorized) it flips
+authorization is done — so in the common case (you came back _because_ you just authorized) it flips
 straight to "Connected" instead of making you wait out the next background poll. If you're not done
 yet, it quietly settles back to "Waiting…". Two smaller returns-focused touches ride along: a
 one-line reassurance for people without a GitHub account ("Create one — we'll keep waiting"), and, if
 the code expired during a long signup, "Try Again" becomes the obvious primary button.
 
 **Product boundary (decided — "feedback-first, one bounded bypass poll"):** this is a
-**responsiveness/feedback** polish on the *already-working* device flow (Phase 26), not a new auth
+**responsiveness/feedback** polish on the _already-working_ device flow (Phase 26), not a new auth
 path. The background poll already detects authorization on its own within one interval; this only
-collapses the *perceived* wait on return and makes the app feel alive. It does **not** add a new auth
+collapses the _perceived_ wait on return and makes the app feel alive. It does **not** add a new auth
 `Status`, does **not** change how tokens are stored or what crosses to the renderer, and does **not**
-poll GitHub on a tighter *sustained* cadence — it permits exactly **one** opportunistic early poll
-per return, rate-guarded, accepting that a user who repeatedly refocuses *without* authorizing may
+poll GitHub on a tighter _sustained_ cadence — it permits exactly **one** opportunistic early poll
+per return, rate-guarded, accepting that a user who repeatedly refocuses _without_ authorizing may
 occasionally incur GitHub's `slow_down` (a self-correcting +5s to the interval — never a break).
 
 ## Codebase findings (grounding)
@@ -59,7 +59,7 @@ Verified against the current tree before writing this plan. Each finding is a cl
    ([GitHubAuthService.ts:150-153](../../src/main/services/GitHubAuthService.ts)); GitHub answers a
    too-fast poll with `slow_down` (+5s, `SLOW_DOWN_INCREMENT_SEC` [GitHubAuthService.ts:33](../../src/main/services/GitHubAuthService.ts)).
    **Consequence:** you **cannot legally poll faster than `intervalSec`**, so an immediate check that
-   *strictly never* polls early buys ~0 latency. Delivering a real instant flip on return therefore
+   _strictly never_ polls early buys ~0 latency. Delivering a real instant flip on return therefore
    requires allowing **one bounded early ("bypass") poll**, at the cost of an occasional single
    `slow_down` — this is the boundary decision, see Decisions §1.
 
@@ -130,7 +130,7 @@ Verified against the current tree before writing this plan. Each finding is a cl
   - **No silent auto-restart of an expired code** — expiry stays manual (a code changing itself under
     the user is confusing); only the button's prominence is addressed.
   - **No change** to token storage, what crosses to the renderer, scopes, or the browser-open behavior.
-  - **No renderer-side polling** — the renderer only *pokes*; all polling stays in main.
+  - **No renderer-side polling** — the renderer only _pokes_; all polling stays in main.
   - **No account-creation flow** — GitHub still owns signup; we only reassure and wait.
 
 ## The new seam (main)
@@ -270,7 +270,7 @@ flow):**
 1. **Honest check, with one bounded bypass poll (the corrected mechanism).** A strict "never poll below
    the interval" guard would neuter the instant flip (finding 3), so the design allows exactly **one**
    opportunistic early poll per return, rate-guarded (one bypass per interval window + a small floor
-   after the last poll). The accepted cost: a user who repeatedly refocuses *without* authorizing may
+   after the last poll). The accepted cost: a user who repeatedly refocuses _without_ authorizing may
    occasionally trigger GitHub's `slow_down` (+5s, self-correcting). (Grill fork 1 = "Honest check",
    refined by finding 3.)
 2. **Include the new-user reassurance line.** One string under the code — it directly serves the

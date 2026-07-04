@@ -13,8 +13,8 @@ Placeholders: `<slug>` (kebab, e.g. `commit-templates`) · `<Feature>` (Title Ca
    - `docs/plans/<slug>-plan.md` exists
    - `<slug>` in `AGENTS.md` "Reference docs"
    - a `### <Feature> feature (...)` heading in `docs/progress-log.md` "## Phase Checklist"
-   If any match → STOP and report. Do not overwrite, do not merge. Let the user pick a new slug or
-   say explicitly they are extending the existing feature.
+     If any match → STOP and report. Do not overwrite, do not merge. Let the user pick a new slug or
+     say explicitly they are extending the existing feature.
 2. **Compute phase numbers.** Read `## Phase Checklist` in `docs/progress-log.md`; the highest
    `Phase NN` line is HEAD. New phases start at `HEAD + 1`. (Non-phased fix → see
    `decomposition-heuristics.md`; it skips items 3,4,6,7,8 and is excluded from the counter.)
@@ -29,6 +29,7 @@ Placeholders: `<slug>` (kebab, e.g. `commit-templates`) · `<Feature>` (Title Ca
 3. **`docs/progress-log.md` → `## Phase Checklist`.** Insert a new block **immediately before**
    the `### Agentic DX track` heading (product features sit in numeric order; the DX track stays
    last):
+
    ```
    ### <Feature> feature (plan: `docs/plans/<slug>-plan.md`, prompts: `docs/prompts/<slug>-prompts.md`)
 
@@ -36,30 +37,37 @@ Placeholders: `<slug>` (kebab, e.g. `commit-templates`) · `<Feature>` (Title Ca
    - [ ] Phase <N+1> — <name>
    - [ ] Phase <NN> — <name>
    ```
+
    All boxes `[ ]` (unticked — nothing is built yet). `/run-track` collects these as the pending list.
 
 4. **`docs/progress-log.md` → `## Feature Track Status`.** Add a row to the table:
+
    ```
    | <Feature>              | <N>–<NN>  | ⬜ not started                                                |
    ```
+
    `⬜` because no phase is done yet (derived-view rule: none `[x]` → ⬜).
 
 5. **`AGENTS.md` → "## Reference docs".** Add one bullet alongside the other feature plans:
+
    ```
    - **<Feature>:** `docs/plans/<slug>-plan.md` + `docs/prompts/<slug>-prompts.md`
    ```
 
 6. **`AGENTS.md` → "## Build order (dependency-driven)".** Extend the chain with the new range,
    placed after the current highest product range:
+
    ```
    … → `<N>→<NN>` (<Feature>)
    ```
 
 7. **`.claude/skills/new-phase/SKILL.md` → the phase-range → plan/prompts table** (the markdown table
    under "Step 2"). Add a row:
+
    ```
    | <N>–<NN>    | `docs/plans/<slug>-plan.md`         | `docs/prompts/<slug>-prompts.md`         |
    ```
+
    Without this row, `/new-phase <N>` cannot find the plan — and `/run-track` calls `/new-phase`.
 
 8. **`.claude/skills/log-phase/SKILL.md` → the phase-range → Track table** (under "Step 4"). Add a row:
@@ -75,7 +83,7 @@ Placeholders: `<slug>` (kebab, e.g. `commit-templates`) · `<Feature>` (Title Ca
 - **Write order:** new files first (items 1–2), then the 6 shared-doc edits. If interrupted, the
   half-done state is uncommitted (see below) and recoverable.
 - **No commit.** Leave everything uncommitted for the user to review the diff. Planning is not a
-  phase; the only commit convention is `Phase N: <name>` for *completed* phases. Never push.
+  phase; the only commit convention is `Phase N: <name>` for _completed_ phases. Never push.
 - **Report** exactly which of the 8 items you wrote/edited, so the user can scan the diff.
 - **Do NOT re-instruct registration in the Phase-1 prompt.** The skill already registered the
   feature; the generated Phase-1 prompt must NOT carry a "Registration (docs): …" task (that would
