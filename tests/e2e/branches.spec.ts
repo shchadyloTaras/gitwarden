@@ -182,6 +182,40 @@ test.describe('Branches', () => {
     await expect(win.getByTestId('branches-local-list')).toContainText('feature-b')
   })
 
+  test('an invalid branch name shows a clear message, not the generic Git error', async () => {
+    await registerFixtureRepo()
+
+    await win.getByTestId('nav-branches').click()
+    await expect(win.getByTestId('screen-branches')).toBeVisible()
+    await expect(win.getByTestId('branches-current-branch')).toBeVisible({ timeout: 10000 })
+
+    // A name with a space is rejected by git; the user must see WHY, not "unexpected error".
+    await win.getByTestId('branches-create-input').fill('my branch')
+    await win.getByTestId('branches-create-btn').click()
+
+    const err = win.getByTestId('branches-error')
+    await expect(err).toBeVisible({ timeout: 10000 })
+    await expect(err).toContainText(/valid branch name/i)
+    await expect(err).not.toContainText('An unexpected Git error occurred')
+  })
+
+  test('creating a branch that already exists shows a clear message', async () => {
+    await registerFixtureRepo()
+
+    await win.getByTestId('nav-branches').click()
+    await expect(win.getByTestId('screen-branches')).toBeVisible()
+    await expect(win.getByTestId('branches-current-branch')).toBeVisible({ timeout: 10000 })
+
+    // 'main' already exists in the fixture repo.
+    await win.getByTestId('branches-create-input').fill('main')
+    await win.getByTestId('branches-create-btn').click()
+
+    const err = win.getByTestId('branches-error')
+    await expect(err).toBeVisible({ timeout: 10000 })
+    await expect(err).toContainText(/already exists/i)
+    await expect(err).not.toContainText('An unexpected Git error occurred')
+  })
+
   test('delete a branch removes it from the list', async () => {
     await registerFixtureRepo()
 

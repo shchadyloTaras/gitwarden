@@ -41,6 +41,38 @@ describe('ErrorMapper', () => {
     expect(err.code).toBe('branchNotFound')
   })
 
+  it('maps an invalid branch name (space) to invalidBranchName', () => {
+    const err = ErrorMapper.map("fatal: 'my branch' is not a valid branch name", 128)
+    expect(err.code).toBe('invalidBranchName')
+    expect(err.userMessage).toMatch(/valid branch name|spaces|dash/i)
+    expect(err.exitCode).toBe(128)
+  })
+
+  it('maps a flag-like branch name (--force) to invalidBranchName', () => {
+    const err = ErrorMapper.map("fatal: '--force' is not a valid branch name", 128)
+    expect(err.code).toBe('invalidBranchName')
+  })
+
+  it('maps an invalid ref name to invalidBranchName', () => {
+    const err = ErrorMapper.map("fatal: '..bad' is not a valid ref name", 128)
+    expect(err.code).toBe('invalidBranchName')
+  })
+
+  it('maps a duplicate branch to branchAlreadyExists', () => {
+    const err = ErrorMapper.map("fatal: a branch named 'main' already exists", 128)
+    expect(err.code).toBe('branchAlreadyExists')
+    expect(err.userMessage).toMatch(/already exists|different name|switch/i)
+  })
+
+  it('classifies an invalid name before "already exists" (no misreport)', () => {
+    // A pathological stderr containing both phrases must resolve to the invalid-name code.
+    const err = ErrorMapper.map(
+      "fatal: 'bad name' is not a valid branch name; a branch named 'x' already exists",
+      128
+    )
+    expect(err.code).toBe('invalidBranchName')
+  })
+
   it('maps a branch checked out in another worktree', () => {
     const err = ErrorMapper.map(
       "fatal: 'feature-a' is already checked out at '/tmp/gitwarden-linked-worktree'",
@@ -188,6 +220,8 @@ describe('ErrorMapper', () => {
       'remote: Authentication failed',
       "fatal: repository 'x' not found",
       "pathspec 'y' did not match any",
+      "fatal: 'bad name' is not a valid branch name",
+      "fatal: a branch named 'main' already exists",
       "fatal: 'feature-a' is already checked out at '/tmp/feature-a'",
       "error: Cannot delete branch 'feature-a' checked out at '/tmp/feature-a'",
       "error: cannot delete branch 'feature-a' used by worktree at '/tmp/feature-a'",

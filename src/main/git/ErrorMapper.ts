@@ -95,6 +95,32 @@ export class ErrorMapper {
       }
     }
 
+    // Git rejects a new branch/ref whose name breaks its rules (spaces, a leading
+    // dash, '..', or ~ ^ : ? * [ \). Without this case the Branches screen showed
+    // only the generic "unexpected error" for a routine typo. Checked before
+    // "already exists" so an invalid name is never misreported as a duplicate.
+    if (/is not a valid branch name|is not a valid ref name/i.test(stderr)) {
+      return {
+        code: 'invalidBranchName',
+        userMessage:
+          "That isn't a valid branch name. Branch names can't contain spaces or start with a dash, and can't include ~ ^ : ? * [ \\ or '..'. Try something like feature/my-change.",
+        technicalDetails: stderr,
+        exitCode,
+      }
+    }
+
+    // Creating a branch whose name is already taken. Distinct, common, and easily
+    // resolved by choosing another name or switching to the existing branch.
+    if (/a branch named .+ already exists|already exists\b.*branch/i.test(stderr)) {
+      return {
+        code: 'branchAlreadyExists',
+        userMessage:
+          'A branch with that name already exists. Choose a different name, or switch to the existing branch.',
+        technicalDetails: stderr,
+        exitCode,
+      }
+    }
+
     const worktreeMatch = stderr.match(
       /(?:is already checked out|checked out|used by worktree) at ['"]([^'"]+)['"]/i
     )

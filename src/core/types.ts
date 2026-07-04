@@ -213,6 +213,8 @@ export type GitErrorCode =
   | 'dubiousOwnership'
   | 'remoteNotFound'
   | 'branchNotFound'
+  | 'invalidBranchName'
+  | 'branchAlreadyExists'
   | 'branchCheckedOutElsewhere'
   | 'mergeConflict'
   | 'nothingToCommit'

@@ -8,6 +8,8 @@ export const FAILURE_CATEGORY_BY_CODE: Record<GitErrorCode, string> = {
   dubiousOwnership: 'repository',
   remoteNotFound: 'remote',
   branchNotFound: 'branch',
+  invalidBranchName: 'branch',
+  branchAlreadyExists: 'branch',
   branchCheckedOutElsewhere: 'branch',
   mergeConflict: 'merge',
   rejectedNonFastForward: 'branch',
@@ -25,6 +27,8 @@ export const FAILURE_ACTION_BY_CODE: Record<GitErrorCode, FailureSuggestedAction
   dubiousOwnership: 'open-repositories',
   remoteNotFound: 'configure-remote',
   branchNotFound: 'switch-branch',
+  invalidBranchName: 'none',
+  branchAlreadyExists: 'switch-branch',
   branchCheckedOutElsewhere: 'switch-branch',
   mergeConflict: 'resolve-conflicts',
   rejectedNonFastForward: 'none',
@@ -53,6 +57,10 @@ export function actionHintForFailure(code: GitErrorCode): string {
       return 'Verify the remote URL in Remote and that you have access to the repository.'
     case 'branchNotFound':
       return 'Switch to an existing branch or create the branch locally first.'
+    case 'invalidBranchName':
+      return "Choose a branch name without spaces, a leading dash, '..', or ~ ^ : ? * [ \\ — for example feature/my-change."
+    case 'branchAlreadyExists':
+      return 'A branch with that name already exists — choose a different name or switch to the existing branch.'
     case 'branchCheckedOutElsewhere':
       return 'Open the worktree that already has this branch checked out, or remove that worktree before switching here.'
     case 'mergeConflict':
