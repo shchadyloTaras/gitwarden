@@ -53,9 +53,13 @@ landing/
 ## Deploy (Vercel — wired in Phase 51)
 
 Host on **Vercel** with **Root Directory = `landing/`** so the monorepo's app tree is ignored.
-Static output (`output: 'static'`); push-to-deploy from `main`; PR preview deploys. The
-Distribution release workflow fires a Vercel deploy hook so a new release refreshes the live
-download buttons automatically. Set the canonical domain in `astro.config.mjs` (`site`).
+Static output (`output: 'static'`); push-to-deploy from `main`; PR preview deploys.
+**Publishing** a release on the `gitwarden-releases` storefront fires a Vercel deploy hook
+(that repo's `.github/workflows/refresh-landing.yml`) so the live download links refresh to
+the new version automatically. The trigger lives on the storefront — not the app repo —
+because it must fire when the release goes **public** (the `release: released` event), not
+while it is still a CI **draft** (which `releases/latest` excludes, freezing the site one
+release behind). Set the canonical domain in `astro.config.mjs` (`site`).
 
 ## Testing
 

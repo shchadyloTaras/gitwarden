@@ -113,12 +113,12 @@ Print the version, then STOP and report exactly:
 Release v<version> staged locally (commit + tag). To publish, run:
   git push origin <branch> && git push origin v<version>
 
-After CI builds the draft release, two manual steps IN THIS ORDER:
+After CI builds the draft release, one manual step:
   1. Promote (publish) the draft on github.com/shchadyloTaras/gitwarden-releases —
-     installed apps only see the update once the draft is published.
-  2. Redeploy the landing on Vercel. The deploy triggered by the push runs BEFORE
-     the draft is promoted, so its static hero/download links still embed the
-     previous release; only a rebuild after promotion picks up v<version>.
+     installed apps only see the update once the draft is published. Publishing also
+     fires the storefront's `Refresh landing site` workflow (gitwarden-releases →
+     .github/workflows/refresh-landing.yml), which rebuilds the landing so its
+     download links resolve to v<version>. No manual Vercel redeploy needed.
 ```
 
 ## Step 11 — Never push

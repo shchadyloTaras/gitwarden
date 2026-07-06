@@ -59,8 +59,11 @@ On **at least one OS** (your main development machine):
 
 > Slice 2b (deferred) will fill the GitHub Release notes from `CHANGELOG.md` automatically in CI; until then, paste the section manually.
 
-- [ ] Click **Publish release**.
+- [ ] Click **Publish release**. This fires the `Refresh landing site` workflow on
+      `gitwarden-releases` (`.github/workflows/refresh-landing.yml`), which rebuilds the
+      landing so its download links resolve to this version — no manual Vercel redeploy.
 - [ ] Confirm `README.md` download links (or the GitHub Releases "latest" link) resolve to the published installers.
+- [ ] Confirm the landing site (`gitwarden.vercel.app`) "All downloads" section shows the new version — it refreshes within a minute or two of publishing.
 
 ---
 

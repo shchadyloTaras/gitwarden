@@ -90,20 +90,10 @@ jobs:
           # No certificate → force an explicit unsigned build (never pass the empty CSC_LINK).
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
-  refresh-landing:
-    name: Refresh landing site (Vercel deploy hook)
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      # Landing Page plan §3/§5 Phase 51: a new release rebuilds the landing site so its
-      # download buttons resolve to the new version without a manual redeploy. Guarded —
-      # if VERCEL_DEPLOY_HOOK_URL is not configured, this no-ops (never fails the release).
-      - name: Trigger Vercel deploy hook (if configured)
-        env:
-          HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
-        run: |
-          if [ -z "$HOOK" ]; then
-            echo "VERCEL_DEPLOY_HOOK_URL not set — skipping landing redeploy."
-            exit 0
-          fi
-          curl -fsS -X POST "$HOOK" && echo "Triggered Vercel rebuild of the landing site."
+  # NOTE: the landing-site refresh intentionally does NOT live here.
+  # This workflow runs on the tag push, while electron-builder has published the release
+  # as a DRAFT (electron-builder.yml `releaseType: draft`). GitHub's `releases/latest` —
+  # which the landing build reads — excludes drafts, so a rebuild fired here resolves to
+  # the PREVIOUS published version and freezes the site one release behind. The rebuild
+  # therefore triggers on the `release: released` event (fired when the draft is promoted
+  # to public) from the storefront: gitwarden-releases → .github/workflows/refresh-landing.yml.
