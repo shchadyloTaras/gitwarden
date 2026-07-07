@@ -109,6 +109,19 @@ export class ErrorMapper {
       }
     }
 
+    // `git branch -d` refuses a branch with commits not reachable from anywhere
+    // else. Checked before the generic "not found"/"already exists" branch cases
+    // below since none of those patterns overlap with git's actual wording here.
+    if (/is not fully merged/i.test(stderr)) {
+      return {
+        code: 'branchNotMerged',
+        userMessage:
+          'This branch has commits that exist nowhere else — deleting it would lose them. Force-delete only if you are sure.',
+        technicalDetails: stderr,
+        exitCode,
+      }
+    }
+
     // Creating a branch whose name is already taken. Distinct, common, and easily
     // resolved by choosing another name or switching to the existing branch.
     if (/a branch named .+ already exists|already exists\b.*branch/i.test(stderr)) {

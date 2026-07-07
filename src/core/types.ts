@@ -138,6 +138,11 @@ export interface GitStatus {
   upstream?: string
   ahead: number
   behind: number
+  /** HEAD is not on any branch (`# branch.head (detached)`) — `branch` is absent because of this. */
+  detached?: boolean
+  /** An upstream is configured (`branch.upstream` present) but its ahead/behind couldn't be computed
+   * (`branch.ab` absent) — the remote-tracking ref itself is gone, not just "0 ahead/0 behind". */
+  upstreamGone?: boolean
 }
 
 export interface GitBranch {
@@ -216,6 +221,7 @@ export type GitErrorCode =
   | 'invalidBranchName'
   | 'branchAlreadyExists'
   | 'branchCheckedOutElsewhere'
+  | 'branchNotMerged'
   | 'mergeConflict'
   | 'nothingToCommit'
   | 'networkError'

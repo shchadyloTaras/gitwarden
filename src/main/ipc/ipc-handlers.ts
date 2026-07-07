@@ -427,6 +427,15 @@ export function registerIpcHandlers(services: Services): void {
     })
   )
 
+  // Phase 92 (W6/W27): force-delete (`branch -D`) is a SEPARATE channel, reachable
+  // only through BranchesScreen's escalated second confirm after a safe -d refusal.
+  ipcMain.handle('git:forceDeleteBranch', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath, branch } = GitBranchOpPayload.parse(raw)
+      return services.git.forceDeleteBranch(repoPath, branch)
+    })
+  )
+
   // Merge a Branch (Phase 83): local `branch` merged into the currently checked-out
   // branch — logic lives in runGitMerge (electron-free, unit-tested directly).
   ipcMain.handle('git:merge', (_e, raw: unknown) =>

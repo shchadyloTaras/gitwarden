@@ -163,8 +163,13 @@ describe('GitService.getStatus integration', () => {
     await expect(realpath(linkedBranch!.worktreePath!)).resolves.toBe(await realpath(linkedPath))
   })
 
-  it('treats deleting an already-missing branch as a successful refresh-safe no-op', async () => {
-    await expect(service.deleteBranch(repoPath, 'already-gone')).resolves.toBeUndefined()
+  it('surfaces the real error when deleting an already-missing branch (Phase 92 — no false success toast)', async () => {
+    // Pre-Phase-92 this silently resolved (a TOCTOU exists-pre-check no-op'd instead
+    // of ever calling git). Dropping that pre-check means a genuinely missing branch
+    // now gets git's own real error instead of a false "Deleted" toast.
+    await expect(service.deleteBranch(repoPath, 'already-gone')).rejects.toMatchObject({
+      code: 'branchNotFound',
+    })
   })
 
   // ── Pull divergence: the real step after a "fetch first" push rejection ──
@@ -312,5 +317,123 @@ describe('GitService.getStatus integration', () => {
     await expect(service.deleteBranch(repoPath, 'linked-worktree')).rejects.toMatchObject({
       code: 'branchCheckedOutElsewhere',
     } satisfies Partial<GitError>)
+  })
+
+  // ── Phase 92: unborn-HEAD branch synthesis (W13) ──────────────────────────────
+  it('getBranches synthesizes the unborn current branch on a fresh repo with no commits', async () => {
+    const branches = await service.getBranches(repoPath)
+    const current = branches.find((b) => b.isCurrent)
+    expect(current).toBeDefined()
+    expect(current!.isRemote).toBe(false)
+    // Whatever the system's default init branch name is, symbolic-ref reports it —
+    // confirm they agree instead of hard-coding 'main'.
+    const headRef = await git(repoPath, 'symbolic-ref', '--short', 'HEAD')
+    expect(current!.name).toBe(headRef)
+  })
+
+  it('getBranches does NOT synthesize once the branch has a real commit (no duplicate entry)', async () => {
+    await writeFile(path.join(repoPath, 'a.txt'), 'a\n')
+    await git(repoPath, 'add', 'a.txt')
+    await git(repoPath, 'commit', '-m', 'init')
+
+    const branches = await service.getBranches(repoPath)
+    const headRef = await git(repoPath, 'symbolic-ref', '--short', 'HEAD')
+    const matching = branches.filter((b) => b.name === headRef)
+    expect(matching).toHaveLength(1)
+    expect(matching[0].isCurrent).toBe(true)
+  })
+
+  it('getBranches synthesizes nothing on a detached HEAD (no ref to report)', async () => {
+    await writeFile(path.join(repoPath, 'a.txt'), 'a\n')
+    await git(repoPath, 'add', 'a.txt')
+    await git(repoPath, 'commit', '-m', 'init')
+    const sha = await git(repoPath, 'rev-parse', 'HEAD')
+    await git(repoPath, 'checkout', sha)
+
+    const branches = await service.getBranches(repoPath)
+    expect(branches.some((b) => b.isCurrent)).toBe(false)
+  })
+
+  // ── Phase 92: safe delete (W6/W27) ────────────────────────────────────────────
+  describe('safe delete vs. force delete', () => {
+    it('deletes a fully-merged branch on the safe -d path', async () => {
+      await writeFile(path.join(repoPath, 'a.txt'), 'a\n')
+      await git(repoPath, 'add', 'a.txt')
+      await git(repoPath, 'commit', '-m', 'init')
+      await git(repoPath, 'branch', 'merged-branch')
+
+      await expect(service.deleteBranch(repoPath, 'merged-branch')).resolves.toBeUndefined()
+      const branches = await service.getBranches(repoPath)
+      expect(branches.some((b) => b.name === 'merged-branch')).toBe(false)
+    })
+
+    async function createUnmergedBranch(): Promise<string> {
+      await writeFile(path.join(repoPath, 'a.txt'), 'a\n')
+      await git(repoPath, 'add', 'a.txt')
+      await git(repoPath, 'commit', '-m', 'init')
+      const baseBranch = await git(repoPath, 'symbolic-ref', '--short', 'HEAD')
+      await git(repoPath, 'checkout', '-b', 'unmerged-work')
+      await writeFile(path.join(repoPath, 'b.txt'), 'b\n')
+      await git(repoPath, 'add', 'b.txt')
+      await git(repoPath, 'commit', '-m', 'unique commit')
+      // Back on base — 'unmerged-work' is no longer checked out, and base never got
+      // its unique commit, so it is genuinely unreachable from anywhere else.
+      await git(repoPath, 'checkout', baseBranch)
+      return baseBranch
+    }
+
+    it('refuses (branchNotMerged) to delete a branch with commits reachable from nowhere else', async () => {
+      await createUnmergedBranch()
+
+      await expect(service.deleteBranch(repoPath, 'unmerged-work')).rejects.toMatchObject({
+        code: 'branchNotMerged',
+      } satisfies Partial<GitError>)
+
+      // Still there — the refusal did not delete anything.
+      const branches = await service.getBranches(repoPath)
+      expect(branches.some((b) => b.name === 'unmerged-work')).toBe(true)
+    })
+
+    it('forceDeleteBranch (the escalated path) deletes the unmerged branch anyway', async () => {
+      await createUnmergedBranch()
+
+      await service.forceDeleteBranch(repoPath, 'unmerged-work')
+
+      const branches = await service.getBranches(repoPath)
+      expect(branches.some((b) => b.name === 'unmerged-work')).toBe(false)
+    })
+  })
+
+  // ── Phase 92: GitStatus.detached feeds getUncommitContext directly ───────────
+  it('getUncommitContext.detachedHead is true on a detached HEAD (via GitStatus.detached)', async () => {
+    await writeFile(path.join(repoPath, 'a.txt'), 'a\n')
+    await git(repoPath, 'add', 'a.txt')
+    await git(repoPath, 'commit', '-m', 'init')
+    const sha = await git(repoPath, 'rev-parse', 'HEAD')
+    await git(repoPath, 'checkout', sha)
+
+    const status = await service.getStatus(repoPath)
+    expect(status.detached).toBe(true)
+    const ctx = await service.getUncommitContext(repoPath)
+    expect(ctx.detachedHead).toBe(true)
+  })
+
+  // ── Phase 92 (#7): reads must never hang indefinitely behind a lock-wedged git ──
+  it('every read-only invocation carries a default timeoutMs', async () => {
+    const runner = new GitRunner(gitPath)
+    const seenTimeouts: (number | undefined)[] = []
+    const originalRun = runner.run.bind(runner)
+    runner.run = (inv) => {
+      if (inv.readOnly) seenTimeouts.push(inv.timeoutMs)
+      return originalRun(inv)
+    }
+    const svc = new GitService(runner)
+
+    await svc.getStatus(repoPath)
+    await svc.getRemotes(repoPath)
+    await svc.getBranches(repoPath)
+
+    expect(seenTimeouts.length).toBeGreaterThan(0)
+    expect(seenTimeouts.every((t) => typeof t === 'number' && t > 0)).toBe(true)
   })
 })

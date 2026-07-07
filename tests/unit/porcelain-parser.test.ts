@@ -27,6 +27,35 @@ describe('parsePorcelainV2', () => {
     const buf = fixture('# branch.head (detached)')
     const status = parsePorcelainV2(buf)
     expect(status.branch).toBeUndefined()
+    expect(status.detached).toBe(true)
+  })
+
+  it('detached is false on a normal branch', () => {
+    const buf = fixture('# branch.head main')
+    const status = parsePorcelainV2(buf)
+    expect(status.detached).toBe(false)
+  })
+
+  it('upstreamGone is true when an upstream is configured but branch.ab is absent', () => {
+    // git omits branch.ab entirely when the remote-tracking ref no longer exists,
+    // even though branch.upstream still names it (Phase 92, #7).
+    const buf = fixture('# branch.head main', '# branch.upstream origin/main')
+    const status = parsePorcelainV2(buf)
+    expect(status.upstream).toBe('origin/main')
+    expect(status.upstreamGone).toBe(true)
+  })
+
+  it('upstreamGone is false when branch.ab is present (0/0 or otherwise)', () => {
+    const buf = fixture('# branch.head main', '# branch.upstream origin/main', '# branch.ab +0 -0')
+    const status = parsePorcelainV2(buf)
+    expect(status.upstreamGone).toBe(false)
+  })
+
+  it('upstreamGone is false when there is no upstream at all', () => {
+    const buf = fixture('# branch.head main')
+    const status = parsePorcelainV2(buf)
+    expect(status.upstream).toBeUndefined()
+    expect(status.upstreamGone).toBe(false)
   })
 
   it('returns zeros for ahead/behind when no upstream', () => {

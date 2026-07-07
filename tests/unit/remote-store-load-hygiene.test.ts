@@ -60,3 +60,42 @@ describe('remoteStore load hygiene (Phase 89)', () => {
     expect(useRemoteStore.getState().upstream).toBe('origin/main')
   })
 })
+
+describe('remoteStore upstreamGone (Phase 92, W20)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    getRemotes.mockResolvedValue({ ok: true, data: [] })
+    getEffectiveIdentity.mockResolvedValue({ ok: true, data: {} })
+  })
+
+  it('surfaces upstreamGone: true from GitStatus', async () => {
+    getStatus.mockResolvedValueOnce({
+      ok: true,
+      data: { branch: 'main', upstream: 'origin/main', upstreamGone: true },
+    })
+    await useRemoteStore.getState().load(repoA.localPath, repoA)
+    expect(useRemoteStore.getState().upstreamGone).toBe(true)
+  })
+
+  it('resets upstreamGone to false when switching to a repo without the issue', async () => {
+    getStatus.mockResolvedValueOnce({
+      ok: true,
+      data: { branch: 'main', upstream: 'origin/main', upstreamGone: true },
+    })
+    await useRemoteStore.getState().load(repoA.localPath, repoA)
+    expect(useRemoteStore.getState().upstreamGone).toBe(true)
+
+    getStatus.mockResolvedValueOnce({
+      ok: true,
+      data: { branch: 'main', upstream: 'origin/main', upstreamGone: false },
+    })
+    await useRemoteStore.getState().load(repoB.localPath, repoB)
+    expect(useRemoteStore.getState().upstreamGone).toBe(false)
+  })
+
+  it('defaults upstreamGone to false when the field is absent', async () => {
+    getStatus.mockResolvedValueOnce({ ok: true, data: { branch: 'main' } })
+    await useRemoteStore.getState().load(repoA.localPath, repoA)
+    expect(useRemoteStore.getState().upstreamGone).toBe(false)
+  })
+})

@@ -58,6 +58,7 @@ export default function BranchesScreen(): React.ReactElement {
     error,
     successMessage,
     deleteConfirmBranch,
+    forceDeleteConfirmBranch,
     mergeConfirmBranch,
     mergeConflict,
     repoPath,
@@ -65,8 +66,10 @@ export default function BranchesScreen(): React.ReactElement {
     doSwitch,
     doCreate,
     doDelete,
+    doForceDelete,
     doMerge,
     setDeleteConfirm,
+    setForceDeleteConfirm,
     setMergeConfirm,
   } = useBranchStore()
 
@@ -89,6 +92,10 @@ export default function BranchesScreen(): React.ReactElement {
 
   async function handleDelete(branch: string): Promise<void> {
     await doDelete(branch)
+  }
+
+  async function handleForceDelete(branch: string): Promise<void> {
+    await doForceDelete(branch)
   }
 
   async function handleMerge(branch: string): Promise<void> {
@@ -349,40 +356,88 @@ export default function BranchesScreen(): React.ReactElement {
                     </button>
                   )}
 
-                  {!b.isCurrent && !checkedOutElsewhere && deleteConfirmBranch !== b.name && (
-                    <button
-                      data-testid="branches-delete-btn"
-                      data-tooltip={STR.TT_BRANCH_DELETE}
-                      onClick={() => {
-                        setDeleteConfirm(b.name)
-                        setMergeConfirm(null)
-                      }}
-                      style={BTN_DANGER}
-                    >
-                      Delete
-                    </button>
-                  )}
+                  {!b.isCurrent &&
+                    !checkedOutElsewhere &&
+                    deleteConfirmBranch !== b.name &&
+                    forceDeleteConfirmBranch !== b.name && (
+                      <button
+                        data-testid="branches-delete-btn"
+                        data-tooltip={STR.TT_BRANCH_DELETE}
+                        onClick={() => {
+                          setDeleteConfirm(b.name)
+                          setMergeConfirm(null)
+                        }}
+                        style={BTN_DANGER}
+                      >
+                        Delete
+                      </button>
+                    )}
 
                   {!b.isCurrent && !checkedOutElsewhere && deleteConfirmBranch === b.name && (
                     <>
                       <span style={{ fontSize: 14, color: 'var(--gw-danger, #f87171)' }}>
-                        Delete?
+                        {STR.BRANCH_DELETE_CONFIRM}
                       </span>
                       <button
                         data-testid="branches-delete-confirm-btn"
                         onClick={() => void handleDelete(b.name)}
                         style={{ ...BTN_DANGER, fontWeight: 600 }}
                       >
-                        Yes, delete
+                        {STR.BRANCH_DELETE_CONFIRM_YES}
                       </button>
                       <button
                         data-testid="branches-delete-cancel-btn"
                         onClick={() => setDeleteConfirm(null)}
                         style={BTN}
                       >
-                        Cancel
+                        {STR.BRANCH_DELETE_CANCEL}
                       </button>
                     </>
+                  )}
+
+                  {/* Escalated force-delete confirm (W6/W27): reachable ONLY after the
+                      safe -d delete refuses with branchNotMerged — a distinct, visibly
+                      stronger warning per AGENTS.md #6, never a bare "Delete?" repeat. */}
+                  {!b.isCurrent && !checkedOutElsewhere && forceDeleteConfirmBranch === b.name && (
+                    <div
+                      data-testid="branches-force-delete-warning"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      <span
+                        aria-hidden="true"
+                        style={{ fontSize: 14, color: 'var(--gw-warning, #fbbf24)' }}
+                      >
+                        ⚠
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 700,
+                          color: 'var(--gw-danger, #f87171)',
+                        }}
+                      >
+                        {STR.BRANCH_FORCE_DELETE_CONFIRM(b.name)}
+                      </span>
+                      <button
+                        data-testid="branches-force-delete-confirm-btn"
+                        onClick={() => void handleForceDelete(b.name)}
+                        style={{ ...BTN_DANGER, fontWeight: 700 }}
+                      >
+                        {STR.BRANCH_FORCE_DELETE_CONFIRM_YES}
+                      </button>
+                      <button
+                        data-testid="branches-force-delete-cancel-btn"
+                        onClick={() => setForceDeleteConfirm(null)}
+                        style={BTN}
+                      >
+                        {STR.BRANCH_FORCE_DELETE_CANCEL}
+                      </button>
+                    </div>
                   )}
 
                   {!b.isCurrent && currentBranch && mergeConfirmBranch !== b.name && (

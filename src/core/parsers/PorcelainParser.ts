@@ -30,6 +30,8 @@ export function parsePorcelainV2(raw: Buffer): GitStatus {
   let upstream: string | undefined
   let ahead = 0
   let behind = 0
+  let detached = false
+  let sawAb = false
 
   let i = 0
   while (i < tokens.length) {
@@ -40,10 +42,12 @@ export function parsePorcelainV2(raw: Buffer): GitStatus {
 
     if (token.startsWith('# branch.head ')) {
       const val = token.slice('# branch.head '.length)
-      branch = val === '(detached)' ? undefined : val
+      detached = val === '(detached)'
+      branch = detached ? undefined : val
     } else if (token.startsWith('# branch.upstream ')) {
       upstream = token.slice('# branch.upstream '.length)
     } else if (token.startsWith('# branch.ab ')) {
+      sawAb = true
       const m = token.slice('# branch.ab '.length).match(/^\+(\d+) -(\d+)$/)
       if (m) {
         ahead = parseInt(m[1], 10)
@@ -93,5 +97,15 @@ export function parsePorcelainV2(raw: Buffer): GitStatus {
     }
   }
 
-  return { files, branch, upstream, ahead, behind }
+  return {
+    files,
+    branch,
+    upstream,
+    ahead,
+    behind,
+    detached,
+    // An upstream is configured but git couldn't report ahead/behind for it — the
+    // remote-tracking ref itself is gone, not merely "0 ahead / 0 behind".
+    upstreamGone: Boolean(upstream) && !sawAb,
+  }
 }

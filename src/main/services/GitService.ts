@@ -23,6 +23,14 @@ export interface PushAuth {
   token: string
 }
 
+/**
+ * Ceiling for every read-only invocation (Phase 92, #7) — a lock-wedged git process
+ * (e.g. another process holding `.git/index.lock`) must not hang a spinner forever.
+ * Writes are unaffected: network writes already carry their own explicit 60s timeout;
+ * fast local writes intentionally have none.
+ */
+const READ_TIMEOUT_MS = 15_000
+
 function parseRemoteHost(url: string): string | undefined {
   // SSH style: git@github.com:user/repo.git or git@github.com-work:user/repo.git
   const sshMatch = url.match(/^[\w.+-]+@([^:]+):/)
@@ -69,6 +77,13 @@ export type WriteExecutor = (inv: Omit<GitInvocation, 'cwd' | 'readOnly'>) => Pr
 export class GitService {
   constructor(private readonly runner: GitRunner) {}
 
+  /** Every read-only invocation goes through here so `READ_TIMEOUT_MS` applies uniformly. */
+  private readOnly(
+    inv: Omit<GitInvocation, 'cwd' | 'readOnly'> & { cwd: string }
+  ): Promise<GitResult> {
+    return this.runner.run({ timeoutMs: READ_TIMEOUT_MS, ...inv, readOnly: true })
+  }
+
   /**
    * Public compound-job API (Phase 91): the read → decide → write sequence a caller
    * builds inside `fn` runs atomically against every other write for this repo — see
@@ -86,11 +101,7 @@ export class GitService {
    */
   async verifyHeadBranch(repoPath: string, expected: string): Promise<boolean> {
     try {
-      const res = await this.runner.run({
-        args: ['symbolic-ref', '--short', 'HEAD'],
-        cwd: repoPath,
-        readOnly: true,
-      })
+      const res = await this.readOnly({ args: ['symbolic-ref', '--short', 'HEAD'], cwd: repoPath })
       return res.stdout.toString('utf8').trim() === expected
     } catch {
       return false
@@ -98,29 +109,20 @@ export class GitService {
   }
 
   async getStatus(repoPath: string): Promise<GitStatus> {
-    const result = await this.runner.run({
+    const result = await this.readOnly({
       args: ['status', '--porcelain=v2', '-z', '--branch'],
       cwd: repoPath,
-      readOnly: true,
     })
     return parsePorcelainV2(result.stdout)
   }
 
   async validateRepository(repoPath: string): Promise<{ name: string; remoteUrl?: string }> {
     // Throws GitError if not a valid git working tree
-    await this.runner.run({
-      args: ['rev-parse', '--show-toplevel'],
-      cwd: repoPath,
-      readOnly: true,
-    })
+    await this.readOnly({ args: ['rev-parse', '--show-toplevel'], cwd: repoPath })
 
     let remoteUrl: string | undefined
     try {
-      const res = await this.runner.run({
-        args: ['remote', 'get-url', 'origin'],
-        cwd: repoPath,
-        readOnly: true,
-      })
+      const res = await this.readOnly({ args: ['remote', 'get-url', 'origin'], cwd: repoPath })
       remoteUrl = res.stdout.toString('utf8').trim() || undefined
     } catch {
       // no remote is fine
@@ -171,11 +173,7 @@ export class GitService {
   async commit(repoPath: string, message: string): Promise<{ hash: string }> {
     return this.enqueueJob(repoPath, async (exec) => {
       await exec({ args: ['commit', '-m', message] })
-      const result = await this.runner.run({
-        args: ['rev-parse', '--short', 'HEAD'],
-        cwd: repoPath,
-        readOnly: true,
-      })
+      const result = await this.readOnly({ args: ['rev-parse', '--short', 'HEAD'], cwd: repoPath })
       return { hash: result.stdout.toString('utf8').trim() }
     })
   }
@@ -211,11 +209,7 @@ export class GitService {
    */
   async findEnclosingToplevel(repoPath: string): Promise<string | null> {
     try {
-      const result = await this.runner.run({
-        args: ['rev-parse', '--show-toplevel'],
-        cwd: repoPath,
-        readOnly: true,
-      })
+      const result = await this.readOnly({ args: ['rev-parse', '--show-toplevel'], cwd: repoPath })
       return result.stdout.toString('utf8').trim()
     } catch {
       return null
@@ -236,11 +230,7 @@ export class GitService {
   }
 
   async getRemotes(repoPath: string): Promise<GitRemote[]> {
-    const result = await this.runner.run({
-      args: ['remote', '-v'],
-      cwd: repoPath,
-      readOnly: true,
-    })
+    const result = await this.readOnly({ args: ['remote', '-v'], cwd: repoPath })
     return parseRemoteLines(result.stdout.toString('utf8'))
   }
 
@@ -319,10 +309,9 @@ export class GitService {
 
   private async hasUpstream(repoPath: string, branch: string): Promise<boolean> {
     try {
-      await this.runner.run({
+      await this.readOnly({
         args: ['rev-parse', '--abbrev-ref', '--symbolic-full-name', `${branch}@{u}`],
         cwd: repoPath,
-        readOnly: true,
       })
       return true
     } catch {
@@ -386,10 +375,9 @@ export class GitService {
   }
 
   async getBranches(repoPath: string): Promise<GitBranch[]> {
-    const localRes = await this.runner.run({
+    const localRes = await this.readOnly({
       args: ['for-each-ref', '--format=%(refname:short)\t%(HEAD)\t%(worktreepath)', 'refs/heads'],
       cwd: repoPath,
-      readOnly: true,
     })
     const localBranches: GitBranch[] = localRes.stdout
       .toString('utf8')
@@ -405,10 +393,28 @@ export class GitService {
         }
       })
 
-    const remoteRes = await this.runner.run({
+    if (!localBranches.some((b) => b.isCurrent)) {
+      // A fresh-init repo (unborn HEAD, W13): no ref exists in refs/heads yet, but
+      // HEAD still symbolically points at a branch name — synthesize it so the app
+      // shows the branch immediately instead of an empty picker. A genuinely
+      // detached HEAD fails symbolic-ref instead (nothing to synthesize here; the
+      // header renders that via GitStatus.detached).
+      try {
+        const headRes = await this.readOnly({
+          args: ['symbolic-ref', '--short', 'HEAD'],
+          cwd: repoPath,
+        })
+        const unbornBranch = headRes.stdout.toString('utf8').trim()
+        if (unbornBranch)
+          localBranches.push({ name: unbornBranch, isCurrent: true, isRemote: false })
+      } catch {
+        // detached HEAD — no branch to synthesize
+      }
+    }
+
+    const remoteRes = await this.readOnly({
       args: ['for-each-ref', '--format=%(refname:short)', 'refs/remotes'],
       cwd: repoPath,
-      readOnly: true,
     })
     const remoteBranches: GitBranch[] = remoteRes.stdout
       .toString('utf8')
@@ -428,18 +434,24 @@ export class GitService {
     await this.runner.run({ args: ['switch', '-c', name], cwd: repoPath, readOnly: false })
   }
 
+  /**
+   * Safe delete (W6/W27): `branch -d` refuses (mapped to `branchNotMerged`) when the
+   * branch has commits unreachable from anywhere else, instead of the old TOCTOU
+   * exists-pre-check + unconditional `-D`. A genuinely missing branch now surfaces
+   * git's own `branchNotFound` error rather than a silent no-op that painted a false
+   * "Deleted" toast.
+   */
   async deleteBranch(repoPath: string, name: string): Promise<void> {
-    const existsRes = await this.runner.run({
-      args: ['for-each-ref', '--format=%(refname:short)', 'refs/heads'],
-      cwd: repoPath,
-      readOnly: true,
-    })
-    const exists = existsRes.stdout
-      .toString('utf8')
-      .split('\n')
-      .some((branch) => branch === name)
-    if (!exists) return
+    await this.runner.run({ args: ['branch', '-d', name], cwd: repoPath, readOnly: false })
+  }
 
+  /**
+   * Force-delete (`branch -D`) — reachable ONLY through BranchesScreen's escalated
+   * second confirm ("this branch has commits that exist nowhere else — delete
+   * anyway?"), honoring AGENTS.md #6's distinct-stronger-warning rule for an
+   * irreversible action (W6/W27).
+   */
+  async forceDeleteBranch(repoPath: string, name: string): Promise<void> {
     await this.runner.run({ args: ['branch', '-D', name], cwd: repoPath, readOnly: false })
   }
 
@@ -488,10 +500,9 @@ export class GitService {
   }
 
   private async queryCommitLog(repoPath: string, extraArgs: string[]): Promise<GitCommit[]> {
-    const result = await this.runner.run({
+    const result = await this.readOnly({
       args: ['log', '-z', '--format=%H%x00%h%x00%an%x00%ae%x00%aI%x00%s', ...extraArgs],
       cwd: repoPath,
-      readOnly: true,
     })
     const raw = result.stdout.toString('utf8')
     if (!raw) return []
@@ -523,10 +534,9 @@ export class GitService {
     branch: string
   ): Promise<{ count: number; hasUpstream: boolean }> {
     try {
-      const result = await this.runner.run({
+      const result = await this.readOnly({
         args: ['rev-list', '--count', `${remote}/${branch}..HEAD`],
         cwd: repoPath,
-        readOnly: true,
       })
       return { count: Number(result.stdout.toString('utf8').trim()), hasUpstream: true }
     } catch {
@@ -535,20 +545,15 @@ export class GitService {
   }
 
   private async countLocalCommits(repoPath: string): Promise<number> {
-    const result = await this.runner.run({
-      args: ['rev-list', '--count', 'HEAD'],
-      cwd: repoPath,
-      readOnly: true,
-    })
+    const result = await this.readOnly({ args: ['rev-list', '--count', 'HEAD'], cwd: repoPath })
     return Number(result.stdout.toString('utf8').trim())
   }
 
   /** True iff HEAD has ≥2 parents (a merge commit). */
   private async isHeadMerge(repoPath: string): Promise<boolean> {
-    const result = await this.runner.run({
+    const result = await this.readOnly({
       args: ['rev-list', '--parents', '-n', '1', 'HEAD'],
       cwd: repoPath,
-      readOnly: true,
     })
     const tokens = result.stdout.toString('utf8').trim().split(/\s+/).filter(Boolean)
     return tokens.length >= 3 // HEAD's own hash + 2 or more parent hashes
@@ -561,10 +566,9 @@ export class GitService {
 
   /** True iff there is a merge commit anywhere in `HEAD~n..HEAD`. */
   private async hasMergeInRange(repoPath: string, n: number): Promise<boolean> {
-    const result = await this.runner.run({
+    const result = await this.readOnly({
       args: ['rev-list', '--merges', `HEAD~${n}..HEAD`],
       cwd: repoPath,
-      readOnly: true,
     })
     return result.stdout.toString('utf8').trim().length > 0
   }
@@ -579,11 +583,7 @@ export class GitService {
 
   private async refExists(repoPath: string, ref: string): Promise<boolean> {
     try {
-      await this.runner.run({
-        args: ['rev-parse', '--verify', '-q', ref],
-        cwd: repoPath,
-        readOnly: true,
-      })
+      await this.readOnly({ args: ['rev-parse', '--verify', '-q', ref], cwd: repoPath })
       return true
     } catch {
       return false
@@ -602,7 +602,7 @@ export class GitService {
   async getUncommitContext(repoPath: string): Promise<UncommitContext> {
     const status = await this.getStatus(repoPath)
     const workingTreeClean = status.files.length === 0
-    const detachedHead = status.branch === undefined
+    const detachedHead = Boolean(status.detached)
 
     const slash = status.upstream?.indexOf('/') ?? -1
     const { count: unpushedCount, hasUpstream } =
@@ -668,7 +668,7 @@ export class GitService {
     const args = ['diff', '--no-color']
     if (staged) args.push('--staged')
     args.push('--', filePath)
-    const result = await this.runner.run({ args, cwd: repoPath, readOnly: true })
+    const result = await this.readOnly({ args, cwd: repoPath })
     return result.stdout.toString('utf8')
   }
 
@@ -677,10 +677,9 @@ export class GitService {
       key: string
     ): Promise<{ value: string; scope: GitConfigScope } | undefined> => {
       try {
-        const result = await this.runner.run({
+        const result = await this.readOnly({
           args: ['config', '--show-origin', '--get', key],
           cwd: repoPath,
-          readOnly: true,
         })
         const line = result.stdout.toString('utf8').trim()
         const tabIdx = line.indexOf('\t')

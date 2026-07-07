@@ -17,6 +17,9 @@ interface RemoteState {
   repository: RepositoryRecord | null
   remotes: GitRemote[]
   upstream: string | null
+  /** True when `upstream` is configured but its remote-tracking ref is gone (Phase 92, W20) —
+   * rendered honestly instead of a misleading "0 ahead / 0 behind". */
+  upstreamGone: boolean
   identity: EffectiveGitIdentity | null
   loading: boolean
   fetchLoading: string | null
@@ -55,6 +58,7 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
   repository: null,
   remotes: [],
   upstream: null,
+  upstreamGone: false,
   identity: null,
   loading: false,
   fetchLoading: null,
@@ -75,6 +79,7 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
       // #9: upstream must reset with the rest of the load — a stale upstream from the
       // previous repo must not survive as this repo's answer.
       upstream: null,
+      upstreamGone: false,
       identity: null,
       successMessage: null,
       lastFailure: null,
@@ -90,6 +95,7 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
         set({
           remotes: remotesRes.ok ? remotesRes.data : [],
           upstream: statusRes.ok ? (statusRes.data.upstream ?? null) : null,
+          upstreamGone: statusRes.ok ? Boolean(statusRes.data.upstreamGone) : false,
           identity: identityRes.ok ? identityRes.data : null,
           error: !remotesRes.ok
             ? remotesRes.error

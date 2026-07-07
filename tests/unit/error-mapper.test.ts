@@ -101,6 +101,15 @@ describe('ErrorMapper', () => {
     expect(err.userMessage).toContain('/tmp/gitwarden-linked-worktree')
   })
 
+  it('maps "not fully merged" (safe branch delete refusal) to branchNotMerged', () => {
+    const err = ErrorMapper.map(
+      "error: The branch 'feature-a' is not fully merged.\nIf you are sure you want to delete it, run 'git branch -D feature-a'.",
+      1
+    )
+    expect(err.code).toBe('branchNotMerged')
+    expect(err.userMessage).toMatch(/force-delete|lose them/i)
+  })
+
   it('maps merge conflict', () => {
     const err = ErrorMapper.map('CONFLICT (content): Merge conflict in foo.ts', 1)
     expect(err.code).toBe('mergeConflict')
@@ -222,6 +231,7 @@ describe('ErrorMapper', () => {
       "pathspec 'y' did not match any",
       "fatal: 'bad name' is not a valid branch name",
       "fatal: a branch named 'main' already exists",
+      "error: The branch 'feature-a' is not fully merged.",
       "fatal: 'feature-a' is already checked out at '/tmp/feature-a'",
       "error: Cannot delete branch 'feature-a' checked out at '/tmp/feature-a'",
       "error: cannot delete branch 'feature-a' used by worktree at '/tmp/feature-a'",

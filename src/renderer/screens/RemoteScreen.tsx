@@ -23,6 +23,7 @@ export default function RemoteScreen(): React.ReactElement {
     repository,
     remotes,
     upstream,
+    upstreamGone,
     identity,
     loading,
     fetchLoading,
@@ -193,7 +194,7 @@ export default function RemoteScreen(): React.ReactElement {
           {currentBranch && (
             <div
               style={{
-                marginBottom: '16px',
+                marginBottom: upstreamGone ? '4px' : '16px',
                 fontSize: '14px',
                 color: 'var(--gw-text-muted, #a1a1aa)',
               }}
@@ -205,6 +206,21 @@ export default function RemoteScreen(): React.ReactElement {
               >
                 {currentBranch}
               </span>
+            </div>
+          )}
+
+          {/* Upstream state — honest about a gone remote-tracking ref (Phase 92, W20)
+              instead of a misleading "0 ahead / 0 behind". */}
+          {upstreamGone && (
+            <div
+              data-testid="remote-upstream-gone"
+              style={{
+                marginBottom: '16px',
+                fontSize: '14px',
+                color: 'var(--gw-warning, #fbbf24)',
+              }}
+            >
+              {STR.REMOTE_UPSTREAM_GONE}
             </div>
           )}
 

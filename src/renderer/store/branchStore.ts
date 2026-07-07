@@ -15,6 +15,9 @@ interface BranchState {
   error: string | null
   successMessage: string | null
   deleteConfirmBranch: string | null
+  /** Set when the safe `-d` delete refused with branchNotMerged — the escalated,
+   * visibly stronger second confirm BranchesScreen renders (W6/W27). */
+  forceDeleteConfirmBranch: string | null
   mergeConfirmBranch: string | null
   mergeConflict: RemediationFailure | null
 
@@ -22,8 +25,11 @@ interface BranchState {
   doSwitch(branch: string): Promise<void>
   doCreate(name: string): Promise<void>
   doDelete(branch: string): Promise<void>
+  /** The escalated path — `branch -D` — reachable only after doDelete's refusal. */
+  doForceDelete(branch: string): Promise<void>
   doMerge(branch: string): Promise<void>
   setDeleteConfirm(branch: string | null): void
+  setForceDeleteConfirm(branch: string | null): void
   setMergeConfirm(branch: string | null): void
   clearMessages(): void
   clear(): void
@@ -42,6 +48,7 @@ export const useBranchStore = create<BranchState>((set, get) => ({
   error: null,
   successMessage: null,
   deleteConfirmBranch: null,
+  forceDeleteConfirmBranch: null,
   mergeConfirmBranch: null,
   mergeConflict: null,
 
@@ -57,6 +64,7 @@ export const useBranchStore = create<BranchState>((set, get) => ({
       branches: [],
       successMessage: null,
       deleteConfirmBranch: null,
+      forceDeleteConfirmBranch: null,
       mergeConfirmBranch: null,
       mergeConflict: null,
     })
@@ -124,11 +132,44 @@ export const useBranchStore = create<BranchState>((set, get) => ({
     set({ error: null, successMessage: null, deleteConfirmBranch: null })
     try {
       const res = await window.api.git.deleteBranch(repoPath, branch)
+      if (!res.ok) {
+        if (res.code === 'branchNotMerged') {
+          // Escalate to the second, visibly stronger confirm (W6/W27) instead of
+          // surfacing this as a plain error — force-delete is reachable ONLY
+          // through that confirm, honoring AGENTS.md #6.
+          if (tracker.isCurrent(token)) set({ forceDeleteConfirmBranch: branch })
+          return
+        }
+        throw new Error(res.error)
+      }
+      const branches = await refreshBranches(repoPath)
+      if (tracker.isCurrent(token)) {
+        if (branches) set({ branches })
+        set({ successMessage: STR.BRANCH_DELETE_SUCCESS(branch) })
+      }
+    } catch (err) {
+      const branches = await refreshBranches(repoPath)
+      if (tracker.isCurrent(token)) {
+        set({
+          ...(branches ? { branches } : {}),
+          error: err instanceof Error ? err.message : String(err),
+        })
+      }
+    }
+  },
+
+  async doForceDelete(branch) {
+    const { repoPath, repository } = get()
+    if (!repoPath || !repository) return
+    const token = tracker.begin()
+    set({ error: null, successMessage: null, forceDeleteConfirmBranch: null })
+    try {
+      const res = await window.api.git.forceDeleteBranch(repoPath, branch)
       if (!res.ok) throw new Error(res.error)
       const branches = await refreshBranches(repoPath)
       if (tracker.isCurrent(token)) {
         if (branches) set({ branches })
-        set({ successMessage: `Deleted branch ${branch}.` })
+        set({ successMessage: STR.BRANCH_DELETE_SUCCESS(branch) })
       }
     } catch (err) {
       const branches = await refreshBranches(repoPath)
@@ -183,6 +224,10 @@ export const useBranchStore = create<BranchState>((set, get) => ({
     set({ deleteConfirmBranch: branch })
   },
 
+  setForceDeleteConfirm(branch) {
+    set({ forceDeleteConfirmBranch: branch })
+  },
+
   setMergeConfirm(branch) {
     set({ mergeConfirmBranch: branch })
   },
@@ -200,6 +245,7 @@ export const useBranchStore = create<BranchState>((set, get) => ({
       error: null,
       successMessage: null,
       deleteConfirmBranch: null,
+      forceDeleteConfirmBranch: null,
       mergeConfirmBranch: null,
       mergeConflict: null,
     })

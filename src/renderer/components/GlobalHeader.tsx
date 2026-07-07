@@ -68,7 +68,13 @@ export default function GlobalHeader(): React.ReactElement {
   const profiles = useProfilesStore((s) => s.profiles)
   const activeProfileId = useProfilesStore((s) => s.activeProfileId)
   const activeProfile = profiles.find((p) => p.id === activeProfileId) ?? null
-  const { branches, load: loadBranches, doSwitch, clear: clearBranches } = useBranchStore()
+  const {
+    branches,
+    loading: branchesLoading,
+    load: loadBranches,
+    doSwitch,
+    clear: clearBranches,
+  } = useBranchStore()
 
   const guardState = useHeaderGuardStore((s) => s.state)
   const guardIssueCount = useHeaderGuardStore((s) => s.issueCount)
@@ -115,6 +121,10 @@ export default function GlobalHeader(): React.ReactElement {
   ])
 
   const localBranches = branches.filter((b) => !b.isRemote)
+  // Once branches have loaded (post Phase 92's unborn-HEAD synthesis in getBranches),
+  // no local branch being isCurrent means detached HEAD — never a stale branch name.
+  const detached =
+    Boolean(activeRepo) && !branchesLoading && !localBranches.some((b) => b.isCurrent)
 
   // aria-label carries the state, the issue count, and where a click goes (count is dynamic,
   // so it is composed here rather than stored). The leading "Guard · " prefix is dropped so
@@ -188,8 +198,31 @@ export default function GlobalHeader(): React.ReactElement {
         triggerStyle={SELECT_STYLE}
       />
 
+      {/* Detached HEAD pill (Phase 92): a distinct state, never a stale branch name */}
+      {detached && (
+        <>
+          <span style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: 14 }}>on</span>
+          <span
+            data-testid="header-branch-detached"
+            data-tooltip={STR.BRANCH_DETACHED_HINT}
+            data-tooltip-pos="bottom"
+            style={{
+              fontSize: 12,
+              fontFamily: 'monospace',
+              background: 'var(--gw-warning-bg, #451a03)',
+              border: '1px solid var(--gw-warning-solid, #d97706)',
+              color: 'var(--gw-warning, #fbbf24)',
+              padding: '2px 8px',
+              borderRadius: 999,
+            }}
+          >
+            {STR.BRANCH_DETACHED_PILL}
+          </span>
+        </>
+      )}
+
       {/* Branch picker */}
-      {localBranches.length > 0 && (
+      {!detached && localBranches.length > 0 && (
         <>
           <span style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: 14 }}>on</span>
           <Dropdown
@@ -227,7 +260,7 @@ export default function GlobalHeader(): React.ReactElement {
       )}
 
       {/* Fallback: show branch text when branches not loaded yet */}
-      {localBranches.length === 0 && currentBranch && (
+      {!detached && localBranches.length === 0 && currentBranch && (
         <>
           <span style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: 14 }}>on</span>
           <span

@@ -488,6 +488,21 @@ export const STR = {
   BRANCH_MERGE_SUCCESS: (branch: string, current: string): string =>
     `Merged ${branch} into ${current}.`,
 
+  // ── Safe delete + escalated force-delete (Phase 92, W6/W27) ─────────────────
+  BRANCH_DELETE_CONFIRM: 'Delete?',
+  BRANCH_DELETE_CONFIRM_YES: 'Yes, delete',
+  BRANCH_DELETE_CANCEL: 'Cancel',
+  BRANCH_FORCE_DELETE_CONFIRM: (branch: string): string =>
+    `"${branch}" has commits that exist nowhere else — delete anyway?`,
+  BRANCH_FORCE_DELETE_CONFIRM_YES: 'Force delete',
+  BRANCH_FORCE_DELETE_CANCEL: 'Cancel',
+  BRANCH_DELETE_SUCCESS: (branch: string): string => `Deleted branch ${branch}.`,
+
+  // ── Branch-state truth (Phase 92) ────────────────────────────────────────────
+  BRANCH_DETACHED_PILL: 'detached',
+  BRANCH_DETACHED_HINT: "You're not on a branch right now (detached HEAD).",
+  REMOTE_UPSTREAM_GONE: 'remote branch is gone',
+
   // ── Inspector ──────────────────────────────────────────────────────────────
   INSPECTOR_TITLE: 'Inspector',
   INSPECTOR_NO_PROFILE: 'No profile selected',
