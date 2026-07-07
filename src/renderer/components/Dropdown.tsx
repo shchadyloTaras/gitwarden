@@ -158,7 +158,11 @@ export default function Dropdown({
   placement = 'auto',
 }: DropdownProps): React.ReactElement {
   const [open, setOpen] = useState(false)
-  const [highlight, setHighlight] = useState(0)
+  // Keyed by option VALUE, not a raw index (W17): the index is re-derived from this
+  // value against the CURRENT filteredOptions on every render, so a list that
+  // reorders/changes while the popup is open can never leave the highlight pointing
+  // at a different option than the one the user actually navigated to.
+  const [highlightValue, setHighlightValue] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [layout, setLayout] = useState<PopupLayout | null>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -170,6 +174,13 @@ export default function Dropdown({
 
   const selected = options.find((o) => o.value === value)
   const label = displayValue ?? selected?.label ?? placeholder
+
+  // Re-derived every render against the CURRENT filteredOptions — never a stale
+  // index left over from a list that has since changed shape (W17).
+  const highlightIndex = Math.max(
+    0,
+    highlightValue !== null ? filteredOptions.findIndex((o) => o.value === highlightValue) : -1
+  )
 
   const reposition = (): void => {
     if (!portaled || !triggerRef.current) return
@@ -192,12 +203,7 @@ export default function Dropdown({
         reposition()
         requestAnimationFrame(() => reposition())
       }
-      setHighlight(
-        Math.max(
-          0,
-          filteredOptions.findIndex((o) => o.value === value)
-        )
-      )
+      setHighlightValue(value)
       if (searchable) searchRef.current?.focus()
     } else {
       setQuery('')
@@ -214,8 +220,7 @@ export default function Dropdown({
 
   useEffect(() => {
     if (!open || !searchable) return
-    const idx = filteredOptions.findIndex((o) => o.value === value)
-    setHighlight(Math.max(0, idx))
+    setHighlightValue(value)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query])
 
@@ -248,18 +253,17 @@ export default function Dropdown({
   }
 
   const moveHighlight = (dir: 1 | -1): void => {
-    setHighlight((h) => {
-      let next = h
-      for (let i = 0; i < filteredOptions.length; i++) {
-        next = (next + dir + filteredOptions.length) % filteredOptions.length
-        if (!filteredOptions[next]?.disabled) break
-      }
-      return next
-    })
+    if (filteredOptions.length === 0) return
+    let next = highlightIndex
+    for (let i = 0; i < filteredOptions.length; i++) {
+      next = (next + dir + filteredOptions.length) % filteredOptions.length
+      if (!filteredOptions[next]?.disabled) break
+    }
+    setHighlightValue(filteredOptions[next]?.value ?? null)
   }
 
   const selectHighlighted = (): void => {
-    const opt = filteredOptions[highlight]
+    const opt = filteredOptions[highlightIndex]
     if (opt && !opt.disabled) choose(opt.value)
   }
 
@@ -449,7 +453,7 @@ export default function Dropdown({
             'gw-dd-option',
             isSel ? 'gw-dd-option--selected' : '',
             o.disabled ? 'gw-dd-option--disabled' : '',
-            i === highlight && !o.disabled ? 'gw-dd-option--active' : '',
+            i === highlightIndex && !o.disabled ? 'gw-dd-option--active' : '',
           ]
             .filter(Boolean)
             .join(' ')
@@ -461,7 +465,7 @@ export default function Dropdown({
               data-testid={testId ? `${testId}-option-${o.value}` : undefined}
               className={cls}
               title={o.title}
-              onMouseEnter={() => setHighlight(i)}
+              onMouseEnter={() => setHighlightValue(o.value)}
               onClick={() => !o.disabled && choose(o.value)}
               style={{
                 fontFamily: monospace ? 'monospace' : 'inherit',

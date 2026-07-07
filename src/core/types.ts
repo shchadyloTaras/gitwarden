@@ -145,6 +145,14 @@ export interface GitStatus {
   upstreamGone?: boolean
 }
 
+/**
+ * Result of the stash-based "bring changes & switch" quick-fix (Phase 93): stash push
+ * --include-untracked → switch → stash pop, run as one compound job. A pop conflict is
+ * NEVER auto-resolved — `ok: false` means the stash is kept and the switch itself
+ * already succeeded; the caller routes the user to Status to finish resolving it.
+ */
+export type StashSwitchResult = { ok: true } | { ok: false; message: string }
+
 export interface GitBranch {
   name: string
   isCurrent: boolean

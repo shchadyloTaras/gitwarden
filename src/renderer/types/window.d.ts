@@ -7,6 +7,7 @@ import type {
   GitRemote,
   GitBranch,
   GitCommit,
+  StashSwitchResult,
   GitHubDeviceCode,
   LinkedGitHubAccount,
   GitHubAccount,
@@ -160,6 +161,7 @@ interface ElectronAPI {
     push(repoPath: string, remote: string, branch: string): Promise<IpcResult<void>>
     getBranches(repoPath: string): Promise<IpcResult<GitBranch[]>>
     switchBranch(repoPath: string, branch: string): Promise<IpcResult<void>>
+    stashSwitchPop(repoPath: string, branch: string): Promise<IpcResult<StashSwitchResult>>
     createBranch(repoPath: string, name: string): Promise<IpcResult<void>>
     deleteBranch(repoPath: string, branch: string): Promise<IpcResult<void>>
     forceDeleteBranch(repoPath: string, branch: string): Promise<IpcResult<void>>

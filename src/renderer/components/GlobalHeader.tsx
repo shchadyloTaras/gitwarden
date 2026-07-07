@@ -73,6 +73,10 @@ export default function GlobalHeader(): React.ReactElement {
     loading: branchesLoading,
     load: loadBranches,
     doSwitch,
+    doSwitchBringChanges,
+    switching,
+    switchError,
+    clearSwitchError,
     clear: clearBranches,
   } = useBranchStore()
 
@@ -143,241 +147,310 @@ export default function GlobalHeader(): React.ReactElement {
   }. ${guardDestination}.`
 
   return (
-    <header
-      className="gw-global-header"
-      data-testid="global-header"
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.75rem',
-        padding: '0 1rem',
-        height: 48,
-        background: 'var(--gw-surface, #18181b)',
-        borderBottom: '1px solid var(--gw-border, #27272a)',
-        color: 'var(--gw-text, #f4f4f5)',
-        flexShrink: 0,
-        userSelect: 'none',
-      }}
-    >
-      <span
+    <>
+      <header
+        className="gw-global-header"
+        data-testid="global-header"
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 7,
-          fontWeight: 700,
-          fontSize: 14,
-          letterSpacing: '-0.02em',
-          marginRight: 8,
+          gap: '0.75rem',
+          padding: '0 1rem',
+          height: 48,
+          background: 'var(--gw-surface, #18181b)',
+          borderBottom: '1px solid var(--gw-border, #27272a)',
+          color: 'var(--gw-text, #f4f4f5)',
+          flexShrink: 0,
+          userSelect: 'none',
         }}
       >
-        <Logo size={20} />
-        {STR.APP_TITLE}
-      </span>
+        <span
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 7,
+            fontWeight: 700,
+            fontSize: 14,
+            letterSpacing: '-0.02em',
+            marginRight: 8,
+          }}
+        >
+          <Logo size={20} />
+          {STR.APP_TITLE}
+        </span>
 
-      <div style={{ width: 1, height: 20, background: 'var(--gw-surface3, #3f3f46)' }} />
+        <div style={{ width: 1, height: 20, background: 'var(--gw-surface3, #3f3f46)' }} />
 
-      {/* Repo picker */}
-      <Dropdown
-        testId="header-repo-select"
-        ariaLabel={STR.HEADER_REPO_PICKER}
-        tooltip={STR.HEADER_REPO_PICKER}
-        tooltipPos="bottom"
-        placeholder="No repositories"
-        value={activeRepo?.id ?? ''}
-        options={repos.map((r) => ({ value: r.id, label: r.name }))}
-        onChange={(id) => {
-          const picked = repos.find((r) => r.id === id) ?? null
-          // Re-selecting the SAME repo is a value-equal no-op for setActiveRepo (W30) —
-          // route it through the explicit refresh seam instead of doing nothing (W14).
-          if (picked && picked.id === activeRepo?.id) {
-            void refreshActiveRepo()
-          } else {
-            setActiveRepo(picked)
-          }
-        }}
-        triggerStyle={SELECT_STYLE}
-      />
+        {/* Repo picker */}
+        <Dropdown
+          testId="header-repo-select"
+          ariaLabel={STR.HEADER_REPO_PICKER}
+          tooltip={STR.HEADER_REPO_PICKER}
+          tooltipPos="bottom"
+          placeholder="No repositories"
+          value={activeRepo?.id ?? ''}
+          options={repos.map((r) => ({ value: r.id, label: r.name }))}
+          onChange={(id) => {
+            const picked = repos.find((r) => r.id === id) ?? null
+            // Re-selecting the SAME repo is a value-equal no-op for setActiveRepo (W30) —
+            // route it through the explicit refresh seam instead of doing nothing (W14).
+            if (picked && picked.id === activeRepo?.id) {
+              void refreshActiveRepo()
+            } else {
+              setActiveRepo(picked)
+            }
+          }}
+          triggerStyle={SELECT_STYLE}
+        />
 
-      {/* Detached HEAD pill (Phase 92): a distinct state, never a stale branch name */}
-      {detached && (
-        <>
-          <span style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: 14 }}>on</span>
-          <span
-            data-testid="header-branch-detached"
-            data-tooltip={STR.BRANCH_DETACHED_HINT}
-            data-tooltip-pos="bottom"
-            style={{
-              fontSize: 12,
-              fontFamily: 'monospace',
-              background: 'var(--gw-warning-bg, #451a03)',
-              border: '1px solid var(--gw-warning-solid, #d97706)',
-              color: 'var(--gw-warning, #fbbf24)',
-              padding: '2px 8px',
-              borderRadius: 999,
-            }}
-          >
-            {STR.BRANCH_DETACHED_PILL}
-          </span>
-        </>
-      )}
+        {/* Detached HEAD pill (Phase 92): a distinct state, never a stale branch name */}
+        {detached && (
+          <>
+            <span style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: 14 }}>on</span>
+            <span
+              data-testid="header-branch-detached"
+              data-tooltip={STR.BRANCH_DETACHED_HINT}
+              data-tooltip-pos="bottom"
+              style={{
+                fontSize: 12,
+                fontFamily: 'monospace',
+                background: 'var(--gw-warning-bg, #451a03)',
+                border: '1px solid var(--gw-warning-solid, #d97706)',
+                color: 'var(--gw-warning, #fbbf24)',
+                padding: '2px 8px',
+                borderRadius: 999,
+              }}
+            >
+              {STR.BRANCH_DETACHED_PILL}
+            </span>
+          </>
+        )}
 
-      {/* Branch picker */}
-      {!detached && localBranches.length > 0 && (
-        <>
-          <span style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: 14 }}>on</span>
-          <Dropdown
-            testId="header-branch-select"
-            ariaLabel={STR.HEADER_BRANCH_PICKER}
-            tooltip={STR.HEADER_BRANCH_PICKER}
-            tooltipPos="bottom"
-            monospace
-            value={currentBranch ?? ''}
-            options={localBranches.map((b) => {
-              const checkedOutElsewhere = Boolean(
-                !b.isCurrent && b.worktreePath && b.worktreePath !== activeRepo?.localPath
-              )
-              return {
-                value: b.name,
-                label: checkedOutElsewhere ? STR.BRANCH_LABEL_WORKTREE(b.name) : b.name,
-                disabled: checkedOutElsewhere,
-                title:
-                  checkedOutElsewhere && b.worktreePath
-                    ? STR.BRANCH_CHECKED_OUT_ELSEWHERE_HINT(b.worktreePath)
-                    : undefined,
-              }
-            })}
-            onChange={(name) => void doSwitch(name)}
-            triggerStyle={{
-              ...SELECT_STYLE,
-              fontSize: 14,
-              background: 'var(--gw-surface2, #27272a)',
-              padding: '2px 6px',
-              maxWidth: 140,
-            }}
-            popupMinWidth={240}
-          />
-        </>
-      )}
+        {/* Branch picker */}
+        {!detached && localBranches.length > 0 && (
+          <>
+            <span style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: 14 }}>on</span>
+            <Dropdown
+              testId="header-branch-select"
+              ariaLabel={STR.HEADER_BRANCH_PICKER}
+              tooltip={STR.HEADER_BRANCH_PICKER}
+              tooltipPos="bottom"
+              monospace
+              value={currentBranch ?? ''}
+              options={localBranches.map((b) => {
+                const checkedOutElsewhere = Boolean(
+                  !b.isCurrent && b.worktreePath && b.worktreePath !== activeRepo?.localPath
+                )
+                return {
+                  value: b.name,
+                  label: checkedOutElsewhere ? STR.BRANCH_LABEL_WORKTREE(b.name) : b.name,
+                  disabled: checkedOutElsewhere,
+                  title:
+                    checkedOutElsewhere && b.worktreePath
+                      ? STR.BRANCH_CHECKED_OUT_ELSEWHERE_HINT(b.worktreePath)
+                      : undefined,
+                }
+              })}
+              onChange={(name) => void doSwitch(name)}
+              disabled={switching}
+              triggerStyle={{
+                ...SELECT_STYLE,
+                fontSize: 14,
+                background: 'var(--gw-surface2, #27272a)',
+                padding: '2px 6px',
+                maxWidth: 140,
+              }}
+              popupMinWidth={240}
+            />
+          </>
+        )}
 
-      {/* Fallback: show branch text when branches not loaded yet */}
-      {!detached && localBranches.length === 0 && currentBranch && (
-        <>
-          <span style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: 14 }}>on</span>
-          <span
-            data-testid="header-branch"
-            style={{
-              fontSize: 14,
-              fontFamily: 'monospace',
-              background: 'var(--gw-surface2, #27272a)',
-              padding: '2px 6px',
-              borderRadius: 4,
-              color: 'var(--gw-text-muted, #a1a1aa)',
-            }}
-          >
-            {currentBranch}
-          </span>
-        </>
-      )}
+        {/* Fallback: show branch text when branches not loaded yet */}
+        {!detached && localBranches.length === 0 && currentBranch && (
+          <>
+            <span style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: 14 }}>on</span>
+            <span
+              data-testid="header-branch"
+              style={{
+                fontSize: 14,
+                fontFamily: 'monospace',
+                background: 'var(--gw-surface2, #27272a)',
+                padding: '2px 6px',
+                borderRadius: 4,
+                color: 'var(--gw-text-muted, #a1a1aa)',
+              }}
+            >
+              {currentBranch}
+            </span>
+          </>
+        )}
 
-      <div style={{ flex: 1 }} />
+        <div style={{ flex: 1 }} />
 
-      <button
-        data-testid="header-guard-badge"
-        aria-label={guardAriaLabel}
-        data-tooltip={guardDestination}
-        data-tooltip-pos="bottom"
-        onClick={() => navigate(activeRepo ? 'safety-center' : guardFallbackScreen)}
-        style={{
-          ...GUARD_STYLE[guardState],
-          fontSize: 14,
-          fontWeight: 600,
-          padding: '2px 8px',
-          borderRadius: 4,
-          letterSpacing: '0.03em',
-          border: 'none',
-          cursor: 'pointer',
-          fontFamily: 'inherit',
-          lineHeight: 1.4,
-        }}
-      >
-        {GUARD_LABEL[guardState]}
-      </button>
+        <button
+          data-testid="header-guard-badge"
+          aria-label={guardAriaLabel}
+          data-tooltip={guardDestination}
+          data-tooltip-pos="bottom"
+          onClick={() => navigate(activeRepo ? 'safety-center' : guardFallbackScreen)}
+          style={{
+            ...GUARD_STYLE[guardState],
+            fontSize: 14,
+            fontWeight: 600,
+            padding: '2px 8px',
+            borderRadius: 4,
+            letterSpacing: '0.03em',
+            border: 'none',
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            lineHeight: 1.4,
+          }}
+        >
+          {GUARD_LABEL[guardState]}
+        </button>
 
-      <div style={{ width: 1, height: 20, background: 'var(--gw-surface3, #3f3f46)' }} />
+        <div style={{ width: 1, height: 20, background: 'var(--gw-surface3, #3f3f46)' }} />
 
-      {activeProfile && (
-        <div data-testid="header-profile" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {activeProfile && (
           <div
+            data-testid="header-profile"
+            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            <div
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: '50%',
+                background: profileColor(activeProfile.id),
+                flexShrink: 0,
+              }}
+            />
+            <span style={{ fontSize: 14, color: 'var(--gw-text, #f4f4f5)' }}>
+              {activeProfile.displayName}
+            </span>
+          </div>
+        )}
+
+        {availableUpdate && (
+          <button
+            data-testid="header-update-button"
+            aria-label={STR.UPDATE_BUTTON_ARIA(availableUpdate.version)}
+            data-tooltip={STR.UPDATE_AVAILABLE(availableUpdate.version)}
+            data-tooltip-pos="bottom"
+            onClick={() => void window.api.shell.openExternal(availableUpdate.url)}
             style={{
-              width: 10,
-              height: 10,
-              borderRadius: '50%',
-              background: profileColor(activeProfile.id),
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              height: 32,
+              padding: '0 10px',
+              marginLeft: 4,
+              background: 'var(--gw-accent, #6366f1)',
+              color: 'var(--gw-on-solid, #fff)',
+              border: 'none',
+              borderRadius: 4,
+              fontSize: 13,
+              fontWeight: 600,
+              fontFamily: 'inherit',
+              cursor: 'pointer',
               flexShrink: 0,
             }}
-          />
-          <span style={{ fontSize: 14, color: 'var(--gw-text, #f4f4f5)' }}>
-            {activeProfile.displayName}
-          </span>
-        </div>
-      )}
+          >
+            <span aria-hidden="true" style={{ fontSize: 13, lineHeight: 1 }}>
+              ↓
+            </span>
+            {STR.UPDATE_BUTTON_LABEL}
+          </button>
+        )}
 
-      {availableUpdate && (
         <button
-          data-testid="header-update-button"
-          aria-label={STR.UPDATE_BUTTON_ARIA(availableUpdate.version)}
-          data-tooltip={STR.UPDATE_AVAILABLE(availableUpdate.version)}
+          data-testid="header-ai-chat"
+          aria-label={STR.CHAT_OPEN_LABEL}
+          data-tooltip={STR.CHAT_OPEN_LABEL}
           data-tooltip-pos="bottom"
-          onClick={() => void window.api.shell.openExternal(availableUpdate.url)}
+          onClick={() => openRightPanel('chat')}
           style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 5,
-            height: 32,
-            padding: '0 10px',
+            ...HEADER_ACTION_BUTTON_STYLE,
             marginLeft: 4,
-            background: 'var(--gw-accent, #6366f1)',
-            color: 'var(--gw-on-solid, #fff)',
-            border: 'none',
-            borderRadius: 4,
-            fontSize: 13,
             fontWeight: 600,
-            fontFamily: 'inherit',
-            cursor: 'pointer',
+          }}
+        >
+          AI
+        </button>
+
+        <button
+          aria-label={STR.INSPECTOR_TOGGLE}
+          data-tooltip={STR.INSPECTOR_TOGGLE}
+          data-tooltip-pos="bottom"
+          onClick={toggleInspector}
+          style={HEADER_ACTION_BUTTON_STYLE}
+        >
+          ⓘ
+        </button>
+      </header>
+
+      {/* Switch-failure banner (W3): stacks below the header via normal flex-column
+          flow in App.tsx — no anchoring math needed. Tagged with the branch it's FOR
+          so a superseded switch's error never lingers once a newer one lands (#13). */}
+      {switchError && (
+        <div
+          data-testid="header-switch-error"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            padding: '0.5rem 1rem',
+            background: 'var(--gw-danger-bg, #450a0a)',
+            borderBottom: '1px solid var(--gw-danger-solid, #dc2626)',
+            color: 'var(--gw-danger, #fca5a5)',
+            fontSize: 13,
             flexShrink: 0,
           }}
         >
-          <span aria-hidden="true" style={{ fontSize: 13, lineHeight: 1 }}>
-            ↓
+          <span style={{ flex: 1 }}>
+            {STR.SWITCH_FAILED(switchError.branch, switchError.message)}
           </span>
-          {STR.UPDATE_BUTTON_LABEL}
-        </button>
+          <button
+            data-testid="header-switch-error-open-status"
+            onClick={() => {
+              clearSwitchError()
+              navigate('status')
+            }}
+            style={{
+              background: 'none',
+              border: '1px solid var(--gw-danger-solid, #dc2626)',
+              borderRadius: 4,
+              color: 'inherit',
+              padding: '3px 8px',
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              flexShrink: 0,
+            }}
+          >
+            {STR.SWITCH_ERROR_OPEN_STATUS}
+          </button>
+          <button
+            data-testid="header-switch-error-bring-changes"
+            onClick={() => void doSwitchBringChanges(switchError.branch)}
+            style={{
+              background: 'var(--gw-danger-solid, #dc2626)',
+              border: 'none',
+              borderRadius: 4,
+              color: 'var(--gw-on-solid, #fff)',
+              padding: '3px 8px',
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              flexShrink: 0,
+            }}
+          >
+            {STR.SWITCH_ERROR_BRING_CHANGES}
+          </button>
+        </div>
       )}
-
-      <button
-        data-testid="header-ai-chat"
-        aria-label={STR.CHAT_OPEN_LABEL}
-        data-tooltip={STR.CHAT_OPEN_LABEL}
-        data-tooltip-pos="bottom"
-        onClick={() => openRightPanel('chat')}
-        style={{
-          ...HEADER_ACTION_BUTTON_STYLE,
-          marginLeft: 4,
-          fontWeight: 600,
-        }}
-      >
-        AI
-      </button>
-
-      <button
-        aria-label={STR.INSPECTOR_TOGGLE}
-        data-tooltip={STR.INSPECTOR_TOGGLE}
-        data-tooltip-pos="bottom"
-        onClick={toggleInspector}
-        style={HEADER_ACTION_BUTTON_STYLE}
-      >
-        ⓘ
-      </button>
-    </header>
+    </>
   )
 }

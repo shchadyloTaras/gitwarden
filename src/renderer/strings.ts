@@ -503,6 +503,12 @@ export const STR = {
   BRANCH_DETACHED_HINT: "You're not on a branch right now (detached HEAD).",
   REMOTE_UPSTREAM_GONE: 'remote branch is gone',
 
+  // ── Switch UX: visible failures + stash quick-fix (Phase 93, W3) ───────────
+  SWITCH_FAILED: (branch: string, message: string): string =>
+    `Couldn't switch to ${branch}: ${message}`,
+  SWITCH_ERROR_OPEN_STATUS: 'Open Status',
+  SWITCH_ERROR_BRING_CHANGES: 'Bring changes & switch',
+
   // ── Inspector ──────────────────────────────────────────────────────────────
   INSPECTOR_TITLE: 'Inspector',
   INSPECTOR_NO_PROFILE: 'No profile selected',

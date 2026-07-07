@@ -9,6 +9,7 @@ import type {
   GitRemote,
   GitBranch,
   GitCommit,
+  StashSwitchResult,
   GitHubDeviceCode,
   LinkedGitHubAccount,
   GitHubAccount,
@@ -189,6 +190,8 @@ export const api = {
       invoke('git:getBranches', { repoPath }),
     switchBranch: (repoPath: string, branch: string): Promise<IpcResult<void>> =>
       invoke('git:switchBranch', { repoPath, branch }),
+    stashSwitchPop: (repoPath: string, branch: string): Promise<IpcResult<StashSwitchResult>> =>
+      invoke('git:stashSwitchPop', { repoPath, branch }),
     createBranch: (repoPath: string, name: string): Promise<IpcResult<void>> =>
       invoke('git:createBranch', { repoPath, name }),
     deleteBranch: (repoPath: string, branch: string): Promise<IpcResult<void>> =>

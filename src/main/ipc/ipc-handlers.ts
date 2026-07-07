@@ -413,6 +413,15 @@ export function registerIpcHandlers(services: Services): void {
     })
   )
 
+  // Phase 93: the "bring changes & switch" quick-fix — behind a confirm in the
+  // renderer (AGENTS.md #6), reachable only from a dirty-tree switch failure.
+  ipcMain.handle('git:stashSwitchPop', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath, branch } = GitBranchOpPayload.parse(raw)
+      return services.git.stashSwitchPop(repoPath, branch)
+    })
+  )
+
   ipcMain.handle('git:createBranch', (_e, raw: unknown) =>
     wrap(async () => {
       const { repoPath, name } = GitCreateBranchPayload.parse(raw)

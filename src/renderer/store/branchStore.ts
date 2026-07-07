@@ -20,9 +20,21 @@ interface BranchState {
   forceDeleteConfirmBranch: string | null
   mergeConfirmBranch: string | null
   mergeConflict: RemediationFailure | null
+  /** True while a switch (plain or the stash quick-fix) is in flight — the header
+   * picker disables itself so a rapid second pick can't queue a checkout pile-up
+   * (fix B, W3). */
+  switching: boolean
+  /** The last switch failure, tagged with which branch it was FOR (#13) — rendered
+   * inline next to the header picker, not buried in the Branches-only `error`. */
+  switchError: { branch: string; message: string } | null
 
   load(repoPath: string, repository: RepositoryRecord): Promise<void>
   doSwitch(branch: string): Promise<void>
+  /** The "bring changes & switch" quick-fix: stash → switch → pop, one compound job.
+   * Offered inline after a dirty-tree switch failure; runs behind the confirm the
+   * button's own label constitutes (AGENTS.md #6). A pop conflict is never
+   * auto-resolved — the stash stays, and the caller is routed to Status. */
+  doSwitchBringChanges(branch: string): Promise<void>
   doCreate(name: string): Promise<void>
   doDelete(branch: string): Promise<void>
   /** The escalated path — `branch -D` — reachable only after doDelete's refusal. */
@@ -31,6 +43,7 @@ interface BranchState {
   setDeleteConfirm(branch: string | null): void
   setForceDeleteConfirm(branch: string | null): void
   setMergeConfirm(branch: string | null): void
+  clearSwitchError(): void
   clearMessages(): void
   clear(): void
 }
@@ -51,11 +64,14 @@ export const useBranchStore = create<BranchState>((set, get) => ({
   forceDeleteConfirmBranch: null,
   mergeConfirmBranch: null,
   mergeConflict: null,
+  switching: false,
+  switchError: null,
 
   async load(repoPath, repository) {
     const token = tracker.begin()
     // W5/W16: an armed destructive confirm (or a stale merge conflict) must not survive
-    // a repo switch — reset them here, alongside the usual load-start hygiene.
+    // a repo switch — reset them here, alongside the usual load-start hygiene. A stale
+    // switchError from a different repo/branch must not survive either.
     set({
       loading: true,
       error: null,
@@ -67,6 +83,7 @@ export const useBranchStore = create<BranchState>((set, get) => ({
       forceDeleteConfirmBranch: null,
       mergeConfirmBranch: null,
       mergeConflict: null,
+      switchError: null,
     })
     try {
       const res = await window.api.git.getBranches(repoPath)
@@ -87,13 +104,17 @@ export const useBranchStore = create<BranchState>((set, get) => ({
   },
 
   async doSwitch(branch) {
-    const { repoPath, repository } = get()
+    const { repoPath, repository, switching } = get()
     if (!repoPath || !repository) return
+    if (switching) return // non-reentrant (fix B) — ignore a rapid second pick
     const token = tracker.begin()
-    set({ error: null, successMessage: null })
+    set({ error: null, successMessage: null, switching: true, switchError: null })
     try {
       const res = await window.api.git.switchBranch(repoPath, branch)
-      if (!res.ok) throw new Error(res.error)
+      if (!res.ok) {
+        if (tracker.isCurrent(token)) set({ switchError: { branch, message: res.error } })
+        return
+      }
       if (tracker.isCurrent(token)) useAppStore.getState().setCurrentBranch(branch)
       // Reload branch list so isCurrent flags update
       const branches = await refreshBranches(repoPath)
@@ -102,7 +123,49 @@ export const useBranchStore = create<BranchState>((set, get) => ({
         set({ successMessage: `Switched to ${branch}.` })
       }
     } catch (err) {
-      if (tracker.isCurrent(token)) set({ error: err instanceof Error ? err.message : String(err) })
+      if (tracker.isCurrent(token)) {
+        set({ switchError: { branch, message: err instanceof Error ? err.message : String(err) } })
+      }
+    } finally {
+      // switching is exclusive to doSwitch/doSwitchBringChanges — always clear it,
+      // regardless of whether a later request has since superseded this call's
+      // token (the Phase 89 stuck-busy-flag lesson).
+      set({ switching: false })
+    }
+  },
+
+  async doSwitchBringChanges(branch) {
+    const { repoPath, repository, switching } = get()
+    if (!repoPath || !repository) return
+    if (switching) return
+    const token = tracker.begin()
+    set({ error: null, successMessage: null, switching: true, switchError: null })
+    try {
+      const res = await window.api.git.stashSwitchPop(repoPath, branch)
+      if (!res.ok) throw new Error(res.error)
+      if (!res.data.ok) {
+        // A stash-pop conflict — never auto-resolved. The switch itself succeeded;
+        // the stash is kept, and the user is routed to Status to finish resolving
+        // it, exactly like a merge conflict.
+        if (tracker.isCurrent(token)) {
+          set({ switchError: { branch, message: res.data.message } })
+          useAppStore.getState().setCurrentBranch(branch)
+          useAppStore.getState().navigate('status')
+        }
+        return
+      }
+      if (tracker.isCurrent(token)) useAppStore.getState().setCurrentBranch(branch)
+      const branches = await refreshBranches(repoPath)
+      if (tracker.isCurrent(token)) {
+        if (branches) set({ branches })
+        set({ successMessage: `Switched to ${branch} and brought your changes along.` })
+      }
+    } catch (err) {
+      if (tracker.isCurrent(token)) {
+        set({ switchError: { branch, message: err instanceof Error ? err.message : String(err) } })
+      }
+    } finally {
+      set({ switching: false })
     }
   },
 
@@ -232,6 +295,10 @@ export const useBranchStore = create<BranchState>((set, get) => ({
     set({ mergeConfirmBranch: branch })
   },
 
+  clearSwitchError() {
+    set({ switchError: null })
+  },
+
   clearMessages() {
     set({ error: null, successMessage: null, mergeConflict: null })
   },
@@ -248,6 +315,7 @@ export const useBranchStore = create<BranchState>((set, get) => ({
       forceDeleteConfirmBranch: null,
       mergeConfirmBranch: null,
       mergeConflict: null,
+      switchError: null,
     })
   },
 }))

@@ -6,6 +6,7 @@ import type {
   GitRemote,
   GitBranch,
   GitCommit,
+  StashSwitchResult,
 } from '../../core/types.js'
 import { parsePorcelainV2 } from '../../core/parsers/PorcelainParser.js'
 import type { UncommitContext } from '../../core/history/uncommit.js'
@@ -428,6 +429,60 @@ export class GitService {
 
   async switchBranch(repoPath: string, branch: string): Promise<void> {
     await this.runner.run({ args: ['switch', branch], cwd: repoPath, readOnly: false })
+  }
+
+  /**
+   * Stash-based "bring changes & switch" quick-fix (Phase 93): `stash push
+   * --include-untracked` → `switch` → `stash pop`, all inside one compound job.
+   * `stash push` on an already-clean tree creates no stash and reports "No local
+   * changes to save" — detected from its stdout so we never attempt a `stash pop`
+   * with nothing to pop. If `switch` itself fails, the stash (if one was made) is
+   * restored before the error propagates, so nothing is ever lost. A pop CONFLICT
+   * is never auto-resolved: the stash is deliberately left in place and `ok: false`
+   * tells the caller to route the user to Status, exactly like a merge conflict.
+   */
+  async stashSwitchPop(repoPath: string, branch: string): Promise<StashSwitchResult> {
+    return this.enqueueJob(repoPath, async (exec) => {
+      const stashRes = await exec({ args: ['stash', 'push', '--include-untracked'] })
+      const stashed = !stashRes.stdout.toString('utf8').includes('No local changes to save')
+
+      try {
+        await exec({ args: ['switch', branch] })
+      } catch (err) {
+        if (stashed) {
+          try {
+            await exec({ args: ['stash', 'pop'] })
+          } catch {
+            // The restore itself failed (rare) — say so explicitly instead of just
+            // rethrowing the switch error, so the user isn't left thinking their
+            // edits vanished when they are actually still sitting in the stash.
+            const switchMessage =
+              err instanceof GitError
+                ? err.userMessage
+                : err instanceof Error
+                  ? err.message
+                  : String(err)
+            throw new Error(
+              `${switchMessage} Your changes are safe in the stash — nothing was lost.`
+            )
+          }
+        }
+        throw err
+      }
+
+      if (!stashed) return { ok: true }
+
+      try {
+        await exec({ args: ['stash', 'pop'] })
+        return { ok: true }
+      } catch (err) {
+        const message =
+          err instanceof GitError
+            ? err.userMessage
+            : 'Bringing your changes back caused a conflict — resolve it on Status.'
+        return { ok: false, message }
+      }
+    })
   }
 
   async createBranch(repoPath: string, name: string): Promise<void> {
