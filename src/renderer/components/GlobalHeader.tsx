@@ -6,6 +6,7 @@ import { useRepositoriesStore } from '../store/repositoriesStore'
 import { useBranchStore } from '../store/branchStore'
 import { useHeaderGuardStore } from '../store/headerGuardStore'
 import { useUpdatesStore } from '../store/updatesStore'
+import { refreshActiveRepo } from '../store/refreshActiveRepo'
 import type { HeaderGuardState } from '../../core/safety/headerGuard'
 import Dropdown from './Dropdown'
 import Logo from './Logo'
@@ -78,24 +79,40 @@ export default function GlobalHeader(): React.ReactElement {
   const updateResult = useUpdatesStore((s) => s.result)
   const availableUpdate = updateResult?.status === 'update-available' ? updateResult.release : null
 
-  // Load branches whenever the active repo changes; clear when no repo is selected
+  // Load branches whenever the active repo changes; clear when no repo is selected.
+  // Keyed on id/localPath, NOT the whole activeRepo object — a same-repo metadata save
+  // (e.g. editing notes) constructs a fresh object that would otherwise blank and
+  // refetch the picker on every save even though the branch list can't have changed
+  // (W30).
   useEffect(() => {
     if (activeRepo) {
       void loadBranches(activeRepo.localPath, activeRepo)
     } else {
       clearBranches()
     }
-  }, [activeRepo, loadBranches, clearBranches])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on id/localPath, not the whole activeRepo object (W30)
+  }, [activeRepo?.id, activeRepo?.localPath, loadBranches, clearBranches])
 
   // The header is always mounted, so this effect gives the guard app-wide live updates on
-  // every repo/profile change — mirrors SafetyCenterScreen's load effect.
+  // every repo/profile change — mirrors SafetyCenterScreen's load effect. Keyed on
+  // activeRepo's id/assignedProfileId (not the whole object) for the same reason as
+  // above; activeProfile/profiles stay full dependencies since the guard genuinely
+  // needs to recheck when either of those changes.
   useEffect(() => {
     if (activeRepo) {
       void refreshGuard(activeRepo.localPath, activeRepo, activeProfile, profiles)
     } else {
       resetGuard()
     }
-  }, [activeRepo, activeProfile, profiles, refreshGuard, resetGuard])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on id/assignedProfileId, not the whole activeRepo object (W30)
+  }, [
+    activeRepo?.id,
+    activeRepo?.assignedProfileId,
+    activeProfile,
+    profiles,
+    refreshGuard,
+    resetGuard,
+  ])
 
   const localBranches = branches.filter((b) => !b.isRemote)
 
@@ -158,7 +175,16 @@ export default function GlobalHeader(): React.ReactElement {
         placeholder="No repositories"
         value={activeRepo?.id ?? ''}
         options={repos.map((r) => ({ value: r.id, label: r.name }))}
-        onChange={(id) => setActiveRepo(repos.find((r) => r.id === id) ?? null)}
+        onChange={(id) => {
+          const picked = repos.find((r) => r.id === id) ?? null
+          // Re-selecting the SAME repo is a value-equal no-op for setActiveRepo (W30) —
+          // route it through the explicit refresh seam instead of doing nothing (W14).
+          if (picked && picked.id === activeRepo?.id) {
+            void refreshActiveRepo()
+          } else {
+            setActiveRepo(picked)
+          }
+        }}
         triggerStyle={SELECT_STYLE}
       />
 

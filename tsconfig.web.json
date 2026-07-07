@@ -23,6 +23,11 @@
     "tests/unit/branch-store-request-guard.test.ts",
     "tests/unit/remote-store-load-hygiene.test.ts",
     "tests/unit/history-store-request-guard.test.ts",
-    "tests/unit/safety-center-store-request-guard.test.ts"
+    "tests/unit/safety-center-store-request-guard.test.ts",
+    "tests/unit/app-store-set-active-repo.test.ts",
+    "tests/unit/branch-store-current-branch-ownership.test.ts",
+    "tests/unit/profiles-store-request-guard.test.ts",
+    "tests/unit/repositories-store-load-error.test.ts",
+    "tests/unit/refresh-active-repo.test.ts"
   ]
 }

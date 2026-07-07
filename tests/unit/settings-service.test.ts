@@ -46,6 +46,21 @@ describe('SettingsService', () => {
     expect(s.lastOpenedRepositoryId).toBe('r1')
   })
 
+  it('two concurrent updates to different fields both land (Phase 90, W19)', async () => {
+    // Simulates e.g. a profile switch racing an onboarding-completed write — before the
+    // JsonStore.update() mutex, both calls could read the same stale snapshot and
+    // whichever wrote last would silently drop the other's field.
+    const [a, b] = await Promise.all([
+      service.update({ activeProfileId: 'p-work' }),
+      service.update({ onboardingCompletedAt: '2026-07-07T00:00:00.000Z' }),
+    ])
+    void a
+    void b
+    const final = await service.get()
+    expect(final.activeProfileId).toBe('p-work')
+    expect(final.onboardingCompletedAt).toBe('2026-07-07T00:00:00.000Z')
+  })
+
   it('data persists across store instances (simulates relaunch)', async () => {
     const filePath = path.join(tmpDir, 'settings.json')
     const storeA = new JsonStore(filePath, AppSettingsSchema, DEFAULTS)

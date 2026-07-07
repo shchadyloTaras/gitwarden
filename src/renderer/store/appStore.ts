@@ -3,6 +3,19 @@ import type { RepositoryRecord } from '../../core/types'
 import { useProfilesStore } from './profilesStore'
 
 /**
+ * Full value equality (not just `id`) — a same-repo metadata save (e.g. editing notes or
+ * a push policy) constructs a fresh object with identical id but a genuinely different
+ * field, and that case must still go through as a real change. `JSON.stringify` is safe
+ * here: `RepositoryRecord` is a plain JSON-serializable record built consistently from
+ * IPC responses / zod-parsed data, so key order is stable across instances (audit W30).
+ */
+function sameRepoRecord(a: RepositoryRecord | null, b: RepositoryRecord | null): boolean {
+  if (a === b) return true
+  if (!a || !b) return false
+  return JSON.stringify(a) === JSON.stringify(b)
+}
+
+/**
  * Switch the active profile to follow the repo's assigned profile.
  *
  * Fired on real repo changes (header picker, Repositories screen, auto-select) and
@@ -74,6 +87,12 @@ export const useAppStore = create<AppState>((set) => ({
   setActiveRepo: (repo) => {
     let shouldSyncProfile = false
     set((s) => {
+      // Bail entirely on a value-equal record — returning the same state reference is a
+      // documented Zustand no-op (no merge, no listener notification), so a same-repo
+      // re-select or an unrelated re-render can never churn activeRepo's identity and
+      // retrigger every effect keyed on it (W30).
+      if (sameRepoRecord(repo, s.activeRepo)) return s
+
       const sameRepo = repo?.id === s.activeRepo?.id
       const assignmentChanged = repo?.assignedProfileId !== s.activeRepo?.assignedProfileId
       shouldSyncProfile = Boolean(repo && (!sameRepo || assignmentChanged))

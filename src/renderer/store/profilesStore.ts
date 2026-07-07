@@ -1,6 +1,9 @@
 import { create } from 'zustand'
 import type { Profile } from '../../core/types'
 import { useRepositoriesStore } from './repositoriesStore'
+import { createRequestTracker } from '../../core/concurrency/requestGuard'
+
+const activeProfileTracker = createRequestTracker()
 
 const COLORS = ['#4ade80', '#60a5fa', '#f472b6', '#fb923c', '#a78bfa', '#34d399']
 
@@ -71,8 +74,11 @@ export const useProfilesStore = create<ProfilesState>((set) => ({
   },
 
   async setActiveProfile(profileId) {
+    // W19: a superseded resolution (e.g. two rapid profile switches) must never land
+    // after a newer one already did.
+    const token = activeProfileTracker.begin()
     const res = await window.api.settings.update({ activeProfileId: profileId ?? undefined })
     if (!res.ok) throw new Error(res.error)
-    set({ activeProfileId: profileId })
+    if (activeProfileTracker.isCurrent(token)) set({ activeProfileId: profileId })
   },
 }))

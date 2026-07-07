@@ -7,6 +7,7 @@ import type {
 } from '../../core/types'
 import type { Remediation } from '../../core/safety/remediation'
 import { useAppStore } from './appStore'
+import { useBranchStore } from './branchStore'
 import { createRequestTracker } from '../../core/concurrency/requestGuard'
 
 const tracker = createRequestTracker()
@@ -98,10 +99,12 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
                 ? identityRes.error
                 : null,
         })
-        // appStore.currentBranch is the single source of truth for the current branch
-        // (read by GlobalHeader and RemoteScreen alike) — push the live git status into
-        // it rather than keeping a second copy here that could drift out of sync.
-        if (branch) useAppStore.getState().setCurrentBranch(branch)
+        // branchStore is the sole writer of appStore.currentBranch (Phase 90) — when the
+        // live branch disagrees with what's currently shown, reconcile THROUGH the
+        // owner instead of writing appStore directly (kills the 5-writer race).
+        if (branch && branch !== useAppStore.getState().currentBranch) {
+          await useBranchStore.getState().load(repoPath, repository)
+        }
       }
     } catch (err) {
       if (tracker.isCurrent(token)) set({ error: err instanceof Error ? err.message : String(err) })
@@ -126,7 +129,7 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
   },
 
   async doPull(remote, branch) {
-    const { repoPath } = get()
+    const { repoPath, repository } = get()
     if (!repoPath) return
     const token = tracker.begin()
     set({ pullLoading: remote, error: null, successMessage: null, lastFailure: null })
@@ -149,11 +152,14 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
         return
       }
       // doPull's status refresh: dropped if a newer load() already landed the live
-      // branch, so a slow pull can't yank appStore.currentBranch backwards.
+      // branch, so a slow pull can't yank appStore.currentBranch backwards. When it
+      // disagrees, reconcile THROUGH branchStore — the sole writer (Phase 90).
       const statusRes = await window.api.git.getStatus(repoPath)
       if (statusRes.ok && tracker.isCurrent(token)) {
         const liveBranch = statusRes.data.branch ?? null
-        if (liveBranch) useAppStore.getState().setCurrentBranch(liveBranch)
+        if (liveBranch && liveBranch !== useAppStore.getState().currentBranch && repository) {
+          await useBranchStore.getState().load(repoPath, repository)
+        }
       }
       set({ successMessage: `Pulled ${branch} from ${remote}.` })
     } catch (err) {

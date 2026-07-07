@@ -14,9 +14,9 @@ export class SettingsService implements ISettingsService {
   }
 
   async update(patch: Partial<AppSettings>): Promise<AppSettings> {
-    const current = await this.store.read()
-    const updated: AppSettings = { ...current, ...patch }
-    await this.store.write(updated)
-    return updated
+    // Serialized read-modify-write (W19) — two concurrent settings.update() calls (e.g.
+    // a profile switch racing an onboarding-completed write) can no longer both read
+    // the same stale snapshot and silently drop one patch.
+    return this.store.update((current) => ({ ...current, ...patch }))
   }
 }

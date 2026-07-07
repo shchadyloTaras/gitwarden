@@ -66,7 +66,10 @@ export const useBranchStore = create<BranchState>((set, get) => ({
       if (tracker.isCurrent(token)) {
         set({ branches: res.data })
         const current = res.data.find((b) => b.isCurrent)
-        if (current) useAppStore.getState().setCurrentBranch(current.name)
+        // branchStore is the sole writer of appStore.currentBranch (Phase 90) — always
+        // assert the truth on every load: a real name, or null when none is found (the
+        // previously-current branch was deleted/renamed away elsewhere) — audit #4.
+        useAppStore.getState().setCurrentBranch(current ? current.name : null)
       }
     } catch (err) {
       if (tracker.isCurrent(token)) set({ error: err instanceof Error ? err.message : String(err) })

@@ -76,4 +76,47 @@ describe('JsonStore', () => {
       expect(await store.read()).toEqual({ value: 20 })
     })
   })
+
+  describe('update() — atomic read-modify-write (Phase 90, W19)', () => {
+    it('applies a single transaction correctly', async () => {
+      await store.write({ value: 1 })
+      const result = await store.update((current) => ({ value: current.value + 1 }))
+      expect(result).toEqual({ value: 2 })
+      expect(await store.read()).toEqual({ value: 2 })
+    })
+
+    it('serializes two concurrent transactions instead of losing one (the actual race)', async () => {
+      await store.write({ value: 0 })
+      // Both transactions start from the SAME on-disk snapshot ({value: 0}) if run as
+      // plain read()+write() — a naive read-modify-write would let whichever WRITES
+      // LAST win, silently discarding the other's +1. update() must serialize them so
+      // both increments land.
+      const [a, b] = await Promise.all([
+        store.update((current) => ({ value: current.value + 1 })),
+        store.update((current) => ({ value: current.value + 1 })),
+      ])
+      expect([a.value, b.value].sort()).toEqual([1, 2])
+      expect(await store.read()).toEqual({ value: 2 })
+    })
+
+    it('runs many concurrent increments without losing any', async () => {
+      await store.write({ value: 0 })
+      await Promise.all(
+        Array.from({ length: 20 }, () => store.update((current) => ({ value: current.value + 1 })))
+      )
+      expect(await store.read()).toEqual({ value: 20 })
+    })
+
+    it('a rejected transaction does not wedge the queue for the next caller', async () => {
+      await store.write({ value: 1 })
+      await expect(
+        store.update(() => {
+          throw new Error('boom')
+        })
+      ).rejects.toThrow('boom')
+
+      const result = await store.update((current) => ({ value: current.value + 1 }))
+      expect(result).toEqual({ value: 2 })
+    })
+  })
 })

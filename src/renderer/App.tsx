@@ -12,6 +12,7 @@ import { useSettingsStore } from './store/settingsStore'
 import { useOnboardingStore } from './store/onboardingStore'
 import { useUpdatesStore } from './store/updatesStore'
 import type { NavScreen } from './store/appStore'
+import { pickAutoSelectedRepo } from '../core/repos/autoSelectRepo'
 
 import RepositoriesScreen from './screens/RepositoriesScreen'
 import ProfilesScreen from './screens/ProfilesScreen'
@@ -254,6 +255,7 @@ export default function App(): React.ReactElement {
   const load = useProfilesStore((s) => s.load)
   const loadRepos = useRepositoriesStore((s) => s.load)
   const repos = useRepositoriesStore((s) => s.repos)
+  const reposError = useRepositoriesStore((s) => s.error)
   const loadSettings = useSettingsStore((s) => s.load)
   const checkForUpdates = useUpdatesStore((s) => s.check)
   const appearance = useSettingsStore((s) => s.appearance)
@@ -366,14 +368,17 @@ export default function App(): React.ReactElement {
     setSidebarCollapsed((current) => !current)
   }, [])
 
-  // Auto-select active repo: pick first available when none is active or active was removed
+  // Auto-select active repo: pick first available when none is active or active was
+  // removed. Gated on storesReady so this never fires before profiles have loaded — an
+  // early setActiveRepo would call syncProfileToRepo while profiles is still empty,
+  // and nothing retries the sync afterward (W18). A failed repositories.list() must
+  // not look like "zero repos" either — reposError blocks the clear-to-null branch
+  // (#11, W32).
   useEffect(() => {
-    if (repos.length === 0) {
-      if (activeRepo) setActiveRepo(null)
-    } else if (!activeRepo || !repos.find((r) => r.id === activeRepo.id)) {
-      setActiveRepo(repos[0])
-    }
-  }, [repos, activeRepo, setActiveRepo])
+    if (!storesReady || reposError) return
+    const next = pickAutoSelectedRepo(repos, activeRepo?.id ?? null)
+    if (next !== undefined) setActiveRepo(next)
+  }, [repos, activeRepo, setActiveRepo, reposError, storesReady])
 
   useEffect(() => {
     if (autoOnboardingChecked || !storesReady || navigator.webdriver) return
