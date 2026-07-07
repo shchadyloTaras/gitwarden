@@ -134,7 +134,11 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
     const token = tracker.begin()
     set({ pullLoading: remote, error: null, successMessage: null, lastFailure: null })
     try {
-      const res = await window.api.git.pull(repoPath, remote, branch)
+      // The main process verifies HEAD is still this branch inside the compound pull
+      // job before integrating anything (Phase 91, wave-1 #2) — a moved HEAD refuses
+      // with a plain message instead of pulling onto the wrong branch.
+      const expectedHeadBranch = useAppStore.getState().currentBranch ?? undefined
+      const res = await window.api.git.pull(repoPath, remote, branch, expectedHeadBranch)
       if (!res.ok) {
         // Retain the structured failure (code + remediation) so the recovery
         // banner can offer the one-click fix (e.g. merge-remote-into-local for a
@@ -181,16 +185,25 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
       if (!res.ok) {
         // Retain the structured failure (code + remediation) so the recovery
         // banner can offer the one-click fix; the `error` string still shows too.
+        // remote/branch are pinned too (W21) — matching doPull above — so the
+        // recovery banner's fix button always has a target regardless of which
+        // action failed.
         set({
           error: res.error,
-          lastFailure: { message: res.error, code: res.code, remediation: res.remediation },
+          lastFailure: {
+            message: res.error,
+            code: res.code,
+            remediation: res.remediation,
+            remote,
+            branch,
+          },
         })
         return
       }
       set({ successMessage: `Pushed ${branch} to ${remote}.` })
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
-      set({ error: message, lastFailure: { message } })
+      set({ error: message, lastFailure: { message, remote, branch } })
     } finally {
       set({ pushLoading: false })
     }

@@ -91,9 +91,27 @@ export const GitRemoteBranchOpPayload = z.object({
   branch: z.string().min(1),
 })
 
+// Phase 91 (W1/wave-1 #2): pull is a compound job — verify HEAD (when the caller
+// knows which branch it saw) before integrating, inside the same enqueued job that
+// resolves remote auth and runs the pull.
+export const GitPullPayload = z.object({
+  repoPath: z.string(),
+  remote: z.string().min(1),
+  branch: z.string().min(1),
+  expectedHeadBranch: z.string().optional(),
+})
+
 export const GitBranchOpPayload = z.object({
   repoPath: z.string(),
   branch: z.string().min(1),
+})
+
+// Phase 91 (W8): merge is a compound job — verify HEAD (when the caller knows which
+// branch it saw) → clean-tree check → merge, all inside one enqueued job.
+export const GitMergePayload = z.object({
+  repoPath: z.string(),
+  branch: z.string().min(1),
+  expectedTargetBranch: z.string().optional(),
 })
 
 export const GitCreateBranchPayload = z.object({
@@ -105,6 +123,14 @@ export const GitHistoryPayload = z.object({
   repoPath: z.string(),
   limit: z.number().int().positive(),
   skip: z.number().int().min(0),
+})
+
+// Uncommit to Working Changes (Phase 91, W1): the two return-commit WRITE channels
+// gain expectedHeadBranch — history:getReturnState stays on the plain
+// GitRepoPathPayload since it's a read, not a mutation.
+export const HistoryReturnPayload = z.object({
+  repoPath: z.string(),
+  expectedHeadBranch: z.string().optional(),
 })
 
 // GitHub OAuth request payloads (Device Flow). All keyed by profileId.
@@ -361,4 +387,6 @@ export const RemediationExecutePayload = z.object({
   profileId: z.string().optional(),
   remote: z.string().optional(),
   branch: z.string().optional(),
+  // For merge-remote-into-local (Phase 91): refuse if HEAD has moved off this branch.
+  expectedHeadBranch: z.string().optional(),
 })

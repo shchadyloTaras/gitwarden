@@ -9,7 +9,7 @@ import type {
 } from '../../core/types.js'
 import { parsePorcelainV2 } from '../../core/parsers/PorcelainParser.js'
 import type { UncommitContext } from '../../core/history/uncommit.js'
-import type { GitRunner } from '../git/GitRunner.js'
+import type { GitRunner, GitInvocation, GitResult } from '../git/GitRunner.js'
 import { GitLocator } from '../git/GitLocator.js'
 import { buildAskpassEnv, ensureAskpassHelper } from '../git/askpass.js'
 import { GitError } from '../git/ErrorMapper.js'
@@ -56,8 +56,46 @@ function parseScope(origin: string): GitConfigScope {
   return 'global'
 }
 
+/**
+ * Executes a single WRITE invocation. Passed to a compound job's callback (see
+ * `GitService.enqueueJob`) so a write inside the job bypasses the write queue it is
+ * already occupying, instead of re-entering it and deadlocking (see
+ * `GitRunner.enqueueJob`'s doc comment). Every write method below accepts this as an
+ * optional trailing `exec` param: omitted, it behaves exactly as before (a standalone
+ * call that enqueues itself); passed, it runs as part of the caller's compound job.
+ */
+export type WriteExecutor = (inv: Omit<GitInvocation, 'cwd' | 'readOnly'>) => Promise<GitResult>
+
 export class GitService {
   constructor(private readonly runner: GitRunner) {}
+
+  /**
+   * Public compound-job API (Phase 91): the read → decide → write sequence a caller
+   * builds inside `fn` runs atomically against every other write for this repo — see
+   * `GitRunner.enqueueJob`.
+   */
+  enqueueJob<T>(repoPath: string, fn: (exec: WriteExecutor) => Promise<T>): Promise<T> {
+    return this.runner.enqueueJob(repoPath, fn)
+  }
+
+  /**
+   * True iff HEAD is still on the expected branch, checked via `symbolic-ref --short
+   * HEAD` — the in-queue verification every compound write performs immediately
+   * before mutating (Phase 91). A detached HEAD (or any other `symbolic-ref` failure)
+   * counts as a mismatch, not a crash: there is no branch to match against.
+   */
+  async verifyHeadBranch(repoPath: string, expected: string): Promise<boolean> {
+    try {
+      const res = await this.runner.run({
+        args: ['symbolic-ref', '--short', 'HEAD'],
+        cwd: repoPath,
+        readOnly: true,
+      })
+      return res.stdout.toString('utf8').trim() === expected
+    } catch {
+      return false
+    }
+  }
 
   async getStatus(repoPath: string): Promise<GitStatus> {
     const result = await this.runner.run({
@@ -125,18 +163,21 @@ export class GitService {
     })
   }
 
+  /**
+   * The commit and the hash read that follows it run inside one compound job (W26) —
+   * without it, the hash read is a separate, unqueued call that could race a
+   * concurrently-enqueued write (e.g. a switchBranch) moving HEAD in between.
+   */
   async commit(repoPath: string, message: string): Promise<{ hash: string }> {
-    await this.runner.run({
-      args: ['commit', '-m', message],
-      cwd: repoPath,
-      readOnly: false,
+    return this.enqueueJob(repoPath, async (exec) => {
+      await exec({ args: ['commit', '-m', message] })
+      const result = await this.runner.run({
+        args: ['rev-parse', '--short', 'HEAD'],
+        cwd: repoPath,
+        readOnly: true,
+      })
+      return { hash: result.stdout.toString('utf8').trim() }
     })
-    const result = await this.runner.run({
-      args: ['rev-parse', '--short', 'HEAD'],
-      cwd: repoPath,
-      readOnly: true,
-    })
-    return { hash: result.stdout.toString('utf8').trim() }
   }
 
   /**
@@ -216,54 +257,70 @@ export class GitService {
     })
   }
 
-  async fetch(repoPath: string, remote: string, auth?: PushAuth): Promise<void> {
-    await this.runner.run({
+  async fetch(
+    repoPath: string,
+    remote: string,
+    auth?: PushAuth,
+    exec?: WriteExecutor
+  ): Promise<void> {
+    const run = exec ?? ((inv) => this.runner.run({ ...inv, cwd: repoPath, readOnly: false }))
+    await run({
       args: [...this.credentialIsolationArgs(auth), 'fetch', remote],
-      cwd: repoPath,
-      readOnly: false,
       timeoutMs: 60_000,
       extraEnv: this.askpassEnv(auth),
     })
   }
 
-  async pull(repoPath: string, remote: string, branch: string, auth?: PushAuth): Promise<void> {
+  async pull(
+    repoPath: string,
+    remote: string,
+    branch: string,
+    auth?: PushAuth,
+    exec?: WriteExecutor
+  ): Promise<void> {
     // `--ff-only`: integrate the remote ONLY when it is a clean fast-forward. This
     // keeps the common "local is behind" case working while turning a divergence
     // into a single, predictable "Not possible to fast-forward" error (mapped to
     // `divergentBranches`) — instead of git's cryptic "Need to specify how to
     // reconcile" or a surprise merge commit / conflict a user did not ask for.
     // A merge/rebase is a deliberate action, not a silent side effect of Pull.
-    await this.runner.run({
+    const run = exec ?? ((inv) => this.runner.run({ ...inv, cwd: repoPath, readOnly: false }))
+    await run({
       args: [...this.credentialIsolationArgs(auth), 'pull', '--ff-only', remote, branch],
-      cwd: repoPath,
-      readOnly: false,
       timeoutMs: 60_000,
       extraEnv: this.askpassEnv(auth),
     })
   }
 
   /**
-   * `-u` is added only when the current branch has no upstream yet, so the first push
-   * after connecting a remote (Initialize Repository, Phase 86) wires tracking exactly
-   * like GitHub's own "git push -u origin main" — behavior is unchanged once an upstream
-   * already exists.
+   * `-u` is added only when the branch being pushed has no upstream yet, so the first
+   * push after connecting a remote (Initialize Repository, Phase 86) wires tracking
+   * exactly like GitHub's own "git push -u origin main" — behavior is unchanged once
+   * an upstream already exists. Probes the NAMED branch's upstream (`<branch>@{u}`),
+   * not HEAD's (W10) — pushing a branch other than the checked-out one used to get
+   * `-u` decided by the wrong ref entirely.
    */
-  async push(repoPath: string, remote: string, branch: string, auth?: PushAuth): Promise<void> {
-    const hasUpstream = await this.hasUpstream(repoPath)
+  async push(
+    repoPath: string,
+    remote: string,
+    branch: string,
+    auth?: PushAuth,
+    exec?: WriteExecutor
+  ): Promise<void> {
+    const hasUpstream = await this.hasUpstream(repoPath, branch)
     const pushArgs = hasUpstream ? ['push', remote, branch] : ['push', '-u', remote, branch]
-    await this.runner.run({
+    const run = exec ?? ((inv) => this.runner.run({ ...inv, cwd: repoPath, readOnly: false }))
+    await run({
       args: [...this.credentialIsolationArgs(auth), ...pushArgs],
-      cwd: repoPath,
-      readOnly: false,
       timeoutMs: 60_000,
       extraEnv: this.askpassEnv(auth),
     })
   }
 
-  private async hasUpstream(repoPath: string): Promise<boolean> {
+  private async hasUpstream(repoPath: string, branch: string): Promise<boolean> {
     try {
       await this.runner.run({
-        args: ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'],
+        args: ['rev-parse', '--abbrev-ref', '--symbolic-full-name', `${branch}@{u}`],
         cwd: repoPath,
         readOnly: true,
       })
@@ -282,13 +339,9 @@ export class GitService {
    * and leaves the repo in git's standard mid-merge state — this method does
    * NOT catch or resolve it.
    */
-  async mergeBranch(repoPath: string, ref: string): Promise<void> {
-    await this.runner.run({
-      args: ['merge', '--no-edit', ref],
-      cwd: repoPath,
-      readOnly: false,
-      timeoutMs: 60_000,
-    })
+  async mergeBranch(repoPath: string, ref: string, exec?: WriteExecutor): Promise<void> {
+    const run = exec ?? ((inv) => this.runner.run({ ...inv, cwd: repoPath, readOnly: false }))
+    await run({ args: ['merge', '--no-edit', ref], timeoutMs: 60_000 })
   }
 
   /**
@@ -297,8 +350,13 @@ export class GitService {
    * so both flows share one merge code path and one conflict-classification
    * behaviour.
    */
-  async mergeRemoteBranch(repoPath: string, remote: string, branch: string): Promise<void> {
-    return this.mergeBranch(repoPath, `${remote}/${branch}`)
+  async mergeRemoteBranch(
+    repoPath: string,
+    remote: string,
+    branch: string,
+    exec?: WriteExecutor
+  ): Promise<void> {
+    return this.mergeBranch(repoPath, `${remote}/${branch}`, exec)
   }
 
   /**
@@ -411,9 +469,21 @@ export class GitService {
   ): Promise<GitCommit[]> {
     try {
       return await this.queryCommitLog(repoPath, ['-n', String(limit), `${remote}/${branch}..HEAD`])
-    } catch {
-      // First push — remote tracking branch may not exist yet.
-      return this.getCommitHistory(repoPath, limit, 0)
+    } catch (err) {
+      // First push — the remote-tracking ref doesn't exist yet, so git reports the
+      // range itself as an unresolvable revision. Narrowed to that specific failure
+      // (W29, mirroring getCommitHistory's pattern above): any OTHER error (a bad
+      // repo path, a timeout, a real permissions failure) must still propagate
+      // instead of being silently reinterpreted as "first push".
+      if (
+        err instanceof GitError &&
+        /unknown revision or path not in the working tree|ambiguous argument/i.test(
+          err.technicalDetails
+        )
+      ) {
+        return this.getCommitHistory(repoPath, limit, 0)
+      }
+      throw err
     }
   }
 
@@ -569,12 +639,9 @@ export class GitService {
    * Changes, Phase 77). Callers pass a validated `` `HEAD~${n}` `` — never free-form user text —
    * so this stays a safe array element (AGENTS.md rule #3), same as every other GitService call.
    */
-  async resetMixed(repoPath: string, target: string): Promise<void> {
-    await this.runner.run({
-      args: ['reset', '--mixed', target],
-      cwd: repoPath,
-      readOnly: false,
-    })
+  async resetMixed(repoPath: string, target: string, exec?: WriteExecutor): Promise<void> {
+    const run = exec ?? ((inv) => this.runner.run({ ...inv, cwd: repoPath, readOnly: false }))
+    await run({ args: ['reset', '--mixed', target] })
   }
 
   async discardFile(repoPath: string, filePath: string): Promise<void> {

@@ -9,17 +9,32 @@
 import type { GitService } from '../services/GitService.js'
 
 export interface GitMergeDeps {
-  git: Pick<GitService, 'getStatus' | 'mergeBranch'>
+  git: Pick<GitService, 'getStatus' | 'mergeBranch' | 'enqueueJob' | 'verifyHeadBranch'>
 }
 
+/**
+ * Phase 91 (W8): verify HEAD → clean-tree check → merge, all inside one enqueued job.
+ * Closes the TOCTOU where a queued write between the old read-only `getStatus` check
+ * and the queued `mergeBranch` write could land the merge on a branch that moved, or
+ * re-dirty a tree the pre-check had just declared clean.
+ */
 export async function runGitMerge(
   deps: GitMergeDeps,
   repoPath: string,
-  branch: string
+  branch: string,
+  expectedTargetBranch?: string
 ): Promise<void> {
-  const status = await deps.git.getStatus(repoPath)
-  if (status.files.length > 0) {
-    throw new Error('Commit or stash your changes before merging this branch in.')
-  }
-  await deps.git.mergeBranch(repoPath, branch)
+  return deps.git.enqueueJob(repoPath, async (exec) => {
+    if (expectedTargetBranch) {
+      const onExpected = await deps.git.verifyHeadBranch(repoPath, expectedTargetBranch)
+      if (!onExpected) {
+        throw new Error('The branch changed since you opened this — refresh and try again.')
+      }
+    }
+    const status = await deps.git.getStatus(repoPath)
+    if (status.files.length > 0) {
+      throw new Error('Commit or stash your changes before merging this branch in.')
+    }
+    await deps.git.mergeBranch(repoPath, branch, exec)
+  })
 }

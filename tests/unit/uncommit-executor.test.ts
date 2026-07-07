@@ -178,4 +178,80 @@ describe('uncommitExecutor integration', () => {
     expect(allResult.ok).toBe(false)
     expect(allResult.message).toMatch(/never been pushed/)
   })
+
+  // ── Phase 91 (W1, critical): expectedHeadBranch verification ────────────────────
+  describe('expectedHeadBranch verification', () => {
+    it('the happy path (matching branch) is unaffected', async () => {
+      await setUpTrackedRemote()
+      await addCommit('second')
+
+      const result = await returnLastCommit(deps, { repoPath, expectedHeadBranch: 'main' })
+      expect(result).toEqual({ ok: true })
+    })
+
+    it('refuses returnLastCommit when HEAD is not the expected branch', async () => {
+      await setUpTrackedRemote()
+      await addCommit('second')
+      await git(repoPath, 'checkout', '-b', 'other')
+      const headBefore = await git(repoPath, 'rev-parse', 'HEAD')
+
+      const result = await returnLastCommit(deps, { repoPath, expectedHeadBranch: 'main' })
+
+      expect(result.ok).toBe(false)
+      expect(result.message).toMatch(/changed since you opened this/i)
+      expect(await git(repoPath, 'rev-parse', 'HEAD')).toBe(headBefore)
+    })
+
+    it('refuses returnUnpushed when HEAD is not the expected branch, without resetting', async () => {
+      await setUpTrackedRemote()
+      await addCommit('c2')
+      await addCommit('c3')
+      await git(repoPath, 'checkout', '-b', 'other')
+      const headBefore = await git(repoPath, 'rev-parse', 'HEAD')
+
+      const result = await returnUnpushed(deps, { repoPath, expectedHeadBranch: 'main' })
+
+      expect(result.ok).toBe(false)
+      expect(result.message).toMatch(/changed since you opened this/i)
+      expect(await git(repoPath, 'rev-parse', 'HEAD')).toBe(headBefore)
+    })
+
+    it('refuses when a queued branch switch lands HEAD elsewhere before the job runs — repo untouched (the wave-1 #2 / plan integration scenario)', async () => {
+      await setUpTrackedRemote()
+      await addCommit('second') // 1 unpushed commit, eligible for returnLastCommit
+      await git(repoPath, 'branch', 'other')
+      const headBefore = await git(repoPath, 'rev-parse', 'HEAD')
+
+      // Occupy the SAME per-repo queue with a slow job that switches HEAD to 'other'
+      // — simulating a concurrent operation that lands between the moment the
+      // renderer read 'main' as current and the moment this returnLastCommit call
+      // actually reaches the front of the queue.
+      const slowSwitch = service.enqueueJob(repoPath, async (exec) => {
+        await new Promise((r) => setTimeout(r, 50))
+        await exec({ args: ['checkout', 'other'] })
+      })
+
+      const result = await returnLastCommit(deps, { repoPath, expectedHeadBranch: 'main' })
+      await slowSwitch
+
+      expect(result.ok).toBe(false)
+      expect(result.message).toMatch(/changed since you opened this/i)
+      // resetMixed never ran: HEAD is still the same commit it was before either job.
+      expect(await git(repoPath, 'rev-parse', 'HEAD')).toBe(headBefore)
+      // The switch itself DID land — proving the refusal came from a fresh check,
+      // not from blocking the other operation.
+      expect(await git(repoPath, 'rev-parse', '--abbrev-ref', 'HEAD')).toBe('other')
+    })
+
+    it('omitting expectedHeadBranch skips verification entirely (backward compatible)', async () => {
+      await setUpTrackedRemote()
+      await addCommit('second')
+      await git(repoPath, 'checkout', '-b', 'other')
+
+      // No expectedHeadBranch passed — the existing (pre-Phase-91) behavior: eligible
+      // on whatever HEAD currently is, regardless of what branch it used to be.
+      const result = await returnLastCommit(deps, { repoPath })
+      expect(result).toEqual({ ok: true })
+    })
+  })
 })

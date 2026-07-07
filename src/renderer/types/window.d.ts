@@ -151,13 +151,18 @@ interface ElectronAPI {
     }): Promise<IpcResult<{ name: string; remoteUrl?: string; remoteError?: string }>>
     getRemotes(repoPath: string): Promise<IpcResult<GitRemote[]>>
     fetch(repoPath: string, remote: string): Promise<IpcResult<void>>
-    pull(repoPath: string, remote: string, branch: string): Promise<IpcResult<void>>
+    pull(
+      repoPath: string,
+      remote: string,
+      branch: string,
+      expectedHeadBranch?: string
+    ): Promise<IpcResult<void>>
     push(repoPath: string, remote: string, branch: string): Promise<IpcResult<void>>
     getBranches(repoPath: string): Promise<IpcResult<GitBranch[]>>
     switchBranch(repoPath: string, branch: string): Promise<IpcResult<void>>
     createBranch(repoPath: string, name: string): Promise<IpcResult<void>>
     deleteBranch(repoPath: string, branch: string): Promise<IpcResult<void>>
-    merge(repoPath: string, branch: string): Promise<IpcResult<void>>
+    merge(repoPath: string, branch: string, expectedTargetBranch?: string): Promise<IpcResult<void>>
     getCommitHistory(repoPath: string, limit: number, skip: number): Promise<IpcResult<GitCommit[]>>
     discardFile(repoPath: string, filePath: string): Promise<IpcResult<void>>
     cleanFile(repoPath: string, filePath: string): Promise<IpcResult<void>>
@@ -165,8 +170,14 @@ interface ElectronAPI {
   }
   history: {
     getReturnState(repoPath: string): Promise<IpcResult<UncommitReturnState>>
-    returnLastCommit(repoPath: string): Promise<IpcResult<UncommitActionResult>>
-    returnUnpushed(repoPath: string): Promise<IpcResult<UncommitActionResult>>
+    returnLastCommit(
+      repoPath: string,
+      expectedHeadBranch?: string
+    ): Promise<IpcResult<UncommitActionResult>>
+    returnUnpushed(
+      repoPath: string,
+      expectedHeadBranch?: string
+    ): Promise<IpcResult<UncommitActionResult>>
   }
   remediation: {
     execute(payload: {
@@ -175,6 +186,7 @@ interface ElectronAPI {
       profileId?: string
       remote?: string
       branch?: string
+      expectedHeadBranch?: string
     }): Promise<IpcResult<RemediationResult>>
   }
   github: {

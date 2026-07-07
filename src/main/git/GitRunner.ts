@@ -137,6 +137,32 @@ export class GitRunner {
     return next
   }
 
+  /**
+   * Public compound-job API (Phase 91): holds this cwd's queue slot for the entire
+   * duration of `fn`, so a read → decide → write sequence executes atomically against
+   * every other write for the same repo — the TOCTOU gap a separate readOnly-read then
+   * a separately-enqueued write otherwise leaves open.
+   *
+   * `fn` receives `runWrite`, which executes a write invocation by calling `execute()`
+   * DIRECTLY — never `run()`/`enqueue()` again. This is deliberate, not an oversight:
+   * `fn` is already running as the queue's current job, so a write issued through the
+   * normal `run({readOnly:false})` path would call `enqueue()` a second time for the
+   * SAME cwd, chaining onto a tail that can only advance once this very job (which is
+   * awaiting that write) finishes — a guaranteed self-deadlock. Reads inside `fn` are
+   * unaffected: `readOnly: true` invocations never enqueue in the first place, so they
+   * can keep going through the normal `run()` path unchanged.
+   */
+  enqueueJob<T>(
+    cwd: string,
+    fn: (
+      runWrite: (inv: Omit<GitInvocation, 'cwd' | 'readOnly'>) => Promise<GitResult>
+    ) => Promise<T>
+  ): Promise<T> {
+    const runWrite = (inv: Omit<GitInvocation, 'cwd' | 'readOnly'>): Promise<GitResult> =>
+      this.execute({ ...inv, cwd, readOnly: false })
+    return this.enqueue(cwd, () => fn(runWrite))
+  }
+
   private buildEnv(readOnly: boolean): NodeJS.ProcessEnv {
     const gitDir = path.dirname(this.gitPath)
     const systemPath = process.env.PATH ?? ''

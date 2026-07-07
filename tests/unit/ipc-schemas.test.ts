@@ -10,6 +10,10 @@ import {
   RepositoryDeletePayload,
   SettingsUpdatePayload,
   GitRepoPathPayload,
+  GitMergePayload,
+  GitPullPayload,
+  HistoryReturnPayload,
+  RemediationExecutePayload,
 } from '../../src/main/ipc/ipc-schemas.js'
 
 // Minimal valid profile input (no id)
@@ -161,5 +165,98 @@ describe('GitRepoPathPayload', () => {
   })
   it('rejects null', () => {
     expect(() => GitRepoPathPayload.parse(null)).toThrow()
+  })
+})
+
+// Phase 91: the verified-target compound writes gain optional expected*Branch fields.
+describe('GitMergePayload', () => {
+  it('accepts without expectedTargetBranch (backward compatible)', () => {
+    expect(() => GitMergePayload.parse({ repoPath: '/repo', branch: 'feature' })).not.toThrow()
+  })
+  it('accepts with expectedTargetBranch', () => {
+    expect(() =>
+      GitMergePayload.parse({ repoPath: '/repo', branch: 'feature', expectedTargetBranch: 'main' })
+    ).not.toThrow()
+  })
+  it('rejects an empty branch', () => {
+    expect(() => GitMergePayload.parse({ repoPath: '/repo', branch: '' })).toThrow()
+  })
+  it('rejects a non-string expectedTargetBranch', () => {
+    expect(() =>
+      GitMergePayload.parse({ repoPath: '/repo', branch: 'feature', expectedTargetBranch: 42 })
+    ).toThrow()
+  })
+})
+
+describe('GitPullPayload', () => {
+  it('accepts without expectedHeadBranch (backward compatible)', () => {
+    expect(() =>
+      GitPullPayload.parse({ repoPath: '/repo', remote: 'origin', branch: 'main' })
+    ).not.toThrow()
+  })
+  it('accepts with expectedHeadBranch', () => {
+    expect(() =>
+      GitPullPayload.parse({
+        repoPath: '/repo',
+        remote: 'origin',
+        branch: 'main',
+        expectedHeadBranch: 'main',
+      })
+    ).not.toThrow()
+  })
+  it('rejects an empty remote', () => {
+    expect(() => GitPullPayload.parse({ repoPath: '/repo', remote: '', branch: 'main' })).toThrow()
+  })
+  it('rejects an empty branch', () => {
+    expect(() =>
+      GitPullPayload.parse({ repoPath: '/repo', remote: 'origin', branch: '' })
+    ).toThrow()
+  })
+})
+
+describe('HistoryReturnPayload', () => {
+  it('accepts without expectedHeadBranch (backward compatible)', () => {
+    expect(() => HistoryReturnPayload.parse({ repoPath: '/repo' })).not.toThrow()
+  })
+  it('accepts with expectedHeadBranch', () => {
+    expect(() =>
+      HistoryReturnPayload.parse({ repoPath: '/repo', expectedHeadBranch: 'main' })
+    ).not.toThrow()
+  })
+  it('rejects missing repoPath', () => {
+    expect(() => HistoryReturnPayload.parse({ expectedHeadBranch: 'main' })).toThrow()
+  })
+})
+
+describe('RemediationExecutePayload expectedHeadBranch (Phase 91)', () => {
+  it('accepts merge-remote-into-local without expectedHeadBranch (backward compatible)', () => {
+    expect(() =>
+      RemediationExecutePayload.parse({
+        action: 'merge-remote-into-local',
+        repoPath: '/repo',
+        remote: 'origin',
+        branch: 'main',
+      })
+    ).not.toThrow()
+  })
+  it('accepts merge-remote-into-local with expectedHeadBranch', () => {
+    expect(() =>
+      RemediationExecutePayload.parse({
+        action: 'merge-remote-into-local',
+        repoPath: '/repo',
+        remote: 'origin',
+        branch: 'main',
+        expectedHeadBranch: 'main',
+      })
+    ).not.toThrow()
+  })
+  it('rejects a non-string expectedHeadBranch', () => {
+    expect(() =>
+      RemediationExecutePayload.parse({
+        action: 'merge-remote-into-local',
+        repoPath: '/repo',
+        expectedHeadBranch: 42,
+      })
+    ).toThrow()
   })
 })

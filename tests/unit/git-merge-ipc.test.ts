@@ -111,4 +111,85 @@ describe('git:merge handler (runGitMerge) integration (Phase 83)', () => {
     expect(await git(repoPath, 'rev-parse', 'HEAD')).toBe(headBefore)
     await expect(stat(path.join(repoPath, '.git', 'MERGE_HEAD'))).rejects.toBeDefined()
   })
+
+  // ── Phase 91 (W8): expectedTargetBranch verification ─────────────────────────────
+  describe('expectedTargetBranch verification', () => {
+    it('the happy path (matching branch) is unaffected', async () => {
+      await writeFile(path.join(repoPath, 'base.txt'), 'one\n')
+      await git(repoPath, 'add', 'base.txt')
+      await git(repoPath, 'commit', '-m', 'c1')
+      await git(repoPath, 'checkout', '-b', 'feature')
+      await writeFile(path.join(repoPath, 'feature.txt'), 'feature work\n')
+      await git(repoPath, 'add', 'feature.txt')
+      await git(repoPath, 'commit', '-m', 'feature commit')
+      await git(repoPath, 'checkout', 'main')
+
+      await expect(
+        runGitMerge({ git: service }, repoPath, 'feature', 'main')
+      ).resolves.toBeUndefined()
+      expect(await git(repoPath, 'show', 'HEAD:feature.txt')).toBe('feature work')
+    })
+
+    it('refuses without attempting the merge when HEAD has moved off the expected branch', async () => {
+      await writeFile(path.join(repoPath, 'base.txt'), 'one\n')
+      await git(repoPath, 'add', 'base.txt')
+      await git(repoPath, 'commit', '-m', 'c1')
+      await git(repoPath, 'branch', 'feature')
+      await git(repoPath, 'checkout', '-b', 'other')
+      const headBefore = await git(repoPath, 'rev-parse', 'HEAD')
+
+      let caught: unknown
+      try {
+        // The renderer believed 'main' was current when the user clicked Merge, but
+        // HEAD is now 'other'.
+        await runGitMerge({ git: service }, repoPath, 'feature', 'main')
+      } catch (err) {
+        caught = err
+      }
+      expect(caught).toBeInstanceOf(Error)
+      expect((caught as Error).message).toMatch(/changed since you opened this/i)
+      expect(await git(repoPath, 'rev-parse', 'HEAD')).toBe(headBefore)
+      await expect(stat(path.join(repoPath, '.git', 'MERGE_HEAD'))).rejects.toBeDefined()
+    })
+
+    it('refuses when a queued branch switch lands HEAD elsewhere before the job runs', async () => {
+      await writeFile(path.join(repoPath, 'base.txt'), 'one\n')
+      await git(repoPath, 'add', 'base.txt')
+      await git(repoPath, 'commit', '-m', 'c1')
+      await git(repoPath, 'branch', 'feature')
+      await git(repoPath, 'branch', 'other')
+      const headBefore = await git(repoPath, 'rev-parse', 'HEAD')
+
+      const slowSwitch = service.enqueueJob(repoPath, async (exec) => {
+        await new Promise((r) => setTimeout(r, 50))
+        await exec({ args: ['checkout', 'other'] })
+      })
+
+      let caught: unknown
+      try {
+        await runGitMerge({ git: service }, repoPath, 'feature', 'main')
+      } catch (err) {
+        caught = err
+      }
+      await slowSwitch
+
+      expect(caught).toBeInstanceOf(Error)
+      expect((caught as Error).message).toMatch(/changed since you opened this/i)
+      expect(await git(repoPath, 'rev-parse', 'HEAD')).toBe(headBefore)
+      expect(await git(repoPath, 'rev-parse', '--abbrev-ref', 'HEAD')).toBe('other')
+    })
+
+    it('omitting expectedTargetBranch skips verification entirely (backward compatible)', async () => {
+      await writeFile(path.join(repoPath, 'base.txt'), 'one\n')
+      await git(repoPath, 'add', 'base.txt')
+      await git(repoPath, 'commit', '-m', 'c1')
+      await git(repoPath, 'checkout', '-b', 'feature')
+      await writeFile(path.join(repoPath, 'feature.txt'), 'feature work\n')
+      await git(repoPath, 'add', 'feature.txt')
+      await git(repoPath, 'commit', '-m', 'feature commit')
+      await git(repoPath, 'checkout', 'main')
+
+      await expect(runGitMerge({ git: service }, repoPath, 'feature')).resolves.toBeUndefined()
+    })
+  })
 })

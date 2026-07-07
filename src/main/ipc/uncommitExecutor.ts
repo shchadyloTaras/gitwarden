@@ -16,8 +16,12 @@ import {
 } from '../../core/history/uncommit.js'
 
 export interface UncommitExecutorDeps {
-  git: Pick<GitService, 'getUncommitContext' | 'resetMixed'>
+  git: Pick<GitService, 'getUncommitContext' | 'resetMixed' | 'enqueueJob' | 'verifyHeadBranch'>
 }
+
+/** Refusal when the branch the caller saw (expectedHeadBranch) is no longer HEAD. */
+const HEAD_MOVED_MESSAGE =
+  'The branch changed since you opened this — refresh History and try again.'
 
 const REFUSAL_MESSAGES: Record<UncommitRefusal, string> = {
   'nothing-unpushed': "There's nothing unpushed to return — this commit is already on the remote.",
@@ -49,24 +53,40 @@ export async function getReturnState(
 
 export async function returnLastCommit(
   deps: UncommitExecutorDeps,
-  input: { repoPath: string }
+  input: { repoPath: string; expectedHeadBranch?: string }
 ): Promise<UncommitActionResult> {
-  const eligibility = await readEligibility(deps, input.repoPath)
-  if (!eligibility.canReturnLast) {
-    return { ok: false, message: REFUSAL_MESSAGES[eligibility.refusals.last!] }
-  }
-  await deps.git.resetMixed(input.repoPath, 'HEAD~1')
-  return { ok: true }
+  // W1 (critical): the eligibility read and the resetMixed write now run as ONE
+  // enqueued job, so a queued write between them can't invalidate what eligibility
+  // already decided. When the caller knows which branch it saw, verify HEAD is still
+  // there before touching anything.
+  return deps.git.enqueueJob(input.repoPath, async (exec) => {
+    if (input.expectedHeadBranch) {
+      const onExpected = await deps.git.verifyHeadBranch(input.repoPath, input.expectedHeadBranch)
+      if (!onExpected) return { ok: false, message: HEAD_MOVED_MESSAGE }
+    }
+    const eligibility = await readEligibility(deps, input.repoPath)
+    if (!eligibility.canReturnLast) {
+      return { ok: false, message: REFUSAL_MESSAGES[eligibility.refusals.last!] }
+    }
+    await deps.git.resetMixed(input.repoPath, 'HEAD~1', exec)
+    return { ok: true }
+  })
 }
 
 export async function returnUnpushed(
   deps: UncommitExecutorDeps,
-  input: { repoPath: string }
+  input: { repoPath: string; expectedHeadBranch?: string }
 ): Promise<UncommitActionResult> {
-  const eligibility = await readEligibility(deps, input.repoPath)
-  if (!eligibility.canReturnAllUnpushed) {
-    return { ok: false, message: REFUSAL_MESSAGES[eligibility.refusals.all!] }
-  }
-  await deps.git.resetMixed(input.repoPath, `HEAD~${eligibility.returnAllCount}`)
-  return { ok: true }
+  return deps.git.enqueueJob(input.repoPath, async (exec) => {
+    if (input.expectedHeadBranch) {
+      const onExpected = await deps.git.verifyHeadBranch(input.repoPath, input.expectedHeadBranch)
+      if (!onExpected) return { ok: false, message: HEAD_MOVED_MESSAGE }
+    }
+    const eligibility = await readEligibility(deps, input.repoPath)
+    if (!eligibility.canReturnAllUnpushed) {
+      return { ok: false, message: REFUSAL_MESSAGES[eligibility.refusals.all!] }
+    }
+    await deps.git.resetMixed(input.repoPath, `HEAD~${eligibility.returnAllCount}`, exec)
+    return { ok: true }
+  })
 }

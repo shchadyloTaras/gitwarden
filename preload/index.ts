@@ -176,8 +176,13 @@ export const api = {
       invoke('git:getRemotes', { repoPath }),
     fetch: (repoPath: string, remote: string): Promise<IpcResult<void>> =>
       invoke('git:fetch', { repoPath, remote }),
-    pull: (repoPath: string, remote: string, branch: string): Promise<IpcResult<void>> =>
-      invoke('git:pull', { repoPath, remote, branch }),
+    pull: (
+      repoPath: string,
+      remote: string,
+      branch: string,
+      expectedHeadBranch?: string
+    ): Promise<IpcResult<void>> =>
+      invoke('git:pull', { repoPath, remote, branch, expectedHeadBranch }),
     push: (repoPath: string, remote: string, branch: string): Promise<IpcResult<void>> =>
       invoke('git:push', { repoPath, remote, branch }),
     getBranches: (repoPath: string): Promise<IpcResult<GitBranch[]>> =>
@@ -188,8 +193,11 @@ export const api = {
       invoke('git:createBranch', { repoPath, name }),
     deleteBranch: (repoPath: string, branch: string): Promise<IpcResult<void>> =>
       invoke('git:deleteBranch', { repoPath, branch }),
-    merge: (repoPath: string, branch: string): Promise<IpcResult<void>> =>
-      invoke('git:merge', { repoPath, branch }),
+    merge: (
+      repoPath: string,
+      branch: string,
+      expectedTargetBranch?: string
+    ): Promise<IpcResult<void>> => invoke('git:merge', { repoPath, branch, expectedTargetBranch }),
     getCommitHistory: (
       repoPath: string,
       limit: number,
@@ -205,10 +213,16 @@ export const api = {
   history: {
     getReturnState: (repoPath: string): Promise<IpcResult<UncommitReturnState>> =>
       invoke('history:getReturnState', { repoPath }),
-    returnLastCommit: (repoPath: string): Promise<IpcResult<UncommitActionResult>> =>
-      invoke('history:returnLastCommit', { repoPath }),
-    returnUnpushed: (repoPath: string): Promise<IpcResult<UncommitActionResult>> =>
-      invoke('history:returnUnpushed', { repoPath }),
+    returnLastCommit: (
+      repoPath: string,
+      expectedHeadBranch?: string
+    ): Promise<IpcResult<UncommitActionResult>> =>
+      invoke('history:returnLastCommit', { repoPath, expectedHeadBranch }),
+    returnUnpushed: (
+      repoPath: string,
+      expectedHeadBranch?: string
+    ): Promise<IpcResult<UncommitActionResult>> =>
+      invoke('history:returnUnpushed', { repoPath, expectedHeadBranch }),
   },
   remediation: {
     execute: (payload: {
@@ -217,6 +231,7 @@ export const api = {
       profileId?: string
       remote?: string
       branch?: string
+      expectedHeadBranch?: string
     }): Promise<IpcResult<RemediationResult>> => invoke('remediation:execute', payload),
   },
   github: {

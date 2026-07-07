@@ -55,10 +55,13 @@ import {
   GitInitializePayload,
   GitRemoteOpPayload,
   GitRemoteBranchOpPayload,
+  GitPullPayload,
   RemediationExecutePayload,
   GitBranchOpPayload,
+  GitMergePayload,
   GitCreateBranchPayload,
   GitHistoryPayload,
+  HistoryReturnPayload,
   GitValidatePathPayload,
   GitHubStartDeviceAuthPayload,
   GitHubCancelDeviceAuthPayload,
@@ -346,27 +349,42 @@ export function registerIpcHandlers(services: Services): void {
     })
   )
 
+  // Phase 91 (W9): auth/URL resolution for fetch/pull/push now runs INSIDE the
+  // compound job, so a queued `remote set-url` landing between the URL snapshot and
+  // the write can no longer stale the credential-isolation decision.
   ipcMain.handle('git:fetch', (_e, raw: unknown) =>
     wrap(async () => {
       const { repoPath, remote } = GitRemoteOpPayload.parse(raw)
-      const auth = await resolveRemoteAuth(services, repoPath, remote)
-      return services.git.fetch(repoPath, remote, auth)
+      return services.git.enqueueJob(repoPath, async (exec) => {
+        const auth = await resolveRemoteAuth(services, repoPath, remote)
+        return services.git.fetch(repoPath, remote, auth, exec)
+      })
     })
   )
 
   ipcMain.handle('git:pull', (_e, raw: unknown) =>
     wrap(async () => {
-      const { repoPath, remote, branch } = GitRemoteBranchOpPayload.parse(raw)
-      const auth = await resolveRemoteAuth(services, repoPath, remote)
-      return services.git.pull(repoPath, remote, branch, auth)
+      const { repoPath, remote, branch, expectedHeadBranch } = GitPullPayload.parse(raw)
+      return services.git.enqueueJob(repoPath, async (exec) => {
+        if (expectedHeadBranch) {
+          const onExpected = await services.git.verifyHeadBranch(repoPath, expectedHeadBranch)
+          if (!onExpected) {
+            throw new Error('The branch changed since you started this — refresh and try again.')
+          }
+        }
+        const auth = await resolveRemoteAuth(services, repoPath, remote)
+        return services.git.pull(repoPath, remote, branch, auth, exec)
+      })
     })
   )
 
   ipcMain.handle('git:push', (_e, raw: unknown) =>
     wrap(async () => {
       const { repoPath, remote, branch } = GitRemoteBranchOpPayload.parse(raw)
-      const auth = await resolveRemoteAuth(services, repoPath, remote)
-      return services.git.push(repoPath, remote, branch, auth)
+      return services.git.enqueueJob(repoPath, async (exec) => {
+        const auth = await resolveRemoteAuth(services, repoPath, remote)
+        return services.git.push(repoPath, remote, branch, auth, exec)
+      })
     })
   )
 
@@ -413,8 +431,8 @@ export function registerIpcHandlers(services: Services): void {
   // branch — logic lives in runGitMerge (electron-free, unit-tested directly).
   ipcMain.handle('git:merge', (_e, raw: unknown) =>
     wrap(async () => {
-      const { repoPath, branch } = GitBranchOpPayload.parse(raw)
-      return runGitMerge(services, repoPath, branch)
+      const { repoPath, branch, expectedTargetBranch } = GitMergePayload.parse(raw)
+      return runGitMerge(services, repoPath, branch, expectedTargetBranch)
     })
   )
 
@@ -437,15 +455,15 @@ export function registerIpcHandlers(services: Services): void {
 
   ipcMain.handle('history:returnLastCommit', (_e, raw: unknown) =>
     wrap(async () => {
-      const { repoPath } = GitRepoPathPayload.parse(raw)
-      return returnLastCommit(services, { repoPath })
+      const { repoPath, expectedHeadBranch } = HistoryReturnPayload.parse(raw)
+      return returnLastCommit(services, { repoPath, expectedHeadBranch })
     })
   )
 
   ipcMain.handle('history:returnUnpushed', (_e, raw: unknown) =>
     wrap(async () => {
-      const { repoPath } = GitRepoPathPayload.parse(raw)
-      return returnUnpushed(services, { repoPath })
+      const { repoPath, expectedHeadBranch } = HistoryReturnPayload.parse(raw)
+      return returnUnpushed(services, { repoPath, expectedHeadBranch })
     })
   )
 

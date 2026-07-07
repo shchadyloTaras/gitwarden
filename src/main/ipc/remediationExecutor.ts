@@ -26,13 +26,21 @@ export interface RemediationExecuteInput {
   profileId?: string
   remote?: string
   branch?: string
+  /** For merge-remote-into-local: refuse if HEAD has moved off this branch (Phase 91). */
+  expectedHeadBranch?: string
 }
 
 /** The narrow service surface the executor needs (injected; mockable in tests). */
 export interface RemediationExecutorDeps {
   git: Pick<
     GitService,
-    'setLocalIdentity' | 'push' | 'getRemotes' | 'getStatus' | 'mergeRemoteBranch'
+    | 'setLocalIdentity'
+    | 'push'
+    | 'getRemotes'
+    | 'getStatus'
+    | 'mergeRemoteBranch'
+    | 'enqueueJob'
+    | 'verifyHeadBranch'
   >
   repositories: Pick<IRepositoryService, 'list'>
   profiles: Pick<IProfileService, 'get'>
@@ -119,33 +127,47 @@ export async function executeRemediation(
       const branch = input.branch
       if (!branch) return { ok: false, message: 'No branch was provided for the merge.' }
       const remote = input.remote ?? 'origin'
-      // Clean-tree pre-check: refuse with a clear message rather than letting git
-      // fail with a confusing "local changes would be overwritten."
-      const status = await deps.git.getStatus(repoPath)
-      if (status.files.length > 0) {
-        return {
-          ok: false,
-          message: "Commit or stash your changes before merging in the remote's changes.",
-        }
-      }
-      try {
-        // Purely local: merges the already-fetched <remote>/<branch> tracking
-        // ref. No fetch, no push, no auth — see GitService.mergeRemoteBranch.
-        await deps.git.mergeRemoteBranch(repoPath, remote, branch)
-      } catch (error) {
-        if (error instanceof GitError && error.code === 'mergeConflict') {
-          // A real content conflict is NEVER auto-resolved: the repo is left in
-          // git's standard mid-merge state, and the user is routed to the
-          // existing resolve-conflicts → Status flow to finish the merge.
-          return {
-            ok: false,
-            remediation: remediationForGitError('mergeConflict'),
-            message: error.userMessage,
+      // Phase 91: verify HEAD → clean-tree check → merge, all inside one enqueued
+      // job — closes the same TOCTOU gap runGitMerge's compound job closes for the
+      // regular git:merge channel.
+      return deps.git.enqueueJob(repoPath, async (exec) => {
+        if (input.expectedHeadBranch) {
+          const onExpected = await deps.git.verifyHeadBranch(repoPath, input.expectedHeadBranch)
+          if (!onExpected) {
+            return {
+              ok: false,
+              message: 'The branch changed since this fix was suggested — refresh and try again.',
+            }
           }
         }
-        throw error
-      }
-      return { ok: true }
+        // Clean-tree pre-check: refuse with a clear message rather than letting git
+        // fail with a confusing "local changes would be overwritten."
+        const status = await deps.git.getStatus(repoPath)
+        if (status.files.length > 0) {
+          return {
+            ok: false,
+            message: "Commit or stash your changes before merging in the remote's changes.",
+          }
+        }
+        try {
+          // Purely local: merges the already-fetched <remote>/<branch> tracking
+          // ref. No fetch, no push, no auth — see GitService.mergeRemoteBranch.
+          await deps.git.mergeRemoteBranch(repoPath, remote, branch, exec)
+        } catch (error) {
+          if (error instanceof GitError && error.code === 'mergeConflict') {
+            // A real content conflict is NEVER auto-resolved: the repo is left in
+            // git's standard mid-merge state, and the user is routed to the
+            // existing resolve-conflicts → Status flow to finish the merge.
+            return {
+              ok: false,
+              remediation: remediationForGitError('mergeConflict'),
+              message: error.userMessage,
+            }
+          }
+          throw error
+        }
+        return { ok: true }
+      })
     }
     default: {
       const _exhaustive: never = action

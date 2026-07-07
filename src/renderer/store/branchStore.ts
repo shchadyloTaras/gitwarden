@@ -145,7 +145,13 @@ export const useBranchStore = create<BranchState>((set, get) => ({
     const { repoPath, repository, branches } = get()
     if (!repoPath || !repository) return
     const token = tracker.begin()
-    const current = branches.find((b) => b.isCurrent)?.name ?? branch
+    // The genuinely-observed current branch (undefined, not a fallback, when the
+    // local list has no isCurrent entry) — passed as expectedTargetBranch so the
+    // main process can refuse if HEAD moved since this render (Phase 91, W8).
+    // Falling back to `branch` here would be wrong: it would ask the compound job to
+    // verify HEAD equals the branch being merged IN, which is never true.
+    const currentBranchName = branches.find((b) => b.isCurrent)?.name
+    const current = currentBranchName ?? branch
     set({
       error: null,
       successMessage: null,
@@ -153,7 +159,7 @@ export const useBranchStore = create<BranchState>((set, get) => ({
       mergeConflict: null,
     })
     try {
-      const res = await window.api.git.merge(repoPath, branch)
+      const res = await window.api.git.merge(repoPath, branch, currentBranchName)
       if (!res.ok) {
         if (res.remediation) {
           if (tracker.isCurrent(token)) {

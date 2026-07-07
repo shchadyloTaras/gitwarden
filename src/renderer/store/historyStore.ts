@@ -109,7 +109,11 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
     if (!repoPath || !repository) return
     set({ returning: true, returnError: null })
     try {
-      const res = await window.api.history.returnLastCommit(repoPath)
+      // The main process verifies HEAD is still this branch inside the compound
+      // uncommit job before resetting anything (Phase 91, W1 — critical) — a moved
+      // HEAD refuses with a plain message instead of returning the wrong commits.
+      const expectedHeadBranch = useAppStore.getState().currentBranch ?? undefined
+      const res = await window.api.history.returnLastCommit(repoPath, expectedHeadBranch)
       if (!res.ok) throw new Error(res.error)
       if (!res.data.ok) {
         set({ returnError: res.data.message ?? null })
@@ -131,7 +135,8 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
     if (!repoPath || !repository) return
     set({ returning: true, returnError: null })
     try {
-      const res = await window.api.history.returnUnpushed(repoPath)
+      const expectedHeadBranch = useAppStore.getState().currentBranch ?? undefined
+      const res = await window.api.history.returnUnpushed(repoPath, expectedHeadBranch)
       if (!res.ok) throw new Error(res.error)
       if (!res.data.ok) {
         set({ returnError: res.data.message ?? null })

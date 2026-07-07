@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest'
-import { mkdtemp, rm, writeFile } from 'fs/promises'
+import { mkdtemp, rm, stat, writeFile } from 'fs/promises'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import * as os from 'os'
@@ -7,7 +7,7 @@ import * as path from 'path'
 import { GitLocator } from '../../src/main/git/GitLocator'
 import { GitRunner } from '../../src/main/git/GitRunner'
 import { GitError } from '../../src/main/git/ErrorMapper'
-import { GitService } from '../../src/main/services/GitService'
+import { GitService, type WriteExecutor } from '../../src/main/services/GitService'
 import {
   executeRemediation,
   type RemediationExecutorDeps,
@@ -29,6 +29,17 @@ async function git(repoPath: string, ...args: string[]): Promise<string> {
 }
 
 const noopSender = { send: (): void => {} }
+
+// Phase 91: RemediationExecutorDeps.git now requires enqueueJob/verifyHeadBranch (the
+// merge-remote-into-local compound job). These tests exercise remediation LOGIC, not
+// GitRunner's real queue semantics, so a trivial stub that just invokes the callback
+// is enough — mergeRemoteBranch's own mock below ignores the `exec` it's handed.
+function stubEnqueueJob<T>(repoPath: string, fn: (exec: WriteExecutor) => Promise<T>): Promise<T> {
+  return fn(async () => ({ stdout: Buffer.from(''), stderr: '', code: 0 }))
+}
+async function stubVerifyHeadBranch(): Promise<boolean> {
+  return true
+}
 
 function profile(over: Partial<Profile> = {}): Profile {
   return {
@@ -53,6 +64,8 @@ function makeDeps(over: Partial<RemediationExecutorDeps> = {}): RemediationExecu
       getRemotes: vi.fn(async () => []),
       getStatus: vi.fn(async () => ({ files: [], ahead: 0, behind: 0 })),
       mergeRemoteBranch: vi.fn(async () => {}),
+      enqueueJob: stubEnqueueJob,
+      verifyHeadBranch: stubVerifyHeadBranch,
     },
     repositories: { list: vi.fn(async () => []) },
     profiles: { get: vi.fn(async () => undefined) },
@@ -202,6 +215,8 @@ describe('executeRemediation (offline fixtures)', () => {
         ]),
         getStatus: vi.fn(async () => ({ files: [], ahead: 0, behind: 0 })),
         mergeRemoteBranch: vi.fn(async () => {}),
+        enqueueJob: stubEnqueueJob,
+        verifyHeadBranch: stubVerifyHeadBranch,
       },
       repositories: { list: vi.fn(async () => [repoRecord(repoPath, 'p1')]) },
       settings: { update },
@@ -238,6 +253,8 @@ describe('executeRemediation (offline fixtures)', () => {
         getRemotes: vi.fn(async () => []),
         getStatus: vi.fn(async () => ({ files: [], ahead: 0, behind: 0 })),
         mergeRemoteBranch: vi.fn(async () => {}),
+        enqueueJob: stubEnqueueJob,
+        verifyHeadBranch: stubVerifyHeadBranch,
       },
       repositories: { list: vi.fn(async () => [repoRecord(repoPath, undefined)]) },
     })
@@ -339,6 +356,8 @@ describe('executeRemediation (offline fixtures)', () => {
           })
         ),
         mergeRemoteBranch,
+        enqueueJob: stubEnqueueJob,
+        verifyHeadBranch: stubVerifyHeadBranch,
       },
     })
 
@@ -362,5 +381,47 @@ describe('executeRemediation (offline fixtures)', () => {
     })
     expect(result.ok).toBe(false)
     expect(result.message).toMatch(/branch/i)
+  })
+
+  // ── Phase 91: expectedHeadBranch verification for merge-remote-into-local ────────
+  describe('merge-remote-into-local expectedHeadBranch verification', () => {
+    it('the happy path (matching branch) is unaffected', async () => {
+      await setUpRemoteAhead()
+      await writeFile(path.join(repoPath, 'local-only.txt'), 'local addition\n')
+      await git(repoPath, 'add', 'local-only.txt')
+      await git(repoPath, 'commit', '-m', 'local-divergent-clean')
+      await git(repoPath, 'fetch', 'origin', 'main')
+
+      const deps = makeDeps({ git: service })
+      const result = await executeRemediation(deps, noopSender, {
+        action: 'merge-remote-into-local',
+        repoPath,
+        remote: 'origin',
+        branch: 'main',
+        expectedHeadBranch: 'main',
+      })
+      expect(result.ok).toBe(true)
+    })
+
+    it('refuses without attempting the merge when HEAD has moved off the expected branch', async () => {
+      await setUpRemoteAhead()
+      await git(repoPath, 'fetch', 'origin', 'main')
+      await git(repoPath, 'checkout', '-b', 'other')
+      const headBefore = await git(repoPath, 'rev-parse', 'HEAD')
+
+      const deps = makeDeps({ git: service })
+      const result = await executeRemediation(deps, noopSender, {
+        action: 'merge-remote-into-local',
+        repoPath,
+        remote: 'origin',
+        branch: 'main',
+        expectedHeadBranch: 'main',
+      })
+
+      expect(result.ok).toBe(false)
+      expect(result.message).toMatch(/changed since this fix was suggested/i)
+      expect(await git(repoPath, 'rev-parse', 'HEAD')).toBe(headBefore)
+      await expect(stat(path.join(repoPath, '.git', 'MERGE_HEAD'))).rejects.toBeDefined()
+    })
   })
 })
