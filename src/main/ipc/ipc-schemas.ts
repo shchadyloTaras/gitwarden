@@ -390,3 +390,17 @@ export const RemediationExecutePayload = z.object({
   // For merge-remote-into-local (Phase 91): refuse if HEAD has moved off this branch.
   expectedHeadBranch: z.string().optional(),
 })
+
+// `.git` watcher (Phase 96): watch/unwatch the active repo only; the pushed
+// `repo:changed` event names which `.git` target changed so the renderer can pick
+// a scoped refresh (head/refs → branch list; index → status/commit).
+export const RepoWatchPayload = z.object({
+  repoPath: z.string().min(1),
+})
+
+export const RepoChangedEventPayload = z.object({
+  repoPath: z.string().min(1),
+  kind: z.enum(['head', 'refs', 'index']),
+})
+
+export type RepoChangedEventPayloadType = z.infer<typeof RepoChangedEventPayload>

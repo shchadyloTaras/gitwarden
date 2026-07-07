@@ -38,6 +38,7 @@ import { AiRepoBriefAssistant } from '../src/main/ai/AiRepoBriefAssistant.js'
 import { AiFailureExplainerAssistant } from '../src/main/ai/AiFailureExplainerAssistant.js'
 import { AiAgenticAssistant } from '../src/main/ai/AiAgenticAssistant.js'
 import { AgenticActionExecutor } from '../src/main/ai/AgenticActionExecutor.js'
+import { RepoWatcherService } from '../src/main/services/RepoWatcherService.js'
 import { AiCommitAssistant } from '../src/main/ai/AiCommitAssistant.js'
 import { AiChangeReviewAssistant } from '../src/main/ai/AiChangeReviewAssistant.js'
 import { AiSafetyCopilotAssistant } from '../src/main/ai/AiSafetyCopilotAssistant.js'
@@ -156,7 +157,7 @@ function resolveIconPath(): string | undefined {
 
 const BRAND_ICON = resolveIconPath()
 
-function createWindow(): void {
+function createWindow(repoWatcher: RepoWatcherService): void {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -175,6 +176,14 @@ function createWindow(): void {
       sandbox: true,
     },
   })
+
+  // Belt-and-suspenders cleanup for the .git watcher (Phase 96): the renderer's
+  // own React effect cleanup already calls repo:unwatch on unmount, but that is an
+  // IPC round-trip that depends on the renderer still being alive to make it — the
+  // one case that's least reliable during an actual window close. This app is
+  // single-window (no multi-window support, AGENTS.md non-goal), so the window
+  // closing always means "nothing is watching anymore."
+  win.on('closed', () => repoWatcher.unwatch())
 
   if (process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'])
@@ -301,6 +310,7 @@ app.whenReady().then(async () => {
   const aiAgenticAssistant = new AiAgenticAssistant(aiContextBuilder, aiAdapters)
   const aiChatAssistant = new AiChatAssistant(aiContextBuilder, aiAdapters)
   const agenticActionExecutor = new AgenticActionExecutor(repositories, git)
+  const repoWatcher = new RepoWatcherService()
 
   // Update notifier: real GitHub-releases check in production; a deterministic fake under e2e so
   // the suite stays offline. Detection only — clicking the button opens the release page.
@@ -335,13 +345,14 @@ app.whenReady().then(async () => {
     agenticActionExecutor,
     stagedChangeReview,
     updates,
+    repoWatcher,
     openExternal,
   })
 
-  createWindow()
+  createWindow(repoWatcher)
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    if (BrowserWindow.getAllWindows().length === 0) createWindow(repoWatcher)
   })
 })
 

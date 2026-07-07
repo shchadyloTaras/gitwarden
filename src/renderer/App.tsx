@@ -351,6 +351,33 @@ export default function App(): React.ReactElement {
     }
   }, [checkForUpdatesIfStale])
 
+  // `.git` watcher (Phase 96, W4 full): watches ONLY the active repo, so the main
+  // process watch must follow every repo switch exactly — start a new watch (which
+  // itself always closes any previous one first) whenever the active repo changes,
+  // and explicitly unwatch when there is no active repo (nothing to start a new
+  // watch, so nothing else would close it) or the app unmounts.
+  useEffect(() => {
+    if (activeRepo) void window.api.repo.watch(activeRepo.localPath)
+    return () => {
+      void window.api.repo.unwatch()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on localPath, not the whole activeRepo object (matches GlobalHeader's loadBranches effect, W30)
+  }, [activeRepo?.localPath])
+
+  // Subscribed once, independent of which repo is active — main only ever pushes
+  // events for whatever repo the watch effect above most recently asked it to
+  // watch, so there is no repo-identity check to make here. `head`/`refs` (HEAD or
+  // any ref moved) get the full refresh (branch list + guard + active screen);
+  // `index` (stage/unstage) only needs Status/Commit, which the 'index' scope
+  // already narrows to. Self-triggered churn (an in-app switch/commit also firing
+  // the watcher) is tolerated: Phase 89's request guard makes a redundant refresh
+  // harmless, and it always lands on fresh data regardless.
+  useEffect(() => {
+    return window.api.repo.onChanged((event) => {
+      void refreshActiveRepo(event.kind === 'index' ? 'index' : 'full')
+    })
+  }, [])
+
   useEffect(() => {
     if (!storesReady || !startupLoaderVisible) return
 

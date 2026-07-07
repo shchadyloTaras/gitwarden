@@ -98,6 +98,12 @@ interface GitHubAuthEvent {
   identity?: GitHubAccount
 }
 
+/** `.git` change pushed from main over `repo:changed`. Mirrors RepoChangedEventPayload. */
+interface RepoChangedEvent {
+  repoPath: string
+  kind: 'head' | 'refs' | 'index'
+}
+
 /** Token-side facts for the push safety check — never includes the token itself. */
 interface GitHubPushStatus {
   hasToken: boolean
@@ -359,6 +365,11 @@ interface ElectronAPI {
   }
   updates: {
     check(): Promise<IpcResult<UpdateCheckResult>>
+  }
+  repo: {
+    watch(repoPath: string): Promise<IpcResult<null>>
+    unwatch(): Promise<IpcResult<null>>
+    onChanged(callback: (event: RepoChangedEvent) => void): () => void
   }
 }
 

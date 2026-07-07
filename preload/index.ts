@@ -104,8 +104,15 @@ export interface GitHubPushStatus {
   effectiveLogin?: string
 }
 
+/** `.git` change pushed from main over `repo:changed` (Phase 96). Mirrors RepoChangedEventPayload. */
+export interface RepoChangedEvent {
+  repoPath: string
+  kind: 'head' | 'refs' | 'index'
+}
+
 const GITHUB_AUTH_EVENT_CHANNEL = 'github:authEvent'
 const AI_CHAT_STREAM_EVENT_CHANNEL = 'ai:chatStreamEvent'
+const REPO_CHANGED_CHANNEL = 'repo:changed'
 
 function invoke<T>(channel: string, payload?: unknown): Promise<IpcResult<T>> {
   return ipcRenderer.invoke(channel, payload) as Promise<IpcResult<T>>
@@ -446,6 +453,18 @@ export const api = {
   updates: {
     /** Check GitHub for a newer published release. Resolves to a soft result, never rejects. */
     check: (): Promise<IpcResult<UpdateCheckResult>> => invoke('updates:check'),
+  },
+  repo: {
+    /** Start watching the given repo's `.git` dir; closes any previously-watched repo first. */
+    watch: (repoPath: string): Promise<IpcResult<null>> => invoke('repo:watch', { repoPath }),
+    /** Stop watching, if anything is currently watched. Safe to call when idle. */
+    unwatch: (): Promise<IpcResult<null>> => invoke('repo:unwatch'),
+    /** Subscribe to `.git` change events for the currently-watched repo; returns an unsubscribe function. */
+    onChanged: (callback: (event: RepoChangedEvent) => void): (() => void) => {
+      const listener = (_e: IpcRendererEvent, payload: RepoChangedEvent): void => callback(payload)
+      ipcRenderer.on(REPO_CHANGED_CHANNEL, listener)
+      return () => ipcRenderer.removeListener(REPO_CHANGED_CHANNEL, listener)
+    },
   },
 }
 

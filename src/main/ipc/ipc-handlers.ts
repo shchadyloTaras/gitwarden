@@ -19,6 +19,7 @@ import type { AiFailureExplainerAssistant } from '../ai/AiFailureExplainerAssist
 import type { AiAgenticAssistant } from '../ai/AiAgenticAssistant.js'
 import type { AiChatAssistant } from '../ai/AiChatAssistant.js'
 import type { AgenticActionExecutor } from '../ai/AgenticActionExecutor.js'
+import type { IRepoWatcherService } from '../services/RepoWatcherService.js'
 import type { StagedChangeReviewService } from '../ai/StagedChangeReviewService.js'
 import type { IUpdateService } from '../services/UpdateService.js'
 import { UpdateCheckResultSchema } from '../../core/updates/schemas.js'
@@ -96,6 +97,7 @@ import {
   AiChatPayload,
   AiChatSuggestBlockPayload,
   AiChatStreamEventSchema,
+  RepoWatchPayload,
 } from './ipc-schemas.js'
 import {
   AiChangeReviewSchema,
@@ -137,6 +139,7 @@ export interface Services {
   agenticActionExecutor: AgenticActionExecutor
   stagedChangeReview: StagedChangeReviewService
   updates: IUpdateService
+  repoWatcher: IRepoWatcherService
   /** Browser-open seam — real `shell.openExternal` in production, no-op under e2e. */
   openExternal: (url: string) => void | Promise<void>
 }
@@ -891,6 +894,25 @@ export function registerIpcHandlers(services: Services): void {
   // throws (a failed check returns a soft `error` result so the button just stays hidden).
   ipcMain.handle('updates:check', () =>
     wrap(async () => UpdateCheckResultSchema.parse(await services.updates.checkForUpdates()))
+  )
+
+  // `.git` watcher (Phase 96) — the renderer drives watch/unwatch on active-repo
+  // change; events push back over `repo:changed` using `event.sender` (the
+  // initiating webContents), same pattern as `github:startDeviceAuth`'s progress
+  // events.
+  ipcMain.handle('repo:watch', (event, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath } = RepoWatchPayload.parse(raw)
+      services.repoWatcher.watch(repoPath, event.sender)
+      return null
+    })
+  )
+
+  ipcMain.handle('repo:unwatch', () =>
+    wrap(async () => {
+      services.repoWatcher.unwatch()
+      return null
+    })
   )
 }
 
