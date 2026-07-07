@@ -13,7 +13,7 @@ export function ChatBlockView({ block }: { block: ChatUiBlock }): React.ReactEle
     case 'review-findings':
       return <ReviewFindingsCard review={block.review} />
     case 'commit-draft':
-      return <CommitDraftCard draft={block.draft} />
+      return <CommitDraftCard draft={block.draft} originRepositoryId={block.originRepositoryId} />
     default:
       return null
   }

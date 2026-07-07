@@ -331,6 +331,11 @@ export const STR = {
   CHAT_ASSISTANT: 'Git Warden AI',
   CHAT_PROPOSAL_APPLY: 'Apply edits',
   CHAT_PROPOSAL_APPLIED: 'Edits applied',
+  // ── AI action origin-pinning (Phase 94, W2/W11) ─────────────────────────────
+  CHAT_PROPOSAL_WRONG_REPO:
+    'This proposal was written for a different repository — switch back to it to apply these edits.',
+  AI_COMMIT_INSERT_WRONG_REPO:
+    'This draft was written for a different repository — switch back to it to insert this message.',
   CHAT_SUGGESTED: 'Suggested',
   CHAT_SETUP_TITLE: 'Connect an AI provider',
   CHAT_SETUP_HINT:

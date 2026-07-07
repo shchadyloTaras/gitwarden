@@ -33,6 +33,7 @@
     "tests/unit/remote-store-expected-head-branch.test.ts",
     "tests/unit/history-store-expected-head-branch.test.ts",
     "tests/unit/branch-store-safe-delete.test.ts",
-    "tests/unit/branch-store-switch-ux.test.ts"
+    "tests/unit/branch-store-switch-ux.test.ts",
+    "tests/unit/ai-chat-store-origin-pin.test.ts"
   ]
 }

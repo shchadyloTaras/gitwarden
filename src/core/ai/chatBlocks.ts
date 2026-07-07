@@ -4,7 +4,7 @@
 // native card. The union is a CLOSED allowlist: the model never chooses an
 // arbitrary component — it only fills the typed fields of a known block.
 //
-// Pure — no node/electron/DOM imports (architecture rule). Blocks are plain data.
+// Pure per AGENTS.md rule #1 (no Node/native/DOM imports). Blocks are plain data.
 
 import { z } from 'zod'
 import type { AiChangeReview, AiCommitDraft } from './types.js'
@@ -15,10 +15,21 @@ import { AI_COMMIT_DRAFT_JSON_SCHEMA } from './providerSchemas.js'
  * A typed renderable block carried on an assistant chat message. A CLOSED
  * allowlist of known cards; further variants (push-brief, …) extend this union
  * later without changing the renderer contract.
+ *
+ * `commit-draft`'s `originRepositoryId`/`originBranch` (Phase 94) are stamped by
+ * the renderer at generation time, not by this module's builders (which run on
+ * both the renderer and the main-process free-text block-upgrade path, where no
+ * "active repo" concept exists) — so they stay optional and are added afterward
+ * wherever a draft becomes an insertable card.
  */
 export type ChatUiBlock =
   | { kind: 'review-findings'; review: AiChangeReview }
-  | { kind: 'commit-draft'; draft: AiCommitDraft }
+  | {
+      kind: 'commit-draft'
+      draft: AiCommitDraft
+      originRepositoryId?: string
+      originBranch?: string
+    }
 
 const ReviewFindingsBlockSchema = z.object({
   kind: z.literal('review-findings'),
@@ -41,8 +52,15 @@ export function reviewFindingsBlock(review: AiChangeReview): ChatUiBlock {
   return { kind: 'review-findings', review }
 }
 
-/** Build a commit-draft block from a parsed AI commit draft. */
-export function commitDraftBlock(draft: AiCommitDraft): ChatUiBlock {
+/**
+ * Build a commit-draft block from a parsed AI commit draft. Narrowed to the
+ * commit-draft member (not the full `ChatUiBlock` union) so callers can spread
+ * origin fields onto the result without TypeScript widening back to the union's
+ * lowest common denominator.
+ */
+export function commitDraftBlock(
+  draft: AiCommitDraft
+): Extract<ChatUiBlock, { kind: 'commit-draft' }> {
   return { kind: 'commit-draft', draft }
 }
 

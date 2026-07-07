@@ -378,11 +378,22 @@ export interface AiAgenticAction {
   command?: string
 }
 
-/** Agentic proposal — previewed and confirmed before any execution (Phase 39). */
+/**
+ * Agentic proposal — previewed and confirmed before any execution (Phase 39).
+ *
+ * `originRepositoryId`/`originBranch` (Phase 94) are stamped by the renderer at
+ * generation time (the repo/branch active when the proposal was requested) — NOT
+ * populated by the assistant itself, so they stay optional here. Apply must refuse
+ * when the currently active repo no longer matches the origin (W2): the AI can
+ * write file content it already knows is stale, but it must never write to a repo
+ * it never looked at.
+ */
 export interface AiAgenticProposal {
   summary: string
   actions: AiAgenticAction[]
   fileEdits: AiAgenticFileEdit[]
+  originRepositoryId?: string
+  originBranch?: string
 }
 
 /**

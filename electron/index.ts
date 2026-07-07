@@ -300,7 +300,7 @@ app.whenReady().then(async () => {
   const aiFailureExplainerAssistant = new AiFailureExplainerAssistant(aiContextBuilder, aiAdapters)
   const aiAgenticAssistant = new AiAgenticAssistant(aiContextBuilder, aiAdapters)
   const aiChatAssistant = new AiChatAssistant(aiContextBuilder, aiAdapters)
-  const agenticActionExecutor = new AgenticActionExecutor(repositories)
+  const agenticActionExecutor = new AgenticActionExecutor(repositories, git)
 
   // Update notifier: real GitHub-releases check in production; a deterministic fake under e2e so
   // the suite stays offline. Detection only — clicking the button opens the release page.

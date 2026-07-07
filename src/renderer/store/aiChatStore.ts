@@ -17,6 +17,8 @@ import { reviewFindingsBlock, commitDraftBlock, type ChatUiBlock } from '../../c
 import { useAppStore } from './appStore'
 import { useAiStore } from './aiStore'
 import { useProfilesStore } from './profilesStore'
+import { useStatusStore } from './statusStore'
+import { useCommitStore } from './commitStore'
 import { STR } from '../strings'
 
 export interface ChatMessage {
@@ -173,10 +175,25 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
     const message = get().messages.find((m) => m.id === messageId)
     const app = useAppStore.getState()
     if (!message?.proposal || !app.activeRepo) return
+
+    // W2: refuse with a plain bubble when the active repo has moved on from the
+    // one this proposal was generated for — never silently apply file edits meant
+    // for a different repo just because it happens to be active now.
+    const origin = message.proposal.originRepositoryId
+    if (app.activeRepo.id !== origin) {
+      appendMessage(set, {
+        role: 'assistant',
+        kind: 'propose',
+        isError: true,
+        content: STR.CHAT_PROPOSAL_WRONG_REPO,
+      })
+      return
+    }
+
     set({ pending: true, error: null })
     try {
       const result = await window.api.ai.executeAgenticProposal({
-        repositoryId: app.activeRepo.id,
+        repositoryId: origin,
         fileEdits: message.proposal.fileEdits,
       })
       if (!result.ok) {
@@ -197,6 +214,14 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
         kind: 'propose',
         content: `Applied ${result.data.writtenFiles.length} file edit(s): ${result.data.writtenFiles.join(', ')}`,
       })
+      // W15: refresh the tabs beside the chat so they reflect the just-applied
+      // writes — but only if the user is STILL on the repo the edits landed in;
+      // they may have switched away while the write was in flight.
+      const stillActive = useAppStore.getState().activeRepo
+      if (stillActive && stillActive.id === origin) {
+        void useStatusStore.getState().loadStatus(stillActive.localPath)
+        void useCommitStore.getState().load(stillActive.localPath, stillActive)
+      }
     } finally {
       set({ pending: false })
     }
@@ -221,6 +246,7 @@ async function runStreamingChat(
 ): Promise<void> {
   const repo = useAppStore.getState().activeRepo
   if (!repo) throw new Error('Select a repository first.')
+  const originBranch = useAppStore.getState().currentBranch ?? undefined
 
   const requestId = crypto.randomUUID()
   const assistantId = appendMessage(set, {
@@ -321,8 +347,14 @@ async function runStreamingChat(
       ...EXPENSIVE_SEND_ACK,
     })
     if (suggestion.ok && suggestion.data.block) {
+      const block = suggestion.data.block
       updateMessage(set, assistantId, {
-        block: suggestion.data.block,
+        // Origin stamped here (W11) — the suggestion pass runs server-side with no
+        // "active repo" concept; `repo` was captured above, before any send.
+        block:
+          block.kind === 'commit-draft'
+            ? { ...block, originRepositoryId: repo.id, originBranch }
+            : block,
         blockAugmentsText: true,
       })
     }
@@ -397,7 +429,14 @@ async function runCapability(parsed: ParsedChatCommand): Promise<Omit<ChatMessag
         role: 'assistant',
         kind: 'commit',
         content: `Conventional: ${draft.conventional}\nPlain: ${draft.plain}\n\n${draft.summary}${body}`,
-        block: commitDraftBlock(draft),
+        // Origin stamped here, at generation time (W11) — not by commitDraftBlock
+        // itself, which also runs on the main-process free-text upgrade path where
+        // no "active repo" concept exists.
+        block: {
+          ...commitDraftBlock(draft),
+          originRepositoryId: repositoryId,
+          originBranch: app.currentBranch ?? undefined,
+        },
       }
     }
     case 'review': {
@@ -459,7 +498,14 @@ async function runCapability(parsed: ParsedChatCommand): Promise<Omit<ChatMessag
         ...EXPENSIVE_SEND_ACK,
       })
       if (!result.ok) throwIpcFailure(result)
-      const proposal = result.data
+      // Origin stamped here, at generation time (W2) — the assistant itself has no
+      // "active repo" concept; only aiChatStore, which captured `repositoryId` (and
+      // the branch) before making this request, can say what it was generated for.
+      const proposal = {
+        ...result.data,
+        originRepositoryId: repositoryId,
+        originBranch: app.currentBranch ?? undefined,
+      }
       const files = proposal.fileEdits.map((e) => `• ${e.path}`).join('\n')
       return {
         role: 'assistant',

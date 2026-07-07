@@ -51,13 +51,29 @@ function Field({
  * Native card for an AI commit draft. Insert reuses the EXISTING commit-message
  * path (`useCommitStore.setMessage`) and navigates to the Commit screen — the
  * user still commits through the Safety Engine. No new mutate path.
+ *
+ * `originRepositoryId` (Phase 94, W11) is the repo this draft was generated for.
+ * `setMessage` always writes into whichever repo is CURRENTLY active in
+ * commitStore, so inserting while looking at a different repo than the one the
+ * draft was written for would silently land in the wrong repo's message box —
+ * Insert refuses instead, matching the chat proposal's origin-pin refusal.
  */
-export default function CommitDraftCard({ draft }: { draft: AiCommitDraft }): React.ReactElement {
+export default function CommitDraftCard({
+  draft,
+  originRepositoryId,
+}: {
+  draft: AiCommitDraft
+  originRepositoryId?: string
+}): React.ReactElement {
   const setMessage = useCommitStore((s) => s.setMessage)
+  const activeRepo = useAppStore((s) => s.activeRepo)
   const navigate = useAppStore((s) => s.navigate)
   const body = draft.body?.trim()
+  // Fail-closed: an unset origin (both sides undefined) must never read as a match.
+  const wrongRepo = !originRepositoryId || activeRepo?.id !== originRepositoryId
 
   function handleInsert(): void {
+    if (wrongRepo) return
     setMessage(buildCommitMessage(draft))
     navigate('commit')
   }
@@ -79,11 +95,20 @@ export default function CommitDraftCard({ draft }: { draft: AiCommitDraft }): Re
       <Field label={STR.AI_COMMIT_DRAFT_PLAIN} value={draft.plain} />
       {draft.summary && <Field label={STR.AI_COMMIT_DRAFT_SUMMARY} value={draft.summary} />}
       {body && <Field label={STR.AI_COMMIT_DRAFT_BODY} value={body} mono />}
+      {wrongRepo && (
+        <p
+          data-testid="ai-chat-commit-insert-wrong-repo"
+          style={{ fontSize: 12, color: 'var(--gw-text-muted, #a1a1aa)', margin: 0 }}
+        >
+          {STR.AI_COMMIT_INSERT_WRONG_REPO}
+        </p>
+      )}
       <div>
         <button
           type="button"
           data-testid="ai-chat-commit-insert"
           onClick={handleInsert}
+          disabled={wrongRepo}
           style={{
             marginTop: 2,
             padding: '5px 12px',
@@ -93,7 +118,8 @@ export default function CommitDraftCard({ draft }: { draft: AiCommitDraft }): Re
             borderRadius: 8,
             fontSize: 12,
             fontWeight: 600,
-            cursor: 'pointer',
+            cursor: wrongRepo ? 'not-allowed' : 'pointer',
+            opacity: wrongRepo ? 0.5 : 1,
           }}
         >
           {STR.AI_COMMIT_INSERT}
