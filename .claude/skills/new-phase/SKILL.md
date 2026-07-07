@@ -44,6 +44,7 @@ Use `AGENTS.md` "Reference docs" section to map the phase number to its plan + p
 | 80–81       | `docs/plans/connect-return-check-plan.md`        | `docs/prompts/connect-return-check-prompts.md`        |
 | 82–84       | `docs/plans/merge-branch-plan.md`                | `docs/prompts/merge-branch-prompts.md`                |
 | 85–88       | `docs/plans/initialize-repository-plan.md`       | `docs/prompts/initialize-repository-prompts.md`       |
+| 89–97       | `docs/plans/branch-switch-integrity-plan.md`     | `docs/prompts/branch-switch-integrity-prompts.md`     |
 | DX-0–DX-6   | `docs/plans/agentic-dx-plan.md`                  | `docs/prompts/dx-execution-prompts.md`                |
 
 ## Step 3 — Read the plan section and prompts

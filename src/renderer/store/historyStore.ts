@@ -2,6 +2,9 @@ import { create } from 'zustand'
 import type { GitCommit, RepositoryRecord } from '../../core/types'
 import type { UncommitEligibility } from '../../core/history/uncommit'
 import { useAppStore } from './appStore'
+import { createRequestTracker } from '../../core/concurrency/requestGuard'
+
+const tracker = createRequestTracker()
 
 const PAGE_SIZE = 50
 
@@ -42,6 +45,7 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
   returnError: null,
 
   async load(repoPath, repository) {
+    const token = tracker.begin()
     set({
       loading: true,
       error: null,
@@ -59,34 +63,43 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
         window.api.history.getReturnState(repoPath),
       ])
       if (!historyRes.ok) throw new Error(historyRes.error)
-      set({ commits: historyRes.data, hasMore: historyRes.data.length === PAGE_SIZE })
-      if (returnStateRes.ok) {
-        set({
-          eligibility: returnStateRes.data.eligibility,
-          unpushedCount: returnStateRes.data.unpushedCount,
-        })
+      if (tracker.isCurrent(token)) {
+        set({ commits: historyRes.data, hasMore: historyRes.data.length === PAGE_SIZE })
+        if (returnStateRes.ok) {
+          set({
+            eligibility: returnStateRes.data.eligibility,
+            unpushedCount: returnStateRes.data.unpushedCount,
+          })
+        }
       }
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) })
+      if (tracker.isCurrent(token)) set({ error: err instanceof Error ? err.message : String(err) })
     } finally {
-      set({ loading: false })
+      if (tracker.isCurrent(token)) set({ loading: false })
     }
   },
 
   async loadMore() {
     const { repoPath, commits } = get()
     if (!repoPath) return
+    const token = tracker.begin()
     set({ loadingMore: true, error: null })
     try {
       const res = await window.api.git.getCommitHistory(repoPath, PAGE_SIZE, commits.length)
       if (!res.ok) throw new Error(res.error)
-      set((s) => ({
-        commits: [...s.commits, ...res.data],
-        hasMore: res.data.length === PAGE_SIZE,
-      }))
+      // #6: a load() (e.g. a branch/repo switch) that started after this page was
+      // requested must win — an appended page from the wrong branch is worse than none.
+      if (tracker.isCurrent(token)) {
+        set((s) => ({
+          commits: [...s.commits, ...res.data],
+          hasMore: res.data.length === PAGE_SIZE,
+        }))
+      }
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) })
+      if (tracker.isCurrent(token)) set({ error: err instanceof Error ? err.message : String(err) })
     } finally {
+      // loadingMore is exclusive to this method — always clear it, regardless of
+      // whether a later load() has since superseded this call's token.
       set({ loadingMore: false })
     }
   },
@@ -102,6 +115,8 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
         set({ returnError: res.data.message ?? null })
         return
       }
+      // load() re-takes a token and applies its own guard; a superseded reload from
+      // here is dropped exactly as any other load() call would be.
       await get().load(repoPath, repository)
       useAppStore.getState().navigate('status')
     } catch (err) {

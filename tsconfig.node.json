@@ -29,6 +29,11 @@
     "tests/unit/ai-model-options.test.ts",
     "tests/unit/app-store-profile-sync.test.ts",
     "tests/unit/commit-store.test.ts",
-    "tests/unit/remote-store-branch-sync.test.ts"
+    "tests/unit/remote-store-branch-sync.test.ts",
+    "tests/unit/status-store-request-guard.test.ts",
+    "tests/unit/branch-store-request-guard.test.ts",
+    "tests/unit/remote-store-load-hygiene.test.ts",
+    "tests/unit/history-store-request-guard.test.ts",
+    "tests/unit/safety-center-store-request-guard.test.ts"
   ]
 }

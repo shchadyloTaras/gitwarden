@@ -7,6 +7,9 @@ import type {
   SafetyCheckResult,
 } from '../../core/types'
 import { safetyCheckService } from '../../core/safety/SafetyCheckService'
+import { createRequestTracker } from '../../core/concurrency/requestGuard'
+
+const tracker = createRequestTracker()
 
 interface SafetyCenterState {
   repoPath: string | null
@@ -43,6 +46,7 @@ export const useSafetyCenterStore = create<SafetyCenterState>((set) => ({
   error: null,
 
   async load(repoPath, repository, activeProfile, profiles) {
+    const token = tracker.begin()
     const assignedProfile = profiles.find((p) => p.id === repository.assignedProfileId) ?? null
     // A stored assignedProfileId that no longer resolves to a profile (e.g. the profile
     // was deleted) is a dangling reference. Treat the repo as unassigned so the engine
@@ -96,24 +100,26 @@ export const useSafetyCenterStore = create<SafetyCenterState>((set) => ({
           })
         : null
 
-      set({
-        identity,
-        remotes,
-        currentBranch,
-        identityCheck,
-        pushCheck,
-        error: !identityRes.ok
-          ? identityRes.error
-          : !remotesRes.ok
-            ? remotesRes.error
-            : !statusRes.ok
-              ? statusRes.error
-              : null,
-      })
+      if (tracker.isCurrent(token)) {
+        set({
+          identity,
+          remotes,
+          currentBranch,
+          identityCheck,
+          pushCheck,
+          error: !identityRes.ok
+            ? identityRes.error
+            : !remotesRes.ok
+              ? remotesRes.error
+              : !statusRes.ok
+                ? statusRes.error
+                : null,
+        })
+      }
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) })
+      if (tracker.isCurrent(token)) set({ error: err instanceof Error ? err.message : String(err) })
     } finally {
-      set({ loading: false })
+      if (tracker.isCurrent(token)) set({ loading: false })
     }
   },
 }))

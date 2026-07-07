@@ -7,6 +7,9 @@ import type {
 } from '../../core/types'
 import type { Remediation } from '../../core/safety/remediation'
 import { useAppStore } from './appStore'
+import { createRequestTracker } from '../../core/concurrency/requestGuard'
+
+const tracker = createRequestTracker()
 
 interface RemoteState {
   repoPath: string | null
@@ -61,12 +64,16 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
   lastFailure: null,
 
   async load(repoPath, repository) {
+    const token = tracker.begin()
     set({
       loading: true,
       error: null,
       repoPath,
       repository,
       remotes: [],
+      // #9: upstream must reset with the rest of the load — a stale upstream from the
+      // previous repo must not survive as this repo's answer.
+      upstream: null,
       identity: null,
       successMessage: null,
       lastFailure: null,
@@ -78,26 +85,28 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
         window.api.git.getEffectiveIdentity(repoPath),
       ])
       const branch = statusRes.ok ? (statusRes.data.branch ?? null) : null
-      set({
-        remotes: remotesRes.ok ? remotesRes.data : [],
-        upstream: statusRes.ok ? (statusRes.data.upstream ?? null) : null,
-        identity: identityRes.ok ? identityRes.data : null,
-        error: !remotesRes.ok
-          ? remotesRes.error
-          : !statusRes.ok
-            ? statusRes.error
-            : !identityRes.ok
-              ? identityRes.error
-              : null,
-      })
-      // appStore.currentBranch is the single source of truth for the current branch
-      // (read by GlobalHeader and RemoteScreen alike) — push the live git status into
-      // it rather than keeping a second copy here that could drift out of sync.
-      if (branch) useAppStore.getState().setCurrentBranch(branch)
+      if (tracker.isCurrent(token)) {
+        set({
+          remotes: remotesRes.ok ? remotesRes.data : [],
+          upstream: statusRes.ok ? (statusRes.data.upstream ?? null) : null,
+          identity: identityRes.ok ? identityRes.data : null,
+          error: !remotesRes.ok
+            ? remotesRes.error
+            : !statusRes.ok
+              ? statusRes.error
+              : !identityRes.ok
+                ? identityRes.error
+                : null,
+        })
+        // appStore.currentBranch is the single source of truth for the current branch
+        // (read by GlobalHeader and RemoteScreen alike) — push the live git status into
+        // it rather than keeping a second copy here that could drift out of sync.
+        if (branch) useAppStore.getState().setCurrentBranch(branch)
+      }
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) })
+      if (tracker.isCurrent(token)) set({ error: err instanceof Error ? err.message : String(err) })
     } finally {
-      set({ loading: false })
+      if (tracker.isCurrent(token)) set({ loading: false })
     }
   },
 
@@ -119,6 +128,7 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
   async doPull(remote, branch) {
     const { repoPath } = get()
     if (!repoPath) return
+    const token = tracker.begin()
     set({ pullLoading: remote, error: null, successMessage: null, lastFailure: null })
     try {
       const res = await window.api.git.pull(repoPath, remote, branch)
@@ -138,9 +148,10 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
         })
         return
       }
-      // Refresh status after pull
+      // doPull's status refresh: dropped if a newer load() already landed the live
+      // branch, so a slow pull can't yank appStore.currentBranch backwards.
       const statusRes = await window.api.git.getStatus(repoPath)
-      if (statusRes.ok) {
+      if (statusRes.ok && tracker.isCurrent(token)) {
         const liveBranch = statusRes.data.branch ?? null
         if (liveBranch) useAppStore.getState().setCurrentBranch(liveBranch)
       }
@@ -149,6 +160,8 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
       const message = err instanceof Error ? err.message : String(err)
       set({ error: message, lastFailure: { message, remote, branch } })
     } finally {
+      // pullLoading is exclusive to this method — always clear it, regardless of
+      // whether a later load() has since superseded this call's token.
       set({ pullLoading: null })
     }
   },

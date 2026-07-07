@@ -1,5 +1,8 @@
 import { create } from 'zustand'
 import type { GitStatus } from '../../core/types'
+import { createRequestTracker } from '../../core/concurrency/requestGuard'
+
+const tracker = createRequestTracker()
 
 interface StatusState {
   status: GitStatus | null
@@ -21,18 +24,25 @@ export const useStatusStore = create<StatusState>((set, get) => ({
   repoPath: null,
 
   async loadStatus(repoPath: string) {
-    set({ loading: true, error: null, repoPath })
+    const token = tracker.begin()
+    // W7: reset the stale payload when the target repo differs from the one already
+    // loaded, so a superseded row can't be clicked mid-load; an in-place refresh of
+    // the SAME repo stays flicker-free (status keeps rendering while it reloads).
+    const isRepoChange = get().repoPath !== repoPath
+    set({ loading: true, error: null, repoPath, ...(isRepoChange ? { status: null } : {}) })
     try {
       const res = await window.api.git.getStatus(repoPath)
       if (res.ok) {
-        set({ status: res.data })
+        if (tracker.isCurrent(token)) set({ status: res.data })
       } else {
-        set({ error: res.error, status: null })
+        if (tracker.isCurrent(token)) set({ error: res.error, status: null })
       }
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err), status: null })
+      if (tracker.isCurrent(token)) {
+        set({ error: err instanceof Error ? err.message : String(err), status: null })
+      }
     } finally {
-      set({ loading: false })
+      if (tracker.isCurrent(token)) set({ loading: false })
     }
   },
 

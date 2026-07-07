@@ -3,6 +3,9 @@ import type { GitBranch, RepositoryRecord } from '../../core/types'
 import type { RemediationFailure } from '../components/RemediationButton'
 import { useAppStore } from './appStore'
 import { STR } from '../strings'
+import { createRequestTracker } from '../../core/concurrency/requestGuard'
+
+const tracker = createRequestTracker()
 
 interface BranchState {
   repoPath: string | null
@@ -43,75 +46,102 @@ export const useBranchStore = create<BranchState>((set, get) => ({
   mergeConflict: null,
 
   async load(repoPath, repository) {
-    set({ loading: true, error: null, repoPath, repository, branches: [], successMessage: null })
+    const token = tracker.begin()
+    // W5/W16: an armed destructive confirm (or a stale merge conflict) must not survive
+    // a repo switch — reset them here, alongside the usual load-start hygiene.
+    set({
+      loading: true,
+      error: null,
+      repoPath,
+      repository,
+      branches: [],
+      successMessage: null,
+      deleteConfirmBranch: null,
+      mergeConfirmBranch: null,
+      mergeConflict: null,
+    })
     try {
       const res = await window.api.git.getBranches(repoPath)
       if (!res.ok) throw new Error(res.error)
-      set({ branches: res.data })
-      const current = res.data.find((b) => b.isCurrent)
-      if (current) useAppStore.getState().setCurrentBranch(current.name)
+      if (tracker.isCurrent(token)) {
+        set({ branches: res.data })
+        const current = res.data.find((b) => b.isCurrent)
+        if (current) useAppStore.getState().setCurrentBranch(current.name)
+      }
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) })
+      if (tracker.isCurrent(token)) set({ error: err instanceof Error ? err.message : String(err) })
     } finally {
-      set({ loading: false })
+      if (tracker.isCurrent(token)) set({ loading: false })
     }
   },
 
   async doSwitch(branch) {
     const { repoPath, repository } = get()
     if (!repoPath || !repository) return
+    const token = tracker.begin()
     set({ error: null, successMessage: null })
     try {
       const res = await window.api.git.switchBranch(repoPath, branch)
       if (!res.ok) throw new Error(res.error)
-      useAppStore.getState().setCurrentBranch(branch)
+      if (tracker.isCurrent(token)) useAppStore.getState().setCurrentBranch(branch)
       // Reload branch list so isCurrent flags update
       const branches = await refreshBranches(repoPath)
-      if (branches) set({ branches })
-      set({ successMessage: `Switched to ${branch}.` })
+      if (tracker.isCurrent(token)) {
+        if (branches) set({ branches })
+        set({ successMessage: `Switched to ${branch}.` })
+      }
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) })
+      if (tracker.isCurrent(token)) set({ error: err instanceof Error ? err.message : String(err) })
     }
   },
 
   async doCreate(name) {
     const { repoPath, repository } = get()
     if (!repoPath || !repository) return
+    const token = tracker.begin()
     set({ error: null, successMessage: null })
     try {
       const res = await window.api.git.createBranch(repoPath, name)
       if (!res.ok) throw new Error(res.error)
-      useAppStore.getState().setCurrentBranch(name)
+      if (tracker.isCurrent(token)) useAppStore.getState().setCurrentBranch(name)
       const branches = await refreshBranches(repoPath)
-      if (branches) set({ branches })
-      set({ successMessage: `Created and switched to ${name}.` })
+      if (tracker.isCurrent(token)) {
+        if (branches) set({ branches })
+        set({ successMessage: `Created and switched to ${name}.` })
+      }
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) })
+      if (tracker.isCurrent(token)) set({ error: err instanceof Error ? err.message : String(err) })
     }
   },
 
   async doDelete(branch) {
     const { repoPath, repository } = get()
     if (!repoPath || !repository) return
+    const token = tracker.begin()
     set({ error: null, successMessage: null, deleteConfirmBranch: null })
     try {
       const res = await window.api.git.deleteBranch(repoPath, branch)
       if (!res.ok) throw new Error(res.error)
       const branches = await refreshBranches(repoPath)
-      if (branches) set({ branches })
-      set({ successMessage: `Deleted branch ${branch}.` })
+      if (tracker.isCurrent(token)) {
+        if (branches) set({ branches })
+        set({ successMessage: `Deleted branch ${branch}.` })
+      }
     } catch (err) {
       const branches = await refreshBranches(repoPath)
-      set({
-        ...(branches ? { branches } : {}),
-        error: err instanceof Error ? err.message : String(err),
-      })
+      if (tracker.isCurrent(token)) {
+        set({
+          ...(branches ? { branches } : {}),
+          error: err instanceof Error ? err.message : String(err),
+        })
+      }
     }
   },
 
   async doMerge(branch) {
     const { repoPath, repository, branches } = get()
     if (!repoPath || !repository) return
+    const token = tracker.begin()
     const current = branches.find((b) => b.isCurrent)?.name ?? branch
     set({
       error: null,
@@ -123,16 +153,20 @@ export const useBranchStore = create<BranchState>((set, get) => ({
       const res = await window.api.git.merge(repoPath, branch)
       if (!res.ok) {
         if (res.remediation) {
-          set({ mergeConflict: { message: res.error, remediation: res.remediation } })
+          if (tracker.isCurrent(token)) {
+            set({ mergeConflict: { message: res.error, remediation: res.remediation } })
+          }
           return
         }
         throw new Error(res.error)
       }
       const updated = await refreshBranches(repoPath)
-      if (updated) set({ branches: updated })
-      set({ successMessage: STR.BRANCH_MERGE_SUCCESS(branch, current) })
+      if (tracker.isCurrent(token)) {
+        if (updated) set({ branches: updated })
+        set({ successMessage: STR.BRANCH_MERGE_SUCCESS(branch, current) })
+      }
     } catch (err) {
-      set({ error: err instanceof Error ? err.message : String(err) })
+      if (tracker.isCurrent(token)) set({ error: err instanceof Error ? err.message : String(err) })
     }
   },
 
@@ -149,6 +183,7 @@ export const useBranchStore = create<BranchState>((set, get) => ({
   },
 
   clear() {
+    tracker.begin() // invalidate any in-flight request before wiping state
     set({
       branches: [],
       repoPath: null,

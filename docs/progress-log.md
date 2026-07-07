@@ -143,6 +143,18 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] Phase 87 — Empty-repo (unborn HEAD) tolerance (main)
 - [x] Phase 88 — Inline Initialize panel + land on Commit (renderer + e2e)
 
+### Branch-Switch Data Integrity feature (plan: `docs/plans/branch-switch-integrity-plan.md`, prompts: `docs/prompts/branch-switch-integrity-prompts.md`)
+
+- [x] Phase 89 — Stale-request guard + store load hygiene (pure core + renderer stores)
+- [ ] Phase 90 — `currentBranch` single ownership + repo/profile switch hygiene (renderer + small main)
+- [ ] Phase 91 — Verified-target compound writes (main + IPC)
+- [ ] Phase 92 — Branch-state truth + safe delete (core + main + renderer)
+- [ ] Phase 93 — Switch UX: non-reentrant picker, visible failures, stash quick-fix (main + IPC + renderer + e2e)
+- [ ] Phase 94 — AI actions pinned to their origin (main + renderer)
+- [ ] Phase 95 — Focus revalidation + refresh wiring (renderer)
+- [ ] Phase 96 — `.git` watcher: instant external-change detection (main + IPC + renderer)
+- [ ] Phase 97 — Polish + regression sweep (renderer + e2e)
+
 ### Agentic DX track (plan: `docs/plans/agentic-dx-plan.md`, prompts: `docs/prompts/dx-execution-prompts.md`)
 
 > Not product phases — a separate developer-experience track (steps DX-0…DX-6, no global phase
@@ -164,24 +176,25 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 > are done/open). When you tick a checklist box you MUST re-derive the affected row here in the same
 > edit; if a row ever disagrees with the checklist, the checklist wins.
 
-| Track                       | Phases    | Status                                                        |
-| --------------------------- | --------- | ------------------------------------------------------------- |
-| MVP Core                    | 0–20      | ✅ complete                                                   |
-| GitHub OAuth                | 21–27     | ✅ complete                                                   |
-| AI Connections              | 28–39     | ✅ complete                                                   |
-| AI Chat Redesign            | 52–55a    | ✅ complete                                                   |
-| Generative UI Blocks        | 60–62     | ✅ complete                                                   |
-| Guard Quick-Fix             | 63–67     | ✅ complete                                                   |
-| Client Branch Access        | 56–59     | ✅ complete                                                   |
-| Distribution & Release      | 40–45     | 🟡 Phases 40–42, 45 done; 43–44 open (gated on signing certs) |
-| Landing Page                | 46–51     | ✅ complete                                                   |
-| Diverged-Branch Merge       | 68–71     | ✅ complete                                                   |
-| Private-Source Distribution | 72–75     | ✅ complete                                                   |
-| Uncommit to Working Changes | 76–79     | ✅ complete                                                   |
-| Connect-Return Check        | 80–81     | ✅ complete                                                   |
-| Merge a Branch              | 82–84     | ✅ complete                                                   |
-| Initialize Repository       | 85–88     | ✅ complete                                                   |
-| Agentic DX                  | DX-0–DX-6 | ✅ complete (DX-6 = à la carte; project-factory/sdd deferred) |
+| Track                        | Phases    | Status                                                        |
+| ---------------------------- | --------- | ------------------------------------------------------------- |
+| MVP Core                     | 0–20      | ✅ complete                                                   |
+| GitHub OAuth                 | 21–27     | ✅ complete                                                   |
+| AI Connections               | 28–39     | ✅ complete                                                   |
+| AI Chat Redesign             | 52–55a    | ✅ complete                                                   |
+| Generative UI Blocks         | 60–62     | ✅ complete                                                   |
+| Guard Quick-Fix              | 63–67     | ✅ complete                                                   |
+| Client Branch Access         | 56–59     | ✅ complete                                                   |
+| Distribution & Release       | 40–45     | 🟡 Phases 40–42, 45 done; 43–44 open (gated on signing certs) |
+| Landing Page                 | 46–51     | ✅ complete                                                   |
+| Diverged-Branch Merge        | 68–71     | ✅ complete                                                   |
+| Private-Source Distribution  | 72–75     | ✅ complete                                                   |
+| Uncommit to Working Changes  | 76–79     | ✅ complete                                                   |
+| Connect-Return Check         | 80–81     | ✅ complete                                                   |
+| Merge a Branch               | 82–84     | ✅ complete                                                   |
+| Initialize Repository        | 85–88     | ✅ complete                                                   |
+| Branch-Switch Data Integrity | 89–97     | 🟡 Phase 89 done; 90–97 open                                  |
+| Agentic DX                   | DX-0–DX-6 | ✅ complete (DX-6 = à la carte; project-factory/sdd deferred) |
 
 ## Progress Log
 
@@ -1331,3 +1344,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 ### 2026-07-04 — v0.4.2 released
 
 - Cut release `v0.4.2` via `/release` (patch; owner pre-authorized the version and the full commit+push flow in-session). Single app commit since `v0.4.1`: the branch-name error-message fix above. `CHANGELOG.md` rolled (`Unreleased` → `0.4.2 — 2026-07-04`, one user-facing Fixed bullet), `package.json` bumped 0.4.1 → 0.4.2, landing changelog copy refreshed in the release commit. Gates at cut time: `npm test` **812/812**; tree clean. Pushed `main` + `v0.4.2` to origin per the owner's explicit instruction.
+
+### 2026-07-07 — Phase 89: Stale-request guard + store load hygiene (pure core + renderer stores)
+
+- Built: `src/core/concurrency/requestGuard.ts` — `createRequestTracker()` returning `{ begin(): number; isCurrent(token): boolean }`, a dependency-free monotonic-token version of `headerGuardStore`'s `reqId` pattern. Applied it to all six renderer data stores (`statusStore`, `branchStore`, `commitStore`, `remoteStore`, `historyStore`, `safetyCenterStore`): every `load()` takes a token at start, and every subsequent `set()` painting IPC-derived content is dropped unless the token is still current — a slower, superseded request can never overwrite a newer one's data. `doSwitch`/`doCreate`/`doDelete`/`doMerge`'s `refreshBranches()` results (branchStore) and `historyStore.loadMore`'s appended page share the same guard, so a stale branch/history refresh can't paint over a newer load. Per-method-exclusive busy flags (`identityLoading`, `commitLoading`, `fetchLoading`, `pullLoading`, `pushLoading`, `loadingMore`) are deliberately left unconditional in their `finally` blocks — gating them on the store-wide tracker would leave them stuck at `true` whenever an unrelated `load()` superseded their token; only `doCommit`'s and `doPull`'s post-success _status refresh_ (the two spots the plan explicitly names) are guarded. Load hygiene: `statusStore.loadStatus` resets `status: null` only on a real repo change (W7 — flicker-free in-place refresh on the same repo); `remoteStore.load` now resets `upstream: null` (#9); `branchStore.load` resets `deleteConfirmBranch`/`mergeConfirmBranch`/`mergeConflict` (W5, W16); `historyStore.loadMore` drops a superseded append (#6). `commitStore`: the typed message is now tracked per-repo in `messagesByRepo` and restored on return (W23); AI drafts are now keyed by `repositoryId:branch` instead of just `repositoryId`, so a draft never bleeds across branches on the same repo (#5).
+- Files: new `src/core/concurrency/requestGuard.ts`; edited `src/renderer/store/statusStore.ts`, `branchStore.ts`, `commitStore.ts`, `remoteStore.ts`, `historyStore.ts`, `safetyCenterStore.ts`; new tests `tests/unit/request-guard.test.ts`, `status-store-request-guard.test.ts`, `branch-store-request-guard.test.ts`, `history-store-request-guard.test.ts`, `remote-store-load-hygiene.test.ts`, `safety-center-store-request-guard.test.ts`; extended `tests/unit/commit-store.test.ts`; registered the new renderer-store test files in `tsconfig.node.json` (exclude) / `tsconfig.web.json` (include), matching the existing pattern for renderer-store tests.
+- Tests: Vitest **836/836 passed** (92 files; 24 new tests).
+- Exit criteria: ✅ met — `npx tsc --noEmit` clean on both tsconfigs; `npm test` green (836/836) including the new requestGuard + per-store race/hygiene tests; core-purity review clean on the new core module (no imports, no I/O, dependency-free); `npm run lint` clean.
+- Notes / follow-ups: One race test (branchStore's `doSwitch` vs. a superseding `load()`) needed an argument-keyed mock instead of vitest's `mockResolvedValueOnce` FIFO queue, since two independently-scheduled async call sites race for the same mocked function — call order isn't source order (it deadlocked at first; fixed by keying the mock's return on which repo path it was called with). `applyLocalIdentity`, `doFetch`, and `doRemotePush` were deliberately left fully unguarded (matching their original behavior) since they're outside this phase's explicit scope and guarding them risks the same stuck-busy-flag class of bug that had to be corrected for `commitLoading`/`pullLoading`/`loadingMore` mid-phase. Also fixed unrelated pre-existing Prettier drift in `docs/progress-log.md`, `.claude/skills/log-phase/SKILL.md`, `docs/plans/branch-switch-integrity-plan.md`, and `docs/investigations/branch-switch-freshness-audit.md` (formatting only — these files' content was already correct scaffolding from this track's kickoff) so `npm run lint` could pass cleanly. Next: **Phase 90 — `currentBranch` single ownership + repo/profile switch hygiene**, which removes `remoteStore`'s `setCurrentBranch` calls (`load`/`doPull`) and makes `branchStore` the sole writer — this phase's guard on `doPull`'s status refresh is exactly the seam Phase 90 replaces with a reconcile-through-the-owner call.

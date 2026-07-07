@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RepositoryRecord } from '../../src/core/types'
 import { STR } from '../../src/renderer/strings'
+import { useAppStore } from '../../src/renderer/store/appStore'
 
 // The renderer commit store talks to the AI store (for the draft capability) and to
 // window.api.git (to load status/identity). Both are mocked the same way the other
@@ -50,6 +51,7 @@ function reset(): void {
     draftLoading: false,
     draftError: null,
     draftsByRepo: {},
+    messagesByRepo: {},
     error: null,
     committedHash: null,
   })
@@ -236,5 +238,121 @@ describe('commitStore AI draft survives switching accounts / repos mid-draft', (
     await useCommitStore.getState().load('/A', repo('A'))
     expect(useCommitStore.getState().draftError).toBe('rate limited')
     expect(useCommitStore.getState().draftLoading).toBe(false)
+  })
+})
+
+describe('commitStore stale-request guard (Phase 89)', () => {
+  beforeEach(() => {
+    reset()
+    aiStoreError = null
+    vi.clearAllMocks()
+  })
+
+  it('drops a load() result that resolves after a newer load() was issued', async () => {
+    let resolveA: (v: unknown) => void = () => {}
+    apiGit.getStatus.mockImplementationOnce(() => new Promise((r) => (resolveA = r)))
+    apiGit.getEffectiveIdentity.mockResolvedValue({ ok: true, data: { name: 'A', email: 'a@b.c' } })
+
+    const pendingA = useCommitStore.getState().load('/repo-A', repo('repo-A'))
+
+    apiGit.getStatus.mockResolvedValueOnce({ ok: true, data: { branch: 'main', files: [] } })
+    const pendingB = useCommitStore.getState().load('/repo-B', repo('repo-B'))
+    await pendingB
+    expect(useCommitStore.getState().repository?.id).toBe('repo-B')
+
+    // Repo A's slow response finally resolves — must not overwrite repo B's state.
+    resolveA({ ok: true, data: { branch: 'stale', files: [] } })
+    await pendingA
+    expect(useCommitStore.getState().repository?.id).toBe('repo-B')
+    expect(useCommitStore.getState().status?.branch).toBe('main')
+  })
+})
+
+describe('commitStore per-repo typed message (W23)', () => {
+  beforeEach(() => {
+    reset()
+    aiStoreError = null
+    vi.clearAllMocks()
+    apiGit.getStatus.mockResolvedValue({ ok: true, data: { branch: 'main', files: [] } })
+    apiGit.getEffectiveIdentity.mockResolvedValue({ ok: true, data: { name: 'A', email: 'a@b.c' } })
+  })
+
+  it('does not carry a half-typed message from one repo into another', async () => {
+    await useCommitStore.getState().load('/repo-1', repo('repo-1'))
+    useCommitStore.getState().setMessage('wip on repo 1')
+
+    await useCommitStore.getState().load('/repo-2', repo('repo-2'))
+    expect(useCommitStore.getState().message).toBe('')
+  })
+
+  it('restores the typed message when returning to a repo', async () => {
+    await useCommitStore.getState().load('/repo-1', repo('repo-1'))
+    useCommitStore.getState().setMessage('wip on repo 1')
+
+    await useCommitStore.getState().load('/repo-2', repo('repo-2'))
+    await useCommitStore.getState().load('/repo-1', repo('repo-1'))
+    expect(useCommitStore.getState().message).toBe('wip on repo 1')
+  })
+
+  it('clears the saved message for a repo after a successful commit', async () => {
+    await useCommitStore.getState().load('/repo-1', repo('repo-1'))
+    useCommitStore.getState().setMessage('wip on repo 1')
+    apiGit.commit.mockResolvedValue({ ok: true, data: { hash: 'abc123' } })
+
+    await useCommitStore.getState().doCommit('wip on repo 1')
+    await useCommitStore.getState().load('/repo-2', repo('repo-2'))
+    await useCommitStore.getState().load('/repo-1', repo('repo-1'))
+    expect(useCommitStore.getState().message).toBe('')
+  })
+})
+
+describe('commitStore AI drafts keyed by repo AND branch (#5)', () => {
+  beforeEach(() => {
+    reset()
+    aiStoreError = null
+    vi.clearAllMocks()
+    apiGit.getStatus.mockResolvedValue({ ok: true, data: { branch: 'main', files: [] } })
+    apiGit.getEffectiveIdentity.mockResolvedValue({ ok: true, data: { name: 'A', email: 'a@b.c' } })
+    useAppStore.setState({ currentBranch: null })
+  })
+
+  it('a draft started on branch A does not surface when the same repo is on branch B', async () => {
+    useAppStore.setState({ currentBranch: 'feature-a' })
+    await useCommitStore.getState().load('/repo-1', repo('repo-1'))
+
+    let resolveDraft: (v: unknown) => void = () => {}
+    aiMethods.draftCommitMessage.mockImplementation(
+      () => new Promise((r) => (resolveDraft = r as (v: unknown) => void))
+    )
+    const pending = useCommitStore.getState().draftMessage()
+
+    // User switches branch on the SAME repo before the draft resolves.
+    useAppStore.setState({ currentBranch: 'feature-b' })
+    await useCommitStore.getState().load('/repo-1', repo('repo-1'))
+    expect(useCommitStore.getState().draftLoading).toBe(false)
+
+    resolveDraft({ conventional: 'feat: for A', plain: 'p', summary: 's' })
+    await pending
+    expect(useCommitStore.getState().message).toBe('')
+
+    // Returning to branch A surfaces the finished draft.
+    useAppStore.setState({ currentBranch: 'feature-a' })
+    await useCommitStore.getState().load('/repo-1', repo('repo-1'))
+    expect(useCommitStore.getState().message).toBe('feat: for A')
+  })
+
+  it('allows independent concurrent drafts for the same repo on two different branches', async () => {
+    useAppStore.setState({ currentBranch: 'feature-a' })
+    await useCommitStore.getState().load('/repo-1', repo('repo-1'))
+    aiMethods.draftCommitMessage.mockImplementation(() => new Promise(() => {}))
+    void useCommitStore.getState().draftMessage()
+    expect(aiMethods.draftCommitMessage).toHaveBeenCalledTimes(1)
+
+    useAppStore.setState({ currentBranch: 'feature-b' })
+    await useCommitStore.getState().load('/repo-1', repo('repo-1'))
+    void useCommitStore.getState().draftMessage()
+    // A different branch is a different draft target — it is NOT blocked by branch A's
+    // in-flight draft.
+    expect(aiMethods.draftCommitMessage).toHaveBeenCalledTimes(2)
   })
 })
