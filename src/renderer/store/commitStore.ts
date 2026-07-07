@@ -136,14 +136,20 @@ export const useCommitStore = create<CommitState>((set, get) => ({
 
   setMessage(message) {
     // Editing the message dismisses any stale AI-draft error, and keeps the per-repo
-    // draft (W23) in sync so it survives a repo switch and back.
-    set((s) => ({
-      message,
-      draftError: null,
-      messagesByRepo: s.repository
-        ? { ...s.messagesByRepo, [s.repository.id]: message }
-        : s.messagesByRepo,
-    }))
+    // draft (W23) in sync so it survives a repo switch and back. When the message is set
+    // before the Commit screen has ever mounted — e.g. the AI commit-draft card's
+    // "Insert", which writes the message then navigates to Commit — commitStore.repository
+    // is still null; fall back to the active repo (CommitDraftCard gates Insert on it) so
+    // the per-repo message is persisted and the first load() on mount restores it instead
+    // of wiping it to the empty saved value.
+    set((s) => {
+      const repoId = s.repository?.id ?? useAppStore.getState().activeRepo?.id
+      return {
+        message,
+        draftError: null,
+        messagesByRepo: repoId ? { ...s.messagesByRepo, [repoId]: message } : s.messagesByRepo,
+      }
+    })
   },
 
   async applyLocalIdentity(name, email) {

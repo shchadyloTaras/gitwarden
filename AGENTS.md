@@ -29,7 +29,7 @@ Shared instructions for AI coding agents working on this repo. Claude Code loads
 
 - **Electron + TypeScript (strict) + React (Vite)**
 - State: Zustand (or context). Validation: Zod. Tests: **Vitest** (logic) + **Playwright** (Electron e2e).
-- Git access: Node `child_process.execFile` (args array — **never** a shell).
+- Git access: Node `child_process.spawn` (args array, `shell: false` — **never** a shell).
 - Storage: JSON in `app.getPath('userData')` (non-secret) + Electron `safeStorage` (secrets).
 
 ## Commands
@@ -45,7 +45,7 @@ npm run build    # electron-builder package
 ## Architecture rules (non-negotiable)
 
 - **`src/core/` is pure** — no `child_process`, `fs`, Electron, or DOM imports. Safety Engine, porcelain parser, and types live here so they run under plain Vitest. This is the verifiability backbone.
-- All git execution goes through **`GitRunner`** (the only `execFile` caller); controlled env, cancellable, per-repo serialization.
+- All git execution goes through **`GitRunner`** (the only git-command runner; uses `spawn` with an args array, not `execFile`, for a cancellable `ChildProcess` handle); controlled env, cancellable, per-repo serialization.
 - Renderer has **no Node access**: `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`. Renderer ↔ main only via the typed preload bridge; validate IPC payloads with Zod.
 - Every service has an interface and is injected so tests can mock it.
 - Git args are always an **array**, never string-interpolated; path args after `--`.

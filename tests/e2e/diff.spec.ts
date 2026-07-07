@@ -8,7 +8,11 @@ import { execSync } from 'node:child_process'
 
 function launchApp(): Promise<ElectronApplication> {
   return electron.launch({
-    args: [path.resolve(__dirname, '../../out/main/index.js')],
+    // Isolate app storage in a temp dir so this spec never touches the real userData:
+    // the beforeEach cleanup deletes every registered repo, which would be destructive
+    // against a developer's actual GitWarden data. Electron honors --user-data-dir for
+    // app.getPath('userData').
+    args: [path.resolve(__dirname, '../../out/main/index.js'), `--user-data-dir=${userDataDir}`],
   })
 }
 
@@ -30,8 +34,11 @@ async function cleanupAll(win: Page): Promise<void> {
 let fixtureU: string
 // fixtureS: world.txt staged → staged diff exists
 let fixtureS: string
+// Isolated Electron userData dir for this spec (see launchApp).
+let userDataDir: string
 
 test.beforeAll(() => {
+  userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gw-diff-userdata-'))
   // Fixture U: unstaged change
   fixtureU = fs.mkdtempSync(path.join(os.tmpdir(), 'gw-diff-u-'))
   execSync('git init', { cwd: fixtureU, stdio: 'pipe' })
@@ -59,6 +66,7 @@ test.beforeAll(() => {
 test.afterAll(() => {
   fs.rmSync(fixtureU, { recursive: true, force: true })
   fs.rmSync(fixtureS, { recursive: true, force: true })
+  fs.rmSync(userDataDir, { recursive: true, force: true })
 })
 
 test.describe('Diff Viewer', () => {
@@ -120,11 +128,16 @@ test.describe('Diff Viewer', () => {
     // hello.txt appears in unstaged list
     await expect(win.getByTestId('unstaged-list')).toContainText('hello.txt', { timeout: 10000 })
 
-    // Click the file row to select it
+    // Click the file NAME (not the row centre) to select it. The row's action buttons
+    // (Stage / Discard) are right-aligned and stopPropagation; on a narrow list a bare
+    // row-centre .click() can land on "Stage" and stage the file instead of selecting it,
+    // leaving the diff panel empty. The filename span has no handler, so clicking it
+    // bubbles up to the row's onSelect and reliably selects the file.
     await win
       .getByTestId('unstaged-section')
       .locator('[data-testid="unstaged-file-row"]')
       .filter({ hasText: 'hello.txt' })
+      .getByText('hello.txt')
       .click()
 
     // diff-panel should appear with actual diff lines

@@ -356,3 +356,32 @@ describe('commitStore AI drafts keyed by repo AND branch (#5)', () => {
     expect(aiMethods.draftCommitMessage).toHaveBeenCalledTimes(2)
   })
 })
+
+describe('commitStore keeps an AI draft inserted before the Commit screen is first opened', () => {
+  beforeEach(() => {
+    reset()
+    aiStoreError = null
+    vi.clearAllMocks()
+    apiGit.getStatus.mockResolvedValue({ ok: true, data: { branch: 'main', files: [] } })
+    apiGit.getEffectiveIdentity.mockResolvedValue({ ok: true, data: { name: 'A', email: 'a@b.c' } })
+    useAppStore.setState({ activeRepo: null, currentBranch: null })
+  })
+
+  it('does not wipe a message set while commitStore.repository is still null', async () => {
+    // Repro of the AI commit-draft "Insert" bug: CommitDraftCard writes the message and
+    // navigates to Commit WITHOUT the Commit screen ever having mounted, so
+    // commitStore.repository is still null. The active repo is the draft's origin (the
+    // card gates Insert on activeRepo?.id === originRepositoryId), so the message must be
+    // persisted against the active repo and survive the first load() on mount.
+    useAppStore.setState({ activeRepo: repo('repo-1') })
+    expect(useCommitStore.getState().repository).toBeNull()
+
+    // Insert applies the finished draft into the message box.
+    useCommitStore.getState().setMessage('feat: inserted draft\n\nBody line')
+
+    // CommitScreen mounts for the first time and calls load() for the active repo.
+    await useCommitStore.getState().load('/repo-1', repo('repo-1'))
+
+    expect(useCommitStore.getState().message).toBe('feat: inserted draft\n\nBody line')
+  })
+})

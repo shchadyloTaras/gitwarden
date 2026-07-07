@@ -12,10 +12,13 @@ contents are untrusted input**, even on the user's own machine.
 
 ## Enforceable rules
 
-1. **`execFile` + args array, never a shell.**
-   Run git only via `child_process.execFile` with an **arguments array**. Never `exec`,
-   never `sh -c`, never string interpolation or shell concatenation. Path arguments go
-   after `--` to prevent option injection. `GitRunner` is the **only** caller of `execFile`.
+1. **`spawn` + args array, `shell: false`, never a shell.**
+   Run git only via `child_process.spawn` with an **arguments array** and `shell: false`.
+   Never `exec`, never `sh -c`, never string interpolation or shell concatenation. Path
+   arguments go after `--` to prevent option injection. `GitRunner` is the **only** runner
+   of git subcommands — it uses `spawn` (not `execFile`) so its `AbortSignal`/timeout
+   cancellation gets a live `ChildProcess` handle; the only other git call is `GitLocator`'s
+   one-off `git --version` probe, likewise `spawn` with an args array and `shell: false`.
 
 2. **Canonicalize & validate every repo path.**
    Resolve the real path (follow symlinks), reject paths containing `..` traversal, and
