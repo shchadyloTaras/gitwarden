@@ -11,6 +11,7 @@ import { useRepositoriesStore } from './store/repositoriesStore'
 import { useSettingsStore } from './store/settingsStore'
 import { useOnboardingStore } from './store/onboardingStore'
 import { useUpdatesStore } from './store/updatesStore'
+import { refreshActiveRepo } from './store/refreshActiveRepo'
 import type { NavScreen } from './store/appStore'
 import { pickAutoSelectedRepo } from '../core/repos/autoSelectRepo'
 
@@ -60,6 +61,9 @@ const SIDEBAR_TRANSITION_MS = 200
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'gitwarden.layout.sidebarCollapsed.v1'
 const STARTUP_LOADER_MIN_MS = 900
 const STARTUP_LOADER_EXIT_MS = 220
+/** Ignore extra focus/visibility events within this window of the last trigger —
+ * mirrors ConnectGitHubModal's return-focus poke debounce (Phase 95, W4-cheap). */
+const FOCUS_REFRESH_DEBOUNCE_MS = 2000
 
 const COLLAPSE_TOGGLE_STYLE: React.CSSProperties = {
   width: 32,
@@ -258,6 +262,7 @@ export default function App(): React.ReactElement {
   const reposError = useRepositoriesStore((s) => s.error)
   const loadSettings = useSettingsStore((s) => s.load)
   const checkForUpdates = useUpdatesStore((s) => s.check)
+  const checkForUpdatesIfStale = useUpdatesStore((s) => s.checkIfStale)
   const appearance = useSettingsStore((s) => s.appearance)
   const activeRepo = useAppStore((s) => s.activeRepo)
   const setActiveRepo = useAppStore((s) => s.setActiveRepo)
@@ -307,6 +312,44 @@ export default function App(): React.ReactElement {
   useEffect(() => {
     if (!navigator.webdriver) void checkForUpdates()
   }, [checkForUpdates])
+
+  // Cheapest layer of external-change detection (Phase 95, W4-cheap): a terminal
+  // `git switch`/`commit`/`branch` while GitWarden sits in the background is
+  // otherwise invisible until the user switches repos or tabs. Re-read the active
+  // repo's data whenever the window regains focus or the tab becomes visible again
+  // — mirrors ConnectGitHubModal's return-focus poke (same debounce pattern), so a
+  // burst of focus/visibility events (alt-tabbing) triggers at most one refresh.
+  // refreshActiveRepo() makes no network call, so it runs unthrottled by
+  // navigator.webdriver — the e2e smoke test needs it to fire under Playwright too.
+  // The update re-check DOES call GitHub in production, so it keeps the same
+  // webdriver guard as the launch check, plus its own independent 24h throttle (W28).
+  useEffect(() => {
+    let debounced = false
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null
+
+    function triggerFocusRevalidate(): void {
+      if (debounced) return
+      debounced = true
+      debounceTimer = setTimeout(() => {
+        debounced = false
+      }, FOCUS_REFRESH_DEBOUNCE_MS)
+
+      void refreshActiveRepo()
+      if (!navigator.webdriver) void checkForUpdatesIfStale(Date.now())
+    }
+
+    function onVisibilityChange(): void {
+      if (document.visibilityState === 'visible') triggerFocusRevalidate()
+    }
+
+    window.addEventListener('focus', triggerFocusRevalidate)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => {
+      window.removeEventListener('focus', triggerFocusRevalidate)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      if (debounceTimer) clearTimeout(debounceTimer)
+    }
+  }, [checkForUpdatesIfStale])
 
   useEffect(() => {
     if (!storesReady || !startupLoaderVisible) return

@@ -45,6 +45,9 @@
     "tests/unit/history-store-expected-head-branch.test.ts",
     "tests/unit/branch-store-safe-delete.test.ts",
     "tests/unit/branch-store-switch-ux.test.ts",
-    "tests/unit/ai-chat-store-origin-pin.test.ts"
+    "tests/unit/ai-chat-store-origin-pin.test.ts",
+    "tests/unit/updates-store-focus-recheck.test.ts",
+    "tests/unit/remote-store-fetch-refresh.test.ts",
+    "tests/unit/safety-center-store-guard-sync.test.ts"
   ]
 }

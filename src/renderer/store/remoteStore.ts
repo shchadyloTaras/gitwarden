@@ -8,6 +8,7 @@ import type {
 import type { Remediation } from '../../core/safety/remediation'
 import { useAppStore } from './appStore'
 import { useBranchStore } from './branchStore'
+import { useHistoryStore } from './historyStore'
 import { createRequestTracker } from '../../core/concurrency/requestGuard'
 
 const tracker = createRequestTracker()
@@ -120,12 +121,26 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
   },
 
   async doFetch(remote) {
-    const { repoPath } = get()
+    const { repoPath, repository } = get()
     if (!repoPath) return
     set({ fetchLoading: remote, error: null, successMessage: null })
     try {
       const res = await window.api.git.fetch(repoPath, remote)
       if (!res.ok) throw new Error(res.error)
+      // W25: a fetch can move remote-tracking refs (ahead/behind, upstream status)
+      // and pull in new incoming commits — reload this store plus nudge
+      // branch/history so those tabs don't keep showing pre-fetch data. Runs BEFORE
+      // the success message, since load()'s own reset would otherwise wipe it out
+      // from under the user. Guarded on the repo not having changed while the fetch
+      // was in flight — a slow network fetch must not overwrite whatever repo the
+      // user has since switched to.
+      if (repository && get().repoPath === repoPath) {
+        await Promise.all([
+          get().load(repoPath, repository),
+          useBranchStore.getState().load(repoPath, repository),
+          useHistoryStore.getState().load(repoPath, repository),
+        ])
+      }
       set({ successMessage: `Fetched from ${remote}.` })
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) })

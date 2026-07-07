@@ -8,6 +8,7 @@ import type {
 } from '../../core/types'
 import { safetyCheckService } from '../../core/safety/SafetyCheckService'
 import { createRequestTracker } from '../../core/concurrency/requestGuard'
+import { useHeaderGuardStore } from './headerGuardStore'
 
 const tracker = createRequestTracker()
 
@@ -115,6 +116,15 @@ export const useSafetyCenterStore = create<SafetyCenterState>((set) => ({
                 ? statusRes.error
                 : null,
         })
+        // W12: keep the always-mounted header badge in lockstep with this screen's
+        // own verdict — GlobalHeader's own effect already refreshes on repo/profile
+        // change, but this screen can also reload independently (e.g. the Phase 95
+        // focus-revalidation path), and the two must never disagree on screen.
+        // Awaited (not fire-and-forget) so callers of load() — e.g. refreshActiveRepo,
+        // which Promise.all()s every screen-scoped load — see it as already settled.
+        await useHeaderGuardStore
+          .getState()
+          .refresh(repoPath, effectiveRepository, activeProfile, profiles)
       }
     } catch (err) {
       if (tracker.isCurrent(token)) set({ error: err instanceof Error ? err.message : String(err) })
