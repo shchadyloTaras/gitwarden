@@ -943,7 +943,15 @@ export default function ProfilesScreen(): React.ReactElement {
         <ConnectGitHubModal
           profileId={selectedId}
           onAuthorized={handleAuthorized}
-          onClose={() => setConnecting(false)}
+          onClose={() => {
+            setConnecting(false)
+            // W24: a cancel racing the OAuth return-poke can close BEFORE
+            // handleAuthorized's own patch has a chance to run — main may have
+            // already persisted the link by then. Reloading from disk on every
+            // close (not just success) means the UI can never disagree with what
+            // actually got saved, regardless of which side won the race.
+            void load()
+          }}
         />
       )}
     </div>

@@ -171,6 +171,7 @@ interface ElectronAPI {
     createBranch(repoPath: string, name: string): Promise<IpcResult<void>>
     deleteBranch(repoPath: string, branch: string): Promise<IpcResult<void>>
     forceDeleteBranch(repoPath: string, branch: string): Promise<IpcResult<void>>
+    pruneWorktrees(repoPath: string): Promise<IpcResult<void>>
     merge(repoPath: string, branch: string, expectedTargetBranch?: string): Promise<IpcResult<void>>
     getCommitHistory(repoPath: string, limit: number, skip: number): Promise<IpcResult<GitCommit[]>>
     discardFile(repoPath: string, filePath: string): Promise<IpcResult<void>>

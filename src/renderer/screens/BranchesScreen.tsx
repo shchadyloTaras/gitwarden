@@ -68,6 +68,7 @@ export default function BranchesScreen(): React.ReactElement {
     doDelete,
     doForceDelete,
     doMerge,
+    doPruneWorktrees,
     setDeleteConfirm,
     setForceDeleteConfirm,
     setMergeConfirm,
@@ -86,8 +87,11 @@ export default function BranchesScreen(): React.ReactElement {
   async function handleCreate(): Promise<void> {
     const name = newBranchName.trim()
     if (!name) return
-    await doCreate(name)
-    setNewBranchName('')
+    // W31: only clear the typed name on success — a rejected name (invalid,
+    // already exists) stays in the input so the user can fix it instead of
+    // re-typing it from scratch.
+    const created = await doCreate(name)
+    if (created) setNewBranchName('')
   }
 
   async function handleDelete(branch: string): Promise<void> {
@@ -334,12 +338,27 @@ export default function BranchesScreen(): React.ReactElement {
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {b.worktreePath}
+                        {b.worktreeMissing ? STR.BRANCH_WORKTREE_MISSING_HINT : b.worktreePath}
                       </div>
                     )}
                   </div>
 
-                  {checkedOutElsewhere && (
+                  {/* W22: a worktree deleted out-of-band (Finder/Explorer, not `git
+                      worktree remove`) keeps this branch permanently badged — offer
+                      the escape hatch (prune) instead of a dead end. The action's own
+                      label is the confirm (AGENTS.md #6): nothing the user still has
+                      is at risk, the directory is already gone. */}
+                  {checkedOutElsewhere && b.worktreeMissing && (
+                    <button
+                      data-testid="branches-worktree-prune-btn"
+                      data-tooltip={STR.BRANCH_WORKTREE_MISSING_HINT}
+                      onClick={() => void doPruneWorktrees()}
+                      style={BTN_PRIMARY}
+                    >
+                      {STR.BRANCH_WORKTREE_PRUNE_BUTTON}
+                    </button>
+                  )}
+                  {checkedOutElsewhere && !b.worktreeMissing && (
                     <span data-testid="branches-worktree-badge" style={WORKTREE_BADGE}>
                       In worktree
                     </span>

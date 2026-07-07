@@ -163,6 +163,38 @@ describe('GitService.getStatus integration', () => {
     await expect(realpath(linkedBranch!.worktreePath!)).resolves.toBe(await realpath(linkedPath))
   })
 
+  it('worktree hygiene (Phase 97, W22): flags a worktree deleted out-of-band, and prune clears it', async () => {
+    await writeFile(path.join(repoPath, 'init.txt'), 'initial\n')
+    await git(repoPath, 'add', 'init.txt')
+    await git(repoPath, 'commit', '-m', 'initial')
+    await git(repoPath, 'branch', 'orphaned-worktree')
+
+    const linkedPath = path.join(tmpDir, 'orphaned-worktree')
+    await execFileAsync('git', ['-C', repoPath, 'worktree', 'add', linkedPath, 'orphaned-worktree'])
+
+    // While the directory still exists, it's a normal (not stale) worktree.
+    const beforeDelete = await service.getBranches(repoPath)
+    expect(beforeDelete.find((b) => b.name === 'orphaned-worktree')?.worktreeMissing).toBe(false)
+
+    // Deleted out-of-band — NOT via `git worktree remove` — exactly the Finder/
+    // Explorer scenario W22 describes: git's own registration doesn't know.
+    await rm(linkedPath, { recursive: true, force: true })
+
+    const afterDelete = await service.getBranches(repoPath)
+    const staleBranch = afterDelete.find((b) => b.name === 'orphaned-worktree')
+    expect(staleBranch?.worktreeMissing).toBe(true)
+    // Still hidden from Switch/Delete (worktreePath is still set) until pruned.
+    expect(staleBranch?.worktreePath).toBeDefined()
+
+    await service.pruneWorktrees(repoPath)
+
+    const afterPrune = await service.getBranches(repoPath)
+    const prunedBranch = afterPrune.find((b) => b.name === 'orphaned-worktree')
+    // The stale registration is gone — a completely normal local branch now.
+    expect(prunedBranch?.worktreePath).toBeUndefined()
+    expect(prunedBranch?.worktreeMissing).toBeUndefined()
+  })
+
   it('surfaces the real error when deleting an already-missing branch (Phase 92 — no false success toast)', async () => {
     // Pre-Phase-92 this silently resolved (a TOCTOU exists-pre-check no-op'd instead
     // of ever calling git). Dropping that pre-check means a genuinely missing branch

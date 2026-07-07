@@ -205,6 +205,8 @@ export const api = {
       invoke('git:deleteBranch', { repoPath, branch }),
     forceDeleteBranch: (repoPath: string, branch: string): Promise<IpcResult<void>> =>
       invoke('git:forceDeleteBranch', { repoPath, branch }),
+    pruneWorktrees: (repoPath: string): Promise<IpcResult<void>> =>
+      invoke('git:pruneWorktrees', { repoPath }),
     merge: (
       repoPath: string,
       branch: string,

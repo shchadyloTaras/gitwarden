@@ -109,4 +109,60 @@ test.describe('Connect-Return Check: "Checking with GitHub…" on return', () =>
     await expect(retryBtn).toHaveText('Try Again')
     await expect(retryBtn).toBeFocused()
   })
+
+  test('connect-return reconcile (Phase 97, W24): closing the modal always reloads profilesStore, even when main persisted a link the renderer never saw', async () => {
+    // A long interval + poke-finds-nothing keeps this flow stuck on "awaitingUser"
+    // for the whole test — isolating the reconcile-on-close fix from the fake
+    // service's own normal authorization path.
+    app = await launchApp({
+      GITWARDEN_E2E_FAKE_GITHUB_INTERVAL_SEC: '30',
+      GITWARDEN_E2E_FAKE_GITHUB_POKE_AUTHORIZES: '0',
+    })
+    win = await app.firstWindow()
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
+    // This spec file has no per-test cleanup — profiles accumulate across its own
+    // tests (each launches a fresh app but shares the real userData dir) — so a
+    // lookup keyed on displayName alone could match a DIFFERENT test's leftover
+    // "Personal" profile. Snapshot the existing ids first so the one this test
+    // actually creates can be found unambiguously afterward.
+    const idsBefore = await win.evaluate(async () => {
+      const api = (window as Window & typeof globalThis).api
+      const res = await api.profiles.list()
+      return res.ok ? res.data.map((p) => p.id) : []
+    })
+
+    await openConnectModal('Personal')
+    await expect(win.getByTestId('github-connect-user-code')).toHaveText('WDJB-MJHT')
+
+    // Simulate the actual race: main has ALREADY persisted a linked account (via
+    // whatever path — a poll this test isn't driving, a completed device flow the
+    // renderer's listener missed because the modal is about to unmount) while the
+    // renderer's own profilesStore snapshot still has none. Writing this directly
+    // through the IPC bridge — bypassing the modal and profilesStore entirely — is
+    // the most direct way to prove the RECONCILE, not the normal happy-path update.
+    await win.evaluate(async (existingIds: string[]) => {
+      const api = (window as Window & typeof globalThis).api
+      const profiles = await api.profiles.list()
+      if (!profiles.ok) throw new Error('profiles.list failed')
+      const profile = profiles.data.find((p) => !existingIds.includes(p.id))
+      if (!profile) throw new Error('newly created profile not found')
+      await api.profiles.update(profile.id, {
+        linkedGitHub: {
+          login: 'raced-in-externally',
+          accountId: 999,
+          scopes: ['repo'],
+          connectedAt: new Date(0).toISOString(),
+        },
+      })
+    }, idsBefore)
+
+    await win.getByTestId('github-connect-cancel').click()
+
+    await expect(win.getByTestId('github-connect-modal')).toHaveCount(0)
+    // The reload-on-close must have pulled the externally-persisted link into view —
+    // not left the pre-close (unlinked) snapshot on screen.
+    await expect(win.getByTestId('github-linked-login')).toContainText('raced-in-externally', {
+      timeout: 10000,
+    })
+  })
 })

@@ -503,6 +503,12 @@ export const STR = {
   BRANCH_FORCE_DELETE_CANCEL: 'Cancel',
   BRANCH_DELETE_SUCCESS: (branch: string): string => `Deleted branch ${branch}.`,
 
+  // ── Worktree hygiene (Phase 97, W22) ────────────────────────────────────────
+  BRANCH_WORKTREE_MISSING_HINT:
+    'The folder this worktree pointed to no longer exists. Clean it up to switch or delete this branch normally.',
+  BRANCH_WORKTREE_PRUNE_BUTTON: 'Clean up stale worktree',
+  BRANCH_WORKTREE_PRUNE_SUCCESS: 'Cleaned up the stale worktree.',
+
   // ── Branch-state truth (Phase 92) ────────────────────────────────────────────
   BRANCH_DETACHED_PILL: 'detached',
   BRANCH_DETACHED_HINT: "You're not on a branch right now (detached HEAD).",

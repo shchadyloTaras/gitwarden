@@ -1,4 +1,5 @@
 import path from 'node:path'
+import fs from 'node:fs'
 import type {
   GitStatus,
   EffectiveGitIdentity,
@@ -391,6 +392,11 @@ export class GitService {
           isCurrent: head === '*',
           isRemote: false,
           worktreePath: worktreePath || undefined,
+          // W22: git's own worktree registration doesn't know if the directory was
+          // deleted out-of-band (Finder/Explorer, not `git worktree remove`) — check
+          // disk directly so a stale entry can be offered a prune instead of
+          // permanently hiding Switch/Delete for a folder that no longer exists.
+          worktreeMissing: worktreePath ? !fs.existsSync(worktreePath) : undefined,
         }
       })
 
@@ -508,6 +514,17 @@ export class GitService {
    */
   async forceDeleteBranch(repoPath: string, name: string): Promise<void> {
     await this.runner.run({ args: ['branch', '-D', name], cwd: repoPath, readOnly: false })
+  }
+
+  /**
+   * Clears git's own worktree registration for any worktree whose directory was
+   * deleted out-of-band — the fix for W22's permanently-stuck "In worktree" badge.
+   * Repo-wide (git has no "prune just this one" mode); behind BranchesScreen's
+   * confirm since it's a git-metadata write, even though nothing the user still has
+   * on disk is touched (the directory is already gone).
+   */
+  async pruneWorktrees(repoPath: string): Promise<void> {
+    await this.runner.run({ args: ['worktree', 'prune'], cwd: repoPath, readOnly: false })
   }
 
   /**

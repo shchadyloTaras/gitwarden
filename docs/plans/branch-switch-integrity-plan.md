@@ -1,7 +1,7 @@
 # Plan — Branch-Switch Data Integrity: every tab shows the branch you're actually on, and every write lands where you aimed it
 
-**Status:** 🟡 in progress — Phases 89–96 done; 97 open — **derived view**; the authoritative
-state is the Phase Checklist in [`docs/progress-log.md`](../progress-log.md).
+**Status:** ✅ complete — Phases 89–97 — **derived view**; the authoritative state is the Phase
+Checklist in [`docs/progress-log.md`](../progress-log.md).
 **Phases:** 89 → 97.
 **Feature-complete stop point:** Phase 97.
 **Prompts:** [`docs/prompts/branch-switch-integrity-prompts.md`](../prompts/branch-switch-integrity-prompts.md).

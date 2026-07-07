@@ -37,6 +37,7 @@
     "tests/unit/ai-chat-store-origin-pin.test.ts",
     "tests/unit/updates-store-focus-recheck.test.ts",
     "tests/unit/remote-store-fetch-refresh.test.ts",
-    "tests/unit/safety-center-store-guard-sync.test.ts"
+    "tests/unit/safety-center-store-guard-sync.test.ts",
+    "tests/unit/branch-store-worktree-prune.test.ts"
   ]
 }

@@ -448,6 +448,15 @@ export function registerIpcHandlers(services: Services): void {
     })
   )
 
+  // Phase 97 (W22): clears git's own registration for a worktree whose directory
+  // was deleted out-of-band, unsticking a permanently "In worktree"-badged branch.
+  ipcMain.handle('git:pruneWorktrees', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath } = GitRepoPathPayload.parse(raw)
+      return services.git.pruneWorktrees(repoPath)
+    })
+  )
+
   // Merge a Branch (Phase 83): local `branch` merged into the currently checked-out
   // branch — logic lives in runGitMerge (electron-free, unit-tested directly).
   ipcMain.handle('git:merge', (_e, raw: unknown) =>

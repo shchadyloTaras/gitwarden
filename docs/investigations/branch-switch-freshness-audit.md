@@ -1,14 +1,47 @@
 # Investigation — Branch-switch data freshness & switch freeze (WIP handoff)
 
-**Status:** audit COMPLETE — two waves (investigation only — no code changed yet).
+**Status:** implemented by Phases 89–97 — all 45 findings (#1–#13, W1–W32) FIXED, none deferred.
+See §Implementation status (Phases 89–97) below for the per-finding map. Original two-wave audit
+(investigation only, no code changed yet) preserved below for reference.
 Wave 1 (2026-07-06): renderer stores/screens → 13 deduped bugs (§Final findings below).
 Wave 2 (2026-07-07): 5 subagents on uncovered surfaces (main/IPC, external-change staleness,
 branch-action flows, AI panel/quick-fix, repo lifecycle) → 32 new findings (§Wave 2 below).
-**Next step = implement fixes A–H (see Recommended fixes).**
-**Date:** 2026-07-06 / 2026-07-07
+**Date:** 2026-07-06 / 2026-07-07 (audit) — 2026-07-07 (implementation, Phases 89–97)
 **User complaint (paraphrased):** switching branches sometimes shows stale / cross-branch data
 (especially the **Status** tab), and switching in the branch **select sometimes hangs / lags**.
 Test repo for repro: https://github.com/shchadyloTaras/test
+
+---
+
+## Implementation status (Phases 89–97) — complete
+
+All 45 findings closed; nothing deferred. Grouped by the phase that fixed each — see
+`docs/progress-log.md` for the full per-phase entries (Built/Files/Tests) this summarizes.
+
+| Phase                                                        | Findings fixed                                                                                |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| 89 — Stale-request guard + store load hygiene                | #1, #5, #6, #9, #12, W5, W7, W16, W19 (renderer half)                                         |
+| 90 — `currentBranch` single ownership + repo/profile hygiene | #4, #10 (mitigated — see note), #11, W14, W18, W19 (main half — `JsonStore.update`), W30, W32 |
+| 91 — Verified-target compound writes                         | #2, W1, W8, W9, W10, W21, W26, W29                                                            |
+| 92 — Branch-state truth + safe delete                        | #7, W6, W13, W20, W27                                                                         |
+| 93 — Switch UX (non-reentrant picker, stash quick-fix)       | #3, #13, W3, W17                                                                              |
+| 94 — AI actions pinned to their origin                       | W2, W11, W15                                                                                  |
+| 95 — Focus revalidation + refresh wiring                     | W4 (cheap layer), W12, W25, W28                                                               |
+| 96 — `.git` watcher                                          | W4 (full — supersedes the cheap layer as the primary path)                                    |
+| 97 — Polish + regression sweep                               | W22, W24, W31                                                                                 |
+
+**Note on #10 ("double-load"):** Phase 90 eliminated the dominant real-world case — a same-repo
+metadata save re-triggering a full branch/guard reload (`setActiveRepo`'s value-equal bail, W30).
+A genuine _different_-repo switch still transiently nulls `currentBranch` before branchStore
+re-derives it; this is correct, not a bug — the old repo's branch name is never fabricated as the
+new repo's, and no store keys an effect on `currentBranch` in a way that fires an extra git read
+because of it. Marked mitigated, not "unfixed," because the audit's specific claim (doubled git
+work) doesn't reproduce against the current code.
+
+**Verification:** every phase's exit criteria required `npx tsc --noEmit` (both tsconfigs) clean,
+`npm test` green, `npm run lint` clean; UI phases additionally required a green Playwright run.
+Phase 97's own regression sweep re-ran the full Vitest + Playwright suites end-to-end against this
+finished state (see the Phase 97 progress-log entry for the exact counts).
 
 ---
 

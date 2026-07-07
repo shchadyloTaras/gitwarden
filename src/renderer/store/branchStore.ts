@@ -35,11 +35,18 @@ interface BranchState {
    * button's own label constitutes (AGENTS.md #6). A pop conflict is never
    * auto-resolved — the stash stays, and the caller is routed to Status. */
   doSwitchBringChanges(branch: string): Promise<void>
-  doCreate(name: string): Promise<void>
+  /** Returns whether the create actually succeeded (W31) — BranchesScreen clears
+   * the typed name only on success, so a rejected name (invalid/duplicate) leaves
+   * it in the input for the user to fix instead of forcing a re-type. */
+  doCreate(name: string): Promise<boolean>
   doDelete(branch: string): Promise<void>
   /** The escalated path — `branch -D` — reachable only after doDelete's refusal. */
   doForceDelete(branch: string): Promise<void>
   doMerge(branch: string): Promise<void>
+  /** Clears git's own registration for any worktree deleted out-of-band (W22) —
+   * repo-wide, since `git worktree prune` has no "just this one" mode; runs behind
+   * the button's own confirm (AGENTS.md #6). */
+  doPruneWorktrees(): Promise<void>
   setDeleteConfirm(branch: string | null): void
   setForceDeleteConfirm(branch: string | null): void
   setMergeConfirm(branch: string | null): void
@@ -171,7 +178,7 @@ export const useBranchStore = create<BranchState>((set, get) => ({
 
   async doCreate(name) {
     const { repoPath, repository } = get()
-    if (!repoPath || !repository) return
+    if (!repoPath || !repository) return false
     const token = tracker.begin()
     set({ error: null, successMessage: null })
     try {
@@ -183,8 +190,10 @@ export const useBranchStore = create<BranchState>((set, get) => ({
         if (branches) set({ branches })
         set({ successMessage: `Created and switched to ${name}.` })
       }
+      return true
     } catch (err) {
       if (tracker.isCurrent(token)) set({ error: err instanceof Error ? err.message : String(err) })
+      return false
     }
   },
 
@@ -277,6 +286,24 @@ export const useBranchStore = create<BranchState>((set, get) => ({
       if (tracker.isCurrent(token)) {
         if (updated) set({ branches: updated })
         set({ successMessage: STR.BRANCH_MERGE_SUCCESS(branch, current) })
+      }
+    } catch (err) {
+      if (tracker.isCurrent(token)) set({ error: err instanceof Error ? err.message : String(err) })
+    }
+  },
+
+  async doPruneWorktrees() {
+    const { repoPath } = get()
+    if (!repoPath) return
+    const token = tracker.begin()
+    set({ error: null, successMessage: null })
+    try {
+      const res = await window.api.git.pruneWorktrees(repoPath)
+      if (!res.ok) throw new Error(res.error)
+      const branches = await refreshBranches(repoPath)
+      if (tracker.isCurrent(token)) {
+        if (branches) set({ branches })
+        set({ successMessage: STR.BRANCH_WORKTREE_PRUNE_SUCCESS })
       }
     } catch (err) {
       if (tracker.isCurrent(token)) set({ error: err instanceof Error ? err.message : String(err) })

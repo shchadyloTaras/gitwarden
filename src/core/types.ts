@@ -160,6 +160,14 @@ export interface GitBranch {
   upstream?: string
   /** Absolute path when this local branch is checked out in any worktree. */
   worktreePath?: string
+  /**
+   * True when `worktreePath` is set but the directory no longer exists on disk
+   * (Phase 97, W22) — e.g. deleted in Finder/Explorer without `git worktree
+   * remove`. Git's own worktree registration still thinks the branch is checked
+   * out there, permanently hiding Switch/Delete, until `git worktree prune` clears
+   * the stale entry.
+   */
+  worktreeMissing?: boolean
 }
 
 export interface GitCommit {
