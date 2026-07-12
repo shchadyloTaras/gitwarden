@@ -529,6 +529,13 @@ export const STR = {
   SWITCH_ERROR_OPEN_STATUS: 'Open Status',
   SWITCH_ERROR_BRING_CHANGES: 'Bring changes & switch',
 
+  // ── Stash-pop conflict after "Bring changes & switch" (Phase 102) ──────────
+  // The switch itself succeeded; only restoring the stash afterward hit a conflict —
+  // names the branch AND the kept stash entry so it's never an invisible leftover.
+  STASH_POP_CONFLICT_BANNER: (branch: string, stashRef: string, message: string): string =>
+    `Switched to ${branch}, but restoring your changes hit a conflict: ${message} Your changes are kept in ${stashRef} — resolve the conflict below, then drop the stash once you're done.`,
+  STASH_POP_CONFLICT_DISMISS: 'Dismiss',
+
   // ── Inspector ──────────────────────────────────────────────────────────────
   INSPECTOR_TITLE: 'Inspector',
   INSPECTOR_NO_PROFILE: 'No profile selected',

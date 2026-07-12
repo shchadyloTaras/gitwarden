@@ -98,6 +98,11 @@ export const useCommitStore = create<CommitState>((set, get) => ({
     // draft: resume a running one, surface a finished one into the box, show an
     // error — never leave it stuck.
     const token = tracker.begin()
+    // Phase 102: committedHash is an operation OUTCOME, not loaded data — a same-repo
+    // refresh (this same load() re-running on remount, a watcher event) must not wipe
+    // the "✓ Committed …" confirmation out from under the user. It resets only on an
+    // actual repo change here; doCommit clears it itself when a NEW commit starts.
+    const isRepoChange = get().repoPath !== repoPath
     const branch = useAppStore.getState().currentBranch
     const key = draftKey(repository.id, branch)
     const entry = get().draftsByRepo[key]
@@ -110,7 +115,7 @@ export const useCommitStore = create<CommitState>((set, get) => ({
       status: null,
       identity: null,
       stagedDiffs: [],
-      committedHash: null,
+      ...(isRepoChange ? { committedHash: null } : {}),
       // W23: the per-repo typed message wins unless a ready draft is surfacing now.
       message: entry?.status === 'ready' ? entry.message : savedMessage,
       draftLoading: entry?.status === 'loading',
@@ -187,7 +192,7 @@ export const useCommitStore = create<CommitState>((set, get) => ({
     const { repoPath, repository } = get()
     if (!repoPath) return
     const token = tracker.begin()
-    set({ commitLoading: true, error: null })
+    set({ commitLoading: true, error: null, committedHash: null })
     try {
       const res = await window.api.git.commit(repoPath, message)
       if (!res.ok) throw new Error(res.error)

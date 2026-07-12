@@ -27,6 +27,17 @@ interface BranchState {
   /** The last switch failure, tagged with which branch it was FOR (#13) — rendered
    * inline next to the header picker, not buried in the Branches-only `error`. */
   switchError: { branch: string; message: string } | null
+  /**
+   * The "bring changes & switch" quick-fix's OWN failure mode (Phase 102): the switch
+   * itself succeeded, but restoring the stash afterward hit a conflict. Deliberately
+   * NOT stored in `switchError` — that field's only consumer (GlobalHeader) offers a
+   * "Bring changes & switch" RETRY, which would be actively wrong here (the switch
+   * already happened; retrying would stash-push-switch-pop again over an already-
+   * conflicted tree). `stashRef` is always `'stash@{0}'`: this repo's writes are
+   * serialized through one compound job (GitService.enqueueJob), so nothing else in
+   * the app could have pushed a stash in between the push and this failed pop.
+   */
+  stashPopConflict: { branch: string; message: string; stashRef: string } | null
 
   load(repoPath: string, repository: RepositoryRecord): Promise<void>
   doSwitch(branch: string): Promise<void>
@@ -51,6 +62,7 @@ interface BranchState {
   setForceDeleteConfirm(branch: string | null): void
   setMergeConfirm(branch: string | null): void
   clearSwitchError(): void
+  clearStashPopConflict(): void
   clearMessages(): void
   clear(): void
 }
@@ -73,24 +85,30 @@ export const useBranchStore = create<BranchState>((set, get) => ({
   mergeConflict: null,
   switching: false,
   switchError: null,
+  stashPopConflict: null,
 
   async load(repoPath, repository) {
     const token = tracker.begin()
-    // W5/W16: an armed destructive confirm (or a stale merge conflict) must not survive
-    // a repo switch — reset them here, alongside the usual load-start hygiene. A stale
-    // switchError from a different repo/branch must not survive either.
+    // W5/W16: an armed destructive confirm must not survive a repo switch — reset it
+    // here, alongside the usual load-start hygiene (unconditionally: an armed confirm
+    // surviving a same-repo refresh is not the "outcome" the phase-102 fix below is
+    // about, and re-arming per fresh data is the safer default). Phase 102:
+    // successMessage/mergeConflict/switchError/stashPopConflict ARE operation
+    // outcomes, not loaded data — a same-repo refresh (a watcher event, focus
+    // revalidation) must not wipe them out. They reset only on an actual repo change.
+    const isRepoChange = get().repoPath !== repoPath
     set({
       loading: true,
       error: null,
       repoPath,
       repository,
       branches: [],
-      successMessage: null,
       deleteConfirmBranch: null,
       forceDeleteConfirmBranch: null,
       mergeConfirmBranch: null,
-      mergeConflict: null,
-      switchError: null,
+      ...(isRepoChange
+        ? { successMessage: null, mergeConflict: null, switchError: null, stashPopConflict: null }
+        : {}),
     })
     try {
       const res = await window.api.git.getBranches(repoPath)
@@ -146,16 +164,24 @@ export const useBranchStore = create<BranchState>((set, get) => ({
     if (!repoPath || !repository) return
     if (switching) return
     const token = tracker.begin()
-    set({ error: null, successMessage: null, switching: true, switchError: null })
+    set({
+      error: null,
+      successMessage: null,
+      switching: true,
+      switchError: null,
+      stashPopConflict: null,
+    })
     try {
       const res = await window.api.git.stashSwitchPop(repoPath, branch)
       if (!res.ok) throw new Error(res.error)
       if (!res.data.ok) {
         // A stash-pop conflict — never auto-resolved. The switch itself succeeded;
         // the stash is kept, and the user is routed to Status to finish resolving
-        // it, exactly like a merge conflict.
+        // it, exactly like a merge conflict. Recorded as `stashPopConflict`, NOT
+        // `switchError` (Phase 102) — the switch didn't fail, so GlobalHeader's
+        // "Bring changes & switch" retry button would be wrong here.
         if (tracker.isCurrent(token)) {
-          set({ switchError: { branch, message: res.data.message } })
+          set({ stashPopConflict: { branch, message: res.data.message, stashRef: 'stash@{0}' } })
           useAppStore.getState().setCurrentBranch(branch)
           useAppStore.getState().navigate('status')
         }
@@ -326,6 +352,10 @@ export const useBranchStore = create<BranchState>((set, get) => ({
     set({ switchError: null })
   },
 
+  clearStashPopConflict() {
+    set({ stashPopConflict: null })
+  },
+
   clearMessages() {
     set({ error: null, successMessage: null, mergeConflict: null })
   },
@@ -343,6 +373,7 @@ export const useBranchStore = create<BranchState>((set, get) => ({
       mergeConfirmBranch: null,
       mergeConflict: null,
       switchError: null,
+      stashPopConflict: null,
     })
   },
 }))

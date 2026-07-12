@@ -32,6 +32,7 @@ function resetStore(): void {
     mergeConflict: null,
     switching: false,
     switchError: null,
+    stashPopConflict: null,
   })
   useAppStore.setState({ currentBranch: 'main' })
 }
@@ -110,7 +111,7 @@ describe('branchStore switch UX (Phase 93)', () => {
     expect(useBranchStore.getState().switching).toBe(false)
   })
 
-  it('never auto-resolves a stash-pop conflict — routes to Status, keeps switchError', async () => {
+  it('never auto-resolves a stash-pop conflict — routes to Status, keeps stashPopConflict (not switchError, Phase 102)', async () => {
     stashSwitchPop.mockResolvedValue({
       ok: true,
       data: { ok: false, message: 'Bringing your changes back caused a conflict.' },
@@ -119,9 +120,14 @@ describe('branchStore switch UX (Phase 93)', () => {
 
     await useBranchStore.getState().doSwitchBringChanges('dev')
 
-    expect(useBranchStore.getState().switchError).toEqual({
+    // Phase 102: recorded as stashPopConflict, NOT switchError — the switch itself
+    // succeeded, so GlobalHeader's "Bring changes & switch" RETRY button (switchError's
+    // only consumer) would be wrong here; only the stash restore actually failed.
+    expect(useBranchStore.getState().switchError).toBeNull()
+    expect(useBranchStore.getState().stashPopConflict).toEqual({
       branch: 'dev',
       message: 'Bringing your changes back caused a conflict.',
+      stashRef: 'stash@{0}',
     })
     // The switch itself succeeded (git already moved HEAD) — currentBranch reflects that.
     expect(useAppStore.getState().currentBranch).toBe('dev')

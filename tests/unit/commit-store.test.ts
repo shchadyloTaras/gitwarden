@@ -436,3 +436,47 @@ describe('commitStore stagedDiffs (Phase 99: commit-gate secret scan)', () => {
     expect(useCommitStore.getState().stagedDiffs).toEqual([])
   })
 })
+
+describe('commitStore committedHash survival (Phase 102)', () => {
+  beforeEach(() => {
+    reset()
+    aiStoreError = null
+    vi.clearAllMocks()
+    apiGit.getStatus.mockResolvedValue({ ok: true, data: { branch: 'main', files: [] } })
+    apiGit.getEffectiveIdentity.mockResolvedValue({ ok: true, data: { name: 'A', email: 'a@b.c' } })
+    apiGit.getStagedDiffs.mockResolvedValue({ ok: true, data: [] })
+  })
+
+  it('survives a same-repo load() a watcher event would trigger — an operation OUTCOME, not loaded data', async () => {
+    await useCommitStore.getState().load('/repo-1', repo('repo-1'))
+    useCommitStore.setState({ committedHash: 'abc123' })
+
+    await useCommitStore.getState().load('/repo-1', repo('repo-1'))
+
+    expect(useCommitStore.getState().committedHash).toBe('abc123')
+  })
+
+  it('clears on an actual repo change', async () => {
+    await useCommitStore.getState().load('/repo-1', repo('repo-1'))
+    useCommitStore.setState({ committedHash: 'abc123' })
+
+    await useCommitStore.getState().load('/repo-2', repo('repo-2'))
+
+    expect(useCommitStore.getState().committedHash).toBeNull()
+  })
+
+  it('clears at the start of a new commit attempt, even before the new result lands', async () => {
+    await useCommitStore.getState().load('/repo-1', repo('repo-1'))
+    useCommitStore.setState({ committedHash: 'abc123' })
+
+    let resolveCommit: (v: unknown) => void = () => {}
+    apiGit.commit.mockImplementation(() => new Promise((r) => (resolveCommit = r)))
+    const pending = useCommitStore.getState().doCommit('a new commit')
+
+    expect(useCommitStore.getState().committedHash).toBeNull()
+
+    resolveCommit({ ok: true, data: { hash: 'def456' } })
+    await pending
+    expect(useCommitStore.getState().committedHash).toBe('def456')
+  })
+})

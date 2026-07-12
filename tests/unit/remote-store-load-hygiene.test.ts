@@ -99,3 +99,59 @@ describe('remoteStore upstreamGone (Phase 92, W20)', () => {
     expect(useRemoteStore.getState().upstreamGone).toBe(false)
   })
 })
+
+describe('remoteStore operation-outcome survival (Phase 102)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    getRemotes.mockResolvedValue({ ok: true, data: [] })
+    getEffectiveIdentity.mockResolvedValue({ ok: true, data: {} })
+    getStatus.mockResolvedValue({ ok: true, data: { branch: 'main' } })
+  })
+
+  it('successMessage survives a same-repo load() — the watcher-refresh case, not just data reset', async () => {
+    await useRemoteStore.getState().load(repoA.localPath, repoA)
+    useRemoteStore.setState({ successMessage: 'Fetched from origin.' })
+
+    // A .git watcher event fires a load() for the SAME repo ~400ms later.
+    await useRemoteStore.getState().load(repoA.localPath, repoA)
+
+    expect(useRemoteStore.getState().successMessage).toBe('Fetched from origin.')
+  })
+
+  it('successMessage clears on an actual repo change', async () => {
+    await useRemoteStore.getState().load(repoA.localPath, repoA)
+    useRemoteStore.setState({ successMessage: 'Fetched from origin.' })
+
+    await useRemoteStore.getState().load(repoB.localPath, repoB)
+
+    expect(useRemoteStore.getState().successMessage).toBeNull()
+  })
+
+  it('lastFailure (the deterministic QA scenario) survives a same-repo load() a watcher event would trigger', async () => {
+    await useRemoteStore.getState().load(repoA.localPath, repoA)
+    useRemoteStore.setState({
+      lastFailure: { message: 'branches have diverged', remote: 'origin', branch: 'main' },
+    })
+
+    // A failed pull's own fetch phase moves refs — the watcher fires a load() for the
+    // SAME repo ~400ms later. The banner must survive THIS, not just a manual retry.
+    await useRemoteStore.getState().load(repoA.localPath, repoA)
+
+    expect(useRemoteStore.getState().lastFailure).toEqual({
+      message: 'branches have diverged',
+      remote: 'origin',
+      branch: 'main',
+    })
+  })
+
+  it('lastFailure clears on an actual repo change', async () => {
+    await useRemoteStore.getState().load(repoA.localPath, repoA)
+    useRemoteStore.setState({
+      lastFailure: { message: 'branches have diverged', remote: 'origin', branch: 'main' },
+    })
+
+    await useRemoteStore.getState().load(repoB.localPath, repoB)
+
+    expect(useRemoteStore.getState().lastFailure).toBeNull()
+  })
+})

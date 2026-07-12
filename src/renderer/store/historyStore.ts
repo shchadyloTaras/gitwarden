@@ -23,6 +23,13 @@ interface HistoryState {
   /** True while a return action's IPC round-trip is in flight. */
   returning: boolean
   returnError: string | null
+  /**
+   * The last successful return's confirmation (Phase 102) — an operation OUTCOME, not
+   * loaded data, so it survives a same-repo refresh. The screen navigates to Status
+   * immediately on success (the returned file lives there), so this is what a user
+   * sees if/when they come back to History, not a fleeting toast they'd otherwise miss.
+   */
+  returnSuccessMessage: string | null
 
   load(repoPath: string, repository: RepositoryRecord): Promise<void>
   loadMore(): Promise<void>
@@ -43,9 +50,14 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
   unpushedCount: 0,
   returning: false,
   returnError: null,
+  returnSuccessMessage: null,
 
   async load(repoPath, repository) {
     const token = tracker.begin()
+    // Phase 102: returnSuccessMessage is an operation OUTCOME, not loaded data — a
+    // same-repo refresh must not wipe it. Resets only on an actual repo change here;
+    // returnLast/returnAllUnpushed clear it themselves at the start of a new attempt.
+    const isRepoChange = get().repoPath !== repoPath
     set({
       loading: true,
       error: null,
@@ -56,6 +68,7 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
       eligibility: null,
       unpushedCount: 0,
       returnError: null,
+      ...(isRepoChange ? { returnSuccessMessage: null } : {}),
     })
     try {
       const [historyRes, returnStateRes] = await Promise.all([
@@ -107,7 +120,7 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
   async returnLast() {
     const { repoPath, repository } = get()
     if (!repoPath || !repository) return
-    set({ returning: true, returnError: null })
+    set({ returning: true, returnError: null, returnSuccessMessage: null })
     try {
       // The main process verifies HEAD is still this branch inside the compound
       // uncommit job before resetting anything (Phase 91, W1 — critical) — a moved
@@ -119,6 +132,7 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
         set({ returnError: res.data.message ?? null })
         return
       }
+      set({ returnSuccessMessage: 'Returned the last commit to your working changes.' })
       // load() re-takes a token and applies its own guard; a superseded reload from
       // here is dropped exactly as any other load() call would be.
       await get().load(repoPath, repository)
@@ -131,9 +145,9 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
   },
 
   async returnAllUnpushed() {
-    const { repoPath, repository } = get()
+    const { repoPath, repository, unpushedCount } = get()
     if (!repoPath || !repository) return
-    set({ returning: true, returnError: null })
+    set({ returning: true, returnError: null, returnSuccessMessage: null })
     try {
       const expectedHeadBranch = useAppStore.getState().currentBranch ?? undefined
       const res = await window.api.history.returnUnpushed(repoPath, expectedHeadBranch)
@@ -142,6 +156,9 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
         set({ returnError: res.data.message ?? null })
         return
       }
+      set({
+        returnSuccessMessage: `Returned ${unpushedCount} unpushed commit${unpushedCount === 1 ? '' : 's'} to your working changes.`,
+      })
       await get().load(repoPath, repository)
       useAppStore.getState().navigate('status')
     } catch (err) {

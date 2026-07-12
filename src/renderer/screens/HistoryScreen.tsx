@@ -89,6 +89,7 @@ export default function HistoryScreen(): React.ReactElement {
     unpushedCount,
     returning,
     returnError,
+    returnSuccessMessage,
     load,
     loadMore,
     returnLast,
@@ -190,6 +191,27 @@ export default function HistoryScreen(): React.ReactElement {
               }}
             >
               {returnError}
+            </div>
+          )}
+
+          {/* Phase 102: an operation OUTCOME, not loaded data — survives a same-repo
+              refresh, so it's still here if the user navigates back to History after
+              landing on Status (where the auto-navigate takes them right after a
+              successful return). */}
+          {returnSuccessMessage && (
+            <div
+              data-testid="history-return-success"
+              style={{
+                margin: '12px 16px',
+                padding: '8px 12px',
+                background: 'var(--gw-success-bg, #052e16)',
+                border: '1px solid var(--gw-success-border, #2d4a2d)',
+                borderRadius: 4,
+                fontSize: 14,
+                color: 'var(--gw-success, #4ade80)',
+              }}
+            >
+              ✓ {returnSuccessMessage}
             </div>
           )}
 

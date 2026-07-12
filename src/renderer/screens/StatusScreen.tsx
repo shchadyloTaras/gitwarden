@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import type { FileChange } from '../../core/types'
 import { useStatusStore } from '../store/statusStore'
 import { useAppStore } from '../store/appStore'
+import { useBranchStore } from '../store/branchStore'
 import ResizableMainSplit from '../components/ResizableMainSplit'
 import { STR } from '../strings'
 
@@ -501,6 +502,7 @@ export default function StatusScreen(): React.ReactElement {
   const currentBranch = useAppStore((s) => s.currentBranch)
   const { status, loading, error, loadStatus, stageFile, unstageFile, stageAll, unstageAll } =
     useStatusStore()
+  const { stashPopConflict, clearStashPopConflict } = useBranchStore()
 
   const [opError, setOpError] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<FileChange | null>(null)
@@ -624,6 +626,53 @@ export default function StatusScreen(): React.ReactElement {
           </button>
         )}
       </div>
+
+      {/* Stash-pop-conflict banner (Phase 102): "Bring changes & switch" succeeded at
+          switching, but restoring the stash afterward hit a conflict — persistent
+          (survives a same-repo refresh) and names the kept stash entry, so it's never
+          an invisible leftover behind bare conflicted-file rows. */}
+      {stashPopConflict && (
+        <div
+          data-testid="status-stash-pop-conflict"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            padding: '10px 12px',
+            background: 'var(--gw-warning-bg, #422006)',
+            borderBottom: '1px solid var(--gw-warning-border, #78350f)',
+            color: 'var(--gw-warning, #fbbf24)',
+            fontSize: 14,
+            flexShrink: 0,
+          }}
+        >
+          <span style={{ flex: 1 }}>
+            {STR.STASH_POP_CONFLICT_BANNER(
+              stashPopConflict.branch,
+              stashPopConflict.stashRef,
+              stashPopConflict.message
+            )}
+          </span>
+          <button
+            data-testid="status-stash-pop-conflict-dismiss"
+            onClick={clearStashPopConflict}
+            style={{
+              background: 'none',
+              border: '1px solid var(--gw-warning-border, #78350f)',
+              borderRadius: 4,
+              color: 'inherit',
+              padding: '3px 8px',
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              flexShrink: 0,
+            }}
+          >
+            {STR.STASH_POP_CONFLICT_DISMISS}
+          </button>
+        </div>
+      )}
 
       {/* Body */}
       <div style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>

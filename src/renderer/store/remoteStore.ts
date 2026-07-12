@@ -71,6 +71,12 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
 
   async load(repoPath, repository) {
     const token = tracker.begin()
+    // Phase 102: successMessage/lastFailure are operation OUTCOMES, not loaded data —
+    // a same-repo refresh (a watcher event, focus revalidation, re-selecting the same
+    // repo) must not wipe them out from under the user. They reset only on an actual
+    // repo change here; an explicit dismiss (clearMessages) or the start of a new
+    // push/pull/fetch (each sets its own fresh null) are the other two reset paths.
+    const isRepoChange = get().repoPath !== repoPath
     set({
       loading: true,
       error: null,
@@ -82,8 +88,7 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
       upstream: null,
       upstreamGone: false,
       identity: null,
-      successMessage: null,
-      lastFailure: null,
+      ...(isRepoChange ? { successMessage: null, lastFailure: null } : {}),
     })
     try {
       const [remotesRes, statusRes, identityRes] = await Promise.all([
@@ -127,13 +132,14 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
     try {
       const res = await window.api.git.fetch(repoPath, remote)
       if (!res.ok) throw new Error(res.error)
+      set({ successMessage: `Fetched from ${remote}.` })
       // W25: a fetch can move remote-tracking refs (ahead/behind, upstream status)
       // and pull in new incoming commits — reload this store plus nudge
-      // branch/history so those tabs don't keep showing pre-fetch data. Runs BEFORE
-      // the success message, since load()'s own reset would otherwise wipe it out
-      // from under the user. Guarded on the repo not having changed while the fetch
-      // was in flight — a slow network fetch must not overwrite whatever repo the
-      // user has since switched to.
+      // branch/history so those tabs don't keep showing pre-fetch data. A same-repo
+      // load() no longer resets successMessage (Phase 102), so this can run in
+      // either order now — kept after the success message for clarity. Guarded on
+      // the repo not having changed while the fetch was in flight — a slow network
+      // fetch must not overwrite whatever repo the user has since switched to.
       if (repository && get().repoPath === repoPath) {
         await Promise.all([
           get().load(repoPath, repository),
@@ -141,7 +147,6 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
           useHistoryStore.getState().load(repoPath, repository),
         ])
       }
-      set({ successMessage: `Fetched from ${remote}.` })
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) })
     } finally {
