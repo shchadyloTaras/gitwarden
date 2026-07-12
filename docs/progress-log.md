@@ -1532,3 +1532,7 @@ The v0.5.0 tag's Windows build failed `npm test`. Root-caused via a temporary di
 ### 2026-07-13 — v0.5.1 released
 
 - Patch release carrying the two Windows-only fixes above (autocrlf mismatch + unhandled `fs.watch` errors). v0.5.0's Windows build stays broken as tagged; v0.5.1 supersedes it.
+
+### 2026-07-13 — v0.5.1 CI: Windows fixed, Ubuntu caught a test bug
+
+The v0.5.1 release build confirmed the fix: Windows job green (5m47s), macOS green, both published their installers to the v0.5.1 draft on `gitwarden-releases`. Ubuntu failed, but on the NEW `repo-watcher-service.test.ts` test added for this same release, not a product regression — it asserted an exact sync-throw from `watcher.emit('error', ...)`, which depends on `fs.watch`'s platform-specific backend (inotify/FSEvents/ReadDirectoryChangesW) in ways that don't hold uniformly. Rewrote the test to assert the code calls `.on('error', ...)` on whichever watcher(s) actually get created, rather than depending on exact EventEmitter throw-timing semantics. Verified locally: Vitest 1063/1063 (117 files), both tsconfigs clean, lint clean. v0.5.1's draft is currently missing only the Linux artifact (blocked by this same test failure) — nothing has been promoted/published, so re-triggering the same tag once this commit lands is safe.
