@@ -72,6 +72,12 @@ describe('AgenticActionExecutor (Phase 94)', () => {
     )
   })
 
+  it('rejects an empty batch of file edits — belt-and-braces, never a silent no-op success (Phase 104)', async () => {
+    await expect(executor.executeFileEdits(repository.id, [])).rejects.toThrow(
+      /No file edits to apply/
+    )
+  })
+
   it('writes a new file when `before` is omitted (backward compatible)', async () => {
     const result = await executor.executeFileEdits(repository.id, [
       { path: 'notes.txt', after: 'hello\n' },

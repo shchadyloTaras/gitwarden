@@ -191,6 +191,19 @@ export const useAiChatStore = create<AiChatState>((set, get) => ({
       return
     }
 
+    // Phase 104: defense in depth — AiChatPanel never renders an Apply button for an
+    // empty proposal, but refuse here too rather than trust the caller, so this can
+    // never report "Applied 0 file edit(s)" as success.
+    if (message.proposal.fileEdits.length === 0) {
+      appendMessage(set, {
+        role: 'assistant',
+        kind: 'propose',
+        isError: true,
+        content: STR.CHAT_PROPOSAL_EMPTY_REFUSAL,
+      })
+      return
+    }
+
     set({ pending: true, error: null })
     try {
       const result = await window.api.ai.executeAgenticProposal({
@@ -523,12 +536,23 @@ async function runCapability(parsed: ParsedChatCommand): Promise<Omit<ChatMessag
         originRepositoryId: repositoryId,
         originBranch: app.currentBranch ?? undefined,
       }
+      // Phase 104: zero file edits is not a quieter version of success — the card
+      // must say so plainly, and (via AiChatPanel's render gate) never offer an
+      // Apply button for nothing.
+      if (proposal.fileEdits.length === 0) {
+        return {
+          role: 'assistant',
+          kind: 'propose',
+          proposal,
+          content: `${proposal.summary}\n\n${STR.CHAT_PROPOSAL_EMPTY}`,
+        }
+      }
       const files = proposal.fileEdits.map((e) => `• ${e.path}`).join('\n')
       return {
         role: 'assistant',
         kind: 'propose',
         proposal,
-        content: `${proposal.summary}${files ? `\n\nProposed file edits (not applied yet):\n${files}` : ''}`,
+        content: `${proposal.summary}\n\nProposed file edits (not applied yet):\n${files}`,
       }
     }
     case 'explain': {

@@ -28,6 +28,12 @@ export class AgenticActionExecutor {
     repositoryId: string,
     fileEdits: AiAgenticFileEdit[]
   ): Promise<AgenticExecutionResult> {
+    // Phase 104 (belt-and-braces): the renderer already refuses to call this for an
+    // empty proposal, but an empty batch must never silently succeed here either —
+    // it is a caller error, not a valid zero-op "Applied 0 file edit(s)".
+    if (fileEdits.length === 0) {
+      throw new Error('No file edits to apply.')
+    }
     const repository = await this.repositories.get(repositoryId)
     if (!repository) throw new Error(`Repository not found: ${repositoryId}`)
 

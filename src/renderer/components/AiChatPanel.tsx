@@ -340,7 +340,7 @@ function MessageRow({
         </div>
       )}
 
-      {message.proposal && (
+      {message.proposal && message.proposal.fileEdits.length > 0 && (
         <button
           type="button"
           className="gw-chat-suggestion"

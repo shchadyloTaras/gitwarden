@@ -340,6 +340,11 @@ export const STR = {
   CHAT_ASSISTANT: 'Git Warden AI',
   CHAT_PROPOSAL_APPLY: 'Apply edits',
   CHAT_PROPOSAL_APPLIED: 'Edits applied',
+  // Phase 104: a proposal with zero file edits gets no Apply button at all — this is
+  // the card's own copy explaining why, and the refusal bubble if applyProposal is
+  // ever invoked on one anyway (defense in depth).
+  CHAT_PROPOSAL_EMPTY: 'The model produced no usable edits for this request — try rephrasing.',
+  CHAT_PROPOSAL_EMPTY_REFUSAL: 'This proposal has no file edits to apply.',
   // ── AI action origin-pinning (Phase 94, W2/W11) ─────────────────────────────
   CHAT_PROPOSAL_WRONG_REPO:
     'This proposal was written for a different repository — switch back to it to apply these edits.',

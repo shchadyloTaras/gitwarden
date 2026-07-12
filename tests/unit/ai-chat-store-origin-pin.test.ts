@@ -146,6 +146,39 @@ describe('aiChatStore AI-action origin pinning (Phase 94)', () => {
     expect(useStatusStore.getState().repoPath).toBeNull()
   })
 
+  it('/propose with zero file edits explains why instead of listing files (Phase 104)', async () => {
+    apiAi.proposeAgenticActions.mockResolvedValue({
+      ok: true,
+      data: { summary: 'Proposal', actions: [], fileEdits: [] },
+    })
+
+    await useAiChatStore.getState().send('/propose add a readme note')
+    const message = useAiChatStore.getState().messages.at(-1)!
+
+    expect(message.proposal?.fileEdits).toHaveLength(0)
+    expect(message.content).toContain(STR.CHAT_PROPOSAL_EMPTY)
+    expect(message.content).not.toContain('Proposed file edits')
+  })
+
+  it('applyProposal refuses an empty proposal defensively — no IPC call, refusal bubble, proposalApplied stays false (Phase 104)', async () => {
+    apiAi.proposeAgenticActions.mockResolvedValue({
+      ok: true,
+      data: { summary: 'Proposal', actions: [], fileEdits: [] },
+    })
+    await useAiChatStore.getState().send('/propose add a readme note')
+    const message = useAiChatStore.getState().messages.at(-1)!
+
+    await useAiChatStore.getState().applyProposal(message.id)
+
+    expect(apiAi.executeAgenticProposal).not.toHaveBeenCalled()
+    const last = useAiChatStore.getState().messages.at(-1)
+    expect(last?.isError).toBe(true)
+    expect(last?.content).toBe(STR.CHAT_PROPOSAL_EMPTY_REFUSAL)
+    expect(
+      useAiChatStore.getState().messages.find((m) => m.id === message.id)?.proposalApplied
+    ).not.toBe(true)
+  })
+
   it('/commit stamps the origin repo + branch onto the commit-draft block', async () => {
     aiMethods.draftCommitMessage.mockResolvedValue({
       conventional: 'feat: test',

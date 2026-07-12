@@ -5,6 +5,7 @@ import type { IProfileService } from '../services/ProfileService.js'
 import type { IRepositoryService } from '../services/RepositoryService.js'
 import type { ISettingsService } from '../services/SettingsService.js'
 import type { GitService } from '../services/GitService.js'
+import type { IGitHubAuthCoordinator } from '../ipc/GitHubAuthCoordinator.js'
 
 const COMMITS_AHEAD_LIMIT = 30
 
@@ -24,7 +25,8 @@ export class PushBriefService {
     private readonly git: Pick<
       GitService,
       'getCommitsAhead' | 'getRemotes' | 'getEffectiveIdentity'
-    >
+    >,
+    private readonly github: Pick<IGitHubAuthCoordinator, 'getPushContext'>
   ) {}
 
   async buildDeterministic(input: PushBriefInput): Promise<AiPushBrief> {
@@ -50,6 +52,24 @@ export class PushBriefService {
       ? profiles.find((p) => p.id === repository.assignedProfileId)
       : undefined
 
+    const isHttpsGitHub = Boolean(remote && isHttpsGitHubRemoteUrl(remote.url))
+
+    // Phase 104: resolve the REAL token facts when the caller didn't already supply
+    // them, via the SAME main-side resolution the push sheet uses
+    // (GitHubAuthCoordinator.getPushContext) — single source by construction, so the
+    // brief can never contradict what the push sheet would say about this profile's
+    // stored token. `/push-brief` (aiChatStore.ts) sends no `github` block at all, so
+    // this is what stops `hasToken` from silently defaulting to false.
+    let githubFacts = input.github
+    if (isHttpsGitHub && !githubFacts && assignedProfile) {
+      const status = await this.github.getPushContext(assignedProfile.id)
+      githubFacts = {
+        hasToken: status.hasToken,
+        tokenInvalid: status.tokenInvalid,
+        effectiveLogin: status.effectiveLogin,
+      }
+    }
+
     const pushIdentity: AiPushIdentityContext = {
       remoteName: input.remoteName,
       branch: input.branch,
@@ -59,15 +79,14 @@ export class PushBriefService {
       assignedProfileName: assignedProfile?.displayName,
       identityName: identity.userName,
       identityEmail: identity.userEmail,
-      github:
-        remote && isHttpsGitHubRemoteUrl(remote.url)
-          ? {
-              assignedLogin: assignedProfile?.linkedGitHub?.login,
-              effectiveLogin: input.github?.effectiveLogin,
-              hasToken: input.github?.hasToken ?? false,
-              tokenInvalid: input.github?.tokenInvalid ?? false,
-            }
-          : undefined,
+      github: isHttpsGitHub
+        ? {
+            assignedLogin: assignedProfile?.linkedGitHub?.login,
+            effectiveLogin: githubFacts?.effectiveLogin,
+            hasToken: githubFacts?.hasToken ?? false,
+            tokenInvalid: githubFacts?.tokenInvalid ?? false,
+          }
+        : undefined,
     }
 
     return buildDeterministicPushBrief(commitsAhead, pushIdentity)

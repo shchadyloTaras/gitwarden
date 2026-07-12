@@ -272,7 +272,7 @@ app.whenReady().then(async () => {
         credentials: aiCredentials,
         http: new FetchHttpClient(),
       })
-  const pushBriefService = new PushBriefService(repositories, profiles, settings, git)
+  const pushBriefService = new PushBriefService(repositories, profiles, settings, git, github)
   const historySummaryService = new HistorySummaryService(repositories, git)
   const repoBriefService = new RepoBriefService(repositories, git)
   const aiContextBuilder = new AiContextBuilder({
