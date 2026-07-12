@@ -2,6 +2,43 @@
 
 ## Unreleased
 
+## 0.5.0 — 2026-07-12
+
+### Added
+
+**Safety gates for identity, secrets, and outgoing authorship (Phases 98–100)**
+
+- Committing under the wrong git name is now blocked, not just the wrong email.
+- Staged changes are scanned for secrets (API keys, tokens) before commit; a match blocks the commit and names the offending file.
+- Pushing commits authored under the wrong identity is now blocked with a clear explanation — GitWarden never rewrites history, so the fix is to uncommit and redo the commit under the right identity.
+
+**Reliable external-change detection (Phases 96, 101)**
+
+- GitWarden now detects branch switches, commits, and config edits made outside the app (terminal, another Git client) and refreshes automatically — including across repeated renames of the underlying `.git` files, which used to silently stop being detected after the first change.
+
+**Operation outcomes that survive a refresh (Phase 102)**
+
+- Success and conflict banners (commit, merge, uncommit, branch switch) no longer disappear the moment a background refresh runs.
+- A stash conflict during "bring changes & switch" now shows a clear, persistent explanation naming the kept stash entry.
+
+**Safer branch and worktree cleanup (Phases 92, 97)**
+
+- A branch whose worktree folder was deleted outside GitWarden now shows a "Clean up stale worktree" action instead of staying permanently locked.
+- Deleting a branch with unmerged work is refused safely, with an explicit "force delete" escalation instead of a silent failure.
+
+### Fixed
+
+- Reconnecting GitHub after a push failure now keeps the device code — and the "Authorized as @you" confirmation — visible for its full duration instead of vanishing early.
+- Pushing over HTTPS with no saved GitHub login, or switching/merging over local changes that would be overwritten, now explains the real cause instead of showing a generic Git error.
+- AI `/push-brief` now reports your actual GitHub token status instead of defaulting to "no token." `/propose` no longer reports success when the AI produced no usable file edits.
+- Detached HEAD is now shown as "detached" in the header instead of a stale branch name.
+- Numerous branch-switch and refresh races fixed: stale data can no longer overwrite newer data, AI drafts and chat proposals stay pinned to the repo/branch they were created for, and GitWarden now re-checks GitHub and refreshes the active repo when the window regains focus.
+
+### Changed
+
+- Push-policy mode labels are now plain language ("All branches allowed (except protected ones)" / "Only listed branches allowed") instead of jargon.
+- Small polish: live theme preview while choosing an appearance, a per-file icon for staged deletions, a clearer malformed-email message on Profiles, and an Enter-to-send fix for fully-typed slash commands in AI chat.
+
 ## 0.4.2 — 2026-07-04
 
 ### Fixed
