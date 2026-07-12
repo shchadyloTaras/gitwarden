@@ -44,6 +44,13 @@ export default function RemoteScreen(): React.ReactElement {
   const [selectedRemote, setSelectedRemote] = useState<GitRemote | null>(null)
   const [pushStatus, setPushStatus] = useState<PushStatus | null>(null)
   const [pushStatusPending, setPushStatusPending] = useState(false)
+  // Outgoing-authorship gate (Phase 100): the commits about to be pushed, fetched when the
+  // sheet opens. Withheld (undefined) from checkPush while pending so the "safe to push"
+  // verdict never renders before the authorship check has actually run.
+  const [outgoingCommits, setOutgoingCommits] = useState<
+    { authorName: string; authorEmail: string }[] | null
+  >(null)
+  const [outgoingCommitsPending, setOutgoingCommitsPending] = useState(false)
 
   const activeProfile = profiles.find((p) => p.id === activeProfileId)
 
@@ -84,6 +91,8 @@ export default function RemoteScreen(): React.ReactElement {
       upstream: upstream ?? undefined,
       // Withhold the context until the token is verified so we don't flash a stale verdict.
       github: pushStatusPending ? undefined : githubContext,
+      // Withhold until the outgoing range is fetched, same reasoning as githubContext above.
+      outgoingCommits: outgoingCommitsPending ? undefined : (outgoingCommits ?? undefined),
     })
   }, [
     repository,
@@ -94,6 +103,8 @@ export default function RemoteScreen(): React.ReactElement {
     upstream,
     githubContext,
     pushStatusPending,
+    outgoingCommits,
+    outgoingCommitsPending,
   ])
 
   const handleOpenPushSheet = (remote: GitRemote) => {
@@ -101,6 +112,7 @@ export default function RemoteScreen(): React.ReactElement {
     setSelectedRemote(remote)
     setShowPushSheet(true)
     setPushStatus(null)
+    setOutgoingCommits(null)
 
     // Verify the assigned profile's token so we can catch an account mismatch / revoked
     // token before pushing — but only for an HTTPS GitHub remote.
@@ -115,6 +127,22 @@ export default function RemoteScreen(): React.ReactElement {
     } else {
       setPushStatusPending(false)
     }
+
+    // Outgoing-authorship gate (Phase 100): fetch the commits this push would carry, for
+    // ANY remote (not just HTTPS GitHub) — a wrong-author commit is wrong regardless of
+    // transport.
+    const repoPath = repository?.localPath ?? activeRepo?.localPath
+    if (repoPath && currentBranch) {
+      setOutgoingCommitsPending(true)
+      void window.api.git
+        .getOutgoingCommits(repoPath, remote.name, currentBranch)
+        .then((res) => {
+          if (res.ok) setOutgoingCommits(res.data)
+        })
+        .finally(() => setOutgoingCommitsPending(false))
+    } else {
+      setOutgoingCommitsPending(false)
+    }
   }
 
   const handleClosePushSheet = () => {
@@ -122,6 +150,8 @@ export default function RemoteScreen(): React.ReactElement {
     setSelectedRemote(null)
     setPushStatus(null)
     setPushStatusPending(false)
+    setOutgoingCommits(null)
+    setOutgoingCommitsPending(false)
   }
 
   const handleConfirmPush = async () => {
@@ -129,6 +159,7 @@ export default function RemoteScreen(): React.ReactElement {
       !selectedRemote ||
       !currentBranch ||
       pushStatusPending ||
+      outgoingCommitsPending ||
       pushSafetyResult?.canPush === false
     )
       return
@@ -575,21 +606,24 @@ export default function RemoteScreen(): React.ReactElement {
               </div>
             )}
 
-            {pushSafetyResult?.canPush && pushSafetyResult.issues.length === 0 && (
-              <div
-                style={{
-                  padding: '8px 12px',
-                  background: 'var(--gw-success-bg, #052e16)',
-                  border: '1px solid var(--gw-success-border, #2d4a2d)',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  color: 'var(--gw-success, #4ade80)',
-                  marginBottom: '16px',
-                }}
-              >
-                ✓ Identity check passed — safe to push.
-              </div>
-            )}
+            {pushSafetyResult?.canPush &&
+              pushSafetyResult.issues.length === 0 &&
+              !pushStatusPending &&
+              !outgoingCommitsPending && (
+                <div
+                  style={{
+                    padding: '8px 12px',
+                    background: 'var(--gw-success-bg, #052e16)',
+                    border: '1px solid var(--gw-success-border, #2d4a2d)',
+                    borderRadius: '4px',
+                    fontSize: '14px',
+                    color: 'var(--gw-success, #4ade80)',
+                    marginBottom: '16px',
+                  }}
+                >
+                  {STR.PUSH_SAFE_TO_PUSH(githubContext !== undefined)}
+                </div>
+              )}
 
             {/* Actions */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
@@ -611,14 +645,19 @@ export default function RemoteScreen(): React.ReactElement {
               <button
                 data-testid="remote-push-confirm-btn"
                 onClick={handleConfirmPush}
-                disabled={!pushSafetyResult?.canPush || pushLoading || pushStatusPending}
+                disabled={
+                  !pushSafetyResult?.canPush ||
+                  pushLoading ||
+                  pushStatusPending ||
+                  outgoingCommitsPending
+                }
                 style={{
                   background:
-                    pushSafetyResult?.canPush && !pushStatusPending
+                    pushSafetyResult?.canPush && !pushStatusPending && !outgoingCommitsPending
                       ? 'var(--gw-primary, #2563eb)'
                       : 'var(--gw-surface3, #3f3f46)',
                   color:
-                    pushSafetyResult?.canPush && !pushStatusPending
+                    pushSafetyResult?.canPush && !pushStatusPending && !outgoingCommitsPending
                       ? 'var(--gw-on-solid, #fff)'
                       : 'var(--gw-text-dim, #52525b)',
                   border: 'none',
@@ -626,7 +665,9 @@ export default function RemoteScreen(): React.ReactElement {
                   padding: '7px 16px',
                   fontSize: '14px',
                   cursor:
-                    pushSafetyResult?.canPush && !pushStatusPending ? 'pointer' : 'not-allowed',
+                    pushSafetyResult?.canPush && !pushStatusPending && !outgoingCommitsPending
+                      ? 'pointer'
+                      : 'not-allowed',
                 }}
               >
                 {pushStatusPending ? STR.PUSH_GH_VERIFYING : 'Confirm Push'}

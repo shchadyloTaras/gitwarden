@@ -172,6 +172,12 @@ export const api = {
       invoke('git:getDiff', { repoPath, filePath, staged }),
     getStagedDiffs: (repoPath: string): Promise<IpcResult<StagedDiff[]>> =>
       invoke('git:getStagedDiffs', { repoPath }),
+    getOutgoingCommits: (
+      repoPath: string,
+      remote: string,
+      branch: string
+    ): Promise<IpcResult<GitCommit[]>> =>
+      invoke('git:getOutgoingCommits', { repoPath, remote, branch }),
     commit: (repoPath: string, message: string): Promise<IpcResult<{ hash: string }>> =>
       invoke('git:commit', { repoPath, message }),
     setLocalIdentity: (repoPath: string, name: string, email: string): Promise<IpcResult<void>> =>

@@ -25,6 +25,7 @@ export const SAFETY_SEVERITY: Record<SafetyCode, Severity> = {
   REMOTE_OWNER_MISMATCH: 'blocker',
   REMOTE_REPO_MISMATCH: 'blocker',
   PUSH_POLICY_INCOMPLETE: 'warning',
+  OUTGOING_WRONG_AUTHOR: 'blocker',
 }
 
 export const SAFETY_MESSAGES: Record<SafetyCode, string> = {
@@ -63,6 +64,8 @@ export const SAFETY_MESSAGES: Record<SafetyCode, string> = {
     'The push target repository name does not match the expected repository in the push policy.',
   PUSH_POLICY_INCOMPLETE:
     'The push policy requires specific branches but none are configured. Add allowed branch patterns to enable pushing.',
+  OUTGOING_WRONG_AUTHOR:
+    'One or more commits about to be pushed are authored by someone other than this profile’s identity.',
 }
 
 export function stagedSecretMessage(file?: string): string {
@@ -70,4 +73,42 @@ export function stagedSecretMessage(file?: string): string {
     return `Staged changes in ${file} contain secret-like content. Remove or redact before committing.`
   }
   return SAFETY_MESSAGES.STAGED_SECRET_DETECTED
+}
+
+/**
+ * Names the offending author(s) + count for OUTGOING_WRONG_AUTHOR (Phase 100) — the
+ * generic catalogue message above is a fallback for contexts with no commit list (e.g.
+ * Safety Copilot's per-code /explain). Never suggests a history rewrite: the remediation
+ * is explain-only (return the commit, fix identity, re-commit).
+ */
+export function outgoingWrongAuthorMessage(
+  offenders: { authorName: string; authorEmail: string }[]
+): string {
+  const uniqueAuthors = Array.from(
+    new Map(offenders.map((o) => [`${o.authorName}\0${o.authorEmail}`, o])).values()
+  )
+  const count = offenders.length
+  const commitWord = count === 1 ? 'commit is' : 'commits are'
+  const who =
+    uniqueAuthors.length === 1
+      ? `authored as ${uniqueAuthors[0].authorName} <${uniqueAuthors[0].authorEmail}>`
+      : `authored by ${uniqueAuthors.length} different people`
+  return (
+    `${count} outgoing ${commitWord} ${who}, not this profile’s identity. ` +
+    'Return the commit(s) with Uncommit, fix your identity, then re-commit — ' +
+    'GitWarden will not rewrite history automatically.'
+  )
+}
+
+/**
+ * GITHUB_ACCOUNT_MISMATCH's message names the actual source of the expected login —
+ * the repo's push-policy override (`expectedGitHubActor`) or the assigned profile's
+ * linked account (Phase 100 copy-truth fix: the message previously always blamed the
+ * profile even when a policy field set the expectation).
+ */
+export function githubAccountMismatchMessage(source?: 'policy' | 'profile'): string {
+  if (source === 'policy') {
+    return 'The stored GitHub token authenticates as a different account than this repository’s push policy expects — you may push as the wrong user.'
+  }
+  return SAFETY_MESSAGES.GITHUB_ACCOUNT_MISMATCH
 }

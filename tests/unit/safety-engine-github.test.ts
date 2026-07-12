@@ -84,6 +84,42 @@ describe('checkPush — GitHub HTTPS-token matrix', () => {
     expect(result.canPush).toBe(false)
   })
 
+  // ── Phase 100: GITHUB_ACCOUNT_MISMATCH copy-truth (names the actual expectation source) ──
+
+  it('MISMATCH message blames the assigned PROFILE when assignedLoginSource is profile (or omitted)', () => {
+    const result = check({
+      httpsToGitHub: true,
+      hasToken: true,
+      assignedLogin: 'alice',
+      effectiveLogin: 'mallory',
+      assignedLoginSource: 'profile',
+    })
+    const issue = result.issues.find((i) => i.code === 'GITHUB_ACCOUNT_MISMATCH')
+    expect(issue?.message).toContain('assigned profile')
+
+    const omitted = check({
+      httpsToGitHub: true,
+      hasToken: true,
+      assignedLogin: 'alice',
+      effectiveLogin: 'mallory',
+    })
+    const omittedIssue = omitted.issues.find((i) => i.code === 'GITHUB_ACCOUNT_MISMATCH')
+    expect(omittedIssue?.message).toBe(issue?.message)
+  })
+
+  it('MISMATCH message blames the push POLICY when assignedLoginSource is policy', () => {
+    const result = check({
+      httpsToGitHub: true,
+      hasToken: true,
+      assignedLogin: 'alice',
+      effectiveLogin: 'mallory',
+      assignedLoginSource: 'policy',
+    })
+    const issue = result.issues.find((i) => i.code === 'GITHUB_ACCOUNT_MISMATCH')
+    expect(issue?.message).toContain('push policy')
+    expect(issue?.message).not.toContain('assigned profile')
+  })
+
   it('MISSING: linked profile but no stored token → blocker, cannot push', () => {
     const result = check({ httpsToGitHub: true, hasToken: false, assignedLogin: 'alice' })
     const issue = result.issues.find((i) => i.code === 'GITHUB_TOKEN_MISSING')

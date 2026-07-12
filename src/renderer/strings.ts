@@ -254,6 +254,15 @@ export const STR = {
   PUSH_GH_NO_TOKEN: 'No HTTPS token stored for the assigned profile.',
   PUSH_GH_TOKEN_INVALID: 'Stored GitHub token was rejected — reconnect required.',
   PUSH_GH_NOT_CONNECTED: 'Assigned profile has no linked GitHub account.',
+  // Phase 100: names exactly what was verified, instead of a vague blanket "safe to push" —
+  // the GitHub-account clause only appears when this push actually goes over an HTTPS
+  // GitHub token (githubChecked), so the copy never claims a check that didn't run.
+  PUSH_SAFE_TO_PUSH: (githubChecked: boolean): string => {
+    const checks = ['your Git identity', 'this remote']
+    if (githubChecked) checks.push('the linked GitHub account')
+    checks.push("every outgoing commit's author")
+    return `✓ Verified ${checks.join(', ')} — safe to push.`
+  },
 
   // ── Settings → AI (token-first single active connection) ───────────────────
   AI_SECTION_LABEL: 'AI Assistant',
@@ -565,6 +574,7 @@ export const STR = {
     remote: 'Remote',
     branches: 'Branches',
     profiles: 'Profiles',
+    history: 'History',
   } as Record<string, string>,
   REMEDIATION_DEVICE_CODE: (code: string, url: string): string =>
     `Enter code ${code} at ${url} to reconnect.`,

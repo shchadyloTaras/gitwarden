@@ -60,6 +60,13 @@ export const GitDiffPayload = z.object({
   staged: z.boolean(),
 })
 
+// Phase 100: outgoing commits for the push-gate authorship check.
+export const GitOutgoingCommitsPayload = z.object({
+  repoPath: z.string(),
+  remote: z.string(),
+  branch: z.string(),
+})
+
 export const GitValidatePathPayload = z.object({ gitPath: z.string().min(1) })
 
 export const GitCommitPayload = z.object({

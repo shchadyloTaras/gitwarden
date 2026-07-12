@@ -51,6 +51,7 @@ import {
   GitRepoPathPayload,
   GitFilePathPayload,
   GitDiffPayload,
+  GitOutgoingCommitsPayload,
   GitCommitPayload,
   GitSetIdentityPayload,
   GitInitializePayload,
@@ -326,6 +327,17 @@ export function registerIpcHandlers(services: Services): void {
     wrap(async () => {
       const { repoPath } = GitRepoPathPayload.parse(raw)
       return services.git.getStagedDiffs(repoPath)
+    })
+  )
+
+  // Phase 100: outgoing commits for the push-gate authorship check (git:getOutgoingCommits).
+  // 200 is generous for the safety check's purpose (catching a wrong-author commit
+  // anywhere in the outgoing range) without being unbounded on a huge first push.
+  const OUTGOING_COMMITS_LIMIT = 200
+  ipcMain.handle('git:getOutgoingCommits', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath, remote, branch } = GitOutgoingCommitsPayload.parse(raw)
+      return services.git.getCommitsAhead(repoPath, remote, branch, OUTGOING_COMMITS_LIMIT)
     })
   )
 

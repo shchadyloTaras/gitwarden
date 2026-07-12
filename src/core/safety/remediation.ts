@@ -35,7 +35,14 @@ export type RemediationKind = 'executable' | 'navigate'
  * reserved for completeness — the profile-related fixes are executable, not
  * navigations — but kept here so the contract is stable if that changes.
  */
-export type NavTarget = 'repositories' | 'commit' | 'status' | 'remote' | 'branches' | 'profiles'
+export type NavTarget =
+  | 'repositories'
+  | 'commit'
+  | 'status'
+  | 'remote'
+  | 'branches'
+  | 'profiles'
+  | 'history'
 
 export interface Remediation {
   action: SafetySuggestedAction
@@ -83,6 +90,7 @@ const NAVIGATE_TARGETS: Record<NavigateAction, NavTarget> = {
   'review-staged-changes': 'commit',
   'switch-branch': 'branches',
   'edit-push-policy': 'repositories',
+  'return-commit-fix-identity': 'history',
 }
 
 /** Build the remediation for any action from the executable/navigate split. */

@@ -150,6 +150,11 @@ interface ElectronAPI {
     unstageAll(repoPath: string): Promise<IpcResult<void>>
     getDiff(repoPath: string, filePath: string, staged: boolean): Promise<IpcResult<string>>
     getStagedDiffs(repoPath: string): Promise<IpcResult<StagedDiff[]>>
+    getOutgoingCommits(
+      repoPath: string,
+      remote: string,
+      branch: string
+    ): Promise<IpcResult<GitCommit[]>>
     commit(repoPath: string, message: string): Promise<IpcResult<{ hash: string }>>
     setLocalIdentity(repoPath: string, name: string, email: string): Promise<IpcResult<void>>
     initializeRepository(params: {

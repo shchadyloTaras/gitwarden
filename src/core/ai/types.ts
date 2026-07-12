@@ -266,6 +266,11 @@ export type SafetySuggestedAction =
   // into the local branch, purely locally (no fetch, no push, no auto-resolve
   // of content conflicts). The AI still never applies it.
   | 'merge-remote-into-local'
+  // QA Fixes (Phase 100): explain-only for an outgoing wrong-author commit —
+  // NEVER an executable one-click fix. GitWarden will not rewrite history to
+  // "correct" an already-made commit's author; the paved path is manual
+  // (return the commit via History's uncommit, fix identity, re-commit).
+  | 'return-commit-fix-identity'
 
 /** Safety Copilot explanation for one SafetyCode (Phase 34). */
 export interface AiSafetyExplanation {

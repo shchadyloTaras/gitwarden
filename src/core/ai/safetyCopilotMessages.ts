@@ -52,6 +52,8 @@ export function explainSafetyIssue(code: SafetyCode): string {
       return 'The push would go to a different repository name than the push policy expects. Verify you are pushing to the correct remote for this client repository.'
     case 'PUSH_POLICY_INCOMPLETE':
       return 'The push policy is set to branch-scoped mode but no allowed branch patterns are configured. Add allowed patterns in the repository Push Policy settings before pushing.'
+    case 'OUTGOING_WRONG_AUTHOR':
+      return 'One or more commits about to be pushed were authored by someone other than this profile’s identity — pushing now would publish them under the wrong name even if your current config is correct. GitWarden never rewrites history automatically: return the commit with Uncommit, fix your identity, then re-commit.'
     default: {
       const _exhaustive: never = code
       return String(_exhaustive)
@@ -89,6 +91,7 @@ export const SAFETY_ACTION_BY_CODE: Record<SafetyCode, SafetySuggestedAction> = 
   REMOTE_OWNER_MISMATCH: 'configure-remote',
   REMOTE_REPO_MISMATCH: 'configure-remote',
   PUSH_POLICY_INCOMPLETE: 'edit-push-policy',
+  OUTGOING_WRONG_AUTHOR: 'return-commit-fix-identity',
 }
 
 const ACTION_HINTS: Record<SafetySuggestedAction, string> = {
@@ -113,4 +116,6 @@ const ACTION_HINTS: Record<SafetySuggestedAction, string> = {
   'switch-profile-and-retry-push':
     'Switch to the repository’s assigned profile and push again with its GitHub account.',
   'merge-remote-into-local': 'Bring the remote’s changes into your branch with a merge, then push.',
+  'return-commit-fix-identity':
+    'Open History and use Uncommit to return the wrong-author commit to your working changes, fix your Git identity, then re-commit. GitWarden never rewrites history automatically.',
 }

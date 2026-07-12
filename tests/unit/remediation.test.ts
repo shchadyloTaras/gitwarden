@@ -20,6 +20,7 @@ const NAV_TARGETS: NavTarget[] = [
   'remote',
   'branches',
   'profiles',
+  'history',
 ]
 
 describe('remediationForSafetyCode', () => {
@@ -91,6 +92,13 @@ describe('remediationForSafetyCode', () => {
       action: 'edit-push-policy',
       kind: 'navigate',
       navigateTo: 'repositories',
+    })
+    // Explain-only, NEVER an executable one-click fix — GitWarden does not rewrite
+    // history to "correct" an already-made commit's author.
+    expect(remediationForSafetyCode('OUTGOING_WRONG_AUTHOR')).toEqual({
+      action: 'return-commit-fix-identity',
+      kind: 'navigate',
+      navigateTo: 'history',
     })
   })
 })

@@ -11,6 +11,7 @@ import { normalizeContextPaths } from '../../core/ai/chatContext'
 import { friendlyCapabilityError } from '../../core/ai/capabilityErrors'
 import { buildActiveSafetyIssuesExplanation } from '../../core/ai/safetyCopilot'
 import { safetyCheckService } from '../../core/safety/SafetyCheckService'
+import { resolvePushTarget } from '../../core/safety/pushTarget'
 import type { AiAgenticProposal, AiChatTurn } from '../../core/ai/types'
 import type { RepositoryRecord, SafetyIssue } from '../../core/types'
 import { reviewFindingsBlock, commitDraftBlock, type ChatUiBlock } from '../../core/ai/chatBlocks'
@@ -397,6 +398,21 @@ async function loadActiveSafetyIssues(repository: RepositoryRecord): Promise<Saf
   const currentBranch = statusRes.ok ? (statusRes.data.branch ?? undefined) : undefined
   const upstream = statusRes.ok ? (statusRes.data.upstream ?? undefined) : undefined
 
+  // Outgoing-authorship gate (Phase 100): give the bare /explain overview the same
+  // outgoing-commits input the push sheet uses, so it can surface OUTGOING_WRONG_AUTHOR
+  // too — resolved the same way the push-policy owner/repo check already resolves a
+  // target remote (pushTarget.ts), so both stay in agreement.
+  const target = resolvePushTarget({ remotes, upstream })
+  let outgoingCommits: { authorName: string; authorEmail: string }[] | undefined
+  if (target && currentBranch) {
+    const outgoingRes = await window.api.git.getOutgoingCommits(
+      repository.localPath,
+      target.name,
+      currentBranch
+    )
+    if (outgoingRes.ok) outgoingCommits = outgoingRes.data
+  }
+
   const identityCheck = safetyCheckService.checkRepositoryIdentity({
     repository: effectiveRepository,
     activeProfile: activeProfile ?? undefined,
@@ -409,6 +425,7 @@ async function loadActiveSafetyIssues(repository: RepositoryRecord): Promise<Saf
     remotes,
     currentBranch,
     upstream,
+    outgoingCommits,
   })
   return [...identityCheck.issues, ...pushCheck.issues]
 }

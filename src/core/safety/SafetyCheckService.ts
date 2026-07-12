@@ -8,7 +8,13 @@ import type {
   SafetyCheckResult,
   StagedDiff,
 } from '../types.js'
-import { SAFETY_MESSAGES, SAFETY_SEVERITY, stagedSecretMessage } from './safetyMessages.js'
+import {
+  SAFETY_MESSAGES,
+  SAFETY_SEVERITY,
+  stagedSecretMessage,
+  outgoingWrongAuthorMessage,
+  githubAccountMismatchMessage,
+} from './safetyMessages.js'
 import { matchesAnyPattern } from './branchPatterns.js'
 import { parseRemoteOwnerRepo } from '../github/remoteOwner.js'
 import { resolvePushTarget } from './pushTarget.js'
@@ -44,6 +50,10 @@ export type SafetyCode =
   | 'REMOTE_OWNER_MISMATCH'
   | 'REMOTE_REPO_MISMATCH'
   | 'PUSH_POLICY_INCOMPLETE'
+  // QA Fixes (Phase 100): a commit already in the outgoing push range was authored by
+  // someone other than the assigned profile — catches a wrong-author commit that
+  // reaches push even after the local identity config has since been fixed.
+  | 'OUTGOING_WRONG_AUTHOR'
 
 function makeIssue(code: SafetyCode): SafetyIssue {
   return { code, message: SAFETY_MESSAGES[code], severity: SAFETY_SEVERITY[code] }
@@ -106,6 +116,14 @@ export interface GitHubPushContext {
   httpsToGitHub: boolean
   /** The @login the assigned profile is linked to, if any. */
   assignedLogin?: string
+  /**
+   * Where `assignedLogin` came from — the repo's push-policy override
+   * (`expectedGitHubActor`) or the assigned profile's linked GitHub account. Determines
+   * which entity `GITHUB_ACCOUNT_MISMATCH`'s message names as the source of the
+   * expectation, so the copy never blames the profile for a policy-set expectation
+   * (or vice versa). Defaults to `'profile'` when omitted (the common case).
+   */
+  assignedLoginSource?: 'policy' | 'profile'
   /** A token is stored for the assigned profile. */
   hasToken: boolean
   /** A stored token was rejected (HTTP 401) and needs re-auth. */
@@ -147,10 +165,42 @@ function collectGitHubPushIssues(github: GitHubPushContext): SafetyIssue[] {
     github.effectiveLogin !== undefined &&
     github.assignedLogin !== github.effectiveLogin
   ) {
-    issues.push(makeIssue('GITHUB_ACCOUNT_MISMATCH'))
+    issues.push({
+      code: 'GITHUB_ACCOUNT_MISMATCH',
+      message: githubAccountMismatchMessage(github.assignedLoginSource),
+      severity: SAFETY_SEVERITY.GITHUB_ACCOUNT_MISMATCH,
+    })
   }
 
   return issues
+}
+
+/**
+ * Outgoing-authorship gate (Phase 100): any commit in the range about to be pushed whose
+ * author doesn't match the ACTIVE profile's identity is a blocker — this is what stops an
+ * already-wrong commit from reaching GitHub even after `--local` config has since been
+ * fixed. Safe to compare against `activeProfile` here specifically because `canPush` can
+ * only be true once `collectIdentityIssues` has already confirmed `activeProfile.id ===
+ * repository.assignedProfileId` (PROFILE_MISMATCH blocks otherwise) — so whenever this
+ * matters, `activeProfile` IS the assigned profile.
+ */
+function collectOutgoingAuthorIssues(
+  outgoingCommits: { authorName: string; authorEmail: string }[] | undefined,
+  activeProfile: Profile | undefined
+): SafetyIssue[] {
+  if (!outgoingCommits || outgoingCommits.length === 0 || !activeProfile) return []
+  const offenders = outgoingCommits.filter(
+    (c) =>
+      c.authorName !== activeProfile.gitAuthorName || c.authorEmail !== activeProfile.gitAuthorEmail
+  )
+  if (offenders.length === 0) return []
+  return [
+    {
+      code: 'OUTGOING_WRONG_AUTHOR',
+      message: outgoingWrongAuthorMessage(offenders),
+      severity: SAFETY_SEVERITY.OUTGOING_WRONG_AUTHOR,
+    },
+  ]
 }
 
 // ── Push policy checks (Phase 57) ────────────────────────────────────────────
@@ -230,6 +280,8 @@ export interface SafetyCheckService {
     /** Upstream tracking ref, e.g. `'origin/main'` from GitStatus.upstream. Used to resolve the push target remote. */
     upstream?: string
     github?: GitHubPushContext
+    /** Commits about to be pushed, for the outgoing-authorship gate (Phase 100). Optional — omit to skip the check. */
+    outgoingCommits?: { authorName: string; authorEmail: string }[]
   }): SafetyCheckResult
 }
 
@@ -306,6 +358,7 @@ class SafetyCheckServiceImpl implements SafetyCheckService {
     currentBranch?: string
     upstream?: string
     github?: GitHubPushContext
+    outgoingCommits?: { authorName: string; authorEmail: string }[]
   }): SafetyCheckResult {
     const issues = collectIdentityIssues(input)
 
@@ -326,6 +379,7 @@ class SafetyCheckServiceImpl implements SafetyCheckService {
     }
 
     if (input.github) issues.push(...collectGitHubPushIssues(input.github))
+    issues.push(...collectOutgoingAuthorIssues(input.outgoingCommits, input.activeProfile))
 
     // Push policy (opt-in — only runs when pushPolicy is set).
     // Owner/repo checks apply in both modes; branch checks apply per mode.

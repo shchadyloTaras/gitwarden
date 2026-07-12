@@ -571,4 +571,62 @@ describe('checkPush', () => {
     expect(blockers(result.issues)).toContain('REMOTE_HOST_MISMATCH')
     expect(result.canPush).toBe(false)
   })
+
+  // ── Phase 100: outgoing-authorship gate ─────────────────────────────────────
+
+  const rightAuthor = { authorName: 'Work User', authorEmail: 'work@example.com' }
+  const wrongAuthor = { authorName: 'eleken-git', authorEmail: 'marketing@eleken.co' }
+
+  it('blocks when an outgoing commit was authored by someone other than the active profile', () => {
+    const result = safetyCheckService.checkPush({
+      ...goodInput,
+      outgoingCommits: [wrongAuthor],
+    })
+    expect(result.canPush).toBe(false)
+    const issue = result.issues.find((i) => i.code === 'OUTGOING_WRONG_AUTHOR')
+    expect(issue?.severity).toBe('blocker')
+    expect(issue?.message).toContain('eleken-git')
+    expect(issue?.message).toContain('marketing@eleken.co')
+  })
+
+  it('does not block when every outgoing commit matches the active profile', () => {
+    const result = safetyCheckService.checkPush({
+      ...goodInput,
+      outgoingCommits: [rightAuthor, rightAuthor],
+    })
+    expect(result.canPush).toBe(true)
+    expect(codes(result.issues)).not.toContain('OUTGOING_WRONG_AUTHOR')
+  })
+
+  it('does not block on an empty outgoing range', () => {
+    const result = safetyCheckService.checkPush({ ...goodInput, outgoingCommits: [] })
+    expect(codes(result.issues)).not.toContain('OUTGOING_WRONG_AUTHOR')
+    expect(result.canPush).toBe(true)
+  })
+
+  it('omitting outgoingCommits entirely skips the check (backward compatible)', () => {
+    const result = safetyCheckService.checkPush(goodInput)
+    expect(codes(result.issues)).not.toContain('OUTGOING_WRONG_AUTHOR')
+  })
+
+  it('blocks on a mixed range, naming only the wrong author', () => {
+    const result = safetyCheckService.checkPush({
+      ...goodInput,
+      outgoingCommits: [rightAuthor, wrongAuthor, rightAuthor],
+    })
+    expect(result.canPush).toBe(false)
+    const issue = result.issues.find((i) => i.code === 'OUTGOING_WRONG_AUTHOR')
+    expect(issue?.message).toContain('eleken-git')
+    expect(issue?.message).not.toContain('Work User')
+  })
+
+  it('names the count of distinct wrong authors when more than one is present', () => {
+    const anotherWrongAuthor = { authorName: 'Someone Else', authorEmail: 'someone@else.com' }
+    const result = safetyCheckService.checkPush({
+      ...goodInput,
+      outgoingCommits: [wrongAuthor, anotherWrongAuthor],
+    })
+    const issue = result.issues.find((i) => i.code === 'OUTGOING_WRONG_AUTHOR')
+    expect(issue?.message).toContain('2 different people')
+  })
 })
