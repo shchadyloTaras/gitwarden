@@ -14,6 +14,8 @@ export function explainSafetyIssue(code: SafetyCode): string {
       return 'Your active profile does not match the profile assigned to this repository. Committing or pushing now could use the wrong author name, email, or GitHub account for this project.'
     case 'IDENTITY_UNSET':
       return 'Git author name or email is not configured for this repository. Git would still create a commit, but the author might be blank or inherited from global config — which GitWarden cannot tie to your profile.'
+    case 'NAME_MISMATCH':
+      return 'The Git author name configured for this repository does not match the active profile’s expected name. The commit would be attributed to a different person than this profile represents.'
     case 'EMAIL_MISMATCH':
       return 'The Git author email configured for this repository does not match the active profile’s expected email. The commit would be attributed to a different address than this profile represents.'
     case 'EMAIL_FROM_GLOBAL_ONLY':
@@ -68,6 +70,7 @@ export const SAFETY_ACTION_BY_CODE: Record<SafetyCode, SafetySuggestedAction> = 
   REPO_UNASSIGNED: 'assign-repo-profile',
   PROFILE_MISMATCH: 'switch-active-profile',
   IDENTITY_UNSET: 'set-local-identity',
+  NAME_MISMATCH: 'set-local-identity',
   EMAIL_MISMATCH: 'set-local-identity',
   EMAIL_FROM_GLOBAL_ONLY: 'set-local-identity',
   NOTHING_STAGED: 'stage-changes',

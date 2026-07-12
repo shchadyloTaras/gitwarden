@@ -73,6 +73,7 @@ Look up which track owns phase `$N`:
 | 82–84       | Merge a Branch               |
 | 85–88       | Initialize Repository        |
 | 89–97       | Branch-Switch Data Integrity |
+| 98–105      | QA Fixes                     |
 | DX-0–DX-6   | Agentic DX                   |
 
 Count that track's checklist entries:

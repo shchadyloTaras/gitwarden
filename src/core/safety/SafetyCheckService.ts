@@ -19,6 +19,7 @@ export type SafetyCode =
   | 'REPO_UNASSIGNED'
   | 'PROFILE_MISMATCH'
   | 'IDENTITY_UNSET'
+  | 'NAME_MISMATCH'
   | 'EMAIL_MISMATCH'
   | 'EMAIL_FROM_GLOBAL_ONLY'
   | 'NOTHING_STAGED'
@@ -75,6 +76,9 @@ function collectIdentityIssues(input: IdentityInput): SafetyIssue[] {
   if (!identity.userName || !identity.userEmail) {
     issues.push(makeIssue('IDENTITY_UNSET'))
   } else {
+    if (identity.userName !== activeProfile.gitAuthorName) {
+      issues.push(makeIssue('NAME_MISMATCH'))
+    }
     if (identity.userEmail !== activeProfile.gitAuthorEmail) {
       issues.push(makeIssue('EMAIL_MISMATCH'))
     }

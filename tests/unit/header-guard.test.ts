@@ -60,14 +60,6 @@ describe('deriveHeaderGuard', () => {
   })
 
   describe('review (warnings only)', () => {
-    it('EMAIL_MISMATCH → review', () => {
-      const guard = deriveHeaderGuard(
-        readyInput({ identity: makeIdentity({ userEmail: 'other@example.com' }) })
-      )
-      expect(guard.state).toBe('review')
-      expect(guard.issueCount).toBe(1)
-    })
-
     it('global-only identity (emailSource !== local) → review', () => {
       const guard = deriveHeaderGuard(
         readyInput({ identity: makeIdentity({ emailSource: 'global' }) })
@@ -104,6 +96,22 @@ describe('deriveHeaderGuard', () => {
 
     it('no active profile → blocked', () => {
       const guard = deriveHeaderGuard(readyInput({ activeProfile: null }))
+      expect(guard.state).toBe('blocked')
+      expect(guard.issueCount).toBe(1)
+    })
+
+    it('EMAIL_MISMATCH → blocked', () => {
+      const guard = deriveHeaderGuard(
+        readyInput({ identity: makeIdentity({ userEmail: 'other@example.com' }) })
+      )
+      expect(guard.state).toBe('blocked')
+      expect(guard.issueCount).toBe(1)
+    })
+
+    it('NAME_MISMATCH → blocked', () => {
+      const guard = deriveHeaderGuard(
+        readyInput({ identity: makeIdentity({ userName: 'Someone Else' }) })
+      )
       expect(guard.state).toBe('blocked')
       expect(guard.issueCount).toBe(1)
     })
@@ -148,14 +156,14 @@ describe('deriveHeaderGuard', () => {
   })
 
   it('issueCount equals the number of identity issues', () => {
-    // Both EMAIL_MISMATCH (email differs) and EMAIL_FROM_GLOBAL_ONLY (global source) fire:
-    // two warnings → review, issueCount 2.
+    // Both EMAIL_MISMATCH (email differs, blocker) and EMAIL_FROM_GLOBAL_ONLY (global
+    // source, warning) fire: any blocker present → blocked, issueCount 2.
     const guard = deriveHeaderGuard(
       readyInput({
         identity: makeIdentity({ userEmail: 'other@example.com', emailSource: 'global' }),
       })
     )
-    expect(guard.state).toBe('review')
+    expect(guard.state).toBe('blocked')
     expect(guard.issueCount).toBe(2)
   })
 })

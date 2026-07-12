@@ -109,7 +109,7 @@ export default function RemediationButton({
   let label = ''
   switch (action) {
     case 'set-local-identity':
-      // Resolve EMAIL_MISMATCH/IDENTITY_UNSET by writing the ACTIVE profile's identity
+      // Resolve NAME_MISMATCH/EMAIL_MISMATCH/IDENTITY_UNSET by writing the ACTIVE profile's identity
       // (the safety check compares the repo identity against the active profile).
       profileId = activeProfileId ?? undefined
       label = activeProfile

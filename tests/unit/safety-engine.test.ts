@@ -81,6 +81,7 @@ describe('SAFETY_MESSAGES', () => {
       'REPO_UNASSIGNED',
       'PROFILE_MISMATCH',
       'IDENTITY_UNSET',
+      'NAME_MISMATCH',
       'EMAIL_MISMATCH',
       'EMAIL_FROM_GLOBAL_ONLY',
       'NOTHING_STAGED',
@@ -178,25 +179,61 @@ describe('checkRepositoryIdentity', () => {
     expect(codes(result.issues)).toContain('IDENTITY_UNSET')
   })
 
-  it('does not emit EMAIL_MISMATCH or EMAIL_FROM_GLOBAL_ONLY when IDENTITY_UNSET fires', () => {
+  it('does not emit NAME_MISMATCH, EMAIL_MISMATCH, or EMAIL_FROM_GLOBAL_ONLY when IDENTITY_UNSET fires', () => {
     const result = safetyCheckService.checkRepositoryIdentity({
       repository: makeRepo(),
       activeProfile: makeProfile(),
       identity: makeIdentity({ userEmail: undefined }),
     })
+    expect(codes(result.issues)).not.toContain('NAME_MISMATCH')
     expect(codes(result.issues)).not.toContain('EMAIL_MISMATCH')
     expect(codes(result.issues)).not.toContain('EMAIL_FROM_GLOBAL_ONLY')
   })
 
-  it('warns (not blocks) when email does not match profile', () => {
+  it('blocks when email does not match profile', () => {
     const result = safetyCheckService.checkRepositoryIdentity({
       repository: makeRepo(),
       activeProfile: makeProfile({ gitAuthorEmail: 'work@example.com' }),
       identity: makeIdentity({ userEmail: 'personal@example.com' }),
     })
-    expect(result.canCommit).toBe(true) // warning, not blocker
-    expect(warnings(result.issues)).toContain('EMAIL_MISMATCH')
-    expect(blockers(result.issues)).not.toContain('EMAIL_MISMATCH')
+    expect(result.canCommit).toBe(false)
+    expect(blockers(result.issues)).toContain('EMAIL_MISMATCH')
+    expect(warnings(result.issues)).not.toContain('EMAIL_MISMATCH')
+  })
+
+  it('blocks when name does not match profile', () => {
+    const result = safetyCheckService.checkRepositoryIdentity({
+      repository: makeRepo(),
+      activeProfile: makeProfile({ gitAuthorName: 'Work User' }),
+      identity: makeIdentity({ userName: 'Someone Else' }),
+    })
+    expect(result.canCommit).toBe(false)
+    expect(blockers(result.issues)).toContain('NAME_MISMATCH')
+    expect(warnings(result.issues)).not.toContain('NAME_MISMATCH')
+  })
+
+  it('emits both NAME_MISMATCH and EMAIL_MISMATCH when both differ', () => {
+    const result = safetyCheckService.checkRepositoryIdentity({
+      repository: makeRepo(),
+      activeProfile: makeProfile({
+        gitAuthorName: 'Work User',
+        gitAuthorEmail: 'work@example.com',
+      }),
+      identity: makeIdentity({ userName: 'Someone Else', userEmail: 'personal@example.com' }),
+    })
+    expect(result.canCommit).toBe(false)
+    expect(blockers(result.issues)).toContain('NAME_MISMATCH')
+    expect(blockers(result.issues)).toContain('EMAIL_MISMATCH')
+  })
+
+  it('does not emit NAME_MISMATCH when name matches (even if email does not)', () => {
+    const result = safetyCheckService.checkRepositoryIdentity({
+      repository: makeRepo(),
+      activeProfile: makeProfile({ gitAuthorName: 'Work User' }),
+      identity: makeIdentity({ userName: 'Work User', userEmail: 'personal@example.com' }),
+    })
+    expect(codes(result.issues)).not.toContain('NAME_MISMATCH')
+    expect(codes(result.issues)).toContain('EMAIL_MISMATCH')
   })
 
   it('warns (not blocks) when email is from global config', () => {
@@ -215,9 +252,9 @@ describe('checkRepositoryIdentity', () => {
       activeProfile: makeProfile({ gitAuthorEmail: 'work@example.com' }),
       identity: makeIdentity({ userEmail: 'personal@example.com', emailSource: 'global' }),
     })
-    expect(warnings(result.issues)).toContain('EMAIL_MISMATCH')
+    expect(blockers(result.issues)).toContain('EMAIL_MISMATCH')
     expect(warnings(result.issues)).toContain('EMAIL_FROM_GLOBAL_ONLY')
-    expect(result.canCommit).toBe(true) // both are warnings
+    expect(result.canCommit).toBe(false) // EMAIL_MISMATCH is now a blocker
   })
 
   it('does not emit EMAIL_FROM_GLOBAL_ONLY when emailSource is undefined', () => {

@@ -6,7 +6,8 @@ export const SAFETY_SEVERITY: Record<SafetyCode, Severity> = {
   REPO_UNASSIGNED: 'blocker',
   PROFILE_MISMATCH: 'blocker',
   IDENTITY_UNSET: 'blocker',
-  EMAIL_MISMATCH: 'warning',
+  NAME_MISMATCH: 'blocker',
+  EMAIL_MISMATCH: 'blocker',
   EMAIL_FROM_GLOBAL_ONLY: 'warning',
   NOTHING_STAGED: 'blocker',
   EMPTY_MESSAGE: 'blocker',
@@ -31,6 +32,7 @@ export const SAFETY_MESSAGES: Record<SafetyCode, string> = {
   REPO_UNASSIGNED: 'This repository has no assigned profile.',
   PROFILE_MISMATCH: 'The active profile does not match this repository’s assigned profile.',
   IDENTITY_UNSET: 'Git author name or email is not configured.',
+  NAME_MISMATCH: 'Your Git author name does not match the active profile.',
   EMAIL_MISMATCH: 'Your Git author email does not match the active profile.',
   EMAIL_FROM_GLOBAL_ONLY:
     'Your Git identity is inherited from global config, not set for this repository.',

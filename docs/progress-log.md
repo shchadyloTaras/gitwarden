@@ -155,6 +155,17 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] Phase 96 — `.git` watcher: instant external-change detection (main + IPC + renderer)
 - [x] Phase 97 — Polish + regression sweep (renderer + e2e)
 
+### QA Fixes feature (plan: `docs/plans/qa-fixes-plan.md`, prompts: `docs/prompts/qa-fixes-prompts.md`)
+
+- [x] Phase 98 — Identity gate: name check + mismatch blocks commit (pure core + renderer strings)
+- [ ] Phase 99 — Secret scan runs at the commit gate (core + main + IPC + renderer)
+- [ ] Phase 100 — Push verifies outgoing authorship + truthful push-identity copy (core + main + IPC + renderer + e2e)
+- [ ] Phase 101 — Rename-proof `.git` watching + `config` coverage (main + renderer)
+- [ ] Phase 102 — Operation outcomes survive refreshes + success confirmations (renderer)
+- [ ] Phase 103 — Honest failure copy + reconnect shows its code (main + renderer)
+- [ ] Phase 104 — AI tells the truth: `/push-brief` token facts + `/propose` empty-proposal guard (renderer + main)
+- [ ] Phase 105 — Polish batch + crash telemetry + regression sweep (renderer + main + e2e)
+
 ### Agentic DX track (plan: `docs/plans/agentic-dx-plan.md`, prompts: `docs/prompts/dx-execution-prompts.md`)
 
 > Not product phases — a separate developer-experience track (steps DX-0…DX-6, no global phase
@@ -194,6 +205,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | Merge a Branch               | 82–84     | ✅ complete                                                   |
 | Initialize Repository        | 85–88     | ✅ complete                                                   |
 | Branch-Switch Data Integrity | 89–97     | ✅ complete                                                   |
+| QA Fixes                     | 98–105    | 🟡 Phase 98 done; 99–105 open                                 |
 | Agentic DX                   | DX-0–DX-6 | ✅ complete (DX-6 = à la carte; project-factory/sdd deferred) |
 
 ## Progress Log
@@ -1430,3 +1442,12 @@ The three items flagged as "standing background tasks" in the Phase 97 entry abo
 - **`SECURITY.md` `execFile` vs `spawn`** — FIXED. Rule #1 in `SECURITY.md` and the two matching lines in `AGENTS.md` now say `child_process.spawn` + `shell: false`. The security invariant (args array, never a shell, paths after `--`) was always upheld; `spawn` is used deliberately for the live `ChildProcess` handle the `AbortSignal`/timeout cancellation needs. The same wording still appears in historical `docs/plans`/`docs/prompts` and the architecture diagram — left as point-in-time records; sweep separately if wanted.
 
 Verification: Vitest **999/999**; `diff.spec.ts` **3/3** (isolated userData); `tsc` (web+node) + `npm run lint` clean.
+
+### 2026-07-12 — Phase 98: Identity gate: name check + mismatch blocks commit (pure core + renderer strings)
+
+- Built: Added `NAME_MISMATCH` to the `SafetyCode` union (`SafetyCheckService.ts`) with `'blocker'` severity + a plain-language message in `safetyMessages.ts`; `collectIdentityIssues` now compares `identity.userName !== activeProfile.gitAuthorName` alongside the existing email check. Promoted `EMAIL_MISMATCH` from `'warning'` to `'blocker'` (`EMAIL_FROM_GLOBAL_ONLY` stays a warning — it is not itself an identity mismatch, just a provenance note). Extended the AI Safety Copilot's exhaustive `explainSafetyIssue` switch and the total `SAFETY_ACTION_BY_CODE` map (both in `safetyCopilotMessages.ts`) with a `NAME_MISMATCH` case/entry resolving to the existing `set-local-identity` action — `remediation.ts`'s `remediationForSafetyCode` derives from that same map, so `NAME_MISMATCH` automatically resolves to the same executable one-click fix as `EMAIL_MISMATCH`/`IDENTITY_UNSET` with zero changes needed to `remediation.ts` itself (its own exhaustiveness comment already documents why). No renderer UI changes were needed: `CommitScreen`/Safety Center already render issues generically by severity (blockers vs. warnings), and the header Guard badge (`headerGuard.ts`) derives its state from `checkRepositoryIdentity`'s blocker/warning split, so it now flips to Blocked on either a name or email mismatch with no code change there either — only its tests needed updating for the new classification.
+- Post-review hardening: none needed — core-purity-reviewer found the diff clean on first pass (no forbidden imports; pure data-only change; all three `Record<SafetyCode, …>` maps plus the exhaustive `explainSafetyIssue` switch verified correctly total over all 23 `SafetyCode` members). Also updated one comment in `RemediationButton.tsx` (`// Resolve EMAIL_MISMATCH/IDENTITY_UNSET …` → now names `NAME_MISMATCH` too) for accuracy — no logic change.
+- Files: edited `src/core/safety/SafetyCheckService.ts` (`NAME_MISMATCH` union member + `collectIdentityIssues` check), `src/core/safety/safetyMessages.ts` (severity promotion + new message), `src/core/ai/safetyCopilotMessages.ts` (`explainSafetyIssue` case + `SAFETY_ACTION_BY_CODE` entry), `src/renderer/components/RemediationButton.tsx` (comment only); updated `tests/unit/safety-engine.test.ts` (re-asserted the two existing `EMAIL_MISMATCH` tests as blocker not warning, added three new `NAME_MISMATCH` tests: name-only mismatch, both-mismatch-together, name-matches-so-no-issue), `tests/unit/header-guard.test.ts` (moved the `EMAIL_MISMATCH` case from the "review" describe block to "blocked", added a `NAME_MISMATCH → blocked` case, fixed the combined-issue-count test's expected state from `'review'` to `'blocked'`).
+- Tests: Vitest **1003/1003 passed** (114 files; 5 net-new/reclassified over Phase 97's 998).
+- Exit criteria: ✅ met — `npx tsc --noEmit` clean on both tsconfigs; `npm test` green (1003/1003); `npm run lint` clean; core-purity-reviewer confirmed clean.
+- Notes / follow-ups: `ALL_SAFETY_CODES` in `src/core/ai/safetyCopilot.ts` (the closed set backing the `/explain` IPC payload's Zod enum) was deliberately left NOT including `NAME_MISMATCH` — it already omits the five Phase-57 push-policy codes (`PROTECTED_BRANCH_PUSH`, `BRANCH_NOT_ALLOWED`, `REMOTE_OWNER_MISMATCH`, `REMOTE_REPO_MISMATCH`, `PUSH_POLICY_INCOMPLETE`), so `/explain` support for newer codes is a pre-existing gap this phase's scope ("pure core + renderer strings only") did not ask to close. Next: **Phase 99 — Secret scan runs at the commit gate (core + main + IPC + renderer)** — wiring the existing deterministic secret scanner into `checkCommit` via a new bulk staged-diffs IPC channel.
