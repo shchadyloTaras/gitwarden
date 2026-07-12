@@ -109,6 +109,13 @@ function startStatPolling(dir: string, onChange: () => void): Closeable {
 function watchRefsDir(refsDir: string, onChange: () => void): Closeable {
   try {
     const watcher = fs.watch(refsDir, { recursive: true }, () => onChange())
+    // The watched directory can disappear out from under an active watch — the
+    // user deletes/moves the repo, or (in tests) cleanup removes a fixture while
+    // still watching it. Windows in particular then emits 'error' (EPERM) on the
+    // watcher; EventEmitter throws an unhandled 'error' with no listener, which
+    // would crash the whole process. The watch is stale either way — swallow it,
+    // matching the setup-time catch above.
+    watcher.on('error', () => {})
     return { close: () => watcher.close() }
   } catch {
     return startStatPolling(refsDir, onChange)
@@ -142,6 +149,10 @@ function watchGitDirTopLevel(gitDir: string, onChange: (kind: RepoChangeKind) =>
           break
       }
     })
+    // See the matching comment in `watchRefsDir` — the watched directory can go
+    // away out from under an active watch; don't let an unhandled 'error' crash
+    // the process over a now-stale watch.
+    watcher.on('error', () => {})
     return { close: () => watcher.close() }
   } catch {
     return { close: () => {} }

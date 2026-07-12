@@ -41,7 +41,7 @@ export class GitRunner {
 
   private execute(inv: GitInvocation): Promise<GitResult> {
     return new Promise<GitResult>((resolve, reject) => {
-      const child = spawn(this.gitPath, inv.args, {
+      const child = spawn(this.gitPath, this.buildArgs(inv.args), {
         cwd: inv.cwd,
         env: { ...this.buildEnv(inv.readOnly), ...inv.extraEnv },
         shell: false,
@@ -161,6 +161,21 @@ export class GitRunner {
     const runWrite = (inv: Omit<GitInvocation, 'cwd' | 'readOnly'>): Promise<GitResult> =>
       this.execute({ ...inv, cwd, readOnly: false })
     return this.enqueue(cwd, () => fn(runWrite))
+  }
+
+  /**
+   * `GIT_CONFIG_NOSYSTEM=1` (SECURITY.md #3) ignores the system-level gitconfig on every
+   * invocation — but on Windows, a stock Git for Windows install puts `core.autocrlf=true`
+   * in that SAME system file, so ignoring it silently flips autocrlf off from GitRunner's
+   * point of view while the user's own terminal (and anything else that reads system
+   * config) still has it on. A working tree checked out by one view and read by the other
+   * disagrees on which files are "clean" — confirmed to genuinely stash-and-conflict a
+   * truly-untouched file in `stashSwitchPop` on Windows CI. Restore just this one value,
+   * explicitly, via `-c` (the highest-precedence, per-invocation override) rather than
+   * re-enabling the untrusted system file wholesale.
+   */
+  private buildArgs(args: string[]): string[] {
+    return process.platform === 'win32' ? ['-c', 'core.autocrlf=true', ...args] : args
   }
 
   private buildEnv(readOnly: boolean): NodeJS.ProcessEnv {

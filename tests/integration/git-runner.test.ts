@@ -125,6 +125,37 @@ describe('GitRunner integration', () => {
     ).rejects.toThrow('cancelled')
   })
 
+  it('forces core.autocrlf=true on win32 so Windows checkouts stay consistent regardless of the missing system config (GIT_CONFIG_NOSYSTEM disables it)', async () => {
+    const originalPlatform = process.platform
+    Object.defineProperty(process, 'platform', { value: 'win32' })
+    try {
+      const result = await runner.run({
+        args: ['config', '--get', 'core.autocrlf'],
+        cwd: repoPath,
+        readOnly: true,
+      })
+      expect(result.stdout.toString().trim()).toBe('true')
+    } finally {
+      Object.defineProperty(process, 'platform', { value: originalPlatform })
+    }
+  })
+
+  it('leaves core.autocrlf untouched on non-Windows platforms', async () => {
+    const originalPlatform = process.platform
+    Object.defineProperty(process, 'platform', { value: 'darwin' })
+    try {
+      await expect(
+        runner.run({
+          args: ['config', '--get', 'core.autocrlf'],
+          cwd: repoPath,
+          readOnly: true,
+        })
+      ).rejects.toBeInstanceOf(GitError)
+    } finally {
+      Object.defineProperty(process, 'platform', { value: originalPlatform })
+    }
+  })
+
   it.skipIf(process.platform === 'win32')(
     'kills the child process when AbortSignal fires mid-run',
     async () => {

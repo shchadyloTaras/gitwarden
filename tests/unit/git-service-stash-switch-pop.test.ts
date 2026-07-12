@@ -95,7 +95,10 @@ describe('GitService.stashSwitchPop (Phase 93)', () => {
     expect(await git(repoPath, 'branch', '--show-current')).toBe('main')
     expect(await git(repoPath, 'stash', 'list')).toBe('')
     const content = await readFile(path.join(repoPath, 'shared.txt'), 'utf8')
-    expect(content).toBe('line1\nline2\nline3-EDITED\n')
+    // Normalize: restoring the stash goes through git's own write path, which is free
+    // to smudge line endings per core.autocrlf (e.g. forced true on Windows — see
+    // GitRunner.buildArgs) — a platform-correct difference, not a content mismatch.
+    expect(content.replace(/\r\n/g, '\n')).toBe('line1\nline2\nline3-EDITED\n')
   })
 
   it('if the restore pop itself fails, the error says the changes are safe in the stash (not silently swallowed)', async () => {

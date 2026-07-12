@@ -1,9 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mkdtemp, rm, writeFile, readFile, rename } from 'fs/promises'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import * as os from 'os'
 import * as path from 'path'
+import fs from 'node:fs'
 import {
   RepoWatcherService,
   type RepoWatchSender,
@@ -181,6 +182,32 @@ describe('RepoWatcherService (Phase 96, Phase 101)', () => {
     await new Promise((r) => setTimeout(r, 700))
 
     expect(events).toHaveLength(0)
+  })
+
+  it('does not crash when the .git directory watcher emits an OS-level error (e.g. Windows EPERM after the watched directory disappears)', async () => {
+    const watchers: fs.FSWatcher[] = []
+    const realWatch = fs.watch.bind(fs)
+    const spy = vi.spyOn(fs, 'watch').mockImplementation((...args: unknown[]) => {
+      // Forwarding to the real, overloaded fs.watch(); the mock only observes the watcher.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const watcher = (realWatch as (...a: any[]) => fs.FSWatcher)(...args)
+      watchers.push(watcher)
+      return watcher
+    })
+
+    try {
+      service.watch(repoPath, sender)
+      await waitUntil(() => watchers.length >= 2) // the .git dir watch + the refs dir watch
+
+      for (const watcher of watchers) {
+        const err = Object.assign(new Error('EPERM: operation not permitted, watch'), {
+          code: 'EPERM',
+        })
+        expect(() => watcher.emit('error', err)).not.toThrow()
+      }
+    } finally {
+      spy.mockRestore()
+    }
   })
 
   it('watching a different repo closes the previous watch — no leak, no cross-repo events', async () => {
