@@ -44,10 +44,26 @@ export class ErrorMapper {
       }
     }
 
+    // No credentials at all for this HTTPS remote (`GIT_CONFIG_NOSYSTEM=1` hides the
+    // system keychain helper by design — GitRunner.ts — so a remote with no stored
+    // GitWarden token surfaces this instead of a rejected/expired one). Checked
+    // BEFORE authenticationFailed and deliberately distinct from it: this is "there
+    // is nothing to reject," not "what was tried didn't work."
+    if (/could not read Username/i.test(stderr)) {
+      return {
+        code: 'noCredentialsAvailable',
+        userMessage:
+          'GitWarden has no saved login for this HTTPS remote — connect GitHub for this profile to push with its token.',
+        technicalDetails: stderr,
+        exitCode,
+      }
+    }
+
     // SSH key rejection OR HTTPS token/scope rejection (401 / generic 403 / bad
-    // credentials). A named wrong-account denial is handled above.
+    // credentials). A named wrong-account denial is handled above; no-credentials
+    // (no stored token at all) is handled above too — this is a REJECTED credential.
     if (
-      /authentication failed|could not authenticate|permission denied \(publickey\)|could not read Username|Invalid username or password|\b401\b|The requested URL returned error: 403|\berror: 403\b|Write access to repository not granted/i.test(
+      /authentication failed|could not authenticate|permission denied \(publickey\)|Invalid username or password|\b401\b|The requested URL returned error: 403|\berror: 403\b|Write access to repository not granted/i.test(
         stderr
       )
     ) {
@@ -68,6 +84,20 @@ export class ErrorMapper {
         code: 'dubiousOwnership',
         userMessage:
           "Git refused to use this repository because its folder looks like it moved or is owned by another user ('dubious ownership'). Re-point or re-add the repository in GitWarden — your global Git config is left untouched.",
+        technicalDetails: stderr,
+        exitCode,
+      }
+    }
+
+    // A dirty-tree checkout/switch/merge refusal — previously fell all the way through
+    // to the generic "unexpected Git error" (no pattern matched "local changes" at
+    // all). The switch-failure banner already offers "Bring changes & switch" beside
+    // whatever message renders here, so this only needs to name the real cause.
+    if (/Your local changes to the following files would be overwritten by/i.test(stderr)) {
+      return {
+        code: 'localChangesWouldBeOverwritten',
+        userMessage:
+          'Your local changes would be overwritten by this operation. Commit or stash them first, or use "Bring changes & switch" to carry them along.',
         technicalDetails: stderr,
         exitCode,
       }

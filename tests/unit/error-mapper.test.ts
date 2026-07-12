@@ -157,12 +157,18 @@ describe('ErrorMapper', () => {
     expect(err.code).toBe('authenticationFailed')
   })
 
-  it('maps HTTPS "could not read Username" (no credentials) to authenticationFailed', () => {
+  it('maps HTTPS "could not read Username" (no credentials at all) to noCredentialsAvailable, NOT authenticationFailed (Phase 103)', () => {
+    // GIT_CONFIG_NOSYSTEM=1 hides the system keychain helper by design (GitRunner.ts) —
+    // this is "there is nothing to reject," a distinct, honest case from a rejected/
+    // expired token. Previously lumped into authenticationFailed, whose copy falsely
+    // blamed an expired/revoked token when there was simply no credential to try.
     const err = ErrorMapper.map(
       "fatal: could not read Username for 'https://github.com': terminal prompts disabled",
       128
     )
-    expect(err.code).toBe('authenticationFailed')
+    expect(err.code).toBe('noCredentialsAvailable')
+    expect(err.userMessage).toContain('no saved login')
+    expect(err.userMessage).not.toContain('expired')
   })
 
   it('still maps SSH "permission denied (publickey)" to authenticationFailed', () => {
@@ -177,6 +183,29 @@ describe('ErrorMapper', () => {
     )
     expect(err.code).toBe('dubiousOwnership')
     expect(err.userMessage).toMatch(/moved|re-point|re-add/i)
+  })
+
+  it('maps a dirty-tree checkout refusal to localChangesWouldBeOverwritten, not the generic unknown error (Phase 103)', () => {
+    const err = ErrorMapper.map(
+      'error: Your local changes to the following files would be overwritten by checkout:\n\tsrc/index.ts\nPlease commit your changes or stash them before you switch branches.\nAborting',
+      1
+    )
+    expect(err.code).toBe('localChangesWouldBeOverwritten')
+    expect(err.userMessage).toMatch(/local changes|commit or stash|bring changes/i)
+  })
+
+  it('maps the same dirty-tree refusal for switch and merge (real git wording varies the verb)', () => {
+    const switchErr = ErrorMapper.map(
+      'error: Your local changes to the following files would be overwritten by switch:\n\ta.txt\nAborting',
+      1
+    )
+    expect(switchErr.code).toBe('localChangesWouldBeOverwritten')
+
+    const mergeErr = ErrorMapper.map(
+      'error: Your local changes to the following files would be overwritten by merge:\n\tb.txt\nAborting',
+      1
+    )
+    expect(mergeErr.code).toBe('localChangesWouldBeOverwritten')
   })
 
   it('maps non-fast-forward push rejection (fetch first)', () => {
@@ -264,6 +293,28 @@ describe('toIpcFailure (structured IPC envelope)', () => {
     const failure = toIpcFailure(ErrorMapper.map('fatal: Authentication failed', 128))
     expect(failure.code).toBe('authenticationFailed')
     expect(failure.remediation).toEqual({ action: 'reconnect-github', kind: 'executable' })
+  })
+
+  it('maps noCredentialsAvailable to the same reconnect-github remediation (Phase 103)', () => {
+    const failure = toIpcFailure(
+      ErrorMapper.map(
+        "fatal: could not read Username for 'https://github.com': terminal prompts disabled",
+        128
+      )
+    )
+    expect(failure.code).toBe('noCredentialsAvailable')
+    expect(failure.remediation).toEqual({ action: 'reconnect-github', kind: 'executable' })
+  })
+
+  it('attaches code but NO remediation for localChangesWouldBeOverwritten — explain-only, the existing "Bring changes & switch" button is not the generic remediation model (Phase 103)', () => {
+    const failure = toIpcFailure(
+      ErrorMapper.map(
+        'error: Your local changes to the following files would be overwritten by checkout:\n\ta.txt\nAborting',
+        1
+      )
+    )
+    expect(failure.code).toBe('localChangesWouldBeOverwritten')
+    expect(failure.remediation).toBeUndefined()
   })
 
   it('attaches code but NO remediation for a non-remediable GitError', () => {

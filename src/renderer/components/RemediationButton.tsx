@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import type {
   Remediation,
   RemediationResult,
@@ -59,6 +59,10 @@ const HINT: React.CSSProperties = {
   color: 'var(--gw-text-dim, #52525b)',
 }
 
+/** How long "Authorized as @…" stays up before onSuccess fires (Phase 103) — long
+ * enough for a human to actually read it, short enough not to feel stuck. */
+const AUTHORIZED_DISPLAY_MS = 1500
+
 /**
  * Data-driven remediation affordance (Phase 67). Given a `Remediation` from the core
  * model, it renders EITHER a one-click fix button (`kind: 'executable'` → the
@@ -82,6 +86,58 @@ export default function RemediationButton({
   const reloadProfiles = useProfilesStore((s) => s.load)
   const [pending, setPending] = useState(false)
   const [deviceCode, setDeviceCode] = useState<GitHubDeviceCode | null>(null)
+  /** Set once the REAL 'authorized' event lands (Phase 103) — distinct from `deviceCode`
+   * merely being issued, which is not success yet. */
+  const [authorizedLogin, setAuthorizedLogin] = useState<string | null>(null)
+
+  // Keep the latest callbacks without re-subscribing the auth-event listener below —
+  // same pattern ConnectGitHubModal.tsx already uses for the identical problem: the
+  // wait for the user to actually authorize can be arbitrarily long (real-world, not
+  // just the 1.5s display delay), so a parent re-render mid-wait must not leave this
+  // effect calling a stale onSuccess/onFailure/reloadProfiles closure.
+  const onSuccessRef = useRef(onSuccess)
+  onSuccessRef.current = onSuccess
+  const onFailureRef = useRef(onFailure)
+  onFailureRef.current = onFailure
+  const reloadProfilesRef = useRef(reloadProfiles)
+  reloadProfilesRef.current = reloadProfiles
+
+  // Phase 103: while this reconnect's device code is showing, wait for the REAL
+  // 'authorized' event (or a terminal failure) — never assume success just because a
+  // code was issued. Only the profile this remediation targets is watched. Declared
+  // before the navigate/executable branch below (rules-of-hooks — every hook must run
+  // on every render); reads `remediation.action` directly since the narrowed
+  // `ExecutableAction` isn't computed until after that branch.
+  useEffect(() => {
+    if (remediation.action !== 'reconnect-github' || !deviceCode || !assignedProfileId) return
+    let authorizedTimer: ReturnType<typeof setTimeout> | undefined
+    const unsubscribe = window.api.github.onAuthEvent((event) => {
+      if (event.profileId !== assignedProfileId) return
+      if (event.status === 'authorized') {
+        if (event.identity) setAuthorizedLogin(event.identity.login)
+        // Let the user actually SEE "Authorized as @…" before onSuccess can trigger a
+        // caller's reload/dismiss (e.g. clearMessages() on the recovery banner, which
+        // removes this button from the tree entirely) — otherwise the confirmation
+        // never gets a chance to paint. This is the actual fix: the code+confirmation
+        // must be readable, not just technically rendered for zero perceivable time.
+        authorizedTimer = setTimeout(() => {
+          void reloadProfilesRef.current().then(() => onSuccessRef.current?.({ ok: true }))
+        }, AUTHORIZED_DISPLAY_MS)
+      } else if (
+        event.status === 'denied' ||
+        event.status === 'expired' ||
+        event.status === 'error'
+      ) {
+        setDeviceCode(null)
+        onFailureRef.current?.({ message: STR.RECONNECT_INTERRUPTED_MESSAGE })
+      }
+    })
+    return () => {
+      if (authorizedTimer) clearTimeout(authorizedTimer)
+      unsubscribe()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- onSuccess/onFailure/reloadProfiles are re-subscribed only when the flow itself restarts (remediation.action/deviceCode/assignedProfileId), not on every parent re-render
+  }, [remediation.action, deviceCode, assignedProfileId])
 
   // ── navigate: open the right screen ──────────────────────────────────────────
   if (remediation.kind === 'navigate') {
@@ -153,6 +209,7 @@ export default function RemediationButton({
     if (pending || missingTarget || !repoPath) return
     setPending(true)
     setDeviceCode(null)
+    setAuthorizedLogin(null)
     try {
       const res = await window.api.remediation.execute({
         action,
@@ -171,7 +228,14 @@ export default function RemediationButton({
         return
       }
       const result = res.data
-      if (result.deviceCode) setDeviceCode(result.deviceCode)
+      if (result.deviceCode) {
+        // Phase 103: getting a device code is NOT success yet — the user still has to
+        // enter it on GitHub. Show it and WAIT for the real 'authorized' event (below)
+        // before calling onSuccess, so a caller's reload/dismiss can never unmount this
+        // hint before the user has had a chance to use the code.
+        setDeviceCode(result.deviceCode)
+        return
+      }
       if (result.ok) {
         onSuccess?.(result)
       } else {
@@ -203,9 +267,17 @@ export default function RemediationButton({
       {remediation.action === 'merge-remote-into-local' && (
         <div style={HINT}>{STR.REMEDIATION_MERGE_LOCAL_ONLY_HINT}</div>
       )}
-      {deviceCode && (
+      {deviceCode && !authorizedLogin && (
         <div data-testid="remediation-device-code" style={HINT}>
           {STR.REMEDIATION_DEVICE_CODE(deviceCode.userCode, deviceCode.verificationUri)}
+        </div>
+      )}
+      {authorizedLogin && (
+        <div
+          data-testid="remediation-device-code-authorized"
+          style={{ ...HINT, color: 'var(--gw-success, #4ade80)' }}
+        >
+          {STR.REMEDIATION_AUTHORIZED_AS(authorizedLogin)}
         </div>
       )}
     </div>

@@ -18,6 +18,8 @@ export const FAILURE_CATEGORY_BY_CODE: Record<GitErrorCode, string> = {
   nothingToCommit: 'commit',
   networkError: 'network',
   gitNotFound: 'toolchain',
+  noCredentialsAvailable: 'authentication',
+  localChangesWouldBeOverwritten: 'branch',
   unknown: 'unknown',
 }
 
@@ -38,6 +40,8 @@ export const FAILURE_ACTION_BY_CODE: Record<GitErrorCode, FailureSuggestedAction
   nothingToCommit: 'stage-changes',
   networkError: 'check-network',
   gitNotFound: 'open-settings',
+  noCredentialsAvailable: 'review-auth',
+  localChangesWouldBeOverwritten: 'none',
   unknown: 'none',
 }
 
@@ -79,6 +83,10 @@ export function actionHintForFailure(code: GitErrorCode): string {
       return 'Check your network connection and try again.'
     case 'gitNotFound':
       return 'Set a valid Git executable path in Settings.'
+    case 'noCredentialsAvailable':
+      return 'Connect GitHub for this profile so GitWarden has a token to push with.'
+    case 'localChangesWouldBeOverwritten':
+      return 'Commit or stash your local changes first, or use "Bring changes & switch" to carry them along.'
     default:
       return 'Review the technical details and retry after fixing the underlying issue.'
   }

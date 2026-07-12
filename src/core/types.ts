@@ -250,6 +250,11 @@ export type GitErrorCode =
   | 'gitNotFound'
   | 'rejectedNonFastForward'
   | 'divergentBranches'
+  // QA Fixes (Phase 103): an HTTPS remote with no stored credentials at all (distinct
+  // from authenticationFailed's "a credential was rejected") and a dirty-tree
+  // checkout/switch/merge refusal (previously fell through to 'unknown').
+  | 'noCredentialsAvailable'
+  | 'localChangesWouldBeOverwritten'
   | 'unknown'
 
 export interface GitCommandError {

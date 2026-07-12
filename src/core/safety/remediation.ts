@@ -25,6 +25,9 @@ export type RemediableGitErrorCode =
   | 'dubiousOwnership' // repo dir moved/renamed → explain-only (no global safe.directory)
   | 'divergentBranches' // local + remote each have a unique commit → offer a local merge
   | 'mergeConflict' // a merge hit a real content conflict → navigate to Status to finish it
+  // QA Fixes (Phase 103): no HTTPS credentials stored at all → same fix as a rejected
+  // token (connect/reconnect GitHub for this profile).
+  | 'noCredentialsAvailable'
 
 /** How the UI offers the fix: a one-click in-app action, or a navigation. */
 export type RemediationKind = 'executable' | 'navigate'
@@ -127,6 +130,7 @@ const GIT_ERROR_ACTION: Record<RemediableGitErrorCode, SafetySuggestedAction> = 
   dubiousOwnership: 'assign-repo-profile',
   divergentBranches: 'merge-remote-into-local',
   mergeConflict: 'resolve-conflicts',
+  noCredentialsAvailable: 'reconnect-github',
 }
 
 export function remediationForGitError(code: RemediableGitErrorCode): Remediation {

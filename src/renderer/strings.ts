@@ -585,6 +585,11 @@ export const STR = {
   } as Record<string, string>,
   REMEDIATION_DEVICE_CODE: (code: string, url: string): string =>
     `Enter code ${code} at ${url} to reconnect.`,
+  // Phase 103: the reconnect flow's real completion — distinct from the code merely
+  // being issued, which is not success yet.
+  REMEDIATION_AUTHORIZED_AS: (login: string): string => `✓ Authorized as @${login}.`,
+  RECONNECT_INTERRUPTED_MESSAGE:
+    'The GitHub reconnect was not completed — the code expired, was denied, or hit an error. Try again.',
   // Failed-push recovery banner.
   RECOVERY_BANNER_TITLE: 'This push needs attention',
   RECOVERY_RECONNECT_ASSIGNED_GITHUB: (profile: string): string =>

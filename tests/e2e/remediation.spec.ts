@@ -362,6 +362,16 @@ test.describe('Guard Quick-Fix — one-click fixes & recovery banner', () => {
     await expect(reconnect).toContainText('Reconnect GitHub')
     await reconnect.click()
     await expect(win.getByTestId('remediation-device-code')).toContainText('WDJB-MJHT')
+
+    // Phase 103: the code must stay readable through the whole wait — the fake GitHub
+    // service auto-authorizes after ~1s, exactly the window the OLD code could dismiss
+    // this hint in (onSuccess fired the instant the device code was issued, not when
+    // authorization actually completed). It must still be showing right before that,
+    // and only THEN transition to "Authorized as @octocat".
+    await expect(win.getByTestId('remediation-device-code')).toBeVisible()
+    await expect(win.getByTestId('remediation-device-code-authorized')).toContainText('octocat', {
+      timeout: 10000,
+    })
   })
 
   test('navigate-only issue (unassigned repo): Commit shows a "Go to Repositories" link, not a fix button', async () => {
