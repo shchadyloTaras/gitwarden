@@ -14,6 +14,7 @@ import type {
   GitHubAuthStatus,
   GitHubAuthErrorCode,
   GitErrorCode,
+  StagedDiff,
 } from '../../core/types.js'
 import type {
   Remediation,
@@ -148,6 +149,7 @@ interface ElectronAPI {
     stageAll(repoPath: string): Promise<IpcResult<void>>
     unstageAll(repoPath: string): Promise<IpcResult<void>>
     getDiff(repoPath: string, filePath: string, staged: boolean): Promise<IpcResult<string>>
+    getStagedDiffs(repoPath: string): Promise<IpcResult<StagedDiff[]>>
     commit(repoPath: string, message: string): Promise<IpcResult<{ hash: string }>>
     setLocalIdentity(repoPath: string, name: string, email: string): Promise<IpcResult<void>>
     initializeRepository(params: {

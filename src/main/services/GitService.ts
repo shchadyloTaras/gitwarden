@@ -8,6 +8,7 @@ import type {
   GitBranch,
   GitCommit,
   StashSwitchResult,
+  StagedDiff,
 } from '../../core/types.js'
 import { parsePorcelainV2 } from '../../core/parsers/PorcelainParser.js'
 import type { UncommitContext } from '../../core/history/uncommit.js'
@@ -742,6 +743,25 @@ export class GitService {
     args.push('--', filePath)
     const result = await this.readOnly({ args, cwd: repoPath })
     return result.stdout.toString('utf8')
+  }
+
+  /** Staged files' unified diffs, for the commit-gate secret scan (Phase 99). */
+  async getStagedDiffs(repoPath: string): Promise<StagedDiff[]> {
+    const status = await this.getStatus(repoPath)
+    const stagedPaths = status.files
+      .filter(
+        (f) =>
+          f.indexStatus !== 'unmodified' &&
+          f.indexStatus !== 'untracked' &&
+          f.indexStatus !== 'ignored' &&
+          f.indexStatus !== 'conflicted'
+      )
+      .map((f) => f.path)
+    const diffs: StagedDiff[] = []
+    for (const filePath of stagedPaths) {
+      diffs.push({ path: filePath, diff: await this.getDiff(repoPath, filePath, true) })
+    }
+    return diffs
   }
 
   async getEffectiveIdentity(repoPath: string): Promise<EffectiveGitIdentity> {

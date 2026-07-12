@@ -115,7 +115,7 @@ function scanFilePath(path: string, stagedPaths: Set<string>): AiReviewFinding[]
 }
 
 /** Lines newly added in a unified diff (excludes `+++` file headers). */
-function extractAddedDiffLines(diff: string): string {
+export function extractAddedDiffLines(diff: string): string {
   const added: string[] = []
   for (const line of diff.split('\n')) {
     if (line.startsWith('+++')) continue

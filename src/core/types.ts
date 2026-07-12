@@ -132,6 +132,12 @@ export interface FileChange {
   worktreeStatus: ChangeKind
 }
 
+/** One staged file's unified diff, for the commit-gate secret scan (Phase 99). */
+export interface StagedDiff {
+  path: string
+  diff: string
+}
+
 export interface GitStatus {
   files: FileChange[]
   branch?: string

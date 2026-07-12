@@ -395,6 +395,72 @@ describe('checkCommit', () => {
     expect(codes(result.issues)).toContain('EMPTY_MESSAGE')
     expect(codes(result.issues)).toContain('HAS_CONFLICTS')
   })
+
+  // ── Phase 99: staged-secret gate ────────────────────────────────────────────
+
+  const GITHUB_PAT = 'ghp_0123456789abcdefghijklmnopqrstuvwxyz'
+  const AWS_KEY_ID = 'AKIAIOSFODNN7EXAMPLE'
+
+  it('blocks on a planted GitHub PAT in a staged diff, naming the offending file', () => {
+    const result = safetyCheckService.checkCommit({
+      ...goodInput,
+      stagedDiffs: [{ path: 'config.env', diff: `+API_TOKEN=${GITHUB_PAT}\n` }],
+    })
+    expect(result.canCommit).toBe(false)
+    expect(blockers(result.issues)).toContain('STAGED_SECRET_DETECTED')
+    const issue = result.issues.find((i) => i.code === 'STAGED_SECRET_DETECTED')
+    expect(issue?.message).toContain('config.env')
+  })
+
+  it('blocks on a planted AWS access key pair in a staged diff', () => {
+    const result = safetyCheckService.checkCommit({
+      ...goodInput,
+      stagedDiffs: [{ path: 'infra/creds.txt', diff: `+AWS_ACCESS_KEY_ID=${AWS_KEY_ID}\n` }],
+    })
+    expect(result.canCommit).toBe(false)
+    expect(blockers(result.issues)).toContain('STAGED_SECRET_DETECTED')
+  })
+
+  it('emits one STAGED_SECRET_DETECTED issue per offending file', () => {
+    const result = safetyCheckService.checkCommit({
+      ...goodInput,
+      stagedDiffs: [
+        { path: 'a.env', diff: `+TOKEN=${GITHUB_PAT}\n` },
+        { path: 'b.env', diff: `+KEY=${AWS_KEY_ID}\n` },
+      ],
+    })
+    const secretIssues = result.issues.filter((i) => i.code === 'STAGED_SECRET_DETECTED')
+    expect(secretIssues).toHaveLength(2)
+    expect(secretIssues.map((i) => i.message).join(' ')).toContain('a.env')
+    expect(secretIssues.map((i) => i.message).join(' ')).toContain('b.env')
+  })
+
+  it('does not flag a clean staged diff', () => {
+    const result = safetyCheckService.checkCommit({
+      ...goodInput,
+      stagedDiffs: [{ path: 'src/index.ts', diff: '+export const x = 1\n' }],
+    })
+    expect(codes(result.issues)).not.toContain('STAGED_SECRET_DETECTED')
+    expect(result.canCommit).toBe(true)
+  })
+
+  it('does not flag a secret that only appears in a REMOVED diff line', () => {
+    const result = safetyCheckService.checkCommit({
+      ...goodInput,
+      stagedDiffs: [{ path: 'config.env', diff: `-API_TOKEN=${GITHUB_PAT}\n+// token removed\n` }],
+    })
+    expect(codes(result.issues)).not.toContain('STAGED_SECRET_DETECTED')
+  })
+
+  it('omitting stagedDiffs entirely skips the scan (backward compatible)', () => {
+    const result = safetyCheckService.checkCommit(goodInput)
+    expect(codes(result.issues)).not.toContain('STAGED_SECRET_DETECTED')
+  })
+
+  it('an empty stagedDiffs array skips the scan', () => {
+    const result = safetyCheckService.checkCommit({ ...goodInput, stagedDiffs: [] })
+    expect(codes(result.issues)).not.toContain('STAGED_SECRET_DETECTED')
+  })
 })
 
 // ── checkPush ────────────────────────────────────────────────────────────────

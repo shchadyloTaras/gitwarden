@@ -6,11 +6,14 @@ import type {
   GitRemote,
   SafetyIssue,
   SafetyCheckResult,
+  StagedDiff,
 } from '../types.js'
-import { SAFETY_MESSAGES, SAFETY_SEVERITY } from './safetyMessages.js'
+import { SAFETY_MESSAGES, SAFETY_SEVERITY, stagedSecretMessage } from './safetyMessages.js'
 import { matchesAnyPattern } from './branchPatterns.js'
 import { parseRemoteOwnerRepo } from '../github/remoteOwner.js'
 import { resolvePushTarget } from './pushTarget.js'
+import { extractAddedDiffLines } from '../ai/changeReview.js'
+import { findSecretMatches } from '../ai/redaction.js'
 
 // ── Issue catalogue ──────────────────────────────────────────────────────────
 
@@ -214,6 +217,8 @@ export interface SafetyCheckService {
     identity: EffectiveGitIdentity
     status: GitStatus
     commitMessage: string
+    /** Staged files' unified diffs, for the deterministic secret scan (Phase 99). Optional — omit to skip the scan. */
+    stagedDiffs?: StagedDiff[]
   }): SafetyCheckResult
 
   checkPush(input: {
@@ -242,6 +247,28 @@ function hasConflicts(status: GitStatus): boolean {
   return status.files.some((f) => f.indexStatus === 'conflicted')
 }
 
+/**
+ * Deterministic staged-secret scan for the commit gate (Phase 99). Reuses the same
+ * added-lines extraction + ruleset the AI /review scanner uses (changeReview.ts,
+ * redaction.ts) — one ruleset, no parallel pattern table (AGENTS.md #5: the issue
+ * names the file only, never the matched content).
+ */
+function collectStagedSecretIssues(stagedDiffs?: StagedDiff[]): SafetyIssue[] {
+  if (!stagedDiffs || stagedDiffs.length === 0) return []
+  const issues: SafetyIssue[] = []
+  for (const { path, diff } of stagedDiffs) {
+    const added = extractAddedDiffLines(diff)
+    if (added.trim() && findSecretMatches(added).length > 0) {
+      issues.push({
+        code: 'STAGED_SECRET_DETECTED',
+        message: stagedSecretMessage(path),
+        severity: SAFETY_SEVERITY.STAGED_SECRET_DETECTED,
+      })
+    }
+  }
+  return issues
+}
+
 class SafetyCheckServiceImpl implements SafetyCheckService {
   checkRepositoryIdentity(input: {
     repository: RepositoryRecord
@@ -259,12 +286,14 @@ class SafetyCheckServiceImpl implements SafetyCheckService {
     identity: EffectiveGitIdentity
     status: GitStatus
     commitMessage: string
+    stagedDiffs?: StagedDiff[]
   }): SafetyCheckResult {
     const issues = collectIdentityIssues(input)
 
     if (!hasStagedChanges(input.status)) issues.push(makeIssue('NOTHING_STAGED'))
     if (!input.commitMessage.trim()) issues.push(makeIssue('EMPTY_MESSAGE'))
     if (hasConflicts(input.status)) issues.push(makeIssue('HAS_CONFLICTS'))
+    issues.push(...collectStagedSecretIssues(input.stagedDiffs))
 
     return { canCommit: !hasBlocker(issues), canPush: true, issues }
   }

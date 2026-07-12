@@ -17,6 +17,7 @@ export default function CommitScreen(): React.ReactElement {
     message,
     status,
     identity,
+    stagedDiffs,
     loading,
     commitLoading,
     draftLoading,
@@ -67,8 +68,9 @@ export default function CommitScreen(): React.ReactElement {
       identity,
       status,
       commitMessage: message,
+      stagedDiffs,
     })
-  }, [status, identity, repository, activeProfile, message])
+  }, [status, identity, repository, activeProfile, message, stagedDiffs])
 
   const blockers = safetyResult?.issues.filter((i) => i.severity === 'blocker') ?? []
   const warnings = safetyResult?.issues.filter((i) => i.severity === 'warning') ?? []

@@ -322,6 +322,13 @@ export function registerIpcHandlers(services: Services): void {
     })
   )
 
+  ipcMain.handle('git:getStagedDiffs', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath } = GitRepoPathPayload.parse(raw)
+      return services.git.getStagedDiffs(repoPath)
+    })
+  )
+
   ipcMain.handle('git:commit', (_e, raw: unknown) =>
     wrap(async () => {
       const { repoPath, message } = GitCommitPayload.parse(raw)
