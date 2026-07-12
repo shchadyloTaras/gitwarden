@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { mkdtemp, rm, writeFile } from 'fs/promises'
+import { mkdtemp, rm, writeFile, readFile, rename } from 'fs/promises'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import * as os from 'os'
@@ -30,7 +30,7 @@ async function waitUntil(
 
 interface RecordedEvent {
   repoPath: string
-  kind: 'head' | 'refs' | 'index'
+  kind: 'head' | 'refs' | 'index' | 'config'
 }
 
 function recordingSender(events: RecordedEvent[]): RepoWatchSender {
@@ -40,11 +40,12 @@ function recordingSender(events: RecordedEvent[]): RepoWatchSender {
   }
 }
 
-// Phase 96 (W4 full): RepoWatcherService watches ONLY the active repo's .git/HEAD,
-// .git/refs, and .git/index, debounces (~400ms), and classifies which target
-// changed. Offline (real fixture repos, no network) — external git operations via
-// child_process prove the watch actually fires, with the right kind.
-describe('RepoWatcherService (Phase 96)', () => {
+// Phase 96 (W4 full), rename-proofed Phase 101: RepoWatcherService watches ONLY the
+// active repo's .git directory (HEAD/index/config, via one non-recursive directory
+// watch — Phase 101) and .git/refs (recursive), debounces (~400ms), and classifies
+// which target changed. Offline (real fixture repos, no network) — external git
+// operations via child_process prove the watch actually fires, with the right kind.
+describe('RepoWatcherService (Phase 96, Phase 101)', () => {
   let tmpDir: string
   let repoPath: string
   let service: RepoWatcherService
@@ -78,6 +79,58 @@ describe('RepoWatcherService (Phase 96)', () => {
 
     await waitUntil(() => events.some((e) => e.kind === 'head'))
     expect(events.some((e) => e.repoPath === repoPath && e.kind === 'head')).toBe(true)
+  })
+
+  // ── Phase 101: rename-proof directory watch ─────────────────────────────────
+
+  it('three atomic rename-rewrites of HEAD produce THREE events — the old per-file watch produced only one', async () => {
+    service.watch(repoPath, sender)
+    const headPath = path.join(repoPath, '.git', 'HEAD')
+    const original = await readFile(headPath, 'utf8')
+
+    // Mirrors git's own HEAD-update mechanism: write the new content to a lock
+    // file, then rename it over HEAD. A per-file fs.watch follows the ORIGINAL
+    // inode and dies after the first such rename; a directory watch tracks the
+    // entry by name and survives every one.
+    for (let i = 0; i < 3; i++) {
+      const lockPath = `${headPath}.lock`
+      await writeFile(lockPath, original)
+      await rename(lockPath, headPath)
+      await waitUntil(() => events.filter((e) => e.kind === 'head').length === i + 1)
+      // Let the debounce window fully close so the next rename counts as a
+      // separate event instead of collapsing into the same window.
+      await new Promise((r) => setTimeout(r, 450))
+    }
+
+    expect(events.filter((e) => e.kind === 'head')).toHaveLength(3)
+  })
+
+  it('three real git switches between existing branches each fire head — not just the first', async () => {
+    await git(repoPath, 'branch', 'feature-a')
+    await git(repoPath, 'branch', 'feature-b')
+    service.watch(repoPath, sender)
+
+    await git(repoPath, 'switch', 'feature-a')
+    await waitUntil(() => events.filter((e) => e.kind === 'head').length >= 1)
+    await new Promise((r) => setTimeout(r, 450))
+
+    await git(repoPath, 'switch', 'feature-b')
+    await waitUntil(() => events.filter((e) => e.kind === 'head').length >= 2)
+    await new Promise((r) => setTimeout(r, 450))
+
+    await git(repoPath, 'switch', 'main')
+    await waitUntil(() => events.filter((e) => e.kind === 'head').length >= 3)
+
+    expect(events.filter((e) => e.kind === 'head').length).toBeGreaterThanOrEqual(3)
+  })
+
+  it('fires a config event when git config is edited externally', async () => {
+    service.watch(repoPath, sender)
+
+    await git(repoPath, 'config', 'user.email', 'new@example.com')
+
+    await waitUntil(() => events.some((e) => e.kind === 'config'))
+    expect(events.some((e) => e.repoPath === repoPath && e.kind === 'config')).toBe(true)
   })
 
   it('fires a refs event when a commit is made externally', async () => {

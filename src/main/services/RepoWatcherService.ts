@@ -1,7 +1,22 @@
-// `.git` watcher (Phase 96) — instant external-change detection for the ACTIVE repo
-// only. Watches three targets inside `.git`: `HEAD` (branch/detached-HEAD moves),
-// `refs` (branch/tag creation, deletion, fast-forward — recursive so nested
-// `refs/heads/feature/foo`-style names are covered), and `index` (stage/unstage).
+// `.git` watcher (Phase 96, rename-proofed Phase 101) — instant external-change
+// detection for the ACTIVE repo only. Watches: the `.git` DIRECTORY itself
+// (non-recursive, filtered by filename) for `HEAD` (branch/detached-HEAD moves),
+// `index` (stage/unstage), `config` (identity/remote edits), and `packed-refs`
+// (folded into the `refs` kind); plus `refs/` (recursive, so nested
+// `refs/heads/feature/foo`-style names are covered) for loose ref creation,
+// deletion, and fast-forward.
+//
+// Phase 96 originally watched `HEAD`/`index` via `fs.watch` on the FILES
+// themselves — but git rewrites both via `*.lock` + `rename()` (write the new
+// content to `HEAD.lock`, then rename it over `HEAD`), and a per-file `fs.watch`
+// follows the original inode: once that inode is replaced, the watch is silently
+// dead after its first event (masked in practice by the separate `refs/` watch
+// surviving for branch-creating switches). A DIRECTORY watch instead tracks
+// entries BY NAME, so a rename-in event is reported like any other change — it
+// cannot be killed by git's lock-then-rename pattern, and every subsequent
+// external change (the 2nd, 3rd, Nth `git switch`) is detected exactly like the
+// first.
+//
 // Node's `fs.watch(dir, {recursive:true})` is unsupported on Linux (throws
 // ERR_FEATURE_UNAVAILABLE_ON_PLATFORM) — `refs/` falls back to periodic
 // stat-polling there, since a non-recursive watch would silently miss nested
@@ -17,7 +32,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { RepoChangedEventPayload } from '../ipc/ipc-schemas.js'
 
-export type RepoChangeKind = 'head' | 'refs' | 'index'
+export type RepoChangeKind = 'head' | 'refs' | 'index' | 'config'
 
 export const REPO_CHANGED_CHANNEL = 'repo:changed'
 
@@ -100,11 +115,33 @@ function watchRefsDir(refsDir: string, onChange: () => void): Closeable {
   }
 }
 
-/** Watches a single file; a no-op Closeable if the target doesn't exist (e.g. a
- * brand-new repo's `.git/index` before the first `git add`). */
-function watchFileIfExists(filePath: string, onChange: () => void): Closeable {
+/**
+ * Non-recursive watch on the `.git` DIRECTORY itself, filtered by filename — rename-proof
+ * by construction (a directory watch reports rename-replaced entries by name, so git's
+ * `*.lock` + `rename()` pattern can no longer kill it after one event, unlike a per-file
+ * `fs.watch`). Tolerant of the directory briefly not existing (never true for `.git`
+ * itself in practice, but matches the defensive shape of the file-watch this replaces).
+ */
+function watchGitDirTopLevel(gitDir: string, onChange: (kind: RepoChangeKind) => void): Closeable {
   try {
-    const watcher = fs.watch(filePath, () => onChange())
+    const watcher = fs.watch(gitDir, (_eventType, filename) => {
+      switch (filename) {
+        case 'HEAD':
+          onChange('head')
+          break
+        case 'index':
+          onChange('index')
+          break
+        case 'config':
+          onChange('config')
+          break
+        case 'packed-refs':
+          onChange('refs')
+          break
+        default:
+          break
+      }
+    })
     return { close: () => watcher.close() }
   } catch {
     return { close: () => {} }
@@ -146,9 +183,8 @@ export class RepoWatcherService implements IRepoWatcherService {
     }
 
     state.watchers.push(
-      watchFileIfExists(path.join(gitDir, 'HEAD'), () => scheduleEmit('head')),
-      watchRefsDir(path.join(gitDir, 'refs'), () => scheduleEmit('refs')),
-      watchFileIfExists(path.join(gitDir, 'index'), () => scheduleEmit('index'))
+      watchGitDirTopLevel(gitDir, (kind) => scheduleEmit(kind)),
+      watchRefsDir(path.join(gitDir, 'refs'), () => scheduleEmit('refs'))
     )
   }
 

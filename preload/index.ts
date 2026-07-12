@@ -108,7 +108,7 @@ export interface GitHubPushStatus {
 /** `.git` change pushed from main over `repo:changed` (Phase 96). Mirrors RepoChangedEventPayload. */
 export interface RepoChangedEvent {
   repoPath: string
-  kind: 'head' | 'refs' | 'index'
+  kind: 'head' | 'refs' | 'index' | 'config'
 }
 
 const GITHUB_AUTH_EVENT_CHANNEL = 'github:authEvent'

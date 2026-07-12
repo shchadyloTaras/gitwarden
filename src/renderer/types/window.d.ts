@@ -102,7 +102,7 @@ interface GitHubAuthEvent {
 /** `.git` change pushed from main over `repo:changed`. Mirrors RepoChangedEventPayload. */
 interface RepoChangedEvent {
   repoPath: string
-  kind: 'head' | 'refs' | 'index'
+  kind: 'head' | 'refs' | 'index' | 'config'
 }
 
 /** Token-side facts for the push safety check — never includes the token itself. */

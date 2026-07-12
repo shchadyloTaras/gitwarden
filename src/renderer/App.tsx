@@ -367,11 +367,15 @@ export default function App(): React.ReactElement {
   // Subscribed once, independent of which repo is active — main only ever pushes
   // events for whatever repo the watch effect above most recently asked it to
   // watch, so there is no repo-identity check to make here. `head`/`refs` (HEAD or
-  // any ref moved) get the full refresh (branch list + guard + active screen);
-  // `index` (stage/unstage) only needs Status/Commit, which the 'index' scope
-  // already narrows to. Self-triggered churn (an in-app switch/commit also firing
-  // the watcher) is tolerated: Phase 89's request guard makes a redundant refresh
-  // harmless, and it always lands on fresh data regardless.
+  // any ref moved) and `config` (an external identity/remote edit — Phase 101) all
+  // get the full refresh (branch list + header guard + active screen) — a `config`
+  // change needs the header guard's identity re-check just as much as a branch
+  // move does, and there is no narrower path worth the added complexity (the
+  // request guard makes a redundant refresh harmless). `index` (stage/unstage)
+  // only needs Status/Commit, which the 'index' scope already narrows to.
+  // Self-triggered churn (an in-app switch/commit also firing the watcher) is
+  // tolerated: Phase 89's request guard makes a redundant refresh harmless, and it
+  // always lands on fresh data regardless.
   useEffect(() => {
     return window.api.repo.onChanged((event) => {
       void refreshActiveRepo(event.kind === 'index' ? 'index' : 'full')
