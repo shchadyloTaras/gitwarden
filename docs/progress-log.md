@@ -1528,3 +1528,7 @@ The v0.5.0 tag's Windows build failed `npm test`. Root-caused via a temporary di
 - Files: `src/main/git/GitRunner.ts`, `tests/integration/git-runner.test.ts`, `tests/unit/git-service-stash-switch-pop.test.ts`, `src/main/services/RepoWatcherService.ts`, `tests/unit/repo-watcher-service.test.ts`.
 - Verification: both fixes confirmed together on real Windows CI (117/117 files, 1061/1063 tests, 2 skipped, zero uncaught exceptions) before landing on `main`. Locally: Vitest 1063/1063 (117 files), both tsconfigs clean, lint clean.
 - Not yet released: v0.5.0 is already tagged and pushed without this fix. Awaiting a decision on whether to move the existing tag or cut v0.5.1.
+
+### 2026-07-13 — v0.5.1 released
+
+- Patch release carrying the two Windows-only fixes above (autocrlf mismatch + unhandled `fs.watch` errors). v0.5.0's Windows build stays broken as tagged; v0.5.1 supersedes it.

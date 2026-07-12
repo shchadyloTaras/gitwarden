@@ -8,6 +8,13 @@ order: 9
 
 ## Unreleased
 
+## 0.5.1 — 2026-07-12
+
+### Fixed
+
+- Windows: fixed a line-ending (CRLF) setting mismatch between GitWarden and your own Git installation that could make a clean branch look dirty and, in rare cases, cause an unexpected conflict when switching branches with local changes.
+- Windows: GitWarden could crash if a repository folder was deleted or moved while open in the app; it now handles this gracefully instead.
+
 ## 0.5.0 — 2026-07-12
 
 ### Added
