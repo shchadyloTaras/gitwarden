@@ -14,6 +14,8 @@ function avatarUrlFor(accountId: number): string {
 /** GitHub's per-app authorizations page, so the user can fully revoke access there. */
 const GITHUB_REVOKE_URL = `https://github.com/settings/connections/applications/${GITHUB_CLIENT_ID}`
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 type FormMode = 'idle' | 'create' | 'edit'
 
 interface FormData {
@@ -167,7 +169,11 @@ export default function ProfilesScreen(): React.ReactElement {
       !form.gitAuthorEmail.trim() ||
       !form.githubUsername.trim()
     ) {
-      setError('Display name, Git name, Git email, and GitHub username are required.')
+      setError(STR.PROFILE_FIELDS_REQUIRED)
+      return
+    }
+    if (!EMAIL_PATTERN.test(form.gitAuthorEmail.trim())) {
+      setError(STR.PROFILE_EMAIL_INVALID)
       return
     }
 
@@ -792,6 +798,7 @@ export default function ProfilesScreen(): React.ReactElement {
 
                 {error && (
                   <div
+                    data-testid="profile-form-error"
                     style={{ fontSize: 14, color: 'var(--gw-danger, #f87171)', padding: '6px 0' }}
                   >
                     {error}

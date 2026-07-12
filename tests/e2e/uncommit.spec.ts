@@ -104,6 +104,8 @@ test.describe('Uncommit to Working Changes', () => {
       await expect(win.getByTestId('history-commit-list')).toBeVisible({ timeout: 10_000 })
       await expect(win.getByTestId('history-unpushed-marker')).toHaveCount(1)
       await expect(win.getByTestId('history-return-last')).toBeVisible()
+      // Phase 105: the panel identifies itself instead of floating an unlabeled refusal.
+      await expect(win.getByTestId('history-return-panel')).toContainText('Undo a commit')
       // Only one unpushed commit — "return all" is not offered.
       await expect(win.getByTestId('history-return-all')).toHaveCount(0)
 

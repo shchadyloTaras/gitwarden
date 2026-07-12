@@ -200,6 +200,39 @@ export default function TooltipLayer(): React.ReactElement | null {
     setPlacement(place(tip.rect, { width: b.width, height: b.height }, tip.pref))
   }, [tip])
 
+  // Phase 105: a tooltip's rect is otherwise only ever captured once, at show time,
+  // so it can be left pointing at nothing if its anchor is removed from the DOM (a
+  // click re-renders it away) or moved (a reflow while the bubble is still open) —
+  // QA saw the Pull button's tooltip end up "stuck mid-screen" this way. In practice
+  // Chromium's own hit-test recompute already hides it for most such changes (a
+  // synthetic pointerover with nothing under the cursor, caught above), but that's
+  // incidental browser behavior, not a guarantee — poll explicitly while a tooltip
+  // is showing so this holds regardless: hide it if the anchor disconnects,
+  // otherwise refresh its captured rect so the bubble tracks the anchor's live
+  // position (re-triggers the placement effect above via the `tip` object changing).
+  useEffect(() => {
+    if (!tip) return
+    const id = window.setInterval(() => {
+      const el = targetRef.current
+      if (!el?.isConnected) {
+        targetRef.current = null
+        setTip(null)
+        setPlacement(null)
+        return
+      }
+      const rect = el.getBoundingClientRect()
+      setTip((current) => {
+        if (!current) return current
+        const r = current.rect
+        if (r.top === rect.top && r.left === rect.left && r.width === rect.width) {
+          return current
+        }
+        return { ...current, rect }
+      })
+    }, 200)
+    return () => window.clearInterval(id)
+  }, [tip])
+
   if (!tip) return null
 
   const style = (

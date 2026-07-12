@@ -65,6 +65,10 @@ export const STR = {
   PROFILE_CREATED: 'Profile created.',
   PROFILE_SAVED: 'Profile saved.',
   PROFILE_DISPLAYNAME_REQUIRED: 'Enter a display name to connect a GitHub account.',
+  PROFILE_FIELDS_REQUIRED: 'Display name, Git name, Git email, and GitHub username are required.',
+  // Phase 105: distinct from PROFILE_FIELDS_REQUIRED — a filled-in but malformed
+  // email used to fall through to the generic "required" message.
+  PROFILE_EMAIL_INVALID: 'Enter a valid email address.',
   PROFILE_CREATED_NOT_CONNECTED: 'Profile saved as a draft — GitHub not connected.',
 
   // ── Repositories screen ───────────────────────────────────────────────────
@@ -189,6 +193,9 @@ export const STR = {
 
   // ── History screen — return an unpushed commit to working changes (Phase 79) ──
   HISTORY_UNPUSHED_MARKER: 'Unpushed',
+  // Phase 105: QA saw the refusal text ("Merge commits can't be returned this way.")
+  // floating with no indication of what feature it belongs to — label the panel.
+  HISTORY_RETURN_PANEL_TITLE: 'Undo a commit (keeps your changes)',
   HISTORY_RETURN_LAST_LABEL: 'Return last commit',
   HISTORY_RETURN_ALL_LABEL: (count: number): string => `Return all ${count} unpushed commits`,
   HISTORY_RETURN_CONFIRM_PROMPT: 'Return this to your working changes?',
@@ -459,8 +466,10 @@ export const STR = {
     'Controls which branches are allowed, which are protected, and which remote this repo should push to.',
   PUSH_POLICY_ENABLE_LABEL: 'Enable push policy for this repository',
   PUSH_POLICY_MODE_LABEL: 'Mode',
-  PUSH_POLICY_MODE_UNRESTRICTED: 'Unrestricted (blocked patterns only)',
-  PUSH_POLICY_MODE_BRANCH_SCOPED: 'Branch scoped (allowed list required)',
+  // Phase 105: plain language, matching "Protected branch patterns" below (was
+  // "Unrestricted (blocked patterns only)" / "Branch scoped (allowed list required)").
+  PUSH_POLICY_MODE_UNRESTRICTED: 'All branches allowed (except protected ones)',
+  PUSH_POLICY_MODE_BRANCH_SCOPED: 'Only listed branches allowed',
   PUSH_POLICY_ALLOWED_LABEL: 'Allowed branch patterns',
   PUSH_POLICY_ALLOWED_HINT:
     'One pattern per line. * = one segment, ** = any depth. Required in Branch Scoped mode.',

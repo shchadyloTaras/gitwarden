@@ -5,6 +5,7 @@ import { useUpdatesStore } from '../store/updatesStore'
 import AiConnectionSettings from '../components/AiConnectionSettings'
 import type { AppearanceMode } from '../../core/types'
 import { STR } from '../strings'
+import { applyTheme } from '../theme'
 
 type SettingsTab = 'general' | 'git' | 'ai' | 'walkthrough'
 
@@ -225,7 +226,20 @@ export default function SettingsScreen(): React.ReactElement {
     setLocalAppearance(mode)
     setDirty(true)
     setSaved(false)
+    // Live preview (Phase 105): apply immediately, before Save — reverted on unmount
+    // below if the user navigates away without saving.
+    applyTheme(mode)
   }
+
+  // Revert an unsaved appearance preview when the user navigates away without
+  // clicking Save (Phase 105) — simplest design per the plan: no "are you sure",
+  // just fall back to whatever is actually persisted. A no-op if the user DID save
+  // (the store's appearance already matches what's on screen).
+  useEffect(() => {
+    return () => {
+      applyTheme(useSettingsStore.getState().appearance)
+    }
+  }, [])
 
   function handleGitPathChange(e: React.ChangeEvent<HTMLInputElement>): void {
     setLocalGitPath(e.target.value)

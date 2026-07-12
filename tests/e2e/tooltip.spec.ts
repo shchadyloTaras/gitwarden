@@ -96,4 +96,27 @@ test.describe('Universal data-tooltip', () => {
     await toggle.click()
     await expect(statusNav).toContainText('Status')
   })
+
+  test('a shown tooltip does not linger after its anchor is unmounted (Phase 105)', async () => {
+    // Screens unmount entirely on switch (App.tsx's MainContent), so navigating away
+    // removes the hovered "New Profile" button from the DOM. Switch via the Ctrl+N
+    // keyboard shortcut, not a click — a click anywhere already hides any shown
+    // tooltip via the pre-existing global pointerdown listener, which would pass
+    // regardless of whether the anchor-unmount fix exists. The keyboard shortcut is
+    // the one path that bypasses every pre-existing hide trigger. Profiles/Settings
+    // are used (not Repositories) since nav-repositories is disabled with no profile.
+    await win.getByTestId('nav-profiles').click()
+    const newBtn = win.getByTestId('profiles-new-btn')
+    await expect(newBtn).toBeVisible()
+
+    await newBtn.hover()
+    const bubble = win.getByTestId('tooltip-bubble')
+    await expect(bubble).toBeVisible()
+
+    await win.keyboard.press('Control+9') // profiles(1) … settings(9)
+    await expect(win.getByTestId('screen-settings')).toBeVisible()
+    await expect(newBtn).toHaveCount(0)
+
+    await expect(bubble).toHaveCount(0, { timeout: 1000 })
+  })
 })

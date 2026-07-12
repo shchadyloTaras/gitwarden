@@ -125,7 +125,7 @@ test.describe('Commit tab change review (removed)', () => {
     fs.rmSync(fixtureRepo, { recursive: true, force: true })
   })
 
-  test('staged secret-like content does not block commit', async () => {
+  test('staged secret-like content blocks commit (Phase 99 deterministic gate)', async () => {
     execSync('git config user.email "alice@example.com"', { cwd: fixtureRepo, stdio: 'pipe' })
     execSync('git config user.name "Alice Dev"', { cwd: fixtureRepo, stdio: 'pipe' })
 
@@ -134,13 +134,15 @@ test.describe('Commit tab change review (removed)', () => {
     await win.getByTestId('nav-commit').click()
     await expect(win.getByTestId('commit-staged-summary')).toBeVisible({ timeout: 10000 })
 
+    // Phase 99 wired the deterministic secret scanner into the commit gate itself —
+    // this is independent of (and predates needing) any AI connection.
     await expect(
       win.getByTestId('commit-blocker').filter({ hasText: 'secret-like content' })
-    ).toHaveCount(0)
+    ).toBeVisible()
     await expect(win.getByTestId('commit-review-advisories')).toHaveCount(0)
 
     await win.getByTestId('commit-message').fill('feat: add secrets')
-    await expect(win.getByTestId('commit-btn')).toBeEnabled()
+    await expect(win.getByTestId('commit-btn')).toBeDisabled()
   })
 
   test('Commit tab AI is limited to the commit message even with AI enabled', async () => {
@@ -152,9 +154,10 @@ test.describe('Commit tab change review (removed)', () => {
     await win.getByTestId('nav-commit').click()
     await expect(win.getByTestId('commit-staged-summary')).toBeVisible({ timeout: 10000 })
 
+    // Phase 99: the secret gate blocks regardless of AI being enabled.
     await expect(
       win.getByTestId('commit-blocker').filter({ hasText: 'secret-like content' })
-    ).toHaveCount(0)
+    ).toBeVisible()
     await expect(win.getByTestId('change-review-panel')).toHaveCount(0)
     await expect(win.getByTestId('change-review-ai-btn')).toHaveCount(0)
     await expect(win.getByTestId('ai-summarize-btn')).toHaveCount(0)

@@ -230,6 +230,17 @@ export default function HistoryScreen(): React.ReactElement {
                 borderRadius: 6,
               }}
             >
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                  color: 'var(--gw-text-faint, #71717a)',
+                }}
+              >
+                {STR.HISTORY_RETURN_PANEL_TITLE}
+              </div>
               {confirmAction ? (
                 <ReturnConfirm
                   action={confirmAction}

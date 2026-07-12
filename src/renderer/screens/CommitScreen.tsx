@@ -6,6 +6,7 @@ import { useAiStore } from '../store/aiStore'
 import { safetyCheckService, type SafetyCode } from '../../core/safety/SafetyCheckService'
 import { remediationForSafetyCode } from '../../core/safety/remediation'
 import RemediationButton from '../components/RemediationButton'
+import { FileStatusBadge } from '../components/FileStatusBadge'
 import { STR } from '../strings'
 
 export default function CommitScreen(): React.ReactElement {
@@ -143,9 +144,17 @@ export default function CommitScreen(): React.ReactElement {
                 stagedFiles.map((f) => (
                   <div
                     key={f.path}
-                    style={{ color: 'var(--gw-success, #4ade80)', padding: '2px 0' }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '2px 0',
+                    }}
                   >
-                    + {f.path}
+                    <FileStatusBadge kind={f.indexStatus} />
+                    <span style={{ color: 'var(--gw-text, #f4f4f5)' }}>
+                      {f.originalPath ? `${f.path} ← ${f.originalPath}` : f.path}
+                    </span>
                   </div>
                 ))
               )}

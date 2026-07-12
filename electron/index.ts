@@ -68,6 +68,7 @@ import {
 import { createGitHubAuthTestServices } from '../src/main/testing/githubAuthFakes.js'
 import { GitHubUpdateService, type IUpdateService } from '../src/main/services/UpdateService.js'
 import { createUpdateTestService } from '../src/main/testing/updateFakes.js'
+import { createLogger } from '../src/main/services/Logger.js'
 
 /** True when launched by the Playwright e2e harness — fakes + no real browser. */
 const IS_E2E_FAKE_GITHUB = process.env['GITWARDEN_E2E_FAKE_GITHUB'] === '1'
@@ -157,6 +158,10 @@ function resolveIconPath(): string | undefined {
 
 const BRAND_ICON = resolveIconPath()
 
+// Phase 105: the QA run saw one unexplained app exit and one renderer replacement
+// that left no trace. `crashed` is deprecated in favor of these two events.
+const crashLogger = createLogger('CrashTelemetry')
+
 function createWindow(repoWatcher: RepoWatcherService): void {
   const win = new BrowserWindow({
     width: 1200,
@@ -184,6 +189,13 @@ function createWindow(repoWatcher: RepoWatcherService): void {
   // single-window (no multi-window support, AGENTS.md non-goal), so the window
   // closing always means "nothing is watching anymore."
   win.on('closed', () => repoWatcher.unwatch())
+
+  win.webContents.on('render-process-gone', (_event, details) => {
+    crashLogger.error('Renderer process gone', {
+      reason: details.reason,
+      exitCode: details.exitCode,
+    })
+  })
 
   if (process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'])
@@ -358,4 +370,14 @@ app.whenReady().then(async () => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
+})
+
+// Phase 105: covers non-renderer child processes (GPU, utility, etc.) — the
+// renderer's own crash is handled per-window via 'render-process-gone' above.
+app.on('child-process-gone', (_event, details) => {
+  crashLogger.error('Child process gone', {
+    type: details.type,
+    reason: details.reason,
+    exitCode: details.exitCode,
+  })
 })

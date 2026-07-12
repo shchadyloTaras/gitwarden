@@ -96,6 +96,19 @@ test.describe('Profile management', () => {
     await expect(win.getByTestId('profiles-list')).not.toContainText('Client')
   })
 
+  test('shows a distinct message for a malformed email vs. required fields', async () => {
+    // "user@localhost" passes the browser's own type="email" constraint (no dot
+    // required) but fails our stricter format check — a message distinct from
+    // "are required" (Phase 105).
+    await fillAndSubmitProfile(
+      win,
+      profileFixture('personal', { gitAuthorEmail: 'user@localhost' })
+    )
+
+    await expect(win.getByTestId('profile-form-error')).toContainText('valid email')
+    await expect(win.getByTestId('profile-form-error')).not.toContainText('are required')
+  })
+
   test('sets active profile and it appears in the header', async () => {
     await fillAndSubmitProfile(win, profileFixture('personal'))
 

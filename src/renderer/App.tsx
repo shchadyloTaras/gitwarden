@@ -14,6 +14,7 @@ import { useUpdatesStore } from './store/updatesStore'
 import { refreshActiveRepo } from './store/refreshActiveRepo'
 import type { NavScreen } from './store/appStore'
 import { pickAutoSelectedRepo } from '../core/repos/autoSelectRepo'
+import { applyTheme } from './theme'
 
 import RepositoriesScreen from './screens/RepositoriesScreen'
 import ProfilesScreen from './screens/ProfilesScreen'
@@ -104,19 +105,6 @@ function readIsMacPlatform(): boolean {
   if (typeof navigator === 'undefined') return false
 
   return /mac/i.test(navigator.platform) || /Mac OS X/i.test(navigator.userAgent)
-}
-
-function applyTheme(appearance: string): void {
-  const root = document.documentElement
-  if (appearance === 'light') {
-    root.setAttribute('data-theme', 'light')
-  } else if (appearance === 'dark') {
-    root.setAttribute('data-theme', 'dark')
-  } else {
-    // system — follow OS preference
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    root.setAttribute('data-theme', prefersDark ? 'dark' : 'light')
-  }
 }
 
 function getViewportWidth(): number {

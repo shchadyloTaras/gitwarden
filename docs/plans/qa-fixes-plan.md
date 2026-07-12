@@ -1,6 +1,6 @@
 # Plan — QA Fixes: the identity gate actually gates, freshness stops undermining itself, and every message tells the truth
 
-**Status:** ⬜ not started — Phases 98–105 — **derived view**; the authoritative state is the Phase
+**Status:** ✅ complete — Phases 98–105 — **derived view**; the authoritative state is the Phase
 Checklist in [`docs/progress-log.md`](../progress-log.md).
 **Phases:** 98 → 105.
 **Feature-complete stop point:** Phase 105.

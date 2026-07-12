@@ -469,6 +469,13 @@ function ChatConversation({ onClear }: { onClear: () => void }): React.ReactElem
         return true
       }
       if (e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey)) {
+        // Phase 105: a fully-typed, EXACT command match sends instead of the popup
+        // re-completing it — there's nothing left to complete. Tab still completes
+        // (or just re-confirms) regardless; only Enter gets this exact-match escape.
+        const exactMatch = draft.trim().toLowerCase()
+        if (e.key === 'Enter' && slashMatches.some((c) => c.command === exactMatch)) {
+          return false
+        }
         e.preventDefault()
         const pick = slashMatches[Math.min(slashIndex, slashMatches.length - 1)]
         if (pick) applySlashCommand(pick.command)
