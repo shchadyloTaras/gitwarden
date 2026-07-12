@@ -5,6 +5,7 @@ import { promisify } from 'util'
 import * as os from 'os'
 import * as path from 'path'
 import fs from 'node:fs'
+import { EventEmitter } from 'node:events'
 import {
   RepoWatcherService,
   type RepoWatchSender,
@@ -184,35 +185,36 @@ describe('RepoWatcherService (Phase 96, Phase 101)', () => {
     expect(events).toHaveLength(0)
   })
 
-  it('attaches an error handler to every real fs.watch() it creates (so an OS-level error, e.g. Windows EPERM when the watched directory disappears, cannot crash the process)', async () => {
-    // Verifies the code CALLS .on('error', ...) rather than relying on the exact
-    // sync-vs-async throw semantics of EventEmitter's special 'error' event, which
-    // differ across fs.watch's platform-specific backends (inotify/FSEvents/
-    // ReadDirectoryChangesW) in ways not worth depending on here. `watchRefsDir`'s
-    // recursive watch may or may not actually be created depending on the
-    // platform/Node version (falls back to stat-polling where unsupported) — this
-    // only asserts error-handling for whichever real watcher(s) DID get created.
-    // MockInstance's overload type narrows per call site; widen so pushing distinct
-    // fs.watch() spies type-checks.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const onSpies: any[] = []
-    const realWatch = fs.watch.bind(fs)
-    const spy = vi.spyOn(fs, 'watch').mockImplementation((...args: unknown[]) => {
-      // Forwarding to the real, overloaded fs.watch(); the mock only observes the watcher.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const watcher = (realWatch as (...a: any[]) => fs.FSWatcher)(...args)
-      onSpies.push(vi.spyOn(watcher, 'on'))
-      return watcher
+  it('attaches an error handler to every fs.watch() it creates (so an OS-level error, e.g. Windows EPERM when the watched directory disappears, cannot crash the process)', async () => {
+    // A real fs.watch() FSWatcher's behavior (does .on()/.emit('error', ...) actually
+    // reach a registered listener, does the special no-listener throw fire sync or
+    // async) depends on its platform-specific native backend (inotify/FSEvents/
+    // ReadDirectoryChangesW) in ways that don't hold uniformly — confirmed flaky
+    // across two prior attempts at spying on the real watcher. A plain EventEmitter's
+    // 'error' handling is pure, platform-independent JS, so stand in a fake watcher
+    // for fs.watch() entirely: this isolates "does the code call .on('error', ...)"
+    // from any native fs.watch behavior, which isn't what this test is about.
+    class FakeWatcher extends EventEmitter {
+      close(): void {}
+    }
+    const fakeWatchers: FakeWatcher[] = []
+    const spy = vi.spyOn(fs, 'watch').mockImplementation(() => {
+      const fake = new FakeWatcher()
+      fakeWatchers.push(fake)
+      return fake as unknown as fs.FSWatcher
     })
 
     try {
       service.watch(repoPath, sender)
-      await waitUntil(() => onSpies.length >= 1) // watchGitDirTopLevel always creates one
-      await new Promise((r) => setTimeout(r, 100)) // let watchRefsDir settle either way
+      // Both watchGitDirTopLevel and watchRefsDir call fs.watch() synchronously and
+      // unconditionally in this mocked-success setup (no platform-dependent fallback).
+      await waitUntil(() => fakeWatchers.length >= 2)
 
-      expect(onSpies.length).toBeGreaterThanOrEqual(1)
-      for (const onSpy of onSpies) {
-        expect(onSpy).toHaveBeenCalledWith('error', expect.any(Function))
+      for (const fake of fakeWatchers) {
+        const err = Object.assign(new Error('EPERM: operation not permitted, watch'), {
+          code: 'EPERM',
+        })
+        expect(() => fake.emit('error', err)).not.toThrow()
       }
     } finally {
       spy.mockRestore()
