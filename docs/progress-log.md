@@ -166,6 +166,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] Phase 104 — AI tells the truth: `/push-brief` token facts + `/propose` empty-proposal guard (renderer + main)
 - [x] Phase 105 — Polish batch + crash telemetry + regression sweep (renderer + main + e2e)
 
+### Working-Copy Destination feature (plan: `docs/plans/working-copy-destination-plan.md`, prompts: `docs/prompts/working-copy-destination-prompts.md`)
+
+- [x] Phase 106 — Unique working-copy count (pure core)
+- [ ] Phase 107 — Working-copy destination card and truthful labels (renderer + e2e)
+
 ### Agentic DX track (plan: `docs/plans/agentic-dx-plan.md`, prompts: `docs/prompts/dx-execution-prompts.md`)
 
 > Not product phases — a separate developer-experience track (steps DX-0…DX-6, no global phase
@@ -206,6 +211,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | Initialize Repository        | 85–88     | ✅ complete                                                   |
 | Branch-Switch Data Integrity | 89–97     | ✅ complete                                                   |
 | QA Fixes                     | 98–105    | ✅ complete                                                   |
+| Working-Copy Destination     | 106–107   | 🟡 Phase 106 done; 107 open                                   |
 | Agentic DX                   | DX-0–DX-6 | ✅ complete (DX-6 = à la carte; project-factory/sdd deferred) |
 
 ## Progress Log
@@ -1539,4 +1545,12 @@ The v0.5.1 release build confirmed the fix: Windows job green (5m47s), macOS gre
 
 ### 2026-07-13 — v0.5.1 CI, take 2: same spy-on-real-FSWatcher fragility
 
-Moved the v0.5.1 tag to the previous commit and re-triggered: macOS green again, Ubuntu failed AGAIN on the same test — this time `vi.spyOn(watcher, 'on')` recorded zero calls on Linux even though the service demonstrably calls `.on('error', ...)` (same source on every platform). Two different real-`FSWatcher`-introspection strategies both proved unreliable across platforms — a sign the *testing approach* (spying on a real, native-backed `FSWatcher`) is the fragile part, not the fix. Rewrote the test to mock `fs.watch()` into returning a fully-controlled fake (`class FakeWatcher extends EventEmitter`), so the assertion exercises pure, platform-independent `EventEmitter` semantics instead of any native `fs.watch` backend (inotify/FSEvents/ReadDirectoryChangesW) internals. Verified locally 5× stable, full suite green (1063/1063, 117 files), both tsconfigs and lint clean. Re-moved v0.5.1's tag again to this commit.
+Moved the v0.5.1 tag to the previous commit and re-triggered: macOS green again, Ubuntu failed AGAIN on the same test — this time `vi.spyOn(watcher, 'on')` recorded zero calls on Linux even though the service demonstrably calls `.on('error', ...)` (same source on every platform). Two different real-`FSWatcher`-introspection strategies both proved unreliable across platforms — a sign the _testing approach_ (spying on a real, native-backed `FSWatcher`) is the fragile part, not the fix. Rewrote the test to mock `fs.watch()` into returning a fully-controlled fake (`class FakeWatcher extends EventEmitter`), so the assertion exercises pure, platform-independent `EventEmitter` semantics instead of any native `fs.watch` backend (inotify/FSEvents/ReadDirectoryChangesW) internals. Verified locally 5× stable, full suite green (1063/1063, 117 files), both tsconfigs and lint clean. Re-moved v0.5.1's tag again to this commit.
+
+### 2026-07-13 — Phase 106: Unique working-copy count
+
+- Built: Pure `countUniqueChangedFiles` helper that counts each changed path once across index and worktree states.
+- Files: added `src/core/status/workingCopy.ts`, `tests/unit/working-copy-count.test.ts`; updated `docs/progress-log.md`.
+- Tests: `npx tsc -p tsconfig.node.json --noEmit` and `npx tsc -p tsconfig.web.json --noEmit` passed; Vitest **1070/1070 passed**; `npm run lint` passed.
+- Exit criteria: ✅ met — seven new helper tests cover clean, one-path, staged-and-modified, duplicate, untracked, conflicted, ignored/unmodified, and mixed states; core-purity review passed.
+- Notes / follow-ups: UI, parser, store, and IPC paths remain untouched. Normalized a pre-existing Markdown emphasis marker in this log so the formatting gate passes.
