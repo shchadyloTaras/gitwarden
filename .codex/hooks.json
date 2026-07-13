@@ -1,0 +1,42 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/no-global-git-config.sh\"",
+            "timeout": 30,
+            "statusMessage": "Checking Git config scope"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.codex/hooks/commit-needs-log.sh\"",
+            "timeout": 30,
+            "statusMessage": "Checking phase commit gate"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^apply_patch$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/core-purity-audit.py\"",
+            "timeout": 30,
+            "statusMessage": "Checking core purity"
+          },
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/git-runner-audit.py\"",
+            "timeout": 30,
+            "statusMessage": "Checking GitRunner boundary"
+          }
+        ]
+      }
+    ]
+  }
+}

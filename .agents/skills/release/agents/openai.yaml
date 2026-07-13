@@ -1,0 +1,4 @@
+interface:
+  display_name: "GitWarden: Release (project)"
+  short_description: "Prepare a local GitWarden release"
+  default_prompt: "Use $release to prepare the next GitWarden release."

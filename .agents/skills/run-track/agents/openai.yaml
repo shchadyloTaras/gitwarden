@@ -1,0 +1,4 @@
+interface:
+  display_name: 'GitWarden: Run Track (project)'
+  short_description: 'Run this GitWarden feature track'
+  default_prompt: 'Use $run-track for working-copy-destination --step.'

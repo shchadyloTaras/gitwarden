@@ -1,0 +1,4 @@
+interface:
+  display_name: 'GitWarden: Log Phase (project)'
+  short_description: 'Log a completed GitWarden phase'
+  default_prompt: 'Use $log-phase to record the completed GitWarden phase.'

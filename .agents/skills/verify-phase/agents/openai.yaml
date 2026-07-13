@@ -1,0 +1,4 @@
+interface:
+  display_name: 'GitWarden: Verify Phase (project)'
+  short_description: 'Run this GitWarden phase gate'
+  default_prompt: 'Use $verify-phase to validate the current GitWarden phase.'

@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Landing Preview'
+  short_description: 'Start GitWarden landing preview locally'
+  default_prompt: 'Use $landing-preview to start the local GitWarden landing preview.'

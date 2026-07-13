@@ -1,0 +1,4 @@
+interface:
+  display_name: 'GitWarden: Commit Phase (project)'
+  short_description: 'Commit a verified GitWarden phase'
+  default_prompt: 'Use $commit-phase to commit the verified GitWarden phase.'

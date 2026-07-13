@@ -1,0 +1,50 @@
+# Closest native mapping of .claude/settings.json command permissions.
+# These rules apply only after Codex trusts this project's .codex layer.
+
+prefix_rule(
+    pattern = ["npm", "run", "test"],
+    decision = "allow",
+    justification = "GitWarden test command",
+)
+
+prefix_rule(
+    pattern = ["npm", "test"],
+    decision = "allow",
+    justification = "GitWarden test command",
+)
+
+prefix_rule(
+    pattern = ["npm", "run", ["lint", "e2e", "build", "dev", "pack", "test:tooling"]],
+    decision = "allow",
+    justification = "GitWarden verified project command",
+)
+
+prefix_rule(
+    pattern = ["git", "status"],
+    decision = "allow",
+    justification = "Read-only Git inspection",
+)
+
+prefix_rule(
+    pattern = ["git", ["diff", "log", "show"]],
+    decision = "allow",
+    justification = "Read-only Git inspection",
+)
+
+prefix_rule(
+    pattern = ["npx", ["tsc", "prettier"]],
+    decision = "allow",
+    justification = "GitWarden type-checking or formatting command",
+)
+
+prefix_rule(
+    pattern = ["git", "config", ["--global", "--system"]],
+    decision = "forbidden",
+    justification = "Use repo-scoped Git configuration: git config --local <key> <value>.",
+)
+
+prefix_rule(
+    pattern = ["git", "commit"],
+    decision = "allow",
+    justification = "Phase commits are automatic after the staged Progress Log gate passes.",
+)

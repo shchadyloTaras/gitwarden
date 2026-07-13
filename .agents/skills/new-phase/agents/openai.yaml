@@ -1,0 +1,4 @@
+interface:
+  display_name: 'GitWarden: New Phase (project)'
+  short_description: 'Brief the next GitWarden phase'
+  default_prompt: 'Use $new-phase for GitWarden phase 106.'
