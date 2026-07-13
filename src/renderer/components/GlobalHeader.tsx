@@ -206,7 +206,9 @@ export default function GlobalHeader(): React.ReactElement {
         {/* Detached HEAD pill (Phase 92): a distinct state, never a stale branch name */}
         {detached && (
           <>
-            <span style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: 14 }}>on</span>
+            <span style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: 14 }}>
+              {STR.HEADER_CHECKED_OUT}
+            </span>
             <span
               data-testid="header-branch-detached"
               data-tooltip={STR.BRANCH_DETACHED_HINT}
@@ -229,7 +231,9 @@ export default function GlobalHeader(): React.ReactElement {
         {/* Branch picker */}
         {!detached && localBranches.length > 0 && (
           <>
-            <span style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: 14 }}>on</span>
+            <span style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: 14 }}>
+              {STR.HEADER_CHECKED_OUT}
+            </span>
             <Dropdown
               testId="header-branch-select"
               ariaLabel={STR.HEADER_BRANCH_PICKER}
@@ -268,7 +272,9 @@ export default function GlobalHeader(): React.ReactElement {
         {/* Fallback: show branch text when branches not loaded yet */}
         {!detached && localBranches.length === 0 && currentBranch && (
           <>
-            <span style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: 14 }}>on</span>
+            <span style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: 14 }}>
+              {STR.HEADER_CHECKED_OUT}
+            </span>
             <span
               data-testid="header-branch"
               style={{

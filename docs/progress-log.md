@@ -169,7 +169,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 ### Working-Copy Destination feature (plan: `docs/plans/working-copy-destination-plan.md`, prompts: `docs/prompts/working-copy-destination-prompts.md`)
 
 - [x] Phase 106 — Unique working-copy count (pure core)
-- [ ] Phase 107 — Working-copy destination card and truthful labels (renderer + e2e)
+- [x] Phase 107 — Working-copy destination card and truthful labels (renderer + e2e)
 
 ### Agentic DX track (plan: `docs/plans/agentic-dx-plan.md`, prompts: `docs/prompts/dx-execution-prompts.md`)
 
@@ -211,7 +211,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | Initialize Repository        | 85–88     | ✅ complete                                                   |
 | Branch-Switch Data Integrity | 89–97     | ✅ complete                                                   |
 | QA Fixes                     | 98–105    | ✅ complete                                                   |
-| Working-Copy Destination     | 106–107   | 🟡 Phase 106 done; 107 open                                   |
+| Working-Copy Destination     | 106–107   | ✅ complete                                                   |
 | Agentic DX                   | DX-0–DX-6 | ✅ complete (DX-6 = à la carte; project-factory/sdd deferred) |
 
 ## Progress Log
@@ -1554,3 +1554,11 @@ Moved the v0.5.1 tag to the previous commit and re-triggered: macOS green again,
 - Tests: `npx tsc -p tsconfig.node.json --noEmit` and `npx tsc -p tsconfig.web.json --noEmit` passed; Vitest **1070/1070 passed**; `npm run lint` passed.
 - Exit criteria: ✅ met — seven new helper tests cover clean, one-path, staged-and-modified, duplicate, untracked, conflicted, ignored/unmodified, and mixed states; core-purity review passed.
 - Notes / follow-ups: UI, parser, store, and IPC paths remain untouched. Normalized a pre-existing Markdown emphasis marker in this log so the formatting gate passes.
+
+### 2026-07-13 — Phase 107: Working-copy destination card and truthful labels
+
+- Built: Presentation-only Working Copy → Commit → Destination card on Status with loading, dirty, clean, normal-branch, detached-HEAD, and unknown-branch states. It derives its unique count from the Phase 106 pure helper and the confirmed detached flag from Status, while taking the branch name only from `appStore.currentBranch`; no Git, IPC, store, staging, switch, or commit behavior changed. The global header now says `Checked out:` consistently; Status now labels untracked content as `NEW FILES` with its history hint.
+- Files: added `src/renderer/components/WorkingCopyDestinationCard.tsx`, `tests/unit/working-copy-destination-card.test.ts`; updated `StatusScreen.tsx`, `GlobalHeader.tsx`, `strings.ts`, `theme.css`, `tsconfig.node.json`, `tests/e2e/status.spec.ts`, `tests/e2e/switch-ux.spec.ts`, and derived checklist/status views in this log and the feature plan.
+- Tests: `npx tsc -p tsconfig.node.json --noEmit` and `npx tsc -p tsconfig.web.json --noEmit` passed; Vitest **1076/1076 passed** (119 files); `npm run lint` passed; relevant Playwright Status + switch-UX specs **8/8 passed**.
+- Exit criteria: ✅ met — semantic non-interactive card, unique MM count, clean card, successful/blocked branch-switch truth, detached HEAD, initial unknown state, header/new-files wording, and narrow-width stacked layout are covered.
+- Notes / follow-ups: The presentation test renders with the existing React/React-DOM server renderer. `tsconfig.node.json` now includes this small renderer dependency closure and JSX support so the same strict Node gate verifies that test without widening main-process imports.

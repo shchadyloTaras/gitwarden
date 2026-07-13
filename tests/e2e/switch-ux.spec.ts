@@ -133,6 +133,12 @@ test.describe('Switch UX', () => {
 
     // The switch never happened — header still shows main, not a stale/blank state.
     await expect(win.getByTestId('header-branch-select')).toContainText('main')
+
+    await win.getByTestId('nav-status').click()
+    await expect(win.getByTestId('working-copy-destination-card')).toContainText(
+      'Checked out: main',
+      { timeout: 10000 }
+    )
   })
 
   test('the quick-fix stashes, switches, and pops — preserving the local edit', async () => {

@@ -150,6 +150,12 @@ test.describe('Status & Staging UI', () => {
     // world.txt is MM: appears in BOTH staged and unstaged sections
     await expect(win.getByTestId('staged-list')).toContainText('world.txt', { timeout: 10000 })
     await expect(win.getByTestId('unstaged-list')).toContainText('world.txt')
+    await expect(win.getByTestId('working-copy-destination-card')).toContainText(
+      '1 uncommitted change'
+    )
+    await expect(win.getByTestId('working-copy-destination-card')).toContainText(
+      'Not in any branch yet.'
+    )
   })
 
   test('switching branch via the header dropdown refreshes status without navigating away', async () => {
@@ -180,6 +186,18 @@ test.describe('Status & Staging UI', () => {
       await expect(win.getByTestId('untracked-list')).toContainText('No untracked files', {
         timeout: 10000,
       })
+      await expect(win.getByTestId('working-copy-destination-card')).toContainText(
+        'Working copy clean'
+      )
+      await expect(win.getByTestId('working-copy-destination-card')).toContainText(
+        'No changes are waiting to commit.'
+      )
+      await expect(win.getByTestId('working-copy-destination-card')).toContainText(
+        'Checked out: main'
+      )
+      await expect(win.getByTestId('global-header')).toContainText('Checked out:')
+      await expect(win.getByTestId('untracked-section')).toContainText('NEW FILES')
+      await expect(win.getByTestId('untracked-section')).toContainText('Not yet in Git history.')
 
       // A file appears in the working tree AFTER the initial load — not through the app —
       // simulating the real-world case where the tree changed underneath the open screen.
@@ -196,8 +214,49 @@ test.describe('Status & Staging UI', () => {
       await expect(win.getByTestId('untracked-list')).toContainText('stale-check.txt', {
         timeout: 10000,
       })
+      await expect(win.getByTestId('working-copy-destination-card')).toContainText(
+        'Checked out: feature-a'
+      )
+
+      await win.setViewportSize({ width: 640, height: 800 })
+      await expect(win.getByTestId('working-copy-destination-card')).toHaveCSS(
+        'flex-direction',
+        'column'
+      )
     } finally {
       fs.rmSync(branchRepo, { recursive: true, force: true })
+    }
+  })
+
+  test('names detached HEAD instead of inventing a destination branch', async () => {
+    const detachedRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'gw-status-detached-'))
+    execSync('git init -b main', { cwd: detachedRepo, stdio: 'pipe' })
+    execSync('git config user.email "test@test.com"', { cwd: detachedRepo, stdio: 'pipe' })
+    execSync('git config user.name "Test"', { cwd: detachedRepo, stdio: 'pipe' })
+    fs.writeFileSync(path.join(detachedRepo, 'base.txt'), 'base\n')
+    execSync('git add base.txt', { cwd: detachedRepo, stdio: 'pipe' })
+    execSync('git commit -m "init"', { cwd: detachedRepo, stdio: 'pipe' })
+    execSync('git checkout --detach', { cwd: detachedRepo, stdio: 'pipe' })
+
+    try {
+      await win.evaluate(async (repoPath: string) => {
+        return (window as Window & typeof globalThis).api.repositories.create({
+          name: 'status-detached-fixture',
+          localPath: repoPath,
+          isFavorite: false,
+        })
+      }, detachedRepo)
+
+      await win.reload()
+      await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
+      await win.getByTestId('nav-status').click()
+
+      const card = win.getByTestId('working-copy-destination-card')
+      await expect(card).toContainText('Detached HEAD', { timeout: 10000 })
+      await expect(card).toContainText('A commit will not join a branch until you create one.')
+      await expect(card).not.toContainText('Checked out: main')
+    } finally {
+      fs.rmSync(detachedRepo, { recursive: true, force: true })
     }
   })
 })

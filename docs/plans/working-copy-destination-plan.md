@@ -1,6 +1,6 @@
 # Plan — Working-Copy Destination: make it clear where uncommitted work goes
 
-**Status:** 🟡 Phase 106 done; Phase 107 open — **derived view**; the authoritative state is the
+**Status:** ✅ complete — **derived view**; the authoritative state is the
 Phase Checklist in [`docs/progress-log.md`](../progress-log.md).
 **Phases:** 106 → 107.
 **Feature-complete stop point:** Phase 107.

@@ -16,7 +16,8 @@ export const STR = {
   // ── Icon-button & header-control labels (aria-label + hover tooltip) ───────
   INSPECTOR_TOGGLE: 'Toggle inspector',
   HEADER_REPO_PICKER: 'Active repository',
-  HEADER_BRANCH_PICKER: 'Current branch',
+  HEADER_BRANCH_PICKER: 'Checked out branch',
+  HEADER_CHECKED_OUT: 'Checked out:',
   SIDEBAR_COLLAPSE: 'Collapse sidebar',
   SIDEBAR_EXPAND: 'Expand sidebar',
 
@@ -190,6 +191,25 @@ export const STR = {
   DELETE_UNTRACKED_TITLE: (filePath: string) => `Permanently delete "${filePath}"?`,
   DELETE_UNTRACKED_BODY:
     'This file is untracked. Deleting it removes it from disk permanently — it cannot be recovered from Git.',
+
+  // ── Working-copy destination (Phase 107) ───────────────────────────────────
+  WORKING_COPY_DESTINATION_REGION: 'Working copy destination',
+  WORKING_COPY_HEADING: 'WORKING COPY',
+  WORKING_COPY_UNCOMMITTED_CHANGES: (count: number): string =>
+    `${count} uncommitted change${count === 1 ? '' : 's'}`,
+  WORKING_COPY_NOT_IN_BRANCH: 'Not in any branch yet.',
+  WORKING_COPY_CLEAN: 'Working copy clean',
+  WORKING_COPY_CLEAN_DETAIL: 'No changes are waiting to commit.',
+  WORKING_COPY_CHECKING: 'Checking working copy…',
+  WORKING_COPY_COMMIT_CONNECTOR: 'COMMIT →',
+  WORKING_COPY_DESTINATION_HEADING: 'DESTINATION BRANCH',
+  WORKING_COPY_CHECKED_OUT: (branch: string): string => `Checked out: ${branch}`,
+  WORKING_COPY_BRANCH_DETAIL: 'Changes join this branch only after commit.',
+  WORKING_COPY_DETACHED_HEAD: 'Detached HEAD',
+  WORKING_COPY_DETACHED_DETAIL: 'A commit will not join a branch until you create one.',
+  WORKING_COPY_BRANCH_CHECKING: 'Checking checked-out branch…',
+  STATUS_NEW_FILES_HEADING: 'NEW FILES',
+  STATUS_NEW_FILES_SUBTITLE: 'Not yet in Git history.',
 
   // ── History screen — return an unpushed commit to working changes (Phase 79) ──
   HISTORY_UNPUSHED_MARKER: 'Unpushed',

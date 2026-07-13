@@ -300,6 +300,83 @@ body {
   min-width: 0;
 }
 
+/* ── Working-copy destination card (Phase 107) ───────────────────────────── */
+.gw-working-copy-destination-card {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  margin: 10px 12px;
+  padding: 12px;
+  border: 1px solid var(--gw-border, #27272a);
+  border-radius: 8px;
+  background: var(--gw-surface, #18181b);
+  flex-shrink: 0;
+}
+
+.gw-working-copy-destination-part {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  gap: 4px;
+}
+
+.gw-working-copy-destination-eyebrow {
+  color: var(--gw-text-faint, #71717a);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.gw-working-copy-destination-title {
+  color: var(--gw-text, #f4f4f5);
+  font-size: 14px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.gw-working-copy-destination-detail {
+  color: var(--gw-text-muted, #a1a1aa);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.gw-working-copy-destination-connector {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gw-accent-text, #a5b4fc);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.gw-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 700px) {
+  .gw-working-copy-destination-card {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .gw-working-copy-destination-connector {
+    justify-content: flex-start;
+  }
+}
+
 .gw-sidebar {
   will-change: auto;
 }

@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import type { FileChange } from '../../core/types'
+import { countUniqueChangedFiles } from '../../core/status/workingCopy'
 import { useStatusStore } from '../store/statusStore'
 import { useAppStore } from '../store/appStore'
 import { useBranchStore } from '../store/branchStore'
 import ResizableMainSplit from '../components/ResizableMainSplit'
 import { FileStatusBadge as StatusBadge } from '../components/FileStatusBadge'
+import WorkingCopyDestinationCard from '../components/WorkingCopyDestinationCard'
 import { STR } from '../strings'
 
 function isStagedChange(f: FileChange): boolean {
@@ -231,12 +233,14 @@ function FileRow({
 
 function SectionHeader({
   title,
+  subtitle,
   count,
   bulkLabel,
   bulkTestId,
   onBulk,
 }: {
   title: string
+  subtitle?: string
   count: number
   bulkLabel: string
   bulkTestId: string
@@ -253,17 +257,22 @@ function SectionHeader({
         gap: 6,
       }}
     >
-      <span
-        style={{
-          fontSize: 14,
-          fontWeight: 700,
-          letterSpacing: '0.06em',
-          color: 'var(--gw-text-faint, #71717a)',
-        }}
-      >
-        {title}
-      </span>
-      <span style={{ fontSize: 14, color: 'var(--gw-text-dim, #52525b)' }}>({count})</span>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, minWidth: 0 }}>
+        <span
+          style={{
+            fontSize: 14,
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            color: 'var(--gw-text-faint, #71717a)',
+          }}
+        >
+          {title}
+        </span>
+        {subtitle && (
+          <span style={{ fontSize: 12, color: 'var(--gw-text-dim, #52525b)' }}>{subtitle}</span>
+        )}
+        <span style={{ fontSize: 14, color: 'var(--gw-text-dim, #52525b)' }}>({count})</span>
+      </div>
       <div style={{ flex: 1 }} />
       {count > 0 && (
         <button
@@ -586,6 +595,14 @@ export default function StatusScreen(): React.ReactElement {
         )}
       </div>
 
+      {activeRepo && (
+        <WorkingCopyDestinationCard
+          count={status ? countUniqueChangedFiles(status.files) : null}
+          branch={currentBranch}
+          detached={status?.detached === true}
+        />
+      )}
+
       {/* Stash-pop-conflict banner (Phase 102): "Bring changes & switch" succeeded at
           switching, but restoring the stash afterward hit a conflict — persistent
           (survives a same-repo refresh) and names the kept stash entry, so it's never
@@ -784,7 +801,8 @@ export default function StatusScreen(): React.ReactElement {
 
                     <section data-testid="untracked-section">
                       <SectionHeader
-                        title="UNTRACKED FILES"
+                        title={STR.STATUS_NEW_FILES_HEADING}
+                        subtitle={STR.STATUS_NEW_FILES_SUBTITLE}
                         count={untracked.length}
                         bulkLabel="Stage All"
                         bulkTestId="status-stage-untracked-all"
