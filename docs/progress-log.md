@@ -1562,3 +1562,7 @@ Moved the v0.5.1 tag to the previous commit and re-triggered: macOS green again,
 - Tests: `npx tsc -p tsconfig.node.json --noEmit` and `npx tsc -p tsconfig.web.json --noEmit` passed; Vitest **1076/1076 passed** (119 files); `npm run lint` passed; relevant Playwright Status + switch-UX specs **8/8 passed**.
 - Exit criteria: ✅ met — semantic non-interactive card, unique MM count, clean card, successful/blocked branch-switch truth, detached HEAD, initial unknown state, header/new-files wording, and narrow-width stacked layout are covered.
 - Notes / follow-ups: The presentation test renders with the existing React/React-DOM server renderer. `tsconfig.node.json` now includes this small renderer dependency closure and JSX support so the same strict Node gate verifies that test without widening main-process imports.
+
+### 2026-07-13 — v0.5.2 released
+
+- Patch release adding a clear Working Copy destination card on the Status screen, so uncommitted work and its post-commit destination are easier to understand.

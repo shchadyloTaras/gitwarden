@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.5.2 — 2026-07-13
+
+### Added
+
+- Working Copy destination: the Status screen now clearly shows where your uncommitted changes will appear after you commit, making it easier to keep track of the active branch and working copy.
+
 ## 0.5.1 — 2026-07-12
 
 ### Fixed
