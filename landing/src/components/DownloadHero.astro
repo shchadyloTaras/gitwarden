@@ -46,6 +46,10 @@ const embedded = JSON.stringify(release).replace(/</g, '\\u003c')
     )
   }
 
+  <a class="hero-demo-link" href="#live-demo" data-testid="hero-live-demo-link">
+    {copy.liveDemo.section.heroAnchor}
+  </a>
+
   <script type="application/json" data-gw-release is:inline set:html={embedded} />
 </section>
 

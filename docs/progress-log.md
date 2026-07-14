@@ -174,7 +174,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 ### Landing Live Demo feature (plan: `docs/plans/landing-live-demo-plan.md`, prompts: `docs/prompts/landing-live-demo-prompts.md`)
 
 - [x] Phase 108 — Scripted demo model and copy contract (landing-local pure TypeScript)
-- [ ] Phase 109 — App-faithful Live Demo UI and landing integration (Astro + e2e)
+- [x] Phase 109 — App-faithful Live Demo UI and landing integration (Astro + e2e)
 
 ### Agentic DX track (plan: `docs/plans/agentic-dx-plan.md`, prompts: `docs/prompts/dx-execution-prompts.md`)
 
@@ -217,7 +217,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | Branch-Switch Data Integrity | 89–97     | ✅ complete                                                   |
 | QA Fixes                     | 98–105    | ✅ complete                                                   |
 | Working-Copy Destination     | 106–107   | ✅ complete                                                   |
-| Landing Live Demo            | 108–109   | 🟡 Phase 108 done; 109 open                                  |
+| Landing Live Demo            | 108–109   | ✅ complete                                                   |
 | Agentic DX                   | DX-0–DX-6 | ✅ complete (DX-6 = à la carte; project-factory/sdd deferred) |
 
 ## Progress Log
@@ -1580,3 +1580,11 @@ Moved the v0.5.1 tag to the previous commit and re-triggered: macOS green again,
 - Tests: from `landing/`, `npm run check` (0 errors), `npm run typecheck`, `npm test` (**46/46**, 5 files), and `npm run lint` passed. Repository-wide gate also passed: both TypeScript projects, `npm test` (**1077/1077**, 119 files), and `npm run lint`.
 - Exit criteria: ✅ met — every profile/event outcome and all eight exact app-derived literals are pinned; the model is pure, deterministic, and landing-local; the source-boundary assertion rejects desktop/core, Electron, preload, and IPC references.
 - Notes / follow-ups: No specialist reviewer applied because this phase touched no `src/core/`, main Git/AI, IPC, or desktop safety path. Phase 109 adds the Astro UI, responsive/accessibility behavior, built-output boundary check, and landing e2e coverage.
+
+### 2026-07-14 — Phase 109: App-faithful Live Demo UI and landing integration
+
+- Built: An app-faithful, deterministic Guard demo as the landing page's second section. Visitors can switch Personal / Work / Client profiles, see Guard readiness update live, trigger the exact wrong-identity block, apply `Switch to "Client"`, complete the simulated commit, and reset. The hero keeps Download as its primary CTA and adds a separate `Try the live demo ↓` anchor. The component includes a no-JavaScript explanation, responsive mobile treatment, live-region/alert semantics, and light/dark app tokens without importing desktop code or making Git, network, storage, or backend calls.
+- Files: added `landing/src/components/LiveDemo.astro` and `landing/tests/e2e/live-demo.spec.ts`; updated `landing/src/pages/index.astro`, `landing/src/components/DownloadHero.astro`, `landing/src/content/copy.ts`, `landing/src/styles/global.css`, and `landing/tests/e2e/marketing.spec.ts`; completed the feature's plan, checklist, status row, and build-order derived views.
+- Tests: from `landing/`, `npm run check` (0 errors), `npm run typecheck`, `npm test` (**46/46**, 5 files), `npm run lint`, `RELEASE_MODE=fixture npm run build` (10 pages), and full `npm run e2e` (**31/31**) passed; axe reported no serious/critical violations. The built landing JavaScript boundary scan found no `src/core`, renderer, Electron, preload, or IPC references; no dependencies or lockfiles changed; the demo asset is 2,652 bytes raw / 1,043 bytes gzip. Repository-wide TypeScript, Vitest (**1077/1077**, 119 files), and lint gates passed. The full Electron E2E gate passed **140/140** in a clean temporary worktree; the shared dirty worktree's run was **138 passed, 1 failed, 1 flaky** because unrelated current-branch-indicator edits changed `* dev` to `CURRENT` without updating `rapid-switch-staleness.spec.ts`, and the clean focused reproduction passed **1/1**.
+- Exit criteria: ✅ met — the demo is structurally second under the hero; correct and wrong profiles update the Guard live; wrong Commit reveals all three exact blocking messages; quick-fix and reset complete the scripted scenario; desktop/core code stays out of the public bundle; no-JavaScript, keyboard, live-region, mobile, light, and dark behavior are covered and visually inspected at the local preview.
+- Notes / follow-ups: **Landing Live Demo is feature-complete (Phases 108–109, all ✅)**, so this is the track's explicit stop point. No specialist reviewer applied because the phase touches only landing and workflow-documentation files, with no `src/core/`, main Git/AI, IPC, preload, or desktop safety changes. The local preview remains available at `http://localhost:4321/`; no deployment or push was performed.

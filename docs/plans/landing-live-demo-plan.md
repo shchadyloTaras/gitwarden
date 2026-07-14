@@ -1,6 +1,6 @@
 # Plan — Landing Live Demo: let visitors experience the Guard aha moment
 
-**Status:** 🟡 in progress — Phase 108 complete; Phase 109 open — **derived view**; the
+**Status:** ✅ complete — Phases 108–109 — **derived view**; the
 authoritative state is the Phase Checklist in [`docs/progress-log.md`](../progress-log.md).
 **Phases:** 108 → 109.
 **Feature-complete stop point:** Phase 109.

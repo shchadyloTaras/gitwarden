@@ -2,6 +2,7 @@
 import Base from '../layouts/Base.astro'
 import Header from '../components/Header.astro'
 import DownloadHero from '../components/DownloadHero.astro'
+import LiveDemo from '../components/LiveDemo.astro'
 import WhyGitWarden from '../components/WhyGitWarden.astro'
 import Features from '../components/Features.astro'
 import Screenshots from '../components/Screenshots.astro'
@@ -58,6 +59,7 @@ const faqLd = {
   <Header />
   <main id="top" class="page">
     <DownloadHero resolved={resolved} release={release} />
+    <LiveDemo />
     <WhyGitWarden />
     <Features />
     <Screenshots />

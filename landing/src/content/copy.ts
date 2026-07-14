@@ -100,7 +100,6 @@ export const copy = {
       emailMismatch: 'Your Git author email does not match the active profile.',
     },
     accessibility: {
-      guardStatusLabel: 'Guard status',
       personalSelected: 'Personal profile selected. Guard blocked for this Client repository.',
       workSelected: 'Work profile selected. Guard blocked for this Client repository.',
       clientSelected: 'Client profile selected. Guard ready.',

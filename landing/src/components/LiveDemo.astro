@@ -1,0 +1,306 @@
+---
+import { copy } from '../content/copy'
+import { LIVE_DEMO_PROFILES } from '../lib/liveDemo'
+
+const demo = copy.liveDemo
+const issues = [demo.issues.profileMismatch, demo.issues.nameMismatch, demo.issues.emailMismatch]
+---
+
+<section
+  id="live-demo"
+  class="live-demo"
+  data-testid="live-demo"
+  data-live-demo
+  aria-labelledby="live-demo-heading"
+>
+  <div class="live-demo-intro" data-reveal>
+    <p class="live-demo-eyebrow">{demo.section.eyebrow}</p>
+    <h2 id="live-demo-heading">{demo.section.heading}</h2>
+    <p class="live-demo-subhead">{demo.section.subhead}</p>
+  </div>
+
+  <div
+    class="live-demo-window"
+    data-testid="live-demo-window"
+    data-profile="Personal"
+    data-guard="blocked"
+    data-outcome="idle"
+    data-reveal
+  >
+    <header class="live-demo-app-header">
+      <span class="live-demo-brand">
+        <img src="/favicon.svg" width="20" height="20" alt="" />
+        <span>{demo.window.appName}</span>
+      </span>
+      <span class="live-demo-divider" aria-hidden="true"></span>
+      <span class="live-demo-header-repo">{demo.scenario.repository}</span>
+      <span class="live-demo-header-checked">{demo.window.checkedOut}</span>
+      <code class="live-demo-branch">{demo.scenario.branch}</code>
+      <span class="live-demo-header-spacer"></span>
+      <span
+        class="live-demo-guard live-demo-guard--blocked"
+        data-live-guard
+        data-testid="live-demo-guard"
+      >
+        {demo.status.guardBlocked}
+      </span>
+      <span class="live-demo-divider live-demo-divider--profile" aria-hidden="true"></span>
+      <span class="live-demo-active-profile">
+        <span class="live-demo-profile-dot" aria-hidden="true"></span>
+        <span data-live-active-profile data-testid="live-demo-active-profile">
+          {demo.controls.personalProfile}
+        </span>
+      </span>
+    </header>
+
+    <div class="live-demo-shell">
+      <nav class="live-demo-sidebar" aria-label={demo.window.navigationLabel}>
+        <span>{demo.window.statusNav}</span>
+        <span class="is-selected">{demo.window.commitNav}</span>
+        <span>{demo.window.branchesNav}</span>
+      </nav>
+
+      <div class="live-demo-main">
+        <div class="live-demo-context" data-testid="live-demo-context">
+          <div>
+            <span>{demo.window.repositoryLabel}</span>
+            <strong>{demo.scenario.repository}</strong>
+          </div>
+          <div>
+            <span>{demo.window.branchLabel}</span>
+            <code>{demo.scenario.branch}</code>
+          </div>
+          <div>
+            <span>{demo.window.assignedProfileLabel}</span>
+            <strong>{demo.scenario.assignedProfile}</strong>
+          </div>
+          <div class="live-demo-context-identity">
+            <span>{demo.window.localIdentityLabel}</span>
+            <strong>{demo.scenario.effectiveIdentityName}</strong>
+            <small>{demo.scenario.effectiveIdentityEmail}</small>
+          </div>
+        </div>
+
+        <fieldset class="live-demo-profile-picker">
+          <legend>{demo.controls.profileGroupLabel}</legend>
+          <div class="live-demo-profile-options">
+            {
+              LIVE_DEMO_PROFILES.map((profile) => (
+                <label>
+                  <input
+                    type="radio"
+                    name="live-demo-profile"
+                    value={profile}
+                    checked={profile === 'Personal'}
+                    data-live-profile
+                  />
+                  <span>{profile}</span>
+                </label>
+              ))
+            }
+          </div>
+        </fieldset>
+
+        <div class="live-demo-workspace">
+          <div class="live-demo-commit-form">
+            <div class="live-demo-staged">
+              <span class="live-demo-panel-label">{demo.window.stagedHeading}</span>
+              <div class="live-demo-file-row">
+                <span class="live-demo-file-status" aria-hidden="true">M</span>
+                <code>{demo.scenario.stagedFile}</code>
+              </div>
+            </div>
+
+            <label class="live-demo-message">
+              <span>{demo.window.messageLabel}</span>
+              <textarea readonly rows="3">{demo.scenario.commitMessage}</textarea>
+            </label>
+          </div>
+
+          <div class="live-demo-safety">
+            <span class="live-demo-panel-label">{demo.window.safetyHeading}</span>
+            <p class="live-demo-safety-hint" data-live-safety-hint>
+              {demo.status.blockedHint}
+            </p>
+
+            <div
+              class="live-demo-alert"
+              data-live-alert
+              data-testid="live-demo-alert"
+              aria-labelledby="live-demo-blocked-heading"
+              hidden
+            >
+              <strong id="live-demo-blocked-heading">{demo.window.blockedHeading}</strong>
+              <div class="live-demo-issues">
+                {
+                  issues.map((issue) => (
+                    <div class="live-demo-issue" data-testid="live-demo-issue">
+                      <span aria-hidden="true">⛔</span>
+                      <span>{issue}</span>
+                    </div>
+                  ))
+                }
+              </div>
+              <div class="live-demo-remediation">
+                <button
+                  type="button"
+                  class="live-demo-fix"
+                  data-live-action="fix"
+                  data-pending-label={demo.controls.fixing}
+                  data-testid="live-demo-fix"
+                >
+                  {demo.controls.quickFix}
+                </button>
+              </div>
+            </div>
+
+            <div
+              class="live-demo-completion"
+              data-live-completion
+              data-testid="live-demo-completion"
+              role="status"
+              hidden
+            >
+              <strong>{demo.completion.heading}</strong>
+              <span>{demo.completion.body}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="live-demo-actions">
+          <button
+            type="button"
+            class="live-demo-reset"
+            data-live-action="reset"
+            data-testid="live-demo-reset"
+          >
+            {demo.controls.reset}
+          </button>
+          <button
+            type="button"
+            class="live-demo-commit"
+            data-live-action="commit"
+            data-testid="live-demo-commit"
+          >
+            {demo.controls.commit}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="live-demo-announcement sr-only" data-live-announcement aria-live="polite"></p>
+  <noscript>
+    <p class="live-demo-noscript" data-testid="live-demo-noscript">{demo.noScript}</p>
+  </noscript>
+</section>
+
+<script>
+  import { copy } from '../content/copy'
+  import {
+    LIVE_DEMO_INITIAL_STATE,
+    deriveLiveDemoView,
+    reduceLiveDemo,
+    type LiveDemoProfile,
+    type LiveDemoState,
+  } from '../lib/liveDemo'
+
+  const demoCopy = copy.liveDemo
+  const profileAnnouncements: Record<LiveDemoProfile, string> = {
+    Personal: demoCopy.accessibility.personalSelected,
+    Work: demoCopy.accessibility.workSelected,
+    Client: demoCopy.accessibility.clientSelected,
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-live-demo]').forEach((root) => {
+    if (root.dataset.enhanced === 'true') return
+    root.dataset.enhanced = 'true'
+
+    let state: LiveDemoState = { ...LIVE_DEMO_INITIAL_STATE }
+    const guard = root.querySelector<HTMLElement>('[data-live-guard]')
+    const activeProfile = root.querySelector<HTMLElement>('[data-live-active-profile]')
+    const safetyHint = root.querySelector<HTMLElement>('[data-live-safety-hint]')
+    const alert = root.querySelector<HTMLElement>('[data-live-alert]')
+    const completion = root.querySelector<HTMLElement>('[data-live-completion]')
+    const announcement = root.querySelector<HTMLElement>('[data-live-announcement]')
+    const commit = root.querySelector<HTMLButtonElement>('[data-live-action="commit"]')
+    const profileInputs = Array.from(root.querySelectorAll<HTMLInputElement>('[data-live-profile]'))
+
+    function announce(message: string): void {
+      if (announcement) announcement.textContent = message
+    }
+
+    function render(message?: string): void {
+      const view = deriveLiveDemoView(state)
+      root.dataset.profile = state.activeProfile
+      root.dataset.guard = view.guard
+      root.dataset.outcome = state.outcome
+
+      if (guard) {
+        guard.textContent =
+          view.guard === 'ready' ? demoCopy.status.guardReady : demoCopy.status.guardBlocked
+        guard.classList.toggle('live-demo-guard--ready', view.guard === 'ready')
+        guard.classList.toggle('live-demo-guard--blocked', view.guard === 'blocked')
+      }
+      if (activeProfile) activeProfile.textContent = state.activeProfile
+      if (safetyHint) {
+        safetyHint.textContent =
+          view.guard === 'ready' ? demoCopy.status.readyHint : demoCopy.status.blockedHint
+      }
+      profileInputs.forEach((input) => {
+        input.checked = input.value === state.activeProfile
+      })
+
+      if (alert) {
+        alert.hidden = !view.issuesVisible
+        if (view.issuesVisible) alert.setAttribute('role', 'alert')
+        else alert.removeAttribute('role')
+      }
+      if (completion) completion.hidden = state.outcome !== 'complete'
+      if (commit) commit.disabled = state.outcome === 'blocked' || state.outcome === 'complete'
+      if (message) announce(message)
+    }
+
+    root.addEventListener('change', (event) => {
+      const input = (event.target as Element | null)?.closest<HTMLInputElement>(
+        '[data-live-profile]'
+      )
+      if (!input || !root.contains(input)) return
+      const profile = input.value as LiveDemoProfile
+      state = reduceLiveDemo(state, { type: 'select-profile', profile })
+      render(profileAnnouncements[profile])
+    })
+
+    root.addEventListener('click', (event) => {
+      const button = (event.target as Element | null)?.closest<HTMLButtonElement>(
+        '[data-live-action]'
+      )
+      if (!button || !root.contains(button)) return
+
+      switch (button.dataset.liveAction) {
+        case 'commit':
+          state = reduceLiveDemo(state, { type: 'attempt-commit' })
+          render(
+            state.outcome === 'complete'
+              ? demoCopy.completion.announcement
+              : demoCopy.accessibility.blockersRevealed
+          )
+          break
+        case 'fix':
+          state = reduceLiveDemo(state, { type: 'apply-profile-fix' })
+          render(demoCopy.accessibility.clientSelected)
+          commit?.focus()
+          break
+        case 'reset': {
+          state = reduceLiveDemo(state, { type: 'reset' })
+          render(demoCopy.accessibility.resetComplete)
+          const personal = profileInputs.find((input) => input.value === 'Personal')
+          personal?.focus()
+          break
+        }
+      }
+    })
+
+    render()
+  })
+</script>
