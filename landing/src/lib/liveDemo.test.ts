@@ -144,4 +144,24 @@ describe('live demo public-code boundary', () => {
     expect(source).not.toMatch(/(?:\.\.\/)+src\//)
     expect(source).not.toMatch(/\b(?:electron|preload|ipc)\b/i)
   })
+
+  it('keeps every live-demo import inside the public landing bundle', () => {
+    const sources = [
+      readFileSync(new URL('../components/LiveDemo.astro', import.meta.url), 'utf8'),
+      readFileSync(new URL('../content/copy.ts', import.meta.url), 'utf8'),
+      readFileSync(new URL('../styles/global.css', import.meta.url), 'utf8'),
+    ]
+
+    const importSpecifiers = sources.flatMap((source) =>
+      Array.from(
+        source.matchAll(/(?:from\s+|import\s*(?:\(|))['"]([^'"]+)['"]/g),
+        (match) => match[1]
+      )
+    )
+
+    expect(importSpecifiers).not.toContainEqual(
+      expect.stringMatching(/(?:^|\/)src\/(?:core|renderer)(?:\/|$)/)
+    )
+    expect(sources.join('\n')).not.toMatch(/(?:\.\.\/)+src\/(?:core|renderer)(?:\/|$)/)
+  })
 })

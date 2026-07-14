@@ -30,6 +30,73 @@ test('is the second section and keeps Download as the primary hero action', asyn
   await expect(page.getByTestId('live-demo')).toBeInViewport()
 })
 
+test('mirrors the real GitWarden shell instead of inventing demo-only app chrome', async ({
+  page,
+}) => {
+  await page.goto('/')
+
+  const demoWindow = page.getByTestId('live-demo-window')
+  const sidebar = demoWindow.getByTestId('live-demo-sidebar')
+  const commitScreen = demoWindow.getByTestId('live-demo-commit-screen')
+  const contextPanel = demoWindow.getByTestId('live-demo-context-panel')
+  const controls = page.getByTestId('live-demo-controls')
+
+  const titlebar = demoWindow.getByTestId('live-demo-titlebar')
+  const appHeader = demoWindow.getByTestId('live-demo-app-header')
+
+  await expect(titlebar).toBeVisible()
+  await expect(appHeader).toBeVisible()
+  await expect(titlebar).toHaveCSS('height', '48px')
+  await expect(appHeader).toHaveCSS('height', '48px')
+  await expect(sidebar.locator('[data-live-nav-label]')).toHaveText([
+    'Profiles',
+    'Repositories',
+    'Status',
+    'Commit',
+    'Remote',
+    'Branches',
+    'History',
+    'Safety Center',
+    'Settings',
+  ])
+  await expect(sidebar.getByText('MANAGE', { exact: true })).toBeVisible()
+  await expect(sidebar.getByText('GIT', { exact: true })).toBeVisible()
+  await expect(sidebar.getByText('APP', { exact: true })).toBeVisible()
+  await expect(commitScreen).toContainText('Commit')
+  await expect(contextPanel).toContainText('Context')
+  await expect(contextPanel).toContainText('AI Chat')
+  await expect(contextPanel).toContainText('PROFILE')
+  await expect(contextPanel).toContainText('REPOSITORY')
+  await expect(contextPanel).toContainText('BRANCH')
+  await expect(contextPanel).toContainText('GUARD')
+
+  await expect(controls).toBeVisible()
+  await expect(controls.getByRole('radio')).toHaveCount(3)
+  await expect(demoWindow.getByTestId('live-demo-controls')).toHaveCount(0)
+
+  await expect(demoWindow.locator('.live-demo-context')).toHaveCount(0)
+  await expect(demoWindow.locator('.live-demo-safety')).toHaveCount(0)
+
+  const [titlebarBox, headerBox, sidebarBox, commitBox, contextBox] = await Promise.all([
+    titlebar.boundingBox(),
+    appHeader.boundingBox(),
+    sidebar.boundingBox(),
+    commitScreen.boundingBox(),
+    contextPanel.boundingBox(),
+  ])
+  expect(titlebarBox).not.toBeNull()
+  expect(headerBox).not.toBeNull()
+  expect(sidebarBox).not.toBeNull()
+  expect(commitBox).not.toBeNull()
+  expect(contextBox).not.toBeNull()
+  expect(headerBox!.y).toBeCloseTo(titlebarBox!.y + titlebarBox!.height, 0)
+  expect(sidebarBox!.y).toBeCloseTo(headerBox!.y + headerBox!.height, 0)
+  expect(commitBox!.y).toBeCloseTo(sidebarBox!.y, 0)
+  expect(contextBox!.y).toBeCloseTo(sidebarBox!.y, 0)
+  expect(sidebarBox!.x + sidebarBox!.width).toBeLessThanOrEqual(commitBox!.x + 1)
+  expect(commitBox!.x + commitBox!.width).toBeLessThanOrEqual(contextBox!.x + 1)
+})
+
 test('switches Guard state immediately and clears stale outcomes', async ({ page }) => {
   await page.goto('/')
   const root = page.getByTestId('live-demo')
@@ -122,20 +189,26 @@ test('uses the app dark/light Guard tokens and removes motion when requested', a
   await page.goto('/')
   const guard = page.getByTestId('live-demo-guard')
 
-  await expect(guard).toHaveCSS('background-color', 'rgb(69, 10, 10)')
+  await expect(guard).toHaveCSS('background-color', 'rgb(220, 38, 38)')
+  await expect(guard).toHaveCSS('color', 'rgb(255, 255, 255)')
   await expect(guard).toHaveCSS('transition-duration', '0s')
+  await page.getByRole('radio', { name: 'Client' }).check()
+  await expect(guard).toHaveCSS('background-color', 'rgb(22, 163, 74)')
+  await page.getByRole('radio', { name: 'Personal' }).check()
 
   await page.getByRole('button', { name: /toggle light and dark/i }).click()
-  await expect(guard).toHaveCSS('background-color', 'rgb(253, 232, 238)')
+  await expect(guard).toHaveCSS('background-color', 'rgb(184, 24, 66)')
   await page.getByRole('radio', { name: 'Client' }).check()
-  await expect(guard).toHaveCSS('background-color', 'rgb(230, 245, 239)')
+  await expect(guard).toHaveCSS('background-color', 'rgb(21, 122, 88)')
 })
 
 test('keeps the full interaction readable and tappable at 375px', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 })
   await page.goto('/')
 
+  await expect(page.locator('.live-demo-titlebar')).toBeHidden()
   await expect(page.locator('.live-demo-sidebar')).toBeHidden()
+  await expect(page.getByTestId('live-demo-context-panel')).toBeHidden()
   await page.getByTestId('live-demo-commit').click()
   await expect(page.getByTestId('live-demo-alert')).toBeVisible()
   await expect(page.getByTestId('live-demo-fix')).toBeVisible()
@@ -149,6 +222,23 @@ test('keeps the full interaction readable and tappable at 375px', async ({ page 
       await control.evaluate((element) => element.getBoundingClientRect().height)
     ).toBeGreaterThanOrEqual(44)
   }
+
+  const offenders = await page.evaluate(() => {
+    const viewportWidth = document.documentElement.clientWidth
+    return [...document.querySelectorAll('#live-demo *')]
+      .filter((element) => element.getBoundingClientRect().right > viewportWidth + 1)
+      .map((element) => `${element.tagName}.${element.className}`)
+      .slice(0, 8)
+  })
+  expect(offenders, offenders.join(' | ')).toEqual([])
+})
+
+test('keeps the compact app shell contained at tablet width', async ({ page }) => {
+  await page.setViewportSize({ width: 768, height: 900 })
+  await page.goto('/')
+
+  await expect(page.getByTestId('live-demo-sidebar')).toBeVisible()
+  await expect(page.getByTestId('live-demo-context-panel')).toBeHidden()
 
   const offenders = await page.evaluate(() => {
     const viewportWidth = document.documentElement.clientWidth
