@@ -171,6 +171,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] Phase 106 — Unique working-copy count (pure core)
 - [x] Phase 107 — Working-copy destination card and truthful labels (renderer + e2e)
 
+### Landing Live Demo feature (plan: `docs/plans/landing-live-demo-plan.md`, prompts: `docs/prompts/landing-live-demo-prompts.md`)
+
+- [x] Phase 108 — Scripted demo model and copy contract (landing-local pure TypeScript)
+- [ ] Phase 109 — App-faithful Live Demo UI and landing integration (Astro + e2e)
+
 ### Agentic DX track (plan: `docs/plans/agentic-dx-plan.md`, prompts: `docs/prompts/dx-execution-prompts.md`)
 
 > Not product phases — a separate developer-experience track (steps DX-0…DX-6, no global phase
@@ -212,6 +217,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | Branch-Switch Data Integrity | 89–97     | ✅ complete                                                   |
 | QA Fixes                     | 98–105    | ✅ complete                                                   |
 | Working-Copy Destination     | 106–107   | ✅ complete                                                   |
+| Landing Live Demo            | 108–109   | 🟡 Phase 108 done; 109 open                                  |
 | Agentic DX                   | DX-0–DX-6 | ✅ complete (DX-6 = à la carte; project-factory/sdd deferred) |
 
 ## Progress Log
@@ -1566,3 +1572,11 @@ Moved the v0.5.1 tag to the previous commit and re-triggered: macOS green again,
 ### 2026-07-13 — v0.5.2 released
 
 - Patch release adding a clear Working Copy destination card on the Status screen, so uncommitted work and its post-commit destination are easier to understand.
+
+### 2026-07-14 — Phase 108: Scripted demo model and copy contract
+
+- Built: A landing-local, deterministic Personal / Work / Client simulation model with blocked, ready, quick-fix, completion, profile-change, and reset transitions; centralized Live Demo scenario, accessibility, no-JavaScript, completion, and app-derived copy with provenance; unit and source-boundary coverage proving the public model imports no desktop/core implementation.
+- Files: added `landing/src/lib/liveDemo.ts` and `landing/src/lib/liveDemo.test.ts`; updated `landing/src/content/copy.ts`; registered the track in its plan/prompt and derived workflow docs.
+- Tests: from `landing/`, `npm run check` (0 errors), `npm run typecheck`, `npm test` (**46/46**, 5 files), and `npm run lint` passed. Repository-wide gate also passed: both TypeScript projects, `npm test` (**1077/1077**, 119 files), and `npm run lint`.
+- Exit criteria: ✅ met — every profile/event outcome and all eight exact app-derived literals are pinned; the model is pure, deterministic, and landing-local; the source-boundary assertion rejects desktop/core, Electron, preload, and IPC references.
+- Notes / follow-ups: No specialist reviewer applied because this phase touched no `src/core/`, main Git/AI, IPC, or desktop safety path. Phase 109 adds the Astro UI, responsive/accessibility behavior, built-output boundary check, and landing e2e coverage.

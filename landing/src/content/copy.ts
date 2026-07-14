@@ -36,6 +36,86 @@ export const copy = {
     errorLink: 'See all releases →',
   },
 
+  liveDemo: {
+    section: {
+      eyebrow: 'Interactive demo',
+      heading: 'Catch the wrong Git identity before it becomes a commit.',
+      subhead:
+        'Switch profiles, try the commit, and see GitWarden stop a Client repository from using the wrong identity.',
+      heroAnchor: 'Try the live demo ↓',
+    },
+    scenario: {
+      repository: 'northwind-portal',
+      branch: 'main',
+      assignedProfile: 'Client',
+      effectiveIdentityName: 'Morgan Client',
+      effectiveIdentityEmail: 'morgan@northwind.example',
+      stagedFile: 'src/client/access.ts',
+      commitMessage: 'Update client access rules',
+    },
+    window: {
+      appName: 'GitWarden',
+      checkedOut: 'Checked out:',
+      repositoryLabel: 'Repository',
+      branchLabel: 'Branch',
+      assignedProfileLabel: 'Assigned profile',
+      localIdentityLabel: 'Local Git identity',
+      navigationLabel: 'Git navigation',
+      statusNav: 'Status',
+      commitNav: 'Commit',
+      branchesNav: 'Branches',
+      stagedHeading: 'STAGED CHANGES (1)',
+      messageLabel: 'Commit message',
+      safetyHeading: 'Safety check',
+      blockedHeading: 'Commit blocked',
+    },
+    controls: {
+      activeProfileLabel: 'Active profile',
+      profileGroupLabel: 'Choose the active profile',
+      personalProfile: 'Personal',
+      workProfile: 'Work',
+      clientProfile: 'Client',
+      // Copied verbatim from src/renderer/strings.ts REMEDIATION_SWITCH_PROFILE('Client').
+      quickFix: 'Switch to "Client"',
+      // Copied verbatim from src/renderer/strings.ts REMEDIATION_FIXING.
+      fixing: 'Fixing…',
+      // Copied verbatim from src/renderer/screens/CommitScreen.tsx.
+      commit: 'Commit Changes',
+      reset: 'Reset demo',
+    },
+    status: {
+      // Copied verbatim from src/renderer/strings.ts GUARD_READY.
+      guardReady: 'Guard · Ready',
+      // Copied verbatim from src/renderer/strings.ts GUARD_BLOCKED.
+      guardBlocked: 'Guard · Blocked',
+      readyHint: 'Identity matches the Client profile. This simulated commit can continue.',
+      blockedHint: 'This Client repository is using the wrong active profile.',
+    },
+    issues: {
+      // Copied verbatim from src/core/safety/safetyMessages.ts PROFILE_MISMATCH.
+      profileMismatch: 'The active profile does not match this repository’s assigned profile.',
+      // Copied verbatim from src/core/safety/safetyMessages.ts NAME_MISMATCH.
+      nameMismatch: 'Your Git author name does not match the active profile.',
+      // Copied verbatim from src/core/safety/safetyMessages.ts EMAIL_MISMATCH.
+      emailMismatch: 'Your Git author email does not match the active profile.',
+    },
+    accessibility: {
+      guardStatusLabel: 'Guard status',
+      personalSelected: 'Personal profile selected. Guard blocked for this Client repository.',
+      workSelected: 'Work profile selected. Guard blocked for this Client repository.',
+      clientSelected: 'Client profile selected. Guard ready.',
+      blockersRevealed: 'Commit blocked. Three identity mismatches found.',
+      resetComplete: 'Demo reset. Personal profile selected. Guard blocked.',
+    },
+    noScript:
+      'Enable JavaScript to try the profile switch. This fixed scenario starts blocked because Personal is active for a repository assigned to Client.',
+    completion: {
+      heading: 'Simulated commit passed',
+      body: 'GitWarden would allow this commit. No repository was changed.',
+      announcement: 'Simulation complete. Guard ready. No repository was changed.',
+    },
+  },
+
   allDownloads: {
     heading: 'All downloads',
     subhead:

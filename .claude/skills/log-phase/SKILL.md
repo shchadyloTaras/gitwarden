@@ -75,6 +75,7 @@ Look up which track owns phase `$N`:
 | 89–97       | Branch-Switch Data Integrity |
 | 98–105      | QA Fixes                     |
 | 106–107     | Working-Copy Destination     |
+| 108–109     | Landing Live Demo            |
 | DX-0–DX-6   | Agentic DX                   |
 
 Count that track's checklist entries:

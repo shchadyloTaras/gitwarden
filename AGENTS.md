@@ -72,7 +72,7 @@ npm run build    # electron-builder package
 
 ## Build order (dependency-driven)
 
-`0→…→20` (MVP) → `21→27` (GitHub OAuth) → `28→39` (AI Connections) → `52→55a` (AI Chat) → `56→59` (Client Branch Access) → `60→62` (GenUI Blocks) → `46→51` (Landing; live at gitwarden.vercel.app) → `63→67` (Guard Quick-Fix) → `68→71` (Diverged-Branch Merge) → `72→75` (Private-Source Distribution) → `76→79` (Uncommit to Working Changes) → `80→81` (Connect-Return Check) → `82→84` (Merge a Branch) → `85→88` (Initialize Repository) → `89→97` (Branch-Switch Data Integrity) → `98→105` (QA Fixes) → `106→107` (Working-Copy Destination) | partial: `40→45` (Distribution; 43–44 open, gated on signing certs) | DX track: `DX-0→DX-6` (complete, agentic-dx-plan.md)
+`0→…→20` (MVP) → `21→27` (GitHub OAuth) → `28→39` (AI Connections) → `52→55a` (AI Chat) → `56→59` (Client Branch Access) → `60→62` (GenUI Blocks) → `46→51` (Landing; live at gitwarden.vercel.app) → `63→67` (Guard Quick-Fix) → `68→71` (Diverged-Branch Merge) → `72→75` (Private-Source Distribution) → `76→79` (Uncommit to Working Changes) → `80→81` (Connect-Return Check) → `82→84` (Merge a Branch) → `85→88` (Initialize Repository) → `89→97` (Branch-Switch Data Integrity) → `98→105` (QA Fixes) → `106→107` (Working-Copy Destination) | partial: `40→45` (Distribution; 43–44 open, gated on signing certs); `108→109` (Landing Live Demo; 108 done, 109 open) | DX track: `DX-0→DX-6` (complete, agentic-dx-plan.md)
 
 Logic and infra are built and fully tested before any UI, so the engine is verified headlessly first. The built/partial/unbuilt split above is a **derived view** of the Phase Checklist in `docs/progress-log.md` (authoritative) — re-derive it whenever a phase flips to `[x]`; do not hand-pin completion here. Full status: `docs/progress-log.md`.
 
@@ -114,6 +114,7 @@ This keeps SDD documentation work visible alongside phase progress in the same l
 - **AI Connections feature:** `docs/plans/ai-integration-plan.md` + `docs/prompts/ai-integration-prompts.md`
 - **Distribution & Release:** `docs/plans/distribution-release-plan.md` + `docs/prompts/distribution-release-prompts.md`
 - **Landing Page:** `docs/plans/landing-page-plan.md` + `docs/prompts/landing-page-prompts.md`
+- **Landing Live Demo:** `docs/plans/landing-live-demo-plan.md` + `docs/prompts/landing-live-demo-prompts.md`
 - **AI Chat Redesign:** `docs/plans/ai-chat-redesign-plan.md`
 - **Client Branch Access:** `docs/plans/client-branch-access-plan.md` + `docs/prompts/client-branch-access-prompts.md`
 - **Generative UI Blocks:** `docs/plans/genui-blocks-plan.md` + `docs/prompts/genui-blocks-prompts.md`
