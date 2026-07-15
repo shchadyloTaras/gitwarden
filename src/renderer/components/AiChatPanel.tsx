@@ -94,6 +94,12 @@ function ChatInlineSetup(): React.ReactElement {
   const saveCredential = useAiStore((s) => s.saveCredential)
   const listModels = useAiStore((s) => s.listModels)
   const navigate = useAppStore((s) => s.navigate)
+  const connections = useAiStore((s) => s.connections)
+  const activeConnectionId = useAiStore((s) => s.activeConnectionId)
+  // A connection can exist without ever having a working key (e.g. an earlier save was
+  // interrupted between createConnection and saveCredential). When that's the case, finish
+  // setting up THIS connection instead of creating a second, duplicate one.
+  const existing = connections.find((c) => c.id === activeConnectionId) ?? connections[0] ?? null
 
   const [apiKey, setApiKey] = useState('')
   const [detection, setDetection] = useState<AiProviderDetection | null>(null)
@@ -126,20 +132,34 @@ function ChatInlineSetup(): React.ReactElement {
       const effectiveBaseUrl = showBaseUrl
         ? baseUrl.trim() || undefined
         : detection.suggestedBaseUrl
-      const created = await createConnection({
-        name: titleCaseKind(detection.kind),
-        kind: detection.kind,
-        baseUrl: effectiveBaseUrl,
-      })
-      if (!created) {
+
+      let connectionId: string | undefined
+      if (existing) {
+        // Repair the existing (keyless) connection in place — re-detect from the pasted
+        // key so a stale/mismatched kind or base URL self-heals too.
+        await updateConnection(existing.id, {
+          name: titleCaseKind(detection.kind),
+          kind: detection.kind,
+          baseUrl: effectiveBaseUrl,
+        })
+        connectionId = existing.id
+      } else {
+        const created = await createConnection({
+          name: titleCaseKind(detection.kind),
+          kind: detection.kind,
+          baseUrl: effectiveBaseUrl,
+        })
+        connectionId = created?.id
+      }
+      if (!connectionId) {
         setError(STR.AI_SAVE_ERROR)
         return
       }
-      await saveCredential(created.id, `${titleCaseKind(detection.kind)} key`, {
+      await saveCredential(connectionId, `${titleCaseKind(detection.kind)} key`, {
         apiKey: apiKey.trim(),
       })
-      const fetched = await listModels(created.id)
-      if (fetched[0]) await updateConnection(created.id, { defaultModel: fetched[0].id })
+      const fetched = await listModels(connectionId)
+      if (fetched[0]) await updateConnection(connectionId, { defaultModel: fetched[0].id })
     } catch (err) {
       setError(err instanceof Error ? err.message : STR.AI_SAVE_ERROR)
     } finally {
@@ -149,8 +169,12 @@ function ChatInlineSetup(): React.ReactElement {
 
   return (
     <div data-testid="ai-chat-setup" style={{ padding: 14, overflowY: 'auto' }}>
-      <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>{STR.CHAT_SETUP_TITLE}</div>
-      <p style={{ ...HINT, marginTop: 0, marginBottom: 14 }}>{STR.CHAT_SETUP_HINT}</p>
+      <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>
+        {existing ? STR.CHAT_SETUP_TITLE_NEEDS_KEY : STR.CHAT_SETUP_TITLE}
+      </div>
+      <p style={{ ...HINT, marginTop: 0, marginBottom: 14 }}>
+        {existing ? STR.CHAT_SETUP_HINT_NEEDS_KEY : STR.CHAT_SETUP_HINT}
+      </p>
 
       <input
         data-testid="ai-chat-key-input"
@@ -588,20 +612,26 @@ export default function AiChatPanel(): React.ReactElement {
   const setAiEnabled = useAiStore((s) => s.setAiEnabled)
   const connections = useAiStore((s) => s.connections)
   const activeConnectionId = useAiStore((s) => s.activeConnectionId)
+  const credentialMeta = useAiStore((s) => s.credentialMeta)
   const clear = useAiChatStore((s) => s.clear)
   const active = connections.find((c) => c.id === activeConnectionId) ?? connections[0] ?? null
+  // A connection existing isn't enough to call AI "ready" — it must also have a saved
+  // key. Without this, a connection created but never given a working credential (e.g.
+  // an interrupted save) rendered the full chat composer as if it would work, only to
+  // fail on send with a raw backend error instead of ever explaining what's missing.
+  const ready = active !== null && credentialMeta !== null
 
   useEffect(() => {
     void load()
   }, [load])
 
   useEffect(() => {
-    if (active && !aiEnabled) void setAiEnabled(true)
-  }, [active, aiEnabled, setAiEnabled])
+    if (ready && !aiEnabled) void setAiEnabled(true)
+  }, [ready, aiEnabled, setAiEnabled])
 
   return (
     <div data-testid="ai-chat-panel" className="gw-chat-panel">
-      {active ? <ChatConversation onClear={() => clear()} /> : <ChatInlineSetup />}
+      {ready ? <ChatConversation onClear={() => clear()} /> : <ChatInlineSetup />}
     </div>
   )
 }

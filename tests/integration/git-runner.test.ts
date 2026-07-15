@@ -74,6 +74,17 @@ describe('GitRunner integration', () => {
     expect((err as GitError).code).toBe('branchNotFound')
   })
 
+  it('maps a missing git binary to a friendly gitNotFound GitError instead of the raw spawn error', async () => {
+    const missingGitRunner = new GitRunner(path.join(tmpDir, 'no-such-git-binary'))
+    const err = await missingGitRunner
+      .run({ args: ['status'], cwd: repoPath, readOnly: true })
+      .catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(GitError)
+    expect((err as GitError).code).toBe('gitNotFound')
+    expect((err as GitError).message).not.toContain('ENOENT')
+    expect((err as GitError).message).toContain('Settings')
+  })
+
   it('serializes concurrent mutating ops per cwd', async () => {
     const p1 = runner.run({
       args: ['config', 'user.name', 'Alice'],

@@ -85,11 +85,13 @@ export class GitRunner {
       child.stdout.on('data', (chunk: Buffer) => stdoutChunks.push(chunk))
       child.stderr.on('data', (chunk: Buffer) => stderrChunks.push(chunk.toString()))
 
-      child.on('error', (err) => {
+      child.on('error', (err: NodeJS.ErrnoException) => {
         if (settled) return
         settled = true
         cleanup()
-        reject(err)
+        // Raw Node spawn errors (e.g. "spawn /usr/bin/git ENOENT") are not user-facing —
+        // map to the same typed GitError every other git failure produces.
+        reject(ErrorMapper.mapSpawnFailure(err, this.gitPath))
       })
 
       child.on('close', (code) => {

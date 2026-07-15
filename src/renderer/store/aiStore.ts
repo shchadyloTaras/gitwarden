@@ -134,8 +134,12 @@ interface AiState {
   setAiEnabled(enabled: boolean): Promise<void>
 }
 
+// Mirrors the fallback the renderer uses everywhere it resolves "the" active connection
+// (AiChatPanel, AiConnectionSettings): fall back to the first connection when nothing is
+// explicitly marked active (e.g. after deleting the active one) — so credentialMeta always
+// describes the same connection the UI is showing, not a stale "no active id" null.
 function activeOf(connections: AiConnection[], activeId: string | undefined): AiConnection | null {
-  return connections.find((c) => c.id === activeId) ?? null
+  return connections.find((c) => c.id === activeId) ?? connections[0] ?? null
 }
 
 function dedupeModels(models: AiModelInfo[]): AiModelInfo[] {

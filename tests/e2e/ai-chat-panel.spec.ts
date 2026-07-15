@@ -191,6 +191,41 @@ test.describe('AI Chat panel', () => {
     await expect(win.getByTestId('ai-chat-input')).toHaveCount(0)
   })
 
+  test('chat shows setup (not the live chat) for a connection with no saved key, and repairs it in place', async () => {
+    // Simulates an interrupted setup: a connection object exists (e.g. createConnection
+    // succeeded) but saveCredential never ran. The chat must not treat this as "ready".
+    await win.evaluate(async () => {
+      const api = (window as Window & typeof globalThis).api
+      const created = await api.ai.createConnection({ name: 'Incomplete', kind: 'openrouter' })
+      if (!created.ok) throw new Error('connection create failed')
+    })
+    await createRepo(win)
+
+    await win.getByTestId('header-ai-chat').click()
+    await expect(win.getByTestId('ai-chat-setup')).toBeVisible()
+    await expect(win.getByTestId('ai-chat-input')).toHaveCount(0)
+
+    const countBefore = await win.evaluate(async () => {
+      const api = (window as Window & typeof globalThis).api
+      const res = await api.ai.listConnections()
+      return res.ok ? res.data.connections.length : -1
+    })
+    expect(countBefore).toBe(1)
+
+    await win.getByTestId('ai-chat-key-input').fill('sk-ant-fake')
+    await expect(win.getByTestId('ai-chat-detected')).toContainText('Anthropic')
+    await win.getByTestId('ai-chat-save-connection').click()
+
+    // Saving repairs the SAME connection — no duplicate — and drops straight into the chat.
+    await expect(win.getByTestId('ai-chat-input')).toBeVisible({ timeout: 10000 })
+    const countAfter = await win.evaluate(async () => {
+      const api = (window as Window & typeof globalThis).api
+      const res = await api.ai.listConnections()
+      return res.ok ? res.data.connections.length : -1
+    })
+    expect(countAfter).toBe(1)
+  })
+
   test('free-text reply upgrades the bubble with a commit-draft card (Level 2)', async () => {
     await win.evaluate(async () => {
       const api = (window as Window & typeof globalThis).api

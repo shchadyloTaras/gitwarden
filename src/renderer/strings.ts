@@ -381,6 +381,12 @@ export const STR = {
   CHAT_SETUP_TITLE: 'Connect an AI provider',
   CHAT_SETUP_HINT:
     'Paste an API key to set up a connection. Git Warden detects the provider and stores the key encrypted on this machine.',
+  // Shown instead of the above when a connection already exists but never got a working
+  // key (e.g. an earlier save was interrupted) — the chat isn't broken, it just isn't
+  // set up yet, and this must say so plainly rather than showing a chat that then fails.
+  CHAT_SETUP_TITLE_NEEDS_KEY: 'Add an API key to use AI Chat',
+  CHAT_SETUP_HINT_NEEDS_KEY:
+    "This connection has no API key saved yet, so AI Chat can't run. Paste a key below to finish setup — nothing is sent until you do.",
   CHAT_SETUP_OPEN_SETTINGS: 'Advanced setup in Settings',
   CHAT_MODEL_LABEL: 'Model',
   CHAT_CAPABILITY_STRUCTURED_PARSE_ERROR:
