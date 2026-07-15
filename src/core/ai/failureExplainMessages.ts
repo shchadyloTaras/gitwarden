@@ -82,7 +82,7 @@ export function actionHintForFailure(code: GitErrorCode): string {
     case 'networkError':
       return 'Check your network connection and try again.'
     case 'gitNotFound':
-      return 'Set a valid Git executable path in Settings.'
+      return 'Make sure Git is installed and on your PATH, then restart GitWarden.'
     case 'noCredentialsAvailable':
       return 'Connect GitHub for this profile so GitWarden has a token to push with.'
     case 'localChangesWouldBeOverwritten':

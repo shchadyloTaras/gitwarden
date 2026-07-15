@@ -24,16 +24,16 @@ export class ErrorMapper {
   /**
    * Maps a `child_process.spawn` 'error' event (thrown before git ever runs, so there is
    * no stderr/exit code to classify) to the same typed GitError the rest of the app
-   * expects. GitRunner resolves `gitPath` once at startup — if the binary is later moved,
-   * uninstalled, or a stale custom path no longer exists, every subsequent command hits
-   * this, and without this mapping the raw Node message (e.g. "spawn /usr/bin/git ENOENT")
-   * leaked straight through to the UI instead of the existing `gitNotFound` explanation.
+   * expects. GitRunner resolves `gitPath` once at startup — if the binary is later moved
+   * or uninstalled, every subsequent command hits this, and without this mapping the raw
+   * Node message (e.g. "spawn /usr/bin/git ENOENT") leaked straight through to the UI
+   * instead of the existing `gitNotFound` explanation.
    */
   static mapSpawnFailure(err: NodeJS.ErrnoException, gitPath: string): GitError {
     if (err.code === 'ENOENT') {
       return new GitError({
         code: 'gitNotFound',
-        userMessage: `Git could not be found at "${gitPath}". It may have been moved or uninstalled since Git Warden started — set a valid Git executable path in Settings.`,
+        userMessage: `Git could not be found at "${gitPath}". It may have been moved or uninstalled since Git Warden started — reinstall Git or make sure it is on your PATH.`,
         technicalDetails: err.message,
       })
     }

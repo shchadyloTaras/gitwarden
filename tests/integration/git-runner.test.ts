@@ -82,7 +82,7 @@ describe('GitRunner integration', () => {
     expect(err).toBeInstanceOf(GitError)
     expect((err as GitError).code).toBe('gitNotFound')
     expect((err as GitError).message).not.toContain('ENOENT')
-    expect((err as GitError).message).toContain('Settings')
+    expect((err as GitError).message).toContain('PATH')
   })
 
   it('serializes concurrent mutating ops per cwd', async () => {

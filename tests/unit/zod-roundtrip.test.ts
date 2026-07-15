@@ -125,8 +125,6 @@ describe('AppSettings round-trip', () => {
     activeProfileId: 'p-1',
     lastOpenedRepositoryId: 'r-1',
     appearance: 'dark' as const,
-    customGitPath: '/usr/local/bin/git',
-    defaultProjectsFolder: '/home/alice/projects',
     onboardingCompletedAt: '2026-06-23T12:00:00.000Z',
     onboardingSkippedAt: '2026-06-23T11:00:00.000Z',
   }

@@ -220,8 +220,6 @@ export interface AppSettings {
   activeProfileId?: string
   lastOpenedRepositoryId?: string
   appearance: AppearanceMode
-  customGitPath?: string
-  defaultProjectsFolder?: string
   onboardingCompletedAt?: string
   onboardingSkippedAt?: string
   /**

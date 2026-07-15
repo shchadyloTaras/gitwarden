@@ -243,13 +243,7 @@ app.whenReady().then(async () => {
     appearance: 'system',
   })
 
-  const initialSettings = await settingsStore.read()
-  let gitPath: string
-  try {
-    gitPath = await GitLocator.locate(initialSettings.customGitPath)
-  } catch {
-    gitPath = await GitLocator.locate()
-  }
+  const gitPath = await GitLocator.locate()
   const gitRunner = new GitRunner(gitPath)
 
   const profiles = new ProfileService(profilesStore)

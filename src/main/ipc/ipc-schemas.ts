@@ -67,8 +67,6 @@ export const GitOutgoingCommitsPayload = z.object({
   branch: z.string(),
 })
 
-export const GitValidatePathPayload = z.object({ gitPath: z.string().min(1) })
-
 export const GitCommitPayload = z.object({
   repoPath: z.string(),
   message: z.string().min(1),

@@ -68,7 +68,6 @@ describe('SettingsService', () => {
     await serviceA.update({
       appearance: 'dark',
       activeProfileId: 'p42',
-      defaultProjectsFolder: '/tmp/projects',
       onboardingCompletedAt: '2026-06-23T12:00:00.000Z',
     })
 
@@ -77,7 +76,6 @@ describe('SettingsService', () => {
     const s = await serviceB.get()
     expect(s.appearance).toBe('dark')
     expect(s.activeProfileId).toBe('p42')
-    expect(s.defaultProjectsFolder).toBe('/tmp/projects')
     expect(s.onboardingCompletedAt).toBe('2026-06-23T12:00:00.000Z')
   })
 })

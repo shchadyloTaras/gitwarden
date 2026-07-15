@@ -18,11 +18,7 @@ function launchApp(): Promise<ElectronApplication> {
 async function cleanupAll(win: Page): Promise<void> {
   await win.evaluate(async () => {
     const api = (window as Window & typeof globalThis).api
-    await api.settings.update({
-      appearance: 'system',
-      customGitPath: undefined,
-      defaultProjectsFolder: undefined,
-    })
+    await api.settings.update({ appearance: 'system' })
   })
 }
 
@@ -38,7 +34,7 @@ test.afterAll(() => {
   }
 })
 
-test('Settings screen renders with appearance picker and git path input', async () => {
+test('Settings screen renders with appearance picker', async () => {
   let app: ElectronApplication | null = null
   try {
     app = await launchApp()
@@ -49,23 +45,21 @@ test('Settings screen renders with appearance picker and git path input', async 
     await win.click('[data-testid="nav-settings"]')
     await win.waitForSelector('[data-testid="screen-settings"]')
 
-    // General is the default tab: appearance picker + default folder visible.
+    // General is the default tab: appearance picker visible.
     await expect(win.locator('[data-testid="settings-appearance-system"]')).toBeVisible()
     await expect(win.locator('[data-testid="settings-appearance-light"]')).toBeVisible()
     await expect(win.locator('[data-testid="settings-appearance-dark"]')).toBeVisible()
-    await expect(win.locator('[data-testid="settings-default-folder-input"]')).toBeVisible()
 
-    // Custom Git Path lives under the Git tab — hidden until that tab is active.
+    // The Git tab and its custom-path input have been removed.
+    await expect(win.locator('[data-testid="settings-tab-git"]')).toHaveCount(0)
     await expect(win.locator('[data-testid="settings-git-path-input"]')).toHaveCount(0)
-    await win.click('[data-testid="settings-tab-git"]')
-    await expect(win.locator('[data-testid="settings-git-path-input"]')).toBeVisible()
-    await expect(win.locator('[data-testid="settings-git-path-validate"]')).toBeVisible()
+    await expect(win.locator('[data-testid="settings-default-folder-input"]')).toHaveCount(0)
   } finally {
     await app?.close()
   }
 })
 
-test('Settings screen — tab navigation switches between General, Git, AI Assistant and Walkthrough', async () => {
+test('Settings screen — tab navigation switches between General, AI Assistant and Walkthrough', async () => {
   let app: ElectronApplication | null = null
   try {
     app = await launchApp()
@@ -85,12 +79,6 @@ test('Settings screen — tab navigation switches between General, Git, AI Assis
       'aria-selected',
       'true'
     )
-
-    // Git tab → Custom Git Path.
-    await win.click('[data-testid="settings-tab-git"]')
-    await expect(win.locator('[data-testid="settings-tabpanel-git"]')).toBeVisible()
-    await expect(win.locator('[data-testid="settings-git-path-input"]')).toBeVisible()
-    await expect(win.locator('[data-testid="settings-appearance-picker"]')).toHaveCount(0)
 
     // AI Assistant tab → connection setup.
     await win.click('[data-testid="settings-tab-ai"]')
@@ -133,53 +121,6 @@ test('Settings screen — changing appearance enables Save and persists after re
     // Save
     await win.click('[data-testid="settings-save"]')
     await win.waitForSelector('[data-testid="settings-saved-msg"]')
-
-    await win.fill('[data-testid="settings-default-folder-input"]', os.tmpdir())
-    await win.click('[data-testid="settings-save"]')
-    await win.waitForSelector('[data-testid="settings-saved-msg"]')
-
-    await cleanupAll(win)
-  } finally {
-    await app?.close()
-  }
-})
-
-test('Settings screen — git path validation with real git binary', async () => {
-  let app: ElectronApplication | null = null
-  try {
-    app = await launchApp()
-    const win = await app.firstWindow()
-    await win.waitForSelector('[data-testid="main-content"]')
-
-    await win.click('[data-testid="nav-settings"]')
-    await win.waitForSelector('[data-testid="screen-settings"]')
-
-    // Custom Git Path lives under the Git tab.
-    await win.click('[data-testid="settings-tab-git"]')
-    await win.waitForSelector('[data-testid="settings-git-path-input"]')
-
-    // Find the real git path on this machine
-    let gitPath = '/usr/bin/git'
-    try {
-      gitPath = execSync('which git', { encoding: 'utf8' }).trim()
-    } catch {
-      // fallback to /usr/bin/git
-    }
-
-    // Type the git path
-    await win.fill('[data-testid="settings-git-path-input"]', gitPath)
-
-    // Validate button should be enabled
-    const validateBtn = win.locator('[data-testid="settings-git-path-validate"]')
-    await expect(validateBtn).toBeEnabled()
-
-    // Click validate
-    await win.click('[data-testid="settings-git-path-validate"]')
-
-    // Should show valid indicator
-    await win.waitForSelector('[data-testid="settings-git-valid"]')
-    const validText = await win.textContent('[data-testid="settings-git-valid"]')
-    expect(validText).toContain('git version')
 
     await cleanupAll(win)
   } finally {

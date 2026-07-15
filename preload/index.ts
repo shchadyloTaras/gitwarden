@@ -230,8 +230,6 @@ export const api = {
       invoke('git:discardFile', { repoPath, filePath }),
     cleanFile: (repoPath: string, filePath: string): Promise<IpcResult<void>> =>
       invoke('git:cleanFile', { repoPath, filePath }),
-    validateGitPath: (gitPath: string): Promise<IpcResult<{ version: string }>> =>
-      invoke('git:validateGitPath', { gitPath }),
   },
   history: {
     getReturnState: (repoPath: string): Promise<IpcResult<UncommitReturnState>> =>

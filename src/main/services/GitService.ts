@@ -13,7 +13,6 @@ import type {
 import { parsePorcelainV2 } from '../../core/parsers/PorcelainParser.js'
 import type { UncommitContext } from '../../core/history/uncommit.js'
 import type { GitRunner, GitInvocation, GitResult } from '../git/GitRunner.js'
-import { GitLocator } from '../git/GitLocator.js'
 import { buildAskpassEnv, ensureAskpassHelper } from '../git/askpass.js'
 import { GitError } from '../git/ErrorMapper.js'
 
@@ -731,10 +730,6 @@ export class GitService {
       cwd: repoPath,
       readOnly: false,
     })
-  }
-
-  async validateGitPath(gitPath: string): Promise<{ version: string }> {
-    return GitLocator.inspect(gitPath)
   }
 
   async getDiff(repoPath: string, filePath: string, staged: boolean): Promise<string> {

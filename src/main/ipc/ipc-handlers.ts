@@ -64,7 +64,6 @@ import {
   GitCreateBranchPayload,
   GitHistoryPayload,
   HistoryReturnPayload,
-  GitValidatePathPayload,
   GitHubStartDeviceAuthPayload,
   GitHubCancelDeviceAuthPayload,
   GitHubRefreshDeviceAuthPayload,
@@ -527,13 +526,6 @@ export function registerIpcHandlers(services: Services): void {
     wrap(async () => {
       const { repoPath, filePath } = GitFilePathPayload.parse(raw)
       return services.git.cleanFile(repoPath, filePath)
-    })
-  )
-
-  ipcMain.handle('git:validateGitPath', (_e, raw: unknown) =>
-    wrap(async () => {
-      const { gitPath } = GitValidatePathPayload.parse(raw)
-      return services.git.validateGitPath(gitPath)
     })
   )
 

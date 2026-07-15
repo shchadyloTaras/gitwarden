@@ -3,8 +3,6 @@ import type { AppearanceMode } from '../../core/types'
 
 interface SettingsState {
   appearance: AppearanceMode
-  customGitPath: string | undefined
-  defaultProjectsFolder: string | undefined
   onboardingCompletedAt: string | undefined
   onboardingSkippedAt: string | undefined
   loading: boolean
@@ -12,8 +10,6 @@ interface SettingsState {
   load(): Promise<void>
   update(patch: {
     appearance?: AppearanceMode
-    customGitPath?: string | undefined
-    defaultProjectsFolder?: string | undefined
     onboardingCompletedAt?: string | undefined
     onboardingSkippedAt?: string | undefined
   }): Promise<void>
@@ -23,8 +19,6 @@ interface SettingsState {
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   appearance: 'system',
-  customGitPath: undefined,
-  defaultProjectsFolder: undefined,
   onboardingCompletedAt: undefined,
   onboardingSkippedAt: undefined,
   loading: false,
@@ -38,8 +32,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       if (result.ok) {
         set({
           appearance: result.data.appearance ?? 'system',
-          customGitPath: result.data.customGitPath,
-          defaultProjectsFolder: result.data.defaultProjectsFolder,
           onboardingCompletedAt: result.data.onboardingCompletedAt,
           onboardingSkippedAt: result.data.onboardingSkippedAt,
           loading: false,
@@ -53,11 +45,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
 
   async update(patch) {
-    const hasCustomGitPath = Object.prototype.hasOwnProperty.call(patch, 'customGitPath')
-    const hasDefaultProjectsFolder = Object.prototype.hasOwnProperty.call(
-      patch,
-      'defaultProjectsFolder'
-    )
     const hasOnboardingCompletedAt = Object.prototype.hasOwnProperty.call(
       patch,
       'onboardingCompletedAt'
@@ -68,10 +55,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     )
     const result = await window.api.settings.update({
       ...(patch.appearance !== undefined ? { appearance: patch.appearance } : {}),
-      ...(hasCustomGitPath ? { customGitPath: patch.customGitPath || undefined } : {}),
-      ...(hasDefaultProjectsFolder
-        ? { defaultProjectsFolder: patch.defaultProjectsFolder || undefined }
-        : {}),
       ...(hasOnboardingCompletedAt
         ? { onboardingCompletedAt: patch.onboardingCompletedAt || undefined }
         : {}),
@@ -82,8 +65,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     if (result.ok) {
       set({
         appearance: result.data.appearance ?? 'system',
-        customGitPath: result.data.customGitPath,
-        defaultProjectsFolder: result.data.defaultProjectsFolder,
         onboardingCompletedAt: result.data.onboardingCompletedAt,
         onboardingSkippedAt: result.data.onboardingSkippedAt,
       })

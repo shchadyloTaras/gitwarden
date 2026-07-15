@@ -9,12 +9,7 @@ const COMMON_LOCATIONS: Record<string, string[]> = {
 }
 
 export class GitLocator {
-  static async locate(customPath?: string): Promise<string> {
-    if (customPath) {
-      if (await GitLocator.verify(customPath)) return customPath
-      throw new Error(`Custom Git path is not valid or executable: ${customPath}`)
-    }
-
+  static async locate(): Promise<string> {
     const fromPath = await GitLocator.findInSystemPath()
     if (fromPath) return fromPath
 
@@ -23,10 +18,7 @@ export class GitLocator {
       if (await GitLocator.verify(candidate)) return candidate
     }
 
-    throw new Error(
-      'Git was not found. Install Git and ensure it is on your PATH, ' +
-        'or set a custom Git path in Settings.'
-    )
+    throw new Error('Git was not found. Install Git and ensure it is on your PATH.')
   }
 
   static async inspect(gitPath: string): Promise<{ version: string }> {

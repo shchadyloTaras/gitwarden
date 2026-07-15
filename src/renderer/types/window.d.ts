@@ -183,7 +183,6 @@ interface ElectronAPI {
     getCommitHistory(repoPath: string, limit: number, skip: number): Promise<IpcResult<GitCommit[]>>
     discardFile(repoPath: string, filePath: string): Promise<IpcResult<void>>
     cleanFile(repoPath: string, filePath: string): Promise<IpcResult<void>>
-    validateGitPath(gitPath: string): Promise<IpcResult<{ version: string }>>
   }
   history: {
     getReturnState(repoPath: string): Promise<IpcResult<UncommitReturnState>>

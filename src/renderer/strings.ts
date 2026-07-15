@@ -56,7 +56,6 @@ export const STR = {
   BTN_CANCEL: 'Cancel',
   BTN_DELETE: 'Delete',
   BTN_CONFIRM: 'Confirm',
-  BTN_BROWSE: 'Browse…',
   LOADING: 'Loading…',
   NO_REPO_SELECTED: 'Select a repository to continue.',
 
@@ -96,7 +95,6 @@ export const STR = {
   // ── Settings screen ────────────────────────────────────────────────────────
   SETTINGS_TITLE: 'Settings',
   SETTINGS_TAB_GENERAL: 'General',
-  SETTINGS_TAB_GIT: 'Git',
   SETTINGS_TAB_AI: 'AI Assistant',
   SETTINGS_TAB_WALKTHROUGH: 'Walkthrough',
   SETTINGS_APPEARANCE_LABEL: 'Appearance',
@@ -105,27 +103,10 @@ export const STR = {
   SETTINGS_APPEARANCE_DARK: 'Dark',
   SETTINGS_APPEARANCE_HINT:
     'Controls whether Git Warden uses a light or dark colour scheme. System follows your OS setting.',
-  SETTINGS_GIT_PATH_LABEL: 'Custom Git Path',
-  SETTINGS_GIT_PATH_INPUT_LABEL: 'Path to git binary',
-  SETTINGS_GIT_PATH_PLACEHOLDER: 'e.g. /usr/local/bin/git',
-  SETTINGS_GIT_PATH_HINT:
-    'Leave blank to auto-detect from PATH. Custom paths are used the next time Git Warden starts.',
-  SETTINGS_GIT_PATH_VALIDATE: 'Validate',
-  SETTINGS_GIT_PATH_VALIDATING: 'Validating…',
-  SETTINGS_GIT_PATH_CLEAR: 'Clear',
-  SETTINGS_DEFAULT_FOLDER_LABEL: 'Default Projects Folder',
-  SETTINGS_DEFAULT_FOLDER_INPUT_LABEL: 'Folder for new local repositories',
-  SETTINGS_DEFAULT_FOLDER_PLACEHOLDER: 'e.g. /Users/alice/Projects',
-  SETTINGS_DEFAULT_FOLDER_HINT:
-    'Used as the starting folder for repository workflows that need a project location.',
-  SETTINGS_DEFAULT_FOLDER_CLEAR: 'Clear',
   SETTINGS_SAVE: 'Save Settings',
   SETTINGS_SAVED: 'Settings saved.',
   SETTINGS_SAVE_ERROR: 'Failed to save settings.',
   SETTINGS_SAVE_NO_CHANGES: 'No changes to save.',
-  SETTINGS_GIT_VALID: (version: string) => `Valid — ${version}`,
-  SETTINGS_GIT_INVALID: 'Not a valid git executable.',
-  SETTINGS_GIT_VALIDATE_HINT: 'Enter a path to validate it, or leave blank to use auto-detect.',
   SETTINGS_ONBOARDING_LABEL: 'Walkthrough',
   SETTINGS_ONBOARDING_HINT:
     'A guided tour of Git Warden — profiles, repositories, safety checks, Git actions, and the AI assistant. Run it again any time.',
@@ -145,7 +126,7 @@ export const STR = {
     'Pick the active repository and branch, watch the safety badge, see your profile, and open AI chat from here while you work.',
   ONBOARDING_STEP_NAV_TITLE: 'Navigation',
   ONBOARDING_STEP_NAV_BODY:
-    'Manage covers profiles and repositories. Git covers status, commits, remotes, branches, history, and the Safety Center. Settings holds appearance, Git path, AI connections, and this walkthrough.',
+    'Manage covers profiles and repositories. Git covers status, commits, remotes, branches, history, and the Safety Center. Settings holds appearance, AI connections, and this walkthrough.',
   ONBOARDING_STEP_PROFILES_TITLE: 'Create profiles first',
   ONBOARDING_STEP_PROFILES_BODY:
     'Profiles hold your Git author name, email, GitHub username, SSH alias, and allowed remote hosts. Connect GitHub on a profile to auto-fill identity and verify pushes.',
@@ -663,9 +644,6 @@ export const STR = {
   TT_PROFILE_DISCONNECT_GH: 'Remove the stored GitHub token from this profile.',
   TT_PROFILE_DELETE: 'Delete this profile. Repositories assigned to it lose their assignment.',
   TT_PROFILE_NEW: 'Create a new identity profile.',
-  TT_SETTINGS_GIT_VALIDATE: 'Check that this path points to a working git executable.',
-  TT_SETTINGS_GIT_CLEAR: 'Clear the custom path and auto-detect git from PATH.',
-  TT_SETTINGS_FOLDER_CLEAR: 'Clear the default projects folder.',
   TT_REPO_ADD: 'Add an existing local repository to GitWarden.',
   TT_SAFETY_ASSIGN_REPO: 'Assign this repository to a profile so identity can be checked.',
 } as const

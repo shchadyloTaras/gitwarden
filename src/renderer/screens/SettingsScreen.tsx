@@ -7,11 +7,10 @@ import type { AppearanceMode } from '../../core/types'
 import { STR } from '../strings'
 import { applyTheme } from '../theme'
 
-type SettingsTab = 'general' | 'git' | 'ai' | 'walkthrough'
+type SettingsTab = 'general' | 'ai' | 'walkthrough'
 
 const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'general', label: STR.SETTINGS_TAB_GENERAL },
-  { id: 'git', label: STR.SETTINGS_TAB_GIT },
   { id: 'ai', label: STR.SETTINGS_TAB_AI },
   { id: 'walkthrough', label: STR.SETTINGS_TAB_WALKTHROUGH },
 ]
@@ -29,27 +28,6 @@ const CARD_TITLE: React.CSSProperties = {
   fontWeight: 600,
   marginBottom: 14,
   color: 'var(--gw-text, #f4f4f5)',
-}
-
-const LABEL: React.CSSProperties = {
-  display: 'block',
-  fontSize: 14,
-  fontWeight: 600,
-  letterSpacing: '0.05em',
-  color: 'var(--gw-text-muted, #a1a1aa)',
-  marginBottom: 10,
-}
-
-const INPUT: React.CSSProperties = {
-  background: 'var(--gw-input-bg, #09090b)',
-  border: '1px solid var(--gw-border-subtle, #3f3f46)',
-  borderRadius: 4,
-  color: 'var(--gw-text, #f4f4f5)',
-  fontSize: 14,
-  padding: '6px 10px',
-  flex: 1,
-  minWidth: 0,
-  fontFamily: 'monospace',
 }
 
 function AppearancePicker({
@@ -191,20 +169,14 @@ function UpdatesCard(): React.ReactElement {
 }
 
 export default function SettingsScreen(): React.ReactElement {
-  const { appearance, customGitPath, defaultProjectsFolder, loading, load, update } =
-    useSettingsStore()
+  const { appearance, loading, load, update } = useSettingsStore()
   const startOnboarding = useOnboardingStore((s) => s.start)
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('general')
   const [localAppearance, setLocalAppearance] = useState<AppearanceMode>('system')
-  const [localGitPath, setLocalGitPath] = useState<string>('')
-  const [localDefaultFolder, setLocalDefaultFolder] = useState<string>('')
   const [dirty, setDirty] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
-  const [validateStatus, setValidateStatus] = useState<
-    { ok: true; version: string } | { ok: false; error: string } | 'validating' | null
-  >(null)
 
   const didLoad = useRef(false)
 
@@ -217,10 +189,8 @@ export default function SettingsScreen(): React.ReactElement {
     if (!loading && !didLoad.current) {
       didLoad.current = true
       setLocalAppearance(appearance)
-      setLocalGitPath(customGitPath ?? '')
-      setLocalDefaultFolder(defaultProjectsFolder ?? '')
     }
-  }, [loading, appearance, customGitPath, defaultProjectsFolder])
+  }, [loading, appearance])
 
   function handleAppearanceChange(mode: AppearanceMode): void {
     setLocalAppearance(mode)
@@ -241,49 +211,11 @@ export default function SettingsScreen(): React.ReactElement {
     }
   }, [])
 
-  function handleGitPathChange(e: React.ChangeEvent<HTMLInputElement>): void {
-    setLocalGitPath(e.target.value)
-    setDirty(true)
-    setSaved(false)
-    setValidateStatus(null)
-  }
-
-  function handleDefaultFolderChange(e: React.ChangeEvent<HTMLInputElement>): void {
-    setLocalDefaultFolder(e.target.value)
-    setDirty(true)
-    setSaved(false)
-  }
-
-  async function handleBrowseDefaultFolder(): Promise<void> {
-    const result = await window.api.dialog.openDirectory()
-    if (result.ok && result.data) {
-      setLocalDefaultFolder(result.data)
-      setDirty(true)
-      setSaved(false)
-    }
-  }
-
-  async function handleValidate(): Promise<void> {
-    const p = localGitPath.trim()
-    if (!p) return
-    setValidateStatus('validating')
-    const result = await window.api.git.validateGitPath(p)
-    if (result.ok) {
-      setValidateStatus({ ok: true, version: result.data.version })
-    } else {
-      setValidateStatus({ ok: false, error: result.error })
-    }
-  }
-
   async function handleSave(): Promise<void> {
     setSaveError(null)
     setSaved(false)
     try {
-      await update({
-        appearance: localAppearance,
-        customGitPath: localGitPath.trim() || undefined,
-        defaultProjectsFolder: localDefaultFolder.trim() || undefined,
-      })
+      await update({ appearance: localAppearance })
       setDirty(false)
       setSaved(true)
     } catch (err) {
@@ -291,9 +223,9 @@ export default function SettingsScreen(): React.ReactElement {
     }
   }
 
-  // Appearance + Default Projects Folder feed the shared save below; the Save row is
-  // shown on the tabs that contribute to it (General and Git).
-  const showSaveRow = activeTab === 'general' || activeTab === 'git'
+  // Appearance feeds the shared save below; the Save row is shown only on the
+  // General tab, which is the one that contributes to it.
+  const showSaveRow = activeTab === 'general'
 
   return (
     <div
@@ -352,7 +284,7 @@ export default function SettingsScreen(): React.ReactElement {
             })}
           </div>
 
-          {/* General — Appearance + Default Projects Folder */}
+          {/* General — Appearance + Updates */}
           {activeTab === 'general' && (
             <div role="tabpanel" data-testid="settings-tabpanel-general">
               {/* Appearance */}
@@ -371,156 +303,7 @@ export default function SettingsScreen(): React.ReactElement {
                 </p>
               </div>
 
-              {/* Default projects folder */}
-              <div style={CARD}>
-                <div style={CARD_TITLE}>{STR.SETTINGS_DEFAULT_FOLDER_LABEL}</div>
-
-                <label style={LABEL}>{STR.SETTINGS_DEFAULT_FOLDER_INPUT_LABEL}</label>
-
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-                  <input
-                    data-testid="settings-default-folder-input"
-                    type="text"
-                    value={localDefaultFolder}
-                    onChange={handleDefaultFolderChange}
-                    placeholder={STR.SETTINGS_DEFAULT_FOLDER_PLACEHOLDER}
-                    style={INPUT}
-                  />
-                  <button
-                    data-testid="settings-default-folder-browse"
-                    onClick={() => void handleBrowseDefaultFolder()}
-                    style={{
-                      padding: '6px 12px',
-                      background: 'none',
-                      border: '1px solid var(--gw-surface3, #3f3f46)',
-                      borderRadius: 4,
-                      color: 'var(--gw-text-muted, #a1a1aa)',
-                      fontSize: 14,
-                      cursor: 'pointer',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {STR.BTN_BROWSE}
-                  </button>
-                  {localDefaultFolder && (
-                    <button
-                      data-testid="settings-default-folder-clear"
-                      data-tooltip={STR.TT_SETTINGS_FOLDER_CLEAR}
-                      onClick={() => {
-                        setLocalDefaultFolder('')
-                        setDirty(true)
-                        setSaved(false)
-                      }}
-                      style={{
-                        padding: '6px 10px',
-                        background: 'none',
-                        border: '1px solid var(--gw-surface3, #3f3f46)',
-                        borderRadius: 4,
-                        color: 'var(--gw-text-faint, #71717a)',
-                        fontSize: 14,
-                        cursor: 'pointer',
-                        flexShrink: 0,
-                      }}
-                    >
-                      {STR.SETTINGS_DEFAULT_FOLDER_CLEAR}
-                    </button>
-                  )}
-                </div>
-
-                <p style={{ margin: 0, fontSize: 14, color: 'var(--gw-text-faint, #71717a)' }}>
-                  {STR.SETTINGS_DEFAULT_FOLDER_HINT}
-                </p>
-              </div>
-
               <UpdatesCard />
-            </div>
-          )}
-
-          {/* Git — Custom Git Path */}
-          {activeTab === 'git' && (
-            <div role="tabpanel" data-testid="settings-tabpanel-git">
-              <div style={CARD}>
-                <div style={CARD_TITLE}>{STR.SETTINGS_GIT_PATH_LABEL}</div>
-
-                <label style={LABEL}>{STR.SETTINGS_GIT_PATH_INPUT_LABEL}</label>
-
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-                  <input
-                    data-testid="settings-git-path-input"
-                    type="text"
-                    value={localGitPath}
-                    onChange={handleGitPathChange}
-                    placeholder={STR.SETTINGS_GIT_PATH_PLACEHOLDER}
-                    style={INPUT}
-                  />
-                  <button
-                    data-testid="settings-git-path-validate"
-                    data-tooltip={STR.TT_SETTINGS_GIT_VALIDATE}
-                    disabled={!localGitPath.trim() || validateStatus === 'validating'}
-                    onClick={() => void handleValidate()}
-                    style={{
-                      padding: '6px 12px',
-                      background: 'none',
-                      border: '1px solid var(--gw-surface3, #3f3f46)',
-                      borderRadius: 4,
-                      color: 'var(--gw-text-muted, #a1a1aa)',
-                      fontSize: 14,
-                      cursor: localGitPath.trim() ? 'pointer' : 'not-allowed',
-                      flexShrink: 0,
-                      opacity: !localGitPath.trim() ? 0.4 : 1,
-                    }}
-                  >
-                    {validateStatus === 'validating'
-                      ? STR.SETTINGS_GIT_PATH_VALIDATING
-                      : STR.SETTINGS_GIT_PATH_VALIDATE}
-                  </button>
-                  {localGitPath && (
-                    <button
-                      data-testid="settings-git-path-clear"
-                      data-tooltip={STR.TT_SETTINGS_GIT_CLEAR}
-                      onClick={() => {
-                        setLocalGitPath('')
-                        setValidateStatus(null)
-                        setDirty(true)
-                      }}
-                      style={{
-                        padding: '6px 10px',
-                        background: 'none',
-                        border: '1px solid var(--gw-surface3, #3f3f46)',
-                        borderRadius: 4,
-                        color: 'var(--gw-text-faint, #71717a)',
-                        fontSize: 14,
-                        cursor: 'pointer',
-                        flexShrink: 0,
-                      }}
-                    >
-                      {STR.SETTINGS_GIT_PATH_CLEAR}
-                    </button>
-                  )}
-                </div>
-
-                {/* Validation status */}
-                {validateStatus !== null && validateStatus !== 'validating' && (
-                  <div
-                    data-testid={validateStatus.ok ? 'settings-git-valid' : 'settings-git-invalid'}
-                    style={{
-                      fontSize: 14,
-                      color: validateStatus.ok
-                        ? 'var(--gw-success, #4ade80)'
-                        : 'var(--gw-danger, #f87171)',
-                      marginBottom: 6,
-                    }}
-                  >
-                    {validateStatus.ok
-                      ? STR.SETTINGS_GIT_VALID(validateStatus.version)
-                      : STR.SETTINGS_GIT_INVALID}
-                  </div>
-                )}
-
-                <p style={{ margin: 0, fontSize: 14, color: 'var(--gw-text-faint, #71717a)' }}>
-                  {STR.SETTINGS_GIT_PATH_HINT}
-                </p>
-              </div>
             </div>
           )}
 
@@ -599,7 +382,7 @@ export default function SettingsScreen(): React.ReactElement {
             </div>
           )}
 
-          {/* Save — persists Appearance, Default Projects Folder and Custom Git Path together */}
+          {/* Save — persists Appearance */}
           {showSaveRow && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <span
