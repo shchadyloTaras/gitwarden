@@ -8,6 +8,12 @@ order: 9
 
 ## Unreleased
 
+## 0.5.4 — 2026-07-15
+
+### Changed
+
+- Simplified Settings: the **Custom Git Path** and **Default Projects Folder** options have been removed, and the separate "Git" tab goes with them. GitWarden now always detects Git automatically from your system.
+
 ## 0.5.3 — 2026-07-15
 
 ### Fixed

@@ -1614,3 +1614,7 @@ Moved the v0.5.1 tag to the previous commit and re-triggered: macOS green again,
 - Files: updated `src/renderer/screens/SettingsScreen.tsx`, `src/renderer/store/settingsStore.ts`, `src/renderer/strings.ts`, `src/renderer/types/window.d.ts`, `src/core/schemas.ts`, `src/core/types.ts`, `src/core/ai/failureExplainMessages.ts`, `electron/index.ts`, `preload/index.ts`, `src/main/git/GitLocator.ts`, `src/main/git/ErrorMapper.ts`, `src/main/services/GitService.ts`, `src/main/ipc/ipc-handlers.ts`, `src/main/ipc/ipc-schemas.ts`; updated tests `tests/unit/settings-service.test.ts`, `tests/unit/zod-roundtrip.test.ts`, `tests/integration/git-runner.test.ts`, `tests/e2e/settings.spec.ts`.
 - Tests: both `tsc` projects clean; `npm run lint` clean; `npm test` **1077/1077** (119 files). The e2e settings spec was updated to assert the Git tab / inputs are gone but was **not run** here — it launches against the real userData path.
 - Notes / follow-ups: Non-phased removal. `AppSettingsSchema` is non-strict, so any `customGitPath`/`defaultProjectsFolder` value left in an existing `settings.json` is silently dropped on read — no migration needed. The two `landing/.../changelog.md` mentions of the old setting are historical release entries and were left as records.
+
+### 2026-07-15 — v0.5.4 released
+
+- Patch release removing the unused **Custom Git Path** and **Default Projects Folder** settings (and the now-empty Settings "Git" tab); GitWarden always auto-detects Git from `PATH`, and the git-not-found messages that referenced the removed setting were rewritten.
