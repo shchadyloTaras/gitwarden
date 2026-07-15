@@ -1601,3 +1601,7 @@ Moved the v0.5.1 tag to the previous commit and re-triggered: macOS green again,
 - Files: updated `src/renderer/components/AiChatPanel.tsx`, `src/renderer/store/aiStore.ts`, `src/renderer/strings.ts`, `src/main/git/GitRunner.ts`, `src/main/git/ErrorMapper.ts`; added coverage in `tests/e2e/ai-chat-panel.spec.ts` and `tests/integration/git-runner.test.ts`.
 - Tests: `npx tsc -p tsconfig.node.json --noEmit` and `npx tsc -p tsconfig.web.json --noEmit` passed; `npm test` passed **1078/1078** (119 files, includes the new GitRunner spawn-failure case); `npm run lint` passed; `npm run e2e -- tests/e2e/ai-chat-panel.spec.ts tests/e2e/ai-origin-pin.spec.ts` passed **10/10**.
 - Notes / follow-ups: Non-phased bug fix. No Git command semantics changed beyond the friendlier error mapping. The `aiStore.activeOf` fallback fix (fall back to the first connection when none is explicitly marked active) also benefits `AiConnectionSettings`, which already relied on the same fallback pattern to resolve "the" active connection.
+
+### 2026-07-15 — v0.5.3 released
+
+- Patch release fixing AI Chat's misleading "ready to chat" appearance when no working API key is saved, and mapping a missing/moved Git installation to a clear, actionable error instead of a raw technical one.

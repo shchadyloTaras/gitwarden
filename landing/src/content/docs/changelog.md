@@ -8,6 +8,13 @@ order: 9
 
 ## Unreleased
 
+## 0.5.3 — 2026-07-15
+
+### Fixed
+
+- AI Chat could look ready to use when it wasn't — a connection created without a saved API key still showed the full chat instead of asking for one. It now shows a clear "add an API key" prompt in that case, and reuses the existing connection instead of creating a duplicate once you add the key.
+- A missing or moved Git installation could surface a confusing technical error in AI Chat; GitWarden now explains what happened and how to fix it (set a Git path in Settings).
+
 ## 0.5.2 — 2026-07-13
 
 ### Added
