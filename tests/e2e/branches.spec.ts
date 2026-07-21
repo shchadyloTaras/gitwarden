@@ -126,6 +126,11 @@ test.describe('Branches', () => {
     await expect(win.getByTestId('branches-current-branch')).toBeVisible({ timeout: 10000 })
     await expect(win.getByTestId('branches-current-branch')).toContainText('main')
 
+    const mainRow = win.getByTestId('branches-local-item-main')
+    await expect(mainRow).toHaveAttribute('aria-current', 'true')
+    await expect(mainRow.getByTestId('branches-current-badge')).toHaveText('Current branch')
+    await expect(win.getByTestId('branches-current-badge')).toHaveCount(1)
+
     // Switch to feature-a
     const switchBtns = win.getByTestId('branches-switch-btn')
     await switchBtns.first().click()
@@ -135,6 +140,13 @@ test.describe('Branches', () => {
       timeout: 10000,
     })
     await expect(win.getByTestId('branches-current-branch')).toContainText('feature-a')
+
+    const featureARow = win.getByTestId('branches-local-item-feature-a')
+    await expect(featureARow).toHaveAttribute('aria-current', 'true')
+    await expect(featureARow.getByTestId('branches-current-badge')).toHaveText('Current branch')
+    await expect(mainRow).not.toHaveAttribute('aria-current', 'true')
+    await expect(mainRow.getByTestId('branches-current-badge')).toHaveCount(0)
+    await expect(win.getByTestId('branches-current-badge')).toHaveCount(1)
   })
 
   test('switching branch via the header dropdown updates the Remote screen without navigating away', async () => {

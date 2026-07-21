@@ -70,6 +70,7 @@ export const STR = {
   // email used to fall through to the generic "required" message.
   PROFILE_EMAIL_INVALID: 'Enter a valid email address.',
   PROFILE_CREATED_NOT_CONNECTED: 'Profile saved as a draft — GitHub not connected.',
+  PROFILE_REMOVE_EXPECTED_HOST: (host: string): string => `Remove ${host}`,
 
   // ── Repositories screen ───────────────────────────────────────────────────
   REPOSITORY_SAVED: 'Repository saved.',
@@ -510,6 +511,7 @@ export const STR = {
     'GitWarden enforces this locally. Ask the repo owner to set GitHub branch protection for real enforcement.',
 
   // ── Branch badge (BranchesScreen) ─────────────────────────────────────────
+  BRANCH_CURRENT_BADGE: 'Current branch',
   BRANCH_BADGE_ALLOWED: 'allowed',
   BRANCH_BADGE_BLOCKED: 'blocked',
   BRANCH_BADGE_SUGGESTED_PREFIX: (prefix: string): string => `Suggested prefix: ${prefix}`,

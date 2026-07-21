@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useProfilesStore } from '../store/profilesStore'
 import { useRemoteStore } from '../store/remoteStore'
 import { useAppStore } from '../store/appStore'
@@ -11,6 +11,8 @@ import type { GitRemote } from '../../core/types'
 import { STR } from '../strings'
 import SafetyIssueRow from '../components/SafetyIssueRow'
 import RemediationButton from '../components/RemediationButton'
+import { useDialogFocus } from '../hooks/useDialogFocus'
+import './workflowScreens.css'
 
 /** Renderer-side mirror of the main GitHubPushStatus (token-free). */
 type PushStatus = { hasToken: boolean; tokenInvalid: boolean; effectiveLogin?: string }
@@ -51,6 +53,8 @@ export default function RemoteScreen(): React.ReactElement {
     { authorName: string; authorEmail: string }[] | null
   >(null)
   const [outgoingCommitsPending, setOutgoingCommitsPending] = useState(false)
+  const pushSheetRef = useRef<HTMLDivElement>(null)
+  const pushCancelRef = useRef<HTMLButtonElement>(null)
 
   const activeProfile = profiles.find((p) => p.id === activeProfileId)
 
@@ -154,6 +158,13 @@ export default function RemoteScreen(): React.ReactElement {
     setOutgoingCommitsPending(false)
   }
 
+  useDialogFocus(
+    showPushSheet && selectedRemote !== null,
+    pushSheetRef,
+    handleClosePushSheet,
+    pushCancelRef
+  )
+
   const handleConfirmPush = async () => {
     if (
       !selectedRemote ||
@@ -199,41 +210,38 @@ export default function RemoteScreen(): React.ReactElement {
       : lastFailure?.message
 
   return (
-    <div
+    <section
       data-testid="screen-remote"
-      style={{ padding: '24px', maxWidth: '720px', fontFamily: 'inherit' }}
+      className="gw-page gw-workflow-page"
+      aria-labelledby="remote-page-title"
+      aria-busy={loading}
     >
-      <h2 style={{ margin: '0 0 20px', fontSize: '18px', fontWeight: 600 }}>Remote</h2>
+      <header className="gw-page-header gw-workflow-page-header">
+        <h1 id="remote-page-title" className="gw-page-title gw-workflow-page-title">
+          Remote
+        </h1>
+      </header>
 
       {loading && (
-        <div
-          style={{ color: 'var(--gw-text-faint, #71717a)', fontSize: '14px', marginBottom: '16px' }}
-        >
+        <div className="gw-empty-state gw-workflow-state" role="status">
           Loading…
         </div>
       )}
 
       {!loading && !repository && !activeRepo && (
-        <div style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: '14px' }}>
-          Add a repository to get started.
-        </div>
+        <div className="gw-empty-state gw-workflow-empty">Add a repository to get started.</div>
       )}
 
       {!loading && repository && (
-        <>
+        <div className="gw-workflow-stack">
           {/* Current branch */}
           {currentBranch && (
-            <div
-              style={{
-                marginBottom: upstreamGone ? '4px' : '16px',
-                fontSize: '14px',
-                color: 'var(--gw-text-muted, #a1a1aa)',
-              }}
-            >
+            <div className="gw-remote-context">
               Branch:{' '}
               <span
                 data-testid="remote-current-branch"
-                style={{ color: 'var(--gw-info, #60a5fa)', fontFamily: 'monospace' }}
+                className="gw-workflow-mono"
+                style={{ color: 'var(--gw-info, #60a5fa)' }}
               >
                 {currentBranch}
               </span>
@@ -245,11 +253,8 @@ export default function RemoteScreen(): React.ReactElement {
           {upstreamGone && (
             <div
               data-testid="remote-upstream-gone"
-              style={{
-                marginBottom: '16px',
-                fontSize: '14px',
-                color: 'var(--gw-warning, #fbbf24)',
-              }}
+              className="gw-notice gw-notice--warning gw-workflow-notice gw-workflow-notice--warning"
+              role="status"
             >
               {STR.REMOTE_UPSTREAM_GONE}
             </div>
@@ -257,165 +262,79 @@ export default function RemoteScreen(): React.ReactElement {
 
           {/* Remotes list */}
           {remotes.length === 0 ? (
-            <div
-              style={{
-                color: 'var(--gw-text-dim, #52525b)',
-                fontSize: '14px',
-                marginBottom: '16px',
-              }}
-            >
+            <div className="gw-empty-state gw-workflow-empty">
               No remotes configured for this repository.
             </div>
           ) : (
-            <div style={{ marginBottom: '16px' }}>
-              <div
-                style={{
-                  fontSize: '14px',
-                  color: 'var(--gw-text-faint, #71717a)',
-                  marginBottom: '8px',
-                }}
-              >
+            <section className="gw-workflow-section" aria-labelledby="remote-list-heading">
+              <h2 id="remote-list-heading" className="gw-workflow-section-heading">
                 Remotes ({remotes.length})
-              </div>
-              {remotes.map((remote) => (
-                <div
-                  key={remote.name}
-                  style={{
-                    background: 'var(--gw-surface, #18181b)',
-                    border: '1px solid var(--gw-border, #27272a)',
-                    borderRadius: '4px',
-                    padding: '12px',
-                    marginBottom: '8px',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      flexWrap: 'wrap',
-                      gap: '8px',
-                    }}
-                  >
-                    <div>
-                      <span
-                        style={{
-                          fontFamily: 'monospace',
-                          fontSize: '14px',
-                          color: 'var(--gw-text, #f4f4f5)',
-                          fontWeight: 600,
-                        }}
-                      >
-                        {remote.name}
-                      </span>
-                      <span
-                        style={{
-                          marginLeft: '10px',
-                          fontFamily: 'monospace',
-                          fontSize: '14px',
-                          color: 'var(--gw-text-dim, #52525b)',
-                        }}
-                      >
-                        {remote.url}
-                      </span>
-                      {remote.host && (
-                        <span
-                          style={{
-                            marginLeft: '8px',
-                            fontSize: '14px',
-                            color: 'var(--gw-text-faint, #71717a)',
-                            background: 'var(--gw-surface2, #27272a)',
-                            padding: '1px 6px',
-                            borderRadius: '3px',
-                          }}
-                        >
-                          {remote.host}
-                        </span>
-                      )}
-                    </div>
+              </h2>
+              <div className="gw-remote-list">
+                {remotes.map((remote) => (
+                  <article key={remote.name} className="gw-card gw-workflow-card gw-remote-card">
+                    <div className="gw-remote-card-main">
+                      <div className="gw-remote-meta">
+                        <span className="gw-workflow-mono gw-remote-name">{remote.name}</span>
+                        <span className="gw-workflow-mono gw-remote-url">{remote.url}</span>
+                        {remote.host && <span className="gw-remote-host">{remote.host}</span>}
+                      </div>
 
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <button
-                        data-testid="remote-op-fetch"
-                        data-tooltip={STR.TT_REMOTE_FETCH}
-                        onClick={() => doFetch(remote.name)}
-                        disabled={
-                          fetchLoading === remote.name || pullLoading !== null || pushLoading
-                        }
-                        style={{
-                          background: 'var(--gw-surface2, #27272a)',
-                          color: 'var(--gw-text-muted, #a1a1aa)',
-                          border: '1px solid var(--gw-surface3, #3f3f46)',
-                          borderRadius: '4px',
-                          padding: '5px 10px',
-                          fontSize: '14px',
-                          cursor: fetchLoading === remote.name ? 'wait' : 'pointer',
-                        }}
-                      >
-                        {fetchLoading === remote.name ? 'Fetching…' : 'Fetch'}
-                      </button>
-
-                      {currentBranch && (
+                      <div className="gw-toolbar gw-workflow-actions gw-remote-actions">
                         <button
-                          data-testid="remote-op-pull"
-                          data-tooltip={STR.TT_REMOTE_PULL}
-                          onClick={() => doPull(remote.name, currentBranch)}
+                          type="button"
+                          data-testid="remote-op-fetch"
+                          data-tooltip={STR.TT_REMOTE_FETCH}
+                          onClick={() => doFetch(remote.name)}
                           disabled={
-                            pullLoading === remote.name || fetchLoading !== null || pushLoading
+                            fetchLoading === remote.name || pullLoading !== null || pushLoading
                           }
-                          style={{
-                            background: 'var(--gw-surface2, #27272a)',
-                            color: 'var(--gw-text-muted, #a1a1aa)',
-                            border: '1px solid var(--gw-surface3, #3f3f46)',
-                            borderRadius: '4px',
-                            padding: '5px 10px',
-                            fontSize: '14px',
-                            cursor: pullLoading === remote.name ? 'wait' : 'pointer',
-                          }}
+                          className="gw-button gw-button--secondary gw-workflow-button"
                         >
-                          {pullLoading === remote.name ? 'Pulling…' : 'Pull'}
+                          {fetchLoading === remote.name ? 'Fetching…' : 'Fetch'}
                         </button>
-                      )}
 
-                      {currentBranch && (
-                        <button
-                          data-testid="remote-op-push"
-                          data-tooltip={STR.TT_REMOTE_PUSH}
-                          onClick={() => handleOpenPushSheet(remote)}
-                          disabled={fetchLoading !== null || pullLoading !== null || pushLoading}
-                          style={{
-                            background: 'var(--gw-primary, #2563eb)',
-                            color: 'var(--gw-on-solid, #fff)',
-                            border: 'none',
-                            borderRadius: '4px',
-                            padding: '5px 10px',
-                            fontSize: '14px',
-                            cursor: pushLoading ? 'wait' : 'pointer',
-                          }}
-                        >
-                          {pushLoading ? 'Pushing…' : 'Push'}
-                        </button>
-                      )}
+                        {currentBranch && (
+                          <button
+                            type="button"
+                            data-testid="remote-op-pull"
+                            data-tooltip={STR.TT_REMOTE_PULL}
+                            onClick={() => doPull(remote.name, currentBranch)}
+                            disabled={
+                              pullLoading === remote.name || fetchLoading !== null || pushLoading
+                            }
+                            className="gw-button gw-button--secondary gw-workflow-button"
+                          >
+                            {pullLoading === remote.name ? 'Pulling…' : 'Pull'}
+                          </button>
+                        )}
+
+                        {currentBranch && (
+                          <button
+                            type="button"
+                            data-testid="remote-op-push"
+                            data-tooltip={STR.TT_REMOTE_PUSH}
+                            onClick={() => handleOpenPushSheet(remote)}
+                            disabled={fetchLoading !== null || pullLoading !== null || pushLoading}
+                            className="gw-button gw-button--primary gw-workflow-button"
+                          >
+                            {pushLoading ? 'Pushing…' : 'Push'}
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  </article>
+                ))}
+              </div>
+            </section>
           )}
 
           {/* Success message */}
           {successMessage && (
             <div
               data-testid="remote-success"
-              style={{
-                padding: '10px 14px',
-                background: 'var(--gw-success-bg, #052e16)',
-                border: '1px solid var(--gw-success-border, #2d4a2d)',
-                borderRadius: '4px',
-                fontSize: '14px',
-                color: 'var(--gw-success, #4ade80)',
-                marginBottom: '12px',
-              }}
+              className="gw-notice gw-notice--success gw-workflow-notice gw-workflow-notice--success"
+              role="status"
             >
               ✓ {successMessage}
             </div>
@@ -425,18 +344,9 @@ export default function RemoteScreen(): React.ReactElement {
           {lastFailure ? (
             <div
               data-testid="remote-recovery-banner"
-              style={{
-                padding: '10px 14px',
-                background: 'var(--gw-danger-bg, #450a0a)',
-                border: '1px solid var(--gw-danger-border, #991b1b)',
-                borderRadius: '4px',
-                marginBottom: '12px',
-              }}
+              className="gw-notice gw-notice--danger gw-workflow-notice gw-workflow-notice--danger"
             >
-              <div
-                data-testid="remote-error"
-                style={{ color: 'var(--gw-danger, #f87171)', fontSize: '14px' }}
-              >
+              <div data-testid="remote-error" role="alert">
                 {recoveryMessage}
               </div>
               {recoveryRemediation && lastFailure.code !== 'dubiousOwnership' && (
@@ -461,61 +371,34 @@ export default function RemoteScreen(): React.ReactElement {
             error && (
               <div
                 data-testid="remote-error"
-                style={{
-                  color: 'var(--gw-danger, #f87171)',
-                  fontSize: '14px',
-                  marginBottom: '12px',
-                }}
+                className="gw-notice gw-notice--danger gw-workflow-notice gw-workflow-notice--danger"
+                role="alert"
               >
                 {error}
               </div>
             )
           )}
-        </>
+        </div>
       )}
 
       {/* Push confirmation sheet (modal overlay) */}
       {showPushSheet && selectedRemote && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'var(--gw-overlay)',
-            zIndex: 200,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
+        <div className="gw-dialog-backdrop gw-remote-modal-backdrop">
           <div
+            ref={pushSheetRef}
             data-testid="remote-push-sheet"
-            style={{
-              background: 'var(--gw-surface, #18181b)',
-              border: '1px solid var(--gw-surface3, #3f3f46)',
-              borderRadius: '8px',
-              padding: '24px',
-              width: '500px',
-              maxHeight: '85vh',
-              overflowY: 'auto',
-              fontFamily: 'inherit',
-            }}
+            className="gw-dialog gw-remote-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="remote-push-title"
+            tabIndex={-1}
           >
-            <h3 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: 600 }}>
+            <h2 id="remote-push-title" className="gw-remote-modal-title">
               Push to {selectedRemote.name}
-            </h3>
+            </h2>
 
             {/* Details table */}
-            <div
-              style={{
-                background: 'var(--gw-bg, #09090b)',
-                border: '1px solid var(--gw-border, #27272a)',
-                borderRadius: '4px',
-                padding: '12px',
-                marginBottom: '16px',
-                fontSize: '14px',
-                lineHeight: 1.8,
-              }}
-            >
+            <div className="gw-remote-details">
               <Row label="Repo" value={repository!.name} />
               <Row label="Path" value={repository!.localPath} mono />
               <Row label="Branch" value={currentBranch ?? '(unknown)'} mono />
@@ -535,17 +418,12 @@ export default function RemoteScreen(): React.ReactElement {
                 value={assignedProfile ? assignedProfile.displayName : '(none)'}
               />
               {githubContext && (
-                <div style={{ display: 'flex', gap: '8px' }} data-testid="remote-push-github-line">
+                <div className="gw-remote-detail-row" data-testid="remote-push-github-line">
+                  <span className="gw-remote-detail-label">{STR.PUSH_GH_LABEL}</span>
                   <span
-                    style={{
-                      color: 'var(--gw-text-dim, #52525b)',
-                      minWidth: '110px',
-                      flexShrink: 0,
-                    }}
+                    className="gw-remote-detail-value"
+                    style={{ color: githubLineColor(githubContext, pushStatusPending) }}
                   >
-                    {STR.PUSH_GH_LABEL}
-                  </span>
-                  <span style={{ color: githubLineColor(githubContext, pushStatusPending) }}>
                     {githubLineText(githubContext, pushStatusPending)}
                   </span>
                 </div>
@@ -564,12 +442,8 @@ export default function RemoteScreen(): React.ReactElement {
             {/* Safety issues */}
             {pushSafetyResult && pushSafetyResult.issues.length > 0 && (
               <div
-                style={{
-                  border: '1px solid var(--gw-border, #27272a)',
-                  borderRadius: '4px',
-                  overflow: 'hidden',
-                  marginBottom: '16px',
-                }}
+                className="gw-card gw-workflow-card gw-workflow-card--flush gw-commit-issues"
+                aria-live="polite"
               >
                 {pushBlockers.map((issue) => (
                   <SafetyIssueRow key={issue.code} issue={issue} testIdPrefix="remote-push" />
@@ -583,12 +457,8 @@ export default function RemoteScreen(): React.ReactElement {
             {pushIssueRemediations.length > 0 && (
               <div
                 data-testid="remote-push-remediations"
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                  marginBottom: '16px',
-                }}
+                className="gw-toolbar gw-commit-remediations"
+                style={{ marginBottom: '16px' }}
               >
                 {pushIssueRemediations.map((rem) => (
                   <RemediationButton
@@ -611,38 +481,27 @@ export default function RemoteScreen(): React.ReactElement {
               !pushStatusPending &&
               !outgoingCommitsPending && (
                 <div
-                  style={{
-                    padding: '8px 12px',
-                    background: 'var(--gw-success-bg, #052e16)',
-                    border: '1px solid var(--gw-success-border, #2d4a2d)',
-                    borderRadius: '4px',
-                    fontSize: '14px',
-                    color: 'var(--gw-success, #4ade80)',
-                    marginBottom: '16px',
-                  }}
+                  className="gw-notice gw-notice--success gw-workflow-notice gw-workflow-notice--success"
+                  role="status"
+                  style={{ marginBottom: '16px' }}
                 >
                   {STR.PUSH_SAFE_TO_PUSH(githubContext !== undefined)}
                 </div>
               )}
 
             {/* Actions */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+            <div className="gw-toolbar gw-workflow-actions gw-workflow-actions--end">
               <button
+                ref={pushCancelRef}
+                type="button"
                 data-testid="remote-push-cancel-btn"
                 onClick={handleClosePushSheet}
-                style={{
-                  background: 'transparent',
-                  color: 'var(--gw-text-muted, #a1a1aa)',
-                  border: '1px solid var(--gw-border-strong, #52525b)',
-                  borderRadius: '4px',
-                  padding: '7px 16px',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                }}
+                className="gw-button gw-button--secondary gw-workflow-button"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 data-testid="remote-push-confirm-btn"
                 onClick={handleConfirmPush}
                 disabled={
@@ -651,24 +510,7 @@ export default function RemoteScreen(): React.ReactElement {
                   pushStatusPending ||
                   outgoingCommitsPending
                 }
-                style={{
-                  background:
-                    pushSafetyResult?.canPush && !pushStatusPending && !outgoingCommitsPending
-                      ? 'var(--gw-primary, #2563eb)'
-                      : 'var(--gw-surface3, #3f3f46)',
-                  color:
-                    pushSafetyResult?.canPush && !pushStatusPending && !outgoingCommitsPending
-                      ? 'var(--gw-on-solid, #fff)'
-                      : 'var(--gw-text-dim, #52525b)',
-                  border: 'none',
-                  borderRadius: '4px',
-                  padding: '7px 16px',
-                  fontSize: '14px',
-                  cursor:
-                    pushSafetyResult?.canPush && !pushStatusPending && !outgoingCommitsPending
-                      ? 'pointer'
-                      : 'not-allowed',
-                }}
+                className="gw-button gw-button--primary gw-workflow-button"
               >
                 {pushStatusPending ? STR.PUSH_GH_VERIFYING : 'Confirm Push'}
               </button>
@@ -676,7 +518,7 @@ export default function RemoteScreen(): React.ReactElement {
           </div>
         </div>
       )}
-    </div>
+    </section>
   )
 }
 
@@ -709,39 +551,16 @@ function BranchAccessBlock({
   const verdictColor = isBlocked ? 'var(--gw-danger, #f87171)' : 'var(--gw-success, #4ade80)'
 
   return (
-    <div
+    <section
       data-testid="remote-push-branch-access"
-      style={{
-        border: '1px solid var(--gw-border, #27272a)',
-        borderRadius: 4,
-        marginBottom: 16,
-        overflow: 'hidden',
-      }}
+      className="gw-card gw-workflow-card gw-workflow-card--flush gw-remote-branch-card"
+      aria-labelledby="remote-push-branch-access-title"
     >
-      <div
-        style={{
-          padding: '6px 12px',
-          background: 'var(--gw-bg, #09090b)',
-          borderBottom: '1px solid var(--gw-border, #27272a)',
-          fontSize: 12,
-          fontWeight: 600,
-          color: 'var(--gw-text-faint, #71717a)',
-          textTransform: 'uppercase',
-          letterSpacing: '0.08em',
-        }}
-      >
+      <h3 id="remote-push-branch-access-title" className="gw-remote-branch-heading">
         {STR.BRANCH_ACCESS_SECTION_TITLE}
-      </div>
-      <div
-        style={{
-          padding: '8px 12px',
-          fontSize: 14,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 6,
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+      </h3>
+      <div className="gw-remote-branch-body">
+        <div className="gw-remote-branch-row">
           <span style={{ color: 'var(--gw-text-faint, #71717a)' }}>
             {STR.BRANCH_ACCESS_CURRENT_BRANCH_LABEL}
           </span>
@@ -750,7 +569,7 @@ function BranchAccessBlock({
           </span>
         </div>
         {verdict && (
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div className="gw-remote-branch-row">
             <span style={{ color: 'var(--gw-text-faint, #71717a)' }}>Verdict</span>
             <span
               data-testid="remote-push-branch-verdict"
@@ -762,7 +581,7 @@ function BranchAccessBlock({
         )}
         {/* SSH actor: shown as unverified when policy has expectedGitHubActor and push is SSH */}
         {!isHttps && policy.expectedGitHubActor && (
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div className="gw-remote-branch-row">
             <span style={{ color: 'var(--gw-text-faint, #71717a)' }}>
               {STR.BRANCH_ACCESS_SSH_ACTOR_LABEL}
             </span>
@@ -774,19 +593,9 @@ function BranchAccessBlock({
             </span>
           </div>
         )}
-        <div
-          style={{
-            marginTop: 4,
-            fontSize: 12,
-            color: 'var(--gw-text-dim, #52525b)',
-            borderTop: '1px solid var(--gw-border, #27272a)',
-            paddingTop: 6,
-          }}
-        >
-          {STR.BRANCH_ACCESS_ENFORCEMENT_NOTE}
-        </div>
+        <div className="gw-remote-branch-note">{STR.BRANCH_ACCESS_ENFORCEMENT_NOTE}</div>
       </div>
-    </div>
+    </section>
   )
 }
 
@@ -826,15 +635,14 @@ function Row({
   mono?: boolean
 }): React.ReactElement {
   return (
-    <div style={{ display: 'flex', gap: '8px' }}>
-      <span style={{ color: 'var(--gw-text-dim, #52525b)', minWidth: '110px', flexShrink: 0 }}>
-        {label}
-      </span>
+    <div className="gw-remote-detail-row">
+      <span className="gw-remote-detail-label">{label}</span>
       <span
+        className="gw-remote-detail-value"
         style={{
-          color: 'var(--gw-text-muted, #a1a1aa)',
-          fontFamily: mono ? 'monospace' : 'inherit',
-          wordBreak: 'break-all',
+          fontFamily: mono
+            ? 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
+            : 'inherit',
         }}
       >
         {value}

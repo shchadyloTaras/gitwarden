@@ -7,21 +7,26 @@ import SafetyIssueRow from '../components/SafetyIssueRow'
 import { matchesAnyPattern } from '../../core/safety/branchPatterns'
 import type { SafetyIssue } from '../../core/types'
 import { STR } from '../strings'
+import './workflowScreens.css'
 
 function ScopeLabel({ scope }: { scope: string | undefined }): React.ReactElement {
   if (!scope) return <span style={{ color: 'var(--gw-text-dim, #52525b)' }}>—</span>
   const color = scope === 'local' ? 'var(--gw-success, #4ade80)' : 'var(--gw-warning, #fbbf24)'
-  return <span style={{ color, fontSize: '14px', marginLeft: '6px' }}>({scope})</span>
+  return (
+    <span className="gw-safety-scope" style={{ color }}>
+      ({scope})
+    </span>
+  )
 }
 
 function Verdict({ ok, testId }: { ok: boolean; testId: string }): React.ReactElement {
   return (
     <span
       data-testid={testId}
+      className="gw-ai-status"
       style={{
         fontWeight: 600,
         color: ok ? 'var(--gw-success, #4ade80)' : 'var(--gw-danger, #f87171)',
-        fontSize: '14px',
       }}
     >
       {ok ? '✓ Yes' : '✗ No'}
@@ -35,45 +40,6 @@ function IssueRow({
   issue: import('../../core/types').SafetyIssue
 }): React.ReactElement {
   return <SafetyIssueRow issue={issue} testIdPrefix="safety" />
-}
-
-const CARD: React.CSSProperties = {
-  background: 'var(--gw-surface, #18181b)',
-  border: '1px solid var(--gw-border, #27272a)',
-  borderRadius: '6px',
-  marginBottom: '16px',
-  overflow: 'hidden',
-}
-
-const CARD_HEADER: React.CSSProperties = {
-  padding: '8px 12px',
-  background: 'var(--gw-bg, #09090b)',
-  borderBottom: '1px solid var(--gw-border, #27272a)',
-  fontSize: '14px',
-  fontWeight: 600,
-  color: 'var(--gw-text-faint, #71717a)',
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-}
-
-const CARD_ROW: React.CSSProperties = {
-  padding: '7px 12px',
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  borderBottom: '1px solid var(--gw-surface, #18181b)',
-  fontSize: '14px',
-}
-
-const LABEL: React.CSSProperties = {
-  color: 'var(--gw-text-faint, #71717a)',
-  flexShrink: 0,
-  marginRight: '8px',
-}
-const VALUE: React.CSSProperties = {
-  color: 'var(--gw-text, #f4f4f5)',
-  textAlign: 'right',
-  wordBreak: 'break-all',
 }
 
 export default function SafetyCenterScreen(): React.ReactElement {
@@ -147,55 +113,67 @@ export default function SafetyCenterScreen(): React.ReactElement {
   }
 
   return (
-    <div
+    <section
       data-testid="screen-safety-center"
-      style={{ padding: '24px', maxWidth: '720px', fontFamily: 'inherit' }}
+      className="gw-page gw-workflow-page"
+      aria-labelledby="safety-page-title"
+      aria-busy={loading}
     >
-      <h2 style={{ margin: '0 0 20px', fontSize: '18px', fontWeight: 600 }}>Safety Center</h2>
+      <header className="gw-page-header gw-workflow-page-header">
+        <h1 id="safety-page-title" className="gw-page-title gw-workflow-page-title">
+          Safety Center
+        </h1>
+      </header>
 
       {loading && (
-        <div
-          style={{ color: 'var(--gw-text-faint, #71717a)', fontSize: '14px', marginBottom: '16px' }}
-        >
+        <div className="gw-empty-state gw-workflow-state" role="status">
           Loading…
         </div>
       )}
 
       {error && (
-        <div style={{ color: 'var(--gw-danger, #f87171)', fontSize: '14px', marginBottom: '16px' }}>
+        <div
+          className="gw-notice gw-notice--danger gw-workflow-notice gw-workflow-notice--danger"
+          role="alert"
+        >
           {error}
         </div>
       )}
 
       {!loading && !repository && !activeRepo && (
-        <div style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: '14px' }}>
+        <div className="gw-empty-state gw-workflow-empty">
           Add a repository to run the identity audit.
         </div>
       )}
 
       {!loading && repository && (
-        <>
+        <div className="gw-workflow-stack">
           {/* Profiles card */}
-          <div style={CARD}>
-            <div style={CARD_HEADER}>Profiles</div>
-            <div style={CARD_ROW}>
-              <span style={LABEL}>Active profile</span>
+          <section
+            className="gw-card gw-workflow-card gw-workflow-card--flush gw-safety-card"
+            aria-labelledby="safety-profiles-title"
+          >
+            <h2 id="safety-profiles-title" className="gw-safety-card-heading">
+              Profiles
+            </h2>
+            <div className="gw-safety-row">
+              <span className="gw-safety-label">Active profile</span>
               <span
                 data-testid="safety-active-profile-name"
+                className="gw-safety-value"
                 style={{
-                  ...VALUE,
                   color: activeProfile ? 'var(--gw-text, #f4f4f5)' : 'var(--gw-text-dim, #52525b)',
                 }}
               >
                 {activeProfile ? activeProfile.displayName : '—'}
               </span>
             </div>
-            <div style={CARD_ROW}>
-              <span style={LABEL}>Assigned profile</span>
+            <div className="gw-safety-row">
+              <span className="gw-safety-label">Assigned profile</span>
               <span
                 data-testid="safety-assigned-profile-name"
+                className="gw-safety-value"
                 style={{
-                  ...VALUE,
                   color: assignedProfile
                     ? profileMismatch
                       ? 'var(--gw-danger, #f87171)'
@@ -208,47 +186,30 @@ export default function SafetyCenterScreen(): React.ReactElement {
             </div>
             {profileMismatch && (
               <div
-                style={{
-                  padding: '7px 12px',
-                  background: 'var(--gw-danger-bg, #450a0a)',
-                  fontSize: '14px',
-                  color: 'var(--gw-danger, #f87171)',
-                }}
+                className="gw-notice gw-notice--danger gw-workflow-notice--danger gw-safety-inline-notice"
+                role="alert"
               >
                 This repository is assigned to <strong>{assignedProfile!.displayName}</strong>, but
                 your active profile is <strong>{activeProfile!.displayName}</strong>.
               </div>
             )}
             {repoUnassigned && activeProfile_ && (
-              <div
-                style={{
-                  padding: '10px 12px',
-                  background: 'var(--gw-accent-soft, #1e1b4b)',
-                  borderTop: '1px solid var(--gw-border, #27272a)',
-                }}
-              >
+              <div className="gw-safety-assignment-actions">
                 <button
+                  type="button"
                   data-testid="safety-assign-repo-btn"
                   data-tooltip={STR.TT_SAFETY_ASSIGN_REPO}
                   onClick={() => void handleAssignToActiveProfile()}
                   disabled={assigning}
-                  style={{
-                    background: 'var(--gw-primary, #2563eb)',
-                    color: 'var(--gw-on-solid, #fff)',
-                    border: 'none',
-                    borderRadius: '4px',
-                    padding: '6px 12px',
-                    fontSize: '14px',
-                    cursor: assigning ? 'wait' : 'pointer',
-                  }}
+                  className="gw-button gw-button--primary gw-workflow-button"
                 >
                   {assigning ? 'Assigning…' : `Assign this repo to ${activeProfile_.displayName}`}
                 </button>
                 {assignError && (
                   <div
+                    role="alert"
                     style={{
                       marginTop: '6px',
-                      fontSize: '14px',
                       color: 'var(--gw-danger, #f87171)',
                     }}
                   >
@@ -260,33 +221,33 @@ export default function SafetyCenterScreen(): React.ReactElement {
             {repoUnassigned && !activeProfile_ && (
               <div
                 data-testid="safety-assign-repo-hint"
-                style={{
-                  padding: '7px 12px',
-                  background: 'var(--gw-warning-bg, #422006)',
-                  fontSize: '14px',
-                  color: 'var(--gw-warning, #fbbf24)',
-                }}
+                className="gw-notice gw-notice--warning gw-workflow-notice--warning gw-safety-inline-notice"
               >
                 Select or create a profile in Profiles, then assign this repository to it.
               </div>
             )}
-          </div>
+          </section>
 
           {/* Identity card */}
-          <div style={CARD}>
-            <div style={CARD_HEADER}>Git Identity</div>
-            <div style={CARD_ROW}>
-              <span style={LABEL}>user.name</span>
-              <span data-testid="safety-identity-name" style={VALUE}>
+          <section
+            className="gw-card gw-workflow-card gw-workflow-card--flush gw-safety-card"
+            aria-labelledby="safety-identity-title"
+          >
+            <h2 id="safety-identity-title" className="gw-safety-card-heading">
+              Git Identity
+            </h2>
+            <div className="gw-safety-row">
+              <span className="gw-safety-label">user.name</span>
+              <span data-testid="safety-identity-name" className="gw-safety-value">
                 {identity?.userName ?? (
                   <span style={{ color: 'var(--gw-danger, #f87171)' }}>not set</span>
                 )}
                 <ScopeLabel scope={identity?.nameSource} />
               </span>
             </div>
-            <div style={CARD_ROW}>
-              <span style={LABEL}>user.email</span>
-              <span data-testid="safety-identity-email" style={VALUE}>
+            <div className="gw-safety-row">
+              <span className="gw-safety-label">user.email</span>
+              <span data-testid="safety-identity-email" className="gw-safety-value">
                 {identity?.userEmail ?? (
                   <span style={{ color: 'var(--gw-danger, #f87171)' }}>not set</span>
                 )}
@@ -296,42 +257,42 @@ export default function SafetyCenterScreen(): React.ReactElement {
             {identity?.emailSource && identity.emailSource !== 'local' && (
               <div
                 data-testid="safety-identity-scope-warning"
-                style={{
-                  padding: '7px 12px',
-                  background: 'var(--gw-warning-bg, #422006)',
-                  fontSize: '14px',
-                  color: 'var(--gw-warning, #fbbf24)',
-                }}
+                className="gw-notice gw-notice--warning gw-workflow-notice--warning gw-safety-inline-notice"
               >
                 Your Git identity is inherited from global config, not set for this repository.
               </div>
             )}
-          </div>
+          </section>
 
           {/* Remote & Branch card */}
-          <div style={CARD}>
-            <div style={CARD_HEADER}>Remote &amp; Branch</div>
-            <div style={CARD_ROW}>
-              <span style={LABEL}>Current branch</span>
-              <span data-testid="safety-current-branch" style={VALUE}>
+          <section
+            className="gw-card gw-workflow-card gw-workflow-card--flush gw-safety-card"
+            aria-labelledby="safety-remote-title"
+          >
+            <h2 id="safety-remote-title" className="gw-safety-card-heading">
+              Remote &amp; Branch
+            </h2>
+            <div className="gw-safety-row">
+              <span className="gw-safety-label">Current branch</span>
+              <span data-testid="safety-current-branch" className="gw-safety-value">
                 {currentBranch ?? '—'}
               </span>
             </div>
-            <div style={CARD_ROW}>
-              <span style={LABEL}>Auth method</span>
-              <span style={VALUE}>
+            <div className="gw-safety-row">
+              <span className="gw-safety-label">Auth method</span>
+              <span className="gw-safety-value">
                 {activeProfile?.authenticationMethod === 'token' ? 'Token' : 'SSH'}
               </span>
             </div>
             {remotes.length === 0 ? (
-              <div style={{ ...CARD_ROW, color: 'var(--gw-text-dim, #52525b)', fontSize: '14px' }}>
+              <div className="gw-safety-row" style={{ color: 'var(--gw-text-dim, #52525b)' }}>
                 No remotes configured
               </div>
             ) : (
               remotes.map((r) => (
-                <div key={r.name} style={CARD_ROW}>
-                  <span style={LABEL}>{r.name}</span>
-                  <span style={{ ...VALUE, fontSize: '14px' }}>
+                <div key={r.name} className="gw-safety-row">
+                  <span className="gw-safety-label">{r.name}</span>
+                  <span className="gw-safety-value">
                     <span
                       data-testid={`safety-remote-host-${r.name}`}
                       style={{ color: 'var(--gw-purple, #a78bfa)' }}
@@ -345,44 +306,56 @@ export default function SafetyCenterScreen(): React.ReactElement {
                 </div>
               ))
             )}
-          </div>
+          </section>
 
           {/* Branch Access card — only when a push policy is configured */}
           {repository?.pushPolicy && (
-            <div data-testid="safety-branch-access-card" style={CARD}>
-              <div style={CARD_HEADER}>{STR.BRANCH_ACCESS_SECTION_TITLE}</div>
-              <div style={CARD_ROW}>
-                <span style={LABEL}>{STR.BRANCH_ACCESS_MODE_LABEL}</span>
-                <span style={VALUE}>
+            <section
+              data-testid="safety-branch-access-card"
+              className="gw-card gw-workflow-card gw-workflow-card--flush gw-safety-card"
+              aria-labelledby="safety-branch-access-title"
+            >
+              <h2 id="safety-branch-access-title" className="gw-safety-card-heading">
+                {STR.BRANCH_ACCESS_SECTION_TITLE}
+              </h2>
+              <div className="gw-safety-row">
+                <span className="gw-safety-label">{STR.BRANCH_ACCESS_MODE_LABEL}</span>
+                <span className="gw-safety-value">
                   {repository.pushPolicy.mode === 'branchScoped'
                     ? STR.PUSH_POLICY_MODE_BRANCH_SCOPED
                     : STR.PUSH_POLICY_MODE_UNRESTRICTED}
                 </span>
               </div>
               {repository.pushPolicy.allowedBranchPatterns.length > 0 && (
-                <div style={CARD_ROW}>
-                  <span style={LABEL}>{STR.BRANCH_ACCESS_ALLOWED_PATTERNS_LABEL}</span>
+                <div className="gw-safety-row">
+                  <span className="gw-safety-label">
+                    {STR.BRANCH_ACCESS_ALLOWED_PATTERNS_LABEL}
+                  </span>
                   <span
                     data-testid="safety-branch-access-allowed"
-                    style={{ ...VALUE, fontFamily: 'monospace', fontSize: 12 }}
+                    className="gw-safety-value gw-workflow-mono"
+                    style={{ fontSize: 12 }}
                   >
                     {repository.pushPolicy.allowedBranchPatterns.join(', ')}
                   </span>
                 </div>
               )}
               {repository.pushPolicy.blockedBranchPatterns.length > 0 && (
-                <div style={CARD_ROW}>
-                  <span style={LABEL}>{STR.BRANCH_ACCESS_BLOCKED_PATTERNS_LABEL}</span>
+                <div className="gw-safety-row">
+                  <span className="gw-safety-label">
+                    {STR.BRANCH_ACCESS_BLOCKED_PATTERNS_LABEL}
+                  </span>
                   <span
                     data-testid="safety-branch-access-blocked"
-                    style={{ ...VALUE, fontFamily: 'monospace', fontSize: 12 }}
+                    className="gw-safety-value gw-workflow-mono"
+                    style={{ fontSize: 12 }}
                   >
                     {repository.pushPolicy.blockedBranchPatterns.join(', ')}
                   </span>
                 </div>
               )}
-              <div style={{ ...CARD_ROW, borderBottom: 'none' }}>
-                <span style={LABEL}>{STR.BRANCH_ACCESS_CURRENT_BRANCH_LABEL}</span>
+              <div className="gw-safety-row">
+                <span className="gw-safety-label">{STR.BRANCH_ACCESS_CURRENT_BRANCH_LABEL}</span>
                 <span
                   data-testid="safety-branch-access-verdict"
                   style={{
@@ -412,48 +385,53 @@ export default function SafetyCenterScreen(): React.ReactElement {
                     : '—'}
                 </span>
               </div>
-            </div>
+            </section>
           )}
 
           {/* Verdict card */}
-          <div style={CARD}>
-            <div style={CARD_HEADER}>Verdict</div>
-            <div style={CARD_ROW}>
-              <span style={LABEL}>Can commit (identity)</span>
+          <section
+            className="gw-card gw-workflow-card gw-workflow-card--flush gw-safety-card"
+            aria-labelledby="safety-verdict-title"
+          >
+            <h2 id="safety-verdict-title" className="gw-safety-card-heading">
+              Verdict
+            </h2>
+            <div className="gw-safety-row">
+              <span className="gw-safety-label">Can commit (identity)</span>
               <Verdict ok={canCommit} testId="safety-can-commit" />
             </div>
-            <div style={{ ...CARD_ROW, borderBottom: 'none' }}>
-              <span style={LABEL}>Can push</span>
+            <div className="gw-safety-row">
+              <span className="gw-safety-label">Can push</span>
               <Verdict ok={canPush} testId="safety-can-push" />
             </div>
-          </div>
+          </section>
 
           {/* Issues */}
           {allIssues.length > 0 && (
-            <div style={CARD}>
-              <div style={CARD_HEADER}>Issues ({allIssues.length})</div>
+            <section
+              className="gw-card gw-workflow-card gw-workflow-card--flush gw-safety-card"
+              aria-labelledby="safety-issues-title"
+              aria-live="polite"
+            >
+              <h2 id="safety-issues-title" className="gw-safety-card-heading">
+                Issues ({allIssues.length})
+              </h2>
               {allIssues.map((issue) => (
                 <IssueRow key={issue.code} issue={issue} />
               ))}
-            </div>
+            </section>
           )}
 
           {allIssues.length === 0 && identityCheck && pushCheck && (
             <div
-              style={{
-                padding: '12px 16px',
-                background: 'var(--gw-success-bg, #052e16)',
-                border: '1px solid var(--gw-success-border, #2d4a2d)',
-                borderRadius: '6px',
-                fontSize: '14px',
-                color: 'var(--gw-success, #4ade80)',
-              }}
+              className="gw-notice gw-notice--success gw-workflow-notice gw-workflow-notice--success"
+              role="status"
             >
               ✓ No identity issues detected. This repository is safe to commit and push.
             </div>
           )}
-        </>
+        </div>
       )}
-    </div>
+    </section>
   )
 }

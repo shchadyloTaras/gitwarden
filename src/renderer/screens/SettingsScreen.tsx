@@ -6,6 +6,7 @@ import AiConnectionSettings from '../components/AiConnectionSettings'
 import type { AppearanceMode } from '../../core/types'
 import { STR } from '../strings'
 import { applyTheme } from '../theme'
+import './workflowScreens.css'
 
 type SettingsTab = 'general' | 'ai' | 'walkthrough'
 
@@ -14,21 +15,6 @@ const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'ai', label: STR.SETTINGS_TAB_AI },
   { id: 'walkthrough', label: STR.SETTINGS_TAB_WALKTHROUGH },
 ]
-
-const CARD: React.CSSProperties = {
-  background: 'var(--gw-surface, #18181b)',
-  border: '1px solid var(--gw-border, #27272a)',
-  borderRadius: 8,
-  padding: '20px 24px',
-  marginBottom: 20,
-}
-
-const CARD_TITLE: React.CSSProperties = {
-  fontSize: 14,
-  fontWeight: 600,
-  marginBottom: 14,
-  color: 'var(--gw-text, #f4f4f5)',
-}
 
 function AppearancePicker({
   value,
@@ -43,56 +29,28 @@ function AppearancePicker({
     { id: 'dark', label: STR.SETTINGS_APPEARANCE_DARK },
   ]
   return (
-    <div data-testid="settings-appearance-picker" style={{ display: 'flex', gap: 6 }}>
+    <div
+      data-testid="settings-appearance-picker"
+      className="gw-toolbar gw-settings-choice-group"
+      role="group"
+      aria-labelledby="settings-appearance-title"
+    >
       {modes.map((m) => (
         <button
+          type="button"
           key={m.id}
           data-testid={`settings-appearance-${m.id}`}
           onClick={() => onChange(m.id)}
-          style={{
-            padding: '6px 16px',
-            borderRadius: 4,
-            fontSize: 14,
-            cursor: 'pointer',
-            border:
-              value === m.id
-                ? '2px solid var(--gw-accent, #6366f1)'
-                : '1px solid var(--gw-surface3, #3f3f46)',
-            background:
-              value === m.id ? 'var(--gw-accent-soft, #1e1b4b)' : 'var(--gw-surface2, #27272a)',
-            color:
-              value === m.id ? 'var(--gw-accent-text, #a5b4fc)' : 'var(--gw-text-muted, #a1a1aa)',
-            fontWeight: value === m.id ? 600 : 400,
-          }}
+          aria-pressed={value === m.id}
+          className={`gw-button gw-button--secondary gw-workflow-button gw-settings-choice${
+            value === m.id ? ' gw-settings-choice--selected' : ''
+          }`}
         >
           {m.label}
         </button>
       ))}
     </div>
   )
-}
-
-const SECONDARY_BUTTON: React.CSSProperties = {
-  padding: '6px 12px',
-  background: 'none',
-  border: '1px solid var(--gw-surface3, #3f3f46)',
-  borderRadius: 4,
-  color: 'var(--gw-text-muted, #a1a1aa)',
-  fontSize: 14,
-  cursor: 'pointer',
-  flexShrink: 0,
-}
-
-const ACCENT_BUTTON: React.CSSProperties = {
-  padding: '6px 14px',
-  background: 'var(--gw-accent, #6366f1)',
-  border: 'none',
-  borderRadius: 4,
-  color: 'var(--gw-on-solid, #fff)',
-  fontSize: 14,
-  fontWeight: 600,
-  cursor: 'pointer',
-  flexShrink: 0,
 }
 
 /** Manual "Check for updates" + status, mirroring the header notifier (no in-app install). */
@@ -124,47 +82,41 @@ function UpdatesCard(): React.ReactElement {
   }
 
   return (
-    <div style={CARD}>
-      <div style={CARD_TITLE}>{STR.UPDATE_SETTINGS_TITLE}</div>
-      <div
-        style={{
-          display: 'flex',
-          gap: 8,
-          alignItems: 'center',
-          marginBottom: 10,
-          flexWrap: 'wrap',
-        }}
-      >
+    <section
+      className="gw-card gw-workflow-card gw-settings-card"
+      aria-labelledby="settings-updates-title"
+    >
+      <h2 id="settings-updates-title" className="gw-workflow-card-title">
+        {STR.UPDATE_SETTINGS_TITLE}
+      </h2>
+      <div className="gw-toolbar gw-workflow-actions gw-workflow-actions--wrap">
         <button
+          type="button"
           data-testid="settings-update-check"
           onClick={() => void check()}
           disabled={checking}
-          style={{ ...SECONDARY_BUTTON, opacity: checking ? 0.6 : 1 }}
+          className="gw-button gw-button--secondary gw-workflow-button"
         >
           {checking ? STR.UPDATE_CHECKING : STR.UPDATE_CHECK_BUTTON}
         </button>
         {release && (
           <button
+            type="button"
             data-testid="settings-update-download"
             onClick={() => void window.api.shell.openExternal(release.url)}
-            style={ACCENT_BUTTON}
+            className="gw-button gw-button--primary gw-workflow-button"
           >
             {STR.UPDATE_DOWNLOAD_BUTTON}
           </button>
         )}
         {status && (
-          <span
-            data-testid="settings-update-status"
-            style={{ fontSize: 14, color: 'var(--gw-text-muted, #a1a1aa)' }}
-          >
+          <span data-testid="settings-update-status" className="gw-ai-status" role="status">
             {status}
           </span>
         )}
       </div>
-      <p style={{ margin: 0, fontSize: 14, color: 'var(--gw-text-faint, #71717a)' }}>
-        {STR.UPDATE_SETTINGS_HINT}
-      </p>
-    </div>
+      <p className="gw-settings-copy">{STR.UPDATE_SETTINGS_HINT}</p>
+    </section>
   )
 }
 
@@ -179,6 +131,7 @@ export default function SettingsScreen(): React.ReactElement {
   const [saveError, setSaveError] = useState<string | null>(null)
 
   const didLoad = useRef(false)
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
 
   useEffect(() => {
     void load()
@@ -227,17 +180,42 @@ export default function SettingsScreen(): React.ReactElement {
   // General tab, which is the one that contributes to it.
   const showSaveRow = activeTab === 'general'
 
+  function handleTabKeyDown(
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    currentIndex: number
+  ): void {
+    let nextIndex: number | null = null
+
+    if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % TABS.length
+    else if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + TABS.length) % TABS.length
+    else if (event.key === 'Home') nextIndex = 0
+    else if (event.key === 'End') nextIndex = TABS.length - 1
+
+    if (nextIndex === null) return
+    event.preventDefault()
+    const nextTab = TABS[nextIndex]
+    setActiveTab(nextTab.id)
+    tabRefs.current[nextIndex]?.focus()
+  }
+
   return (
-    <div
+    <section
       data-testid="screen-settings"
-      style={{ padding: '24px 32px', maxWidth: 680, color: 'var(--gw-text, #f4f4f5)' }}
+      className="gw-page gw-workflow-page"
+      aria-labelledby="settings-page-title"
+      aria-busy={loading}
     >
-      <h2 style={{ margin: '0 0 24px', fontSize: 18, fontWeight: 600 }}>{STR.SETTINGS_TITLE}</h2>
+      <header className="gw-page-header gw-workflow-page-header">
+        <h1 id="settings-page-title" className="gw-page-title gw-workflow-page-title">
+          {STR.SETTINGS_TITLE}
+        </h1>
+      </header>
 
       {loading && (
         <div
           data-testid="settings-loading"
-          style={{ color: 'var(--gw-text-faint, #71717a)', fontSize: 14 }}
+          className="gw-empty-state gw-workflow-state"
+          role="status"
         >
           {STR.LOADING}
         </div>
@@ -247,36 +225,28 @@ export default function SettingsScreen(): React.ReactElement {
         <>
           <div
             role="tablist"
+            aria-labelledby="settings-page-title"
             data-testid="settings-tabs"
-            style={{
-              display: 'flex',
-              gap: 4,
-              marginBottom: 20,
-              borderBottom: '1px solid var(--gw-border, #27272a)',
-            }}
+            className="gw-settings-tabs"
           >
-            {TABS.map((tab) => {
+            {TABS.map((tab, index) => {
               const selected = activeTab === tab.id
               return (
                 <button
+                  ref={(element) => {
+                    tabRefs.current[index] = element
+                  }}
+                  type="button"
+                  id={`settings-tab-control-${tab.id}`}
                   key={tab.id}
                   role="tab"
                   aria-selected={selected}
+                  aria-controls={`settings-panel-${tab.id}`}
+                  tabIndex={selected ? 0 : -1}
                   data-testid={`settings-tab-${tab.id}`}
                   onClick={() => setActiveTab(tab.id)}
-                  style={{
-                    padding: '8px 14px',
-                    background: 'none',
-                    border: 'none',
-                    borderBottom: selected
-                      ? '2px solid var(--gw-accent, #6366f1)'
-                      : '2px solid transparent',
-                    color: selected ? 'var(--gw-text, #f4f4f5)' : 'var(--gw-text-muted, #a1a1aa)',
-                    fontSize: 14,
-                    fontWeight: selected ? 600 : 400,
-                    cursor: 'pointer',
-                    marginBottom: -1,
-                  }}
+                  onKeyDown={(event) => handleTabKeyDown(event, index)}
+                  className="gw-settings-tab"
                 >
                   {tab.label}
                 </button>
@@ -286,22 +256,24 @@ export default function SettingsScreen(): React.ReactElement {
 
           {/* General — Appearance + Updates */}
           {activeTab === 'general' && (
-            <div role="tabpanel" data-testid="settings-tabpanel-general">
+            <div
+              id="settings-panel-general"
+              role="tabpanel"
+              aria-labelledby="settings-tab-control-general"
+              data-testid="settings-tabpanel-general"
+              className="gw-settings-panel"
+            >
               {/* Appearance */}
-              <div style={CARD}>
-                <div style={CARD_TITLE}>{STR.SETTINGS_APPEARANCE_LABEL}</div>
+              <section
+                className="gw-card gw-workflow-card gw-settings-card"
+                aria-labelledby="settings-appearance-title"
+              >
+                <h2 id="settings-appearance-title" className="gw-workflow-card-title">
+                  {STR.SETTINGS_APPEARANCE_LABEL}
+                </h2>
                 <AppearancePicker value={localAppearance} onChange={handleAppearanceChange} />
-                <p
-                  style={{
-                    marginTop: 10,
-                    marginBottom: 0,
-                    fontSize: 14,
-                    color: 'var(--gw-text-faint, #71717a)',
-                  }}
-                >
-                  {STR.SETTINGS_APPEARANCE_HINT}
-                </p>
-              </div>
+                <p className="gw-settings-copy">{STR.SETTINGS_APPEARANCE_HINT}</p>
+              </section>
 
               <UpdatesCard />
             </div>
@@ -309,37 +281,38 @@ export default function SettingsScreen(): React.ReactElement {
 
           {/* AI Assistant — token-first single active connection (manages its own saves). */}
           {activeTab === 'ai' && (
-            <div role="tabpanel" data-testid="settings-tabpanel-ai">
+            <div
+              id="settings-panel-ai"
+              role="tabpanel"
+              aria-labelledby="settings-tab-control-ai"
+              data-testid="settings-tabpanel-ai"
+              className="gw-settings-panel"
+            >
               <AiConnectionSettings />
             </div>
           )}
 
           {/* Walkthrough — guided introduction replay */}
           {activeTab === 'walkthrough' && (
-            <div role="tabpanel" data-testid="settings-tabpanel-walkthrough">
-              <div data-testid="settings-onboarding-card" style={CARD}>
-                <div style={{ ...CARD_TITLE, marginBottom: 10 }}>
+            <div
+              id="settings-panel-walkthrough"
+              role="tabpanel"
+              aria-labelledby="settings-tab-control-walkthrough"
+              data-testid="settings-tabpanel-walkthrough"
+              className="gw-settings-panel"
+            >
+              <section
+                data-testid="settings-onboarding-card"
+                className="gw-card gw-workflow-card gw-settings-card"
+                aria-labelledby="settings-onboarding-title"
+              >
+                <h2 id="settings-onboarding-title" className="gw-workflow-card-title">
                   {STR.SETTINGS_ONBOARDING_LABEL}
-                </div>
-                <p
-                  style={{
-                    marginTop: 0,
-                    marginBottom: 16,
-                    fontSize: 14,
-                    color: 'var(--gw-text-faint, #71717a)',
-                  }}
-                >
+                </h2>
+                <p className="gw-settings-copy" style={{ marginTop: 0, marginBottom: 16 }}>
                   {STR.SETTINGS_ONBOARDING_HINT}
                 </p>
-                <ol
-                  style={{
-                    margin: '0 0 20px',
-                    padding: '0 0 0 18px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 6,
-                  }}
-                >
+                <ol className="gw-settings-steps">
                   {[
                     STR.ONBOARDING_STEP_WELCOME_TITLE,
                     STR.ONBOARDING_STEP_HEADER_TITLE,
@@ -354,55 +327,34 @@ export default function SettingsScreen(): React.ReactElement {
                     STR.ONBOARDING_STEP_AI_SETTINGS_TITLE,
                     STR.ONBOARDING_STEP_SETTINGS_TITLE,
                   ].map((title) => (
-                    <li
-                      key={title}
-                      style={{ fontSize: 13, color: 'var(--gw-text-muted, #a1a1aa)' }}
-                    >
-                      {title}
-                    </li>
+                    <li key={title}>{title}</li>
                   ))}
                 </ol>
                 <button
+                  type="button"
                   data-testid="settings-start-onboarding"
                   onClick={startOnboarding}
-                  style={{
-                    padding: '7px 14px',
-                    background: 'var(--gw-surface3, #3f3f46)',
-                    border: 'none',
-                    borderRadius: 4,
-                    color: 'var(--gw-text, #f4f4f5)',
-                    cursor: 'pointer',
-                    fontSize: 14,
-                    fontWeight: 600,
-                  }}
+                  className="gw-button gw-button--secondary gw-workflow-button"
                 >
                   {STR.SETTINGS_ONBOARDING_START}
                 </button>
-              </div>
+              </section>
             </div>
           )}
 
           {/* Save — persists Appearance */}
           {showSaveRow && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="gw-toolbar gw-workflow-actions gw-workflow-actions--wrap gw-settings-save-row">
               <span
                 data-tooltip={dirty ? undefined : STR.SETTINGS_SAVE_NO_CHANGES}
                 style={{ display: 'inline-block' }}
               >
                 <button
+                  type="button"
                   data-testid="settings-save"
                   disabled={!dirty}
                   onClick={() => void handleSave()}
-                  style={{
-                    padding: '8px 20px',
-                    background: dirty ? 'var(--gw-accent, #6366f1)' : 'var(--gw-surface2, #27272a)',
-                    color: dirty ? 'var(--gw-on-solid, #fff)' : 'var(--gw-text-dim, #52525b)',
-                    border: 'none',
-                    borderRadius: 4,
-                    fontSize: 14,
-                    fontWeight: 600,
-                    cursor: dirty ? 'pointer' : 'not-allowed',
-                  }}
+                  className="gw-button gw-button--primary gw-workflow-button"
                 >
                   {STR.SETTINGS_SAVE}
                 </button>
@@ -411,7 +363,9 @@ export default function SettingsScreen(): React.ReactElement {
               {saved && (
                 <span
                   data-testid="settings-saved-msg"
-                  style={{ fontSize: 14, color: 'var(--gw-success, #4ade80)' }}
+                  className="gw-ai-status"
+                  role="status"
+                  style={{ color: 'var(--gw-success, #4ade80)' }}
                 >
                   {STR.SETTINGS_SAVED}
                 </span>
@@ -420,7 +374,9 @@ export default function SettingsScreen(): React.ReactElement {
               {saveError && (
                 <span
                   data-testid="settings-save-error"
-                  style={{ fontSize: 14, color: 'var(--gw-danger, #f87171)' }}
+                  className="gw-ai-status"
+                  role="alert"
+                  style={{ color: 'var(--gw-danger, #f87171)' }}
                 >
                   {saveError}
                 </span>
@@ -429,6 +385,6 @@ export default function SettingsScreen(): React.ReactElement {
           )}
         </>
       )}
-    </div>
+    </section>
   )
 }

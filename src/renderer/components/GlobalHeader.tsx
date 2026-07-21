@@ -62,8 +62,15 @@ const HEADER_ACTION_BUTTON_STYLE: React.CSSProperties = {
 }
 
 export default function GlobalHeader(): React.ReactElement {
-  const { activeRepo, currentBranch, toggleInspector, openRightPanel, setActiveRepo, navigate } =
-    useAppStore()
+  const {
+    activeRepo,
+    currentBranch,
+    inspectorOpen,
+    toggleInspector,
+    openRightPanel,
+    setActiveRepo,
+    navigate,
+  } = useAppStore()
   const repos = useRepositoriesStore((s) => s.repos)
   const profiles = useProfilesStore((s) => s.profiles)
   const activeProfileId = useProfilesStore((s) => s.activeProfileId)
@@ -165,6 +172,7 @@ export default function GlobalHeader(): React.ReactElement {
         }}
       >
         <span
+          className="gw-header__brand"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -176,10 +184,13 @@ export default function GlobalHeader(): React.ReactElement {
           }}
         >
           <Logo size={20} />
-          {STR.APP_TITLE}
+          <span className="gw-header__brand-label">{STR.APP_TITLE}</span>
         </span>
 
-        <div style={{ width: 1, height: 20, background: 'var(--gw-surface3, #3f3f46)' }} />
+        <div
+          className="gw-header__divider"
+          style={{ width: 1, height: 20, background: 'var(--gw-surface3, #3f3f46)' }}
+        />
 
         {/* Repo picker */}
         <Dropdown
@@ -187,6 +198,7 @@ export default function GlobalHeader(): React.ReactElement {
           ariaLabel={STR.HEADER_REPO_PICKER}
           tooltip={STR.HEADER_REPO_PICKER}
           tooltipPos="bottom"
+          triggerClassName="gw-header__repo-trigger"
           placeholder="No repositories"
           value={activeRepo?.id ?? ''}
           options={repos.map((r) => ({ value: r.id, label: r.name }))}
@@ -206,7 +218,10 @@ export default function GlobalHeader(): React.ReactElement {
         {/* Detached HEAD pill (Phase 92): a distinct state, never a stale branch name */}
         {detached && (
           <>
-            <span style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: 14 }}>
+            <span
+              className="gw-header__context-label"
+              style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: 14 }}
+            >
               {STR.HEADER_CHECKED_OUT}
             </span>
             <span
@@ -231,7 +246,10 @@ export default function GlobalHeader(): React.ReactElement {
         {/* Branch picker */}
         {!detached && localBranches.length > 0 && (
           <>
-            <span style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: 14 }}>
+            <span
+              className="gw-header__context-label"
+              style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: 14 }}
+            >
               {STR.HEADER_CHECKED_OUT}
             </span>
             <Dropdown
@@ -239,6 +257,7 @@ export default function GlobalHeader(): React.ReactElement {
               ariaLabel={STR.HEADER_BRANCH_PICKER}
               tooltip={STR.HEADER_BRANCH_PICKER}
               tooltipPos="bottom"
+              triggerClassName="gw-header__branch-trigger"
               monospace
               value={currentBranch ?? ''}
               options={localBranches.map((b) => {
@@ -272,11 +291,15 @@ export default function GlobalHeader(): React.ReactElement {
         {/* Fallback: show branch text when branches not loaded yet */}
         {!detached && localBranches.length === 0 && currentBranch && (
           <>
-            <span style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: 14 }}>
+            <span
+              className="gw-header__context-label"
+              style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: 14 }}
+            >
               {STR.HEADER_CHECKED_OUT}
             </span>
             <span
               data-testid="header-branch"
+              className="gw-header__branch-fallback"
               style={{
                 fontSize: 14,
                 fontFamily: 'monospace',
@@ -291,10 +314,11 @@ export default function GlobalHeader(): React.ReactElement {
           </>
         )}
 
-        <div style={{ flex: 1 }} />
+        <div className="gw-header__spacer" style={{ flex: 1 }} />
 
         <button
           data-testid="header-guard-badge"
+          className="gw-header__guard"
           aria-label={guardAriaLabel}
           data-tooltip={guardDestination}
           data-tooltip-pos="bottom"
@@ -315,11 +339,15 @@ export default function GlobalHeader(): React.ReactElement {
           {GUARD_LABEL[guardState]}
         </button>
 
-        <div style={{ width: 1, height: 20, background: 'var(--gw-surface3, #3f3f46)' }} />
+        <div
+          className="gw-header__divider gw-header__divider--trailing"
+          style={{ width: 1, height: 20, background: 'var(--gw-surface3, #3f3f46)' }}
+        />
 
         {activeProfile && (
           <div
             data-testid="header-profile"
+            className="gw-header__profile"
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}
           >
             <div
@@ -340,6 +368,7 @@ export default function GlobalHeader(): React.ReactElement {
         {availableUpdate && (
           <button
             data-testid="header-update-button"
+            className="gw-header__update"
             aria-label={STR.UPDATE_BUTTON_ARIA(availableUpdate.version)}
             data-tooltip={STR.UPDATE_AVAILABLE(availableUpdate.version)}
             data-tooltip-pos="bottom"
@@ -371,7 +400,9 @@ export default function GlobalHeader(): React.ReactElement {
 
         <button
           data-testid="header-ai-chat"
+          className="gw-header__action"
           aria-label={STR.CHAT_OPEN_LABEL}
+          aria-controls="gitwarden-right-panel"
           data-tooltip={STR.CHAT_OPEN_LABEL}
           data-tooltip-pos="bottom"
           onClick={() => openRightPanel('chat')}
@@ -385,7 +416,10 @@ export default function GlobalHeader(): React.ReactElement {
         </button>
 
         <button
+          className="gw-header__action"
           aria-label={STR.INSPECTOR_TOGGLE}
+          aria-controls="gitwarden-right-panel"
+          aria-expanded={inspectorOpen}
           data-tooltip={STR.INSPECTOR_TOGGLE}
           data-tooltip-pos="bottom"
           onClick={toggleInspector}

@@ -7,6 +7,7 @@ import { useAppStore } from '../store/appStore'
 import Dropdown from '../components/Dropdown'
 import ResizableMainSplit from '../components/ResizableMainSplit'
 import { STR } from '../strings'
+import './dataScreens.css'
 
 // Must match the phrase gitInitializeHandler.ts's nested-repo throw always contains —
 // there is no structured error code for this pre-check (it never reaches GitError),
@@ -258,7 +259,11 @@ export default function RepositoriesScreen(): React.ReactElement {
     selectedRepo?.assignedProfileId !== activeProfileId
 
   return (
-    <div data-testid="screen-repositories" style={{ display: 'flex', height: '100%', minWidth: 0 }}>
+    <div
+      data-testid="screen-repositories"
+      className="gw-page gw-management-page gw-management-page--repositories"
+      style={{ display: 'flex', height: '100%', minWidth: 0 }}
+    >
       <ResizableMainSplit
         storageKey="gitwarden.layout.repositoriesSplit.v1"
         resizeLabel={STR.REPOSITORIES_SPLIT_RESIZE_LABEL}
@@ -271,6 +276,7 @@ export default function RepositoriesScreen(): React.ReactElement {
         minEndWidth={220}
         start={
           <div
+            className="gw-management-pane gw-management-pane--list"
             style={{
               flex: 1,
               minHeight: 0,
@@ -279,8 +285,10 @@ export default function RepositoriesScreen(): React.ReactElement {
               flexDirection: 'column',
             }}
           >
-            <div
+            <h1
+              className="gw-management-pane-title"
               style={{
+                margin: 0,
                 padding: '12px 12px 8px',
                 fontSize: 14,
                 fontWeight: 700,
@@ -289,11 +297,16 @@ export default function RepositoriesScreen(): React.ReactElement {
               }}
             >
               REPOSITORIES
-            </div>
+            </h1>
 
-            <div data-testid="repos-list" style={{ flex: 1, overflowY: 'auto' }}>
+            <div
+              data-testid="repos-list"
+              className="gw-management-list"
+              style={{ flex: 1, overflowY: 'auto' }}
+            >
               {repos.length === 0 && (
                 <div
+                  className="gw-empty-state gw-management-list-empty"
                   style={{
                     padding: 12,
                     fontSize: 14,
@@ -312,6 +325,8 @@ export default function RepositoriesScreen(): React.ReactElement {
                   <button
                     key={r.id}
                     data-testid="repo-item"
+                    className={`gw-list-row gw-management-row gw-management-row-main gw-management-repo-row${selectedId === r.id ? ' gw-management-row--selected' : ''}`}
+                    aria-pressed={selectedId === r.id}
                     onClick={() => selectRepo(r)}
                     style={{
                       display: 'flex',
@@ -365,9 +380,13 @@ export default function RepositoriesScreen(): React.ReactElement {
               })}
             </div>
 
-            <div style={{ padding: '8px 12px', borderTop: '1px solid var(--gw-border, #27272a)' }}>
+            <div
+              className="gw-management-pane-footer"
+              style={{ padding: '8px 12px', borderTop: '1px solid var(--gw-border, #27272a)' }}
+            >
               <button
                 data-testid="repos-add-btn"
+                className="gw-button gw-button--secondary gw-management-primary-action"
                 data-tooltip={STR.TT_REPO_ADD}
                 onClick={startAdd}
                 style={{
@@ -388,9 +407,13 @@ export default function RepositoriesScreen(): React.ReactElement {
           </div>
         }
         end={
-          <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: 24 }}>
+          <div
+            className="gw-management-pane gw-management-pane--detail"
+            style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: 24 }}
+          >
             {mode === 'idle' && (
               <div
+                className="gw-empty-state gw-management-empty-state"
                 style={{
                   display: 'flex',
                   height: '100%',
@@ -405,8 +428,12 @@ export default function RepositoriesScreen(): React.ReactElement {
             )}
 
             {mode === 'add' && (
-              <div style={{ maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div
+                className="gw-card gw-management-form"
+                style={{ maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 16 }}
+              >
                 <h2
+                  className="gw-management-detail-title"
                   style={{
                     margin: 0,
                     fontSize: 16,
@@ -417,9 +444,11 @@ export default function RepositoriesScreen(): React.ReactElement {
                   Add Repository
                 </h2>
 
-                <Field label="Repository Path">
+                <Field label="Repository Path" labelId="repository-path-label">
                   <div style={{ display: 'flex', gap: 6 }}>
                     <input
+                      id="repository-path-input"
+                      aria-labelledby="repository-path-label"
                       data-testid="repo-path-input"
                       value={addPath}
                       onChange={(e) => setAddPath(e.target.value)}
@@ -428,6 +457,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                     />
                     <button
                       type="button"
+                      className="gw-button gw-button--compact gw-button--secondary"
                       data-testid="repo-browse-btn"
                       onClick={() => {
                         void handleBrowse()
@@ -459,6 +489,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button
                     data-testid="repo-validate-btn"
+                    className="gw-button gw-button--primary"
                     onClick={() => {
                       void handleValidateAndAdd()
                     }}
@@ -478,6 +509,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                   </button>
                   <button
                     type="button"
+                    className="gw-button gw-button--secondary"
                     onClick={() => setMode('idle')}
                     style={{
                       padding: '6px 14px',
@@ -502,6 +534,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                       (activeProfile ? (
                         <button
                           type="button"
+                          className="gw-button gw-button--secondary"
                           data-testid="repo-init-btn"
                           onClick={() => setInitMode(true)}
                           style={{
@@ -530,6 +563,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                     {initMode && activeProfile && (
                       <div
                         data-testid="repo-init-panel"
+                        className="gw-card gw-management-subcard"
                         style={{
                           display: 'flex',
                           flexDirection: 'column',
@@ -558,6 +592,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                             </div>
                             <button
                               type="button"
+                              className="gw-button gw-button--primary"
                               data-testid="repo-init-continue-btn"
                               onClick={() => finishInitialize(initPending.repo)}
                               style={{
@@ -577,8 +612,12 @@ export default function RepositoriesScreen(): React.ReactElement {
                           </>
                         ) : (
                           <>
-                            <Field label={STR.INITIALIZE_REPO_URL_LABEL}>
+                            <Field
+                              label={STR.INITIALIZE_REPO_URL_LABEL}
+                              htmlFor="repository-init-url-input"
+                            >
                               <input
+                                id="repository-init-url-input"
                                 data-testid="repo-init-url-input"
                                 value={initRemoteUrl}
                                 onChange={(e) => {
@@ -611,6 +650,7 @@ export default function RepositoriesScreen(): React.ReactElement {
 
                             <button
                               type="button"
+                              className="gw-button gw-button--primary"
                               data-testid="repo-init-submit-btn"
                               onClick={() => {
                                 void handleInitialize()
@@ -642,7 +682,10 @@ export default function RepositoriesScreen(): React.ReactElement {
             )}
 
             {mode === 'edit' && selectedRepo && (
-              <div style={{ maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div
+                className="gw-card gw-management-form"
+                style={{ maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 16 }}
+              >
                 {hasMismatch && (
                   <div
                     data-testid="repo-mismatch-warning"
@@ -664,6 +707,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                 )}
 
                 <h2
+                  className="gw-management-detail-title"
                   style={{
                     margin: 0,
                     fontSize: 16,
@@ -676,8 +720,9 @@ export default function RepositoriesScreen(): React.ReactElement {
 
                 <RepositoryPathField path={selectedRepo.localPath} />
 
-                <Field label="Name">
+                <Field label="Name" htmlFor="repository-name-input">
                   <input
+                    id="repository-name-input"
                     data-testid="repo-form-name"
                     value={editForm.name}
                     onChange={(e) => {
@@ -688,10 +733,11 @@ export default function RepositoriesScreen(): React.ReactElement {
                   />
                 </Field>
 
-                <Field label="Assigned Profile">
+                <Field label="Assigned Profile" labelId="repository-profile-label">
                   <Dropdown
                     testId="repo-form-profile"
                     ariaLabel="Assigned profile"
+                    ariaLabelledBy="repository-profile-label"
                     block
                     value={editForm.assignedProfileId}
                     onChange={(id) => {
@@ -706,8 +752,9 @@ export default function RepositoriesScreen(): React.ReactElement {
                   />
                 </Field>
 
-                <Field label="Notes">
+                <Field label="Notes" htmlFor="repository-notes-input">
                   <textarea
+                    id="repository-notes-input"
                     data-testid="repo-form-notes"
                     value={editForm.notes}
                     onChange={(e) => {
@@ -722,6 +769,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                 {/* Push Policy section */}
                 <div
                   data-testid="repo-push-policy-section"
+                  className="gw-card gw-management-subcard gw-management-policy-card"
                   style={{
                     border: '1px solid var(--gw-border, #27272a)',
                     borderRadius: 4,
@@ -763,10 +811,14 @@ export default function RepositoriesScreen(): React.ReactElement {
 
                   {editForm.policyEnabled && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <Field label={STR.PUSH_POLICY_MODE_LABEL}>
+                      <Field
+                        label={STR.PUSH_POLICY_MODE_LABEL}
+                        labelId="repository-policy-mode-label"
+                      >
                         <Dropdown
                           testId="repo-policy-mode"
                           ariaLabel={STR.PUSH_POLICY_MODE_LABEL}
+                          ariaLabelledBy="repository-policy-mode-label"
                           block
                           value={editForm.policyMode}
                           onChange={(v) => {
@@ -784,8 +836,12 @@ export default function RepositoriesScreen(): React.ReactElement {
                         />
                       </Field>
 
-                      <Field label={STR.PUSH_POLICY_ALLOWED_LABEL}>
+                      <Field
+                        label={STR.PUSH_POLICY_ALLOWED_LABEL}
+                        htmlFor="repository-policy-allowed-input"
+                      >
                         <textarea
+                          id="repository-policy-allowed-input"
                           data-testid="repo-policy-allowed"
                           value={editForm.policyAllowed}
                           onChange={(e) => {
@@ -807,8 +863,12 @@ export default function RepositoriesScreen(): React.ReactElement {
                         </span>
                       </Field>
 
-                      <Field label={STR.PUSH_POLICY_BLOCKED_LABEL}>
+                      <Field
+                        label={STR.PUSH_POLICY_BLOCKED_LABEL}
+                        htmlFor="repository-policy-blocked-input"
+                      >
                         <textarea
+                          id="repository-policy-blocked-input"
                           data-testid="repo-policy-blocked"
                           value={editForm.policyBlocked}
                           onChange={(e) => {
@@ -830,10 +890,14 @@ export default function RepositoriesScreen(): React.ReactElement {
                         </span>
                       </Field>
 
-                      <div style={{ display: 'flex', gap: 8 }}>
+                      <div className="gw-management-form-grid" style={{ display: 'flex', gap: 8 }}>
                         <div style={{ flex: 1 }}>
-                          <Field label={STR.PUSH_POLICY_EXPECTED_OWNER_LABEL}>
+                          <Field
+                            label={STR.PUSH_POLICY_EXPECTED_OWNER_LABEL}
+                            htmlFor="repository-policy-owner-input"
+                          >
                             <input
+                              id="repository-policy-owner-input"
                               data-testid="repo-policy-expected-owner"
                               value={editForm.policyExpectedOwner}
                               onChange={(e) => {
@@ -849,8 +913,12 @@ export default function RepositoriesScreen(): React.ReactElement {
                           </Field>
                         </div>
                         <div style={{ flex: 1 }}>
-                          <Field label={STR.PUSH_POLICY_EXPECTED_REPO_LABEL}>
+                          <Field
+                            label={STR.PUSH_POLICY_EXPECTED_REPO_LABEL}
+                            htmlFor="repository-policy-repo-input"
+                          >
                             <input
+                              id="repository-policy-repo-input"
                               data-testid="repo-policy-expected-repo"
                               value={editForm.policyExpectedRepo}
                               onChange={(e) => {
@@ -867,8 +935,12 @@ export default function RepositoriesScreen(): React.ReactElement {
                         </div>
                       </div>
 
-                      <Field label={STR.PUSH_POLICY_GITHUB_ACTOR_LABEL}>
+                      <Field
+                        label={STR.PUSH_POLICY_GITHUB_ACTOR_LABEL}
+                        htmlFor="repository-policy-actor-input"
+                      >
                         <input
+                          id="repository-policy-actor-input"
                           data-testid="repo-policy-github-actor"
                           value={editForm.policyGitHubActor}
                           onChange={(e) => {
@@ -889,8 +961,12 @@ export default function RepositoriesScreen(): React.ReactElement {
                         </span>
                       </Field>
 
-                      <Field label={STR.PUSH_POLICY_PREFIX_LABEL}>
+                      <Field
+                        label={STR.PUSH_POLICY_PREFIX_LABEL}
+                        htmlFor="repository-policy-prefix-input"
+                      >
                         <input
+                          id="repository-policy-prefix-input"
                           data-testid="repo-policy-prefix"
                           value={editForm.policyPrefix}
                           onChange={(e) => {
@@ -928,6 +1004,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
                   <button
                     data-testid="repo-save-btn"
+                    className="gw-button gw-button--primary"
                     onClick={() => {
                       void handleSave()
                     }}
@@ -950,6 +1027,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                   {!confirmRemove ? (
                     <button
                       data-testid="repo-remove-btn"
+                      className="gw-button gw-button--danger-ghost"
                       onClick={() => setConfirmRemove(true)}
                       disabled={saving}
                       style={{
@@ -983,6 +1061,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button
                           type="button"
+                          className="gw-button gw-button--secondary"
                           onClick={() => setConfirmRemove(false)}
                           style={{
                             flex: 1,
@@ -999,6 +1078,7 @@ export default function RepositoriesScreen(): React.ReactElement {
                         </button>
                         <button
                           data-testid="repo-remove-confirm-btn"
+                          className="gw-button gw-button--danger"
                           onClick={() => {
                             void handleRemove()
                           }}
@@ -1151,22 +1231,32 @@ function RepositoryPathField({ path }: { path: string }): React.ReactElement {
 function Field({
   label,
   children,
+  htmlFor,
+  labelId,
 }: {
   label: string
   children: React.ReactNode
+  htmlFor?: string
+  labelId?: string
 }): React.ReactElement {
+  const labelStyle: React.CSSProperties = {
+    fontSize: 14,
+    fontWeight: 600,
+    color: 'var(--gw-text-faint, #71717a)',
+    letterSpacing: '0.04em',
+  }
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <label
-        style={{
-          fontSize: 14,
-          fontWeight: 600,
-          color: 'var(--gw-text-faint, #71717a)',
-          letterSpacing: '0.04em',
-        }}
-      >
-        {label.toUpperCase()}
-      </label>
+    <div className="gw-field" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      {htmlFor ? (
+        <label className="gw-field__label" htmlFor={htmlFor} style={labelStyle}>
+          {label.toUpperCase()}
+        </label>
+      ) : (
+        <div className="gw-field__label" id={labelId} style={labelStyle}>
+          {label.toUpperCase()}
+        </div>
+      )}
       {children}
     </div>
   )

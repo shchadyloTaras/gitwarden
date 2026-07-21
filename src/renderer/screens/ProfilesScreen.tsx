@@ -5,6 +5,7 @@ import { GITHUB_CLIENT_ID } from '../../core/config/github'
 import ConnectGitHubModal from '../components/ConnectGitHubModal'
 import ResizableMainSplit from '../components/ResizableMainSplit'
 import { STR } from '../strings'
+import './dataScreens.css'
 
 /** GitHub's avatar CDN keyed by numeric account id — no avatar URL needs persisting. */
 function avatarUrlFor(accountId: number): string {
@@ -287,7 +288,11 @@ export default function ProfilesScreen(): React.ReactElement {
   const isActive = selectedId === activeProfileId
 
   return (
-    <div data-testid="screen-profiles" style={{ display: 'flex', height: '100%', minWidth: 0 }}>
+    <div
+      data-testid="screen-profiles"
+      className="gw-page gw-management-page gw-management-page--profiles"
+      style={{ display: 'flex', height: '100%', minWidth: 0 }}
+    >
       <ResizableMainSplit
         storageKey="gitwarden.layout.profilesSplit.v1"
         resizeLabel={STR.PROFILES_SPLIT_RESIZE_LABEL}
@@ -300,6 +305,7 @@ export default function ProfilesScreen(): React.ReactElement {
         minEndWidth={220}
         start={
           <div
+            className="gw-management-pane gw-management-pane--list"
             style={{
               flex: 1,
               minHeight: 0,
@@ -308,8 +314,10 @@ export default function ProfilesScreen(): React.ReactElement {
               flexDirection: 'column',
             }}
           >
-            <div
+            <h1
+              className="gw-management-pane-title"
               style={{
+                margin: 0,
                 padding: '12px 12px 8px',
                 fontSize: 14,
                 fontWeight: 700,
@@ -318,11 +326,17 @@ export default function ProfilesScreen(): React.ReactElement {
               }}
             >
               PROFILES
-            </div>
+            </h1>
 
-            <div data-testid="profiles-list" style={{ flex: 1, overflowY: 'auto' }}>
+            <div
+              data-testid="profiles-list"
+              className="gw-management-list"
+              role="list"
+              style={{ flex: 1, overflowY: 'auto' }}
+            >
               {profiles.length === 0 && (
                 <div
+                  className="gw-empty-state gw-management-list-empty"
                   style={{
                     padding: '12px',
                     fontSize: 14,
@@ -339,6 +353,8 @@ export default function ProfilesScreen(): React.ReactElement {
                   <div
                     key={p.id}
                     data-testid="profile-item"
+                    role="listitem"
+                    className={`gw-list-row gw-management-row gw-management-profile-row${selectedId === p.id ? ' gw-management-row--selected' : ''}`}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -351,6 +367,9 @@ export default function ProfilesScreen(): React.ReactElement {
                   >
                     <button
                       type="button"
+                      className="gw-management-row-main"
+                      aria-pressed={selectedId === p.id}
+                      aria-current={isActiveRow ? 'true' : undefined}
                       onClick={() => selectProfile(p)}
                       style={{
                         display: 'flex',
@@ -404,6 +423,7 @@ export default function ProfilesScreen(): React.ReactElement {
                       profiles.length > 1 && (
                         <button
                           type="button"
+                          className="gw-button gw-button--compact gw-management-row-action"
                           data-testid="profile-row-set-active-btn"
                           data-tooltip={STR.TT_PROFILE_SET_ACTIVE}
                           onClick={() => {
@@ -431,9 +451,13 @@ export default function ProfilesScreen(): React.ReactElement {
               })}
             </div>
 
-            <div style={{ padding: '8px 12px', borderTop: '1px solid var(--gw-border, #27272a)' }}>
+            <div
+              className="gw-management-pane-footer"
+              style={{ padding: '8px 12px', borderTop: '1px solid var(--gw-border, #27272a)' }}
+            >
               <button
                 data-testid="profiles-new-btn"
+                className="gw-button gw-button--secondary gw-management-primary-action"
                 data-tooltip={STR.TT_PROFILE_NEW}
                 onClick={startCreate}
                 style={{
@@ -454,9 +478,13 @@ export default function ProfilesScreen(): React.ReactElement {
           </div>
         }
         end={
-          <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: 24 }}>
+          <div
+            className="gw-management-pane gw-management-pane--detail"
+            style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: 24 }}
+          >
             {mode === 'idle' && (
               <div
+                className="gw-empty-state gw-management-empty-state"
                 style={{
                   display: 'flex',
                   height: '100%',
@@ -473,12 +501,14 @@ export default function ProfilesScreen(): React.ReactElement {
             {(mode === 'create' || mode === 'edit') && (
               <form
                 data-testid="profiles-form"
+                className="gw-card gw-management-form"
                 onSubmit={(e) => {
                   void handleSubmit(e)
                 }}
                 style={{ maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 16 }}
               >
                 <h2
+                  className="gw-management-detail-title"
                   style={{
                     margin: 0,
                     fontSize: 16,
@@ -489,8 +519,9 @@ export default function ProfilesScreen(): React.ReactElement {
                   {mode === 'create' ? 'New Profile' : 'Edit Profile'}
                 </h2>
 
-                <Field label="Display Name *">
+                <Field label="Display Name *" htmlFor="profile-display-name-input">
                   <input
+                    id="profile-display-name-input"
                     data-testid="profile-form-displayName"
                     value={form.displayName}
                     onChange={(e) => setField('displayName', e.target.value)}
@@ -499,8 +530,9 @@ export default function ProfilesScreen(): React.ReactElement {
                   />
                 </Field>
 
-                <Field label="Git Author Name *">
+                <Field label="Git Author Name *" htmlFor="profile-author-name-input">
                   <input
+                    id="profile-author-name-input"
                     data-testid="profile-form-gitAuthorName"
                     value={form.gitAuthorName}
                     onChange={(e) => setField('gitAuthorName', e.target.value)}
@@ -509,8 +541,9 @@ export default function ProfilesScreen(): React.ReactElement {
                   />
                 </Field>
 
-                <Field label="Git Author Email *">
+                <Field label="Git Author Email *" htmlFor="profile-author-email-input">
                   <input
+                    id="profile-author-email-input"
                     data-testid="profile-form-gitAuthorEmail"
                     type="email"
                     value={form.gitAuthorEmail}
@@ -520,8 +553,9 @@ export default function ProfilesScreen(): React.ReactElement {
                   />
                 </Field>
 
-                <Field label="GitHub Username *">
+                <Field label="GitHub Username *" htmlFor="profile-github-username-input">
                   <input
+                    id="profile-github-username-input"
                     data-testid="profile-form-githubUsername"
                     value={form.githubUsername}
                     onChange={(e) => setField('githubUsername', e.target.value)}
@@ -535,6 +569,7 @@ export default function ProfilesScreen(): React.ReactElement {
                     <div>
                       <button
                         type="button"
+                        className="gw-button gw-button--secondary"
                         data-testid="github-connect-new-btn"
                         data-tooltip={STR.TT_PROFILE_CONNECT_GH}
                         onClick={() => {
@@ -603,6 +638,7 @@ export default function ProfilesScreen(): React.ReactElement {
                           <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                             <button
                               type="button"
+                              className="gw-button gw-button--compact"
                               data-testid="github-reconnect-btn"
                               data-tooltip={STR.TT_PROFILE_RECONNECT_GH}
                               onClick={() => setConnecting(true)}
@@ -612,6 +648,7 @@ export default function ProfilesScreen(): React.ReactElement {
                             </button>
                             <button
                               type="button"
+                              className="gw-button gw-button--compact gw-button--danger-ghost"
                               data-testid="github-disconnect-btn"
                               data-tooltip={STR.TT_PROFILE_DISCONNECT_GH}
                               onClick={() => setConfirmDisconnect(true)}
@@ -639,6 +676,7 @@ export default function ProfilesScreen(): React.ReactElement {
                           </span>
                           <button
                             type="button"
+                            className="gw-button gw-button--compact"
                             onClick={() => setConfirmDisconnect(false)}
                             style={ghSecondaryBtn}
                           >
@@ -646,6 +684,7 @@ export default function ProfilesScreen(): React.ReactElement {
                           </button>
                           <button
                             type="button"
+                            className="gw-button gw-button--compact gw-button--danger"
                             data-testid="github-disconnect-confirm-btn"
                             onClick={() => {
                               void handleDisconnect()
@@ -668,6 +707,7 @@ export default function ProfilesScreen(): React.ReactElement {
                     <div>
                       <button
                         type="button"
+                        className="gw-button gw-button--secondary"
                         data-testid="github-connect-btn"
                         data-tooltip={STR.TT_PROFILE_CONNECT_GH}
                         onClick={() => setConnecting(true)}
@@ -693,8 +733,12 @@ export default function ProfilesScreen(): React.ReactElement {
                   )}
                 </Field>
 
-                <Field label="Authentication">
-                  <div style={{ display: 'flex', gap: 16, fontSize: 14 }}>
+                <Field label="Authentication" labelId="profile-authentication-label">
+                  <div
+                    role="radiogroup"
+                    aria-labelledby="profile-authentication-label"
+                    style={{ display: 'flex', gap: 16, fontSize: 14 }}
+                  >
                     <label
                       style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'default' }}
                     >
@@ -716,8 +760,9 @@ export default function ProfilesScreen(): React.ReactElement {
                   </div>
                 </Field>
 
-                <Field label="SSH Host Alias">
+                <Field label="SSH Host Alias" htmlFor="profile-ssh-alias-input">
                   <input
+                    id="profile-ssh-alias-input"
                     data-testid="profile-form-sshKeyAlias"
                     value={form.sshKeyAlias}
                     onChange={(e) => setField('sshKeyAlias', e.target.value)}
@@ -729,9 +774,11 @@ export default function ProfilesScreen(): React.ReactElement {
                   </div>
                 </Field>
 
-                <Field label="Expected Remote Hosts">
+                <Field label="Expected Remote Hosts" labelId="profile-remote-hosts-label">
                   <div style={{ display: 'flex', gap: 6 }}>
                     <input
+                      id="profile-new-host-input"
+                      aria-labelledby="profile-remote-hosts-label"
                       data-testid="profile-form-newHost"
                       value={form.newHost}
                       onChange={(e) => setField('newHost', e.target.value)}
@@ -746,6 +793,7 @@ export default function ProfilesScreen(): React.ReactElement {
                     />
                     <button
                       type="button"
+                      className="gw-button gw-button--compact gw-button--secondary"
                       onClick={addHost}
                       style={{
                         padding: '6px 10px',
@@ -779,6 +827,8 @@ export default function ProfilesScreen(): React.ReactElement {
                       {h}
                       <button
                         type="button"
+                        className="gw-button gw-button--icon"
+                        aria-label={STR.PROFILE_REMOVE_EXPECTED_HOST(h)}
                         onClick={() => removeHost(h)}
                         style={{
                           background: 'none',
@@ -828,10 +878,14 @@ export default function ProfilesScreen(): React.ReactElement {
                 )}
 
                 {/* Action buttons */}
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}>
+                <div
+                  className="gw-toolbar gw-management-form-actions"
+                  style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}
+                >
                   {mode === 'edit' && (
                     <button
                       type="button"
+                      className="gw-button gw-button--secondary"
                       data-testid="profile-set-active-btn"
                       data-tooltip={STR.TT_PROFILE_SET_ACTIVE}
                       onClick={() => {
@@ -857,6 +911,7 @@ export default function ProfilesScreen(): React.ReactElement {
 
                   <button
                     type="submit"
+                    className="gw-button gw-button--primary"
                     data-testid="profile-form-submit"
                     disabled={saving}
                     style={{
@@ -876,6 +931,7 @@ export default function ProfilesScreen(): React.ReactElement {
                   {mode === 'edit' && !confirmDelete && (
                     <button
                       type="button"
+                      className="gw-button gw-button--danger-ghost"
                       data-testid="profile-delete-btn"
                       data-tooltip={STR.TT_PROFILE_DELETE}
                       onClick={() => setConfirmDelete(true)}
@@ -904,6 +960,7 @@ export default function ProfilesScreen(): React.ReactElement {
                       </span>
                       <button
                         type="button"
+                        className="gw-button gw-button--compact"
                         onClick={() => setConfirmDelete(false)}
                         style={{
                           padding: '4px 10px',
@@ -919,6 +976,7 @@ export default function ProfilesScreen(): React.ReactElement {
                       </button>
                       <button
                         type="button"
+                        className="gw-button gw-button--compact gw-button--danger"
                         data-testid="profile-delete-confirm-btn"
                         onClick={() => {
                           void handleDelete()
@@ -999,22 +1057,32 @@ const ghSecondaryBtn: React.CSSProperties = {
 function Field({
   label,
   children,
+  htmlFor,
+  labelId,
 }: {
   label: string
   children: React.ReactNode
+  htmlFor?: string
+  labelId?: string
 }): React.ReactElement {
+  const labelStyle: React.CSSProperties = {
+    fontSize: 14,
+    fontWeight: 600,
+    color: 'var(--gw-text-faint, #71717a)',
+    letterSpacing: '0.04em',
+  }
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <label
-        style={{
-          fontSize: 14,
-          fontWeight: 600,
-          color: 'var(--gw-text-faint, #71717a)',
-          letterSpacing: '0.04em',
-        }}
-      >
-        {label.toUpperCase()}
-      </label>
+    <div className="gw-field" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      {htmlFor ? (
+        <label className="gw-field__label" htmlFor={htmlFor} style={labelStyle}>
+          {label.toUpperCase()}
+        </label>
+      ) : (
+        <div className="gw-field__label" id={labelId} style={labelStyle}>
+          {label.toUpperCase()}
+        </div>
+      )}
       {children}
     </div>
   )

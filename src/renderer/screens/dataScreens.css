@@ -1,0 +1,486 @@
+/* Data-heavy renderer surfaces: dense master/detail navigation, working-copy rows,
+   and history tables. Generic gw-* utilities are supplied by the global theme; this
+   file keeps the screen-specific composition local to these flows. */
+
+.gw-management-page,
+.gw-status-page,
+.gw-history-page {
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  background: var(--gw-bg, #09090b);
+}
+
+/* ── Profiles + repositories master/detail ─────────────────────────────── */
+
+.gw-management-pane {
+  min-width: 0;
+  min-height: 0;
+}
+
+.gw-management-pane--list {
+  background: var(--gw-surface, #18181b);
+}
+
+.gw-management-pane-title {
+  min-height: 40px;
+  padding: 14px 14px 10px !important;
+  color: var(--gw-text-faint, #71717a) !important;
+  font-size: 11px !important;
+  font-weight: 750 !important;
+  letter-spacing: 0.1em !important;
+  line-height: 1.35;
+}
+
+.gw-management-list {
+  padding: 4px 6px 8px;
+}
+
+.gw-management-list-empty {
+  min-height: 96px;
+  margin: 8px 4px;
+  padding: 18px 12px !important;
+  border: 1px dashed var(--gw-border, #27272a);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.gw-management-profile-row {
+  min-height: 0;
+  gap: 0 !important;
+  padding: 0 !important;
+}
+
+.gw-management-row {
+  position: relative;
+  margin: 2px 0;
+  overflow: hidden;
+  border: 1px solid transparent !important;
+  border-radius: 7px;
+  transition:
+    background-color 0.14s ease,
+    border-color 0.14s ease,
+    box-shadow 0.14s ease;
+}
+
+.gw-management-repo-row {
+  align-items: stretch;
+  margin: 0;
+  border: 0 !important;
+  border-radius: 0;
+  text-align: left;
+}
+
+.gw-management-repo-row + .gw-management-repo-row {
+  border-top: 1px solid var(--gw-border, #27272a) !important;
+}
+
+.gw-management-row:hover {
+  background: var(--gw-hover-bg, rgba(255, 255, 255, 0.06)) !important;
+  border-color: var(--gw-border, #27272a) !important;
+}
+
+.gw-management-row--selected {
+  background: var(--gw-surface2, #27272a) !important;
+  border-color: var(--gw-border-subtle, #3f3f46) !important;
+  box-shadow: inset 3px 0 0 var(--gw-accent, #6366f1);
+}
+
+.gw-management-row-main {
+  min-height: 42px;
+  border-radius: inherit;
+}
+
+button.gw-management-row-main:hover:not(:disabled),
+button.gw-management-row-main:active:not(:disabled),
+.gw-management-row .gw-management-row-main:hover:not(:disabled),
+.gw-management-row .gw-management-row-main:active:not(:disabled) {
+  filter: none;
+  transform: none;
+  box-shadow: none;
+}
+
+.gw-management-row-main:focus-visible {
+  outline-offset: -3px;
+}
+
+.gw-management-row-action {
+  margin-right: 6px !important;
+}
+
+.gw-management-pane-footer {
+  background: var(--gw-surface, #18181b);
+  box-shadow: 0 -8px 18px var(--gw-shadow, rgba(0, 0, 0, 0.38));
+}
+
+.gw-management-primary-action {
+  min-height: 34px;
+  border-radius: 7px !important;
+}
+
+.gw-management-pane--detail {
+  padding: clamp(18px, 3vw, 32px) !important;
+  background: var(--gw-bg, #09090b);
+}
+
+.gw-management-empty-state {
+  width: min(100%, 420px);
+  min-height: 180px;
+  height: auto !important;
+  margin: auto;
+  padding: 24px;
+  text-align: center;
+}
+
+.gw-management-form {
+  width: min(100%, 620px);
+  max-width: 620px !important;
+  margin: 0 auto;
+  padding: 22px;
+  border: 1px solid var(--gw-border, #27272a);
+  border-radius: 10px;
+  background: var(--gw-surface, #18181b);
+  box-shadow: 0 16px 40px -30px var(--gw-shadow-strong, rgba(0, 0, 0, 0.55));
+}
+
+.gw-management-detail-title {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--gw-border, #27272a);
+  font-size: 18px !important;
+  letter-spacing: -0.01em;
+}
+
+.gw-field {
+  gap: 6px !important;
+  min-width: 0;
+}
+
+.gw-field__label {
+  color: var(--gw-text-faint, #71717a) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.075em !important;
+  line-height: 1.35;
+}
+
+.gw-management-form :where(input:not([type='radio']):not([type='checkbox']), textarea),
+.gw-management-form .gw-dd-trigger {
+  min-height: 34px;
+  border-radius: 7px !important;
+}
+
+.gw-management-subcard {
+  padding: 14px !important;
+  border-color: var(--gw-border-subtle, #3f3f46) !important;
+  border-radius: 8px !important;
+  background: var(--gw-bg, #09090b);
+}
+
+.gw-management-policy-card {
+  gap: 12px !important;
+}
+
+.gw-management-form-actions {
+  min-height: 42px;
+  padding-top: 10px;
+  border-top: 1px solid var(--gw-border, #27272a);
+  flex-wrap: wrap;
+}
+
+/* ── Status + diff ─────────────────────────────────────────────────────── */
+
+.gw-status-toolbar {
+  min-height: 44px;
+  padding: 7px 12px !important;
+}
+
+.gw-status-alert {
+  line-height: 1.45;
+}
+
+.gw-status-changes-pane {
+  background: var(--gw-bg, #09090b);
+}
+
+.gw-status-section {
+  margin: 10px;
+  overflow: hidden;
+  border: 1px solid var(--gw-border, #27272a);
+  border-radius: 9px;
+  background: var(--gw-surface, #18181b);
+}
+
+.gw-status-section + .gw-status-section {
+  margin-top: 12px;
+}
+
+.gw-status-section-title {
+  color: var(--gw-text-muted, #a1a1aa) !important;
+  font-size: 11px !important;
+  font-weight: 750 !important;
+  letter-spacing: 0.075em !important;
+  line-height: 1.35;
+}
+
+.gw-status-section-empty {
+  min-height: 56px;
+  padding: 16px 12px !important;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: center;
+}
+
+.gw-status-file-item:last-child {
+  border-bottom: 0 !important;
+}
+
+.gw-status-file-row {
+  min-height: 38px;
+  padding: 6px 10px !important;
+  transition:
+    background-color 0.14s ease,
+    box-shadow 0.14s ease;
+}
+
+.gw-status-file-select {
+  display: flex;
+  min-width: 0;
+  min-height: 26px;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.gw-status-file-select:hover:not(:disabled),
+button.gw-status-file-select:active:not(:disabled) {
+  filter: none;
+  transform: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.gw-status-file-select:focus-visible {
+  outline-offset: 1px;
+}
+
+.gw-status-file-row:hover {
+  background: var(--gw-hover-bg, rgba(255, 255, 255, 0.06)) !important;
+}
+
+.gw-status-file-row--selected {
+  background: var(--gw-surface2, #27272a) !important;
+  box-shadow: inset 3px 0 0 var(--gw-accent, #6366f1);
+}
+
+.gw-status-row-action {
+  min-height: 25px;
+  opacity: 0.82;
+}
+
+.gw-status-file-row:hover .gw-status-row-action,
+.gw-status-file-row:focus-within .gw-status-row-action,
+.gw-status-file-row--selected .gw-status-row-action {
+  opacity: 1;
+}
+
+.gw-status-diff-pane {
+  background: var(--gw-bg, #09090b);
+}
+
+.gw-status-diff-toolbar {
+  min-height: 42px;
+  padding: 7px 12px !important;
+}
+
+.gw-status-view-toggle[aria-pressed='true'] {
+  border-color: var(--gw-accent, #6366f1) !important;
+  background: var(--gw-accent-soft, #1e1b4b) !important;
+  color: var(--gw-text, #f4f4f5) !important;
+}
+
+.gw-status-empty-state,
+.gw-status-loading-state,
+.gw-status-diff-empty {
+  min-height: 160px;
+  padding: 24px;
+  text-align: center;
+}
+
+.gw-status-diff-empty {
+  height: auto !important;
+  margin: 12px;
+}
+
+/* ── History ───────────────────────────────────────────────────────────── */
+
+.gw-history-header {
+  min-height: 52px;
+  padding: 10px 16px !important;
+}
+
+.gw-history-title {
+  font-size: 18px !important;
+  letter-spacing: -0.01em;
+}
+
+.gw-history-body {
+  background: var(--gw-bg, #09090b);
+}
+
+.gw-history-alert {
+  border-radius: 8px !important;
+}
+
+.gw-history-return-card {
+  gap: 10px !important;
+  padding: 14px !important;
+  border-radius: 9px !important;
+  background: var(--gw-surface, #18181b) !important;
+  box-shadow: 0 12px 32px -26px var(--gw-shadow-strong, rgba(0, 0, 0, 0.55));
+}
+
+.gw-history-confirm {
+  padding-top: 2px;
+}
+
+.gw-history-grid {
+  grid-template-columns: 76px minmax(180px, 1fr) minmax(110px, 160px) 96px !important;
+}
+
+.gw-history-grid--header {
+  z-index: 2;
+  margin: 12px 16px 0;
+  padding: 9px 12px !important;
+  border: 1px solid var(--gw-border, #27272a) !important;
+  border-radius: 9px 9px 0 0;
+  color: var(--gw-text-faint, #71717a) !important;
+  font-size: 11px !important;
+  font-weight: 700;
+  letter-spacing: 0.065em;
+  text-transform: uppercase;
+}
+
+.gw-history-commit-list {
+  margin: 0 16px 12px;
+  overflow: hidden;
+  border: 1px solid var(--gw-border, #27272a);
+  border-top: 0;
+  border-radius: 0 0 9px 9px;
+  background: var(--gw-surface, #18181b);
+}
+
+.gw-history-commit-row {
+  min-height: 43px;
+  padding: 8px 12px !important;
+  transition: background-color 0.14s ease;
+}
+
+.gw-history-commit-row:hover {
+  background: var(--gw-hover-bg, rgba(255, 255, 255, 0.06));
+}
+
+.gw-history-commit-row--unpushed {
+  box-shadow: inset 3px 0 0 var(--gw-accent, #6366f1);
+}
+
+.gw-history-load-more {
+  display: flex;
+  justify-content: center;
+}
+
+.gw-history-empty-state {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.gw-history-page > .gw-history-empty-state,
+.gw-history-body > .gw-history-empty-state {
+  margin: 16px;
+}
+
+/* ── Compact app windows ───────────────────────────────────────────────── */
+
+@media (max-width: 760px) {
+  .gw-management-pane--detail {
+    padding: 14px !important;
+  }
+
+  .gw-management-form {
+    padding: 16px;
+  }
+
+  .gw-management-form-grid {
+    flex-direction: column;
+  }
+
+  .gw-status-section {
+    margin: 7px;
+  }
+
+  .gw-status-file-row {
+    flex-wrap: wrap;
+  }
+
+  .gw-history-grid {
+    grid-template-columns: 86px minmax(140px, 1fr) !important;
+    grid-template-rows: auto auto;
+    align-items: center !important;
+    gap: 4px 8px !important;
+  }
+
+  .gw-history-grid > :nth-child(1) {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .gw-history-grid > :nth-child(2) {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .gw-history-grid > :nth-child(3) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .gw-history-grid > :nth-child(4) {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .gw-history-commit-row {
+    min-height: 58px;
+  }
+}
+
+@media (max-width: 560px) {
+  .gw-history-grid {
+    grid-template-columns: 80px minmax(120px, 1fr) !important;
+  }
+
+  .gw-history-grid--header,
+  .gw-history-commit-list {
+    margin-right: 8px;
+    margin-left: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gw-management-row,
+  .gw-status-file-row,
+  .gw-history-commit-row {
+    transition: none;
+  }
+}

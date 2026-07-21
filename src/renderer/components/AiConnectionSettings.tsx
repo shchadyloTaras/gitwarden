@@ -10,69 +10,7 @@ import type {
 import Dropdown from './Dropdown'
 import { modelDropdownOptions } from './aiModelOptions'
 import { STR } from '../strings'
-
-const CARD: React.CSSProperties = {
-  background: 'var(--gw-surface, #18181b)',
-  border: '1px solid var(--gw-border, #27272a)',
-  borderRadius: 8,
-  padding: '20px 24px',
-  marginBottom: 20,
-}
-
-const LABEL: React.CSSProperties = {
-  display: 'block',
-  fontSize: 12,
-  fontWeight: 600,
-  letterSpacing: '0.05em',
-  color: 'var(--gw-text-muted, #a1a1aa)',
-  marginBottom: 8,
-}
-
-const INPUT: React.CSSProperties = {
-  background: 'var(--gw-input-bg, #09090b)',
-  border: '1px solid var(--gw-border-subtle, #3f3f46)',
-  borderRadius: 4,
-  color: 'var(--gw-text, #f4f4f5)',
-  fontSize: 13,
-  padding: '6px 10px',
-  width: '100%',
-  boxSizing: 'border-box',
-  fontFamily: 'monospace',
-}
-
-const HINT: React.CSSProperties = {
-  margin: '6px 0 0',
-  fontSize: 12,
-  color: 'var(--gw-text-faint, #71717a)',
-}
-
-const SECTION_TITLE: React.CSSProperties = {
-  fontSize: 13,
-  fontWeight: 600,
-  marginBottom: 14,
-  color: 'var(--gw-text, #f4f4f5)',
-}
-
-const PRIMARY_BTN: React.CSSProperties = {
-  padding: '8px 18px',
-  background: 'var(--gw-accent, #6366f1)',
-  color: 'var(--gw-on-solid, #fff)',
-  border: 'none',
-  borderRadius: 4,
-  fontSize: 13,
-  fontWeight: 600,
-  cursor: 'pointer',
-}
-
-const SUBTLE_BTN: React.CSSProperties = {
-  padding: '6px 12px',
-  background: 'none',
-  border: '1px solid var(--gw-surface3, #3f3f46)',
-  borderRadius: 4,
-  color: 'var(--gw-text-muted, #a1a1aa)',
-  fontSize: 12,
-  cursor: 'pointer',
-}
+import '../screens/workflowScreens.css'
 
 function titleCaseKind(kind: AiConnectionKind | 'unknown'): string {
   switch (kind) {
@@ -157,42 +95,74 @@ function SetupForm(): React.ReactElement {
   }
 
   return (
-    <div style={CARD} data-testid="ai-setup-form">
-      <div style={SECTION_TITLE}>{STR.AI_SECTION_LABEL}</div>
-      <p style={{ ...HINT, marginTop: 0, marginBottom: 16 }}>{STR.AI_SECTION_HINT}</p>
+    <section
+      className="gw-card gw-workflow-card gw-ai-card"
+      data-testid="ai-setup-form"
+      aria-labelledby="ai-setup-title"
+    >
+      <h2 id="ai-setup-title" className="gw-workflow-card-title">
+        {STR.AI_SECTION_LABEL}
+      </h2>
+      <p className="gw-workflow-hint" style={{ marginBottom: 16 }}>
+        {STR.AI_SECTION_HINT}
+      </p>
 
-      <label style={LABEL}>{STR.AI_KEY_INPUT_LABEL}</label>
-      <input
-        data-testid="ai-key-input"
-        type="password"
-        value={apiKey}
-        onChange={(e) => void handleKeyChange(e.target.value)}
-        placeholder={STR.AI_KEY_PLACEHOLDER}
-        style={INPUT}
-      />
-      {detection === null ? (
-        <p style={HINT}>{STR.AI_KEY_DETECT_HINT}</p>
-      ) : isUnknown ? (
-        <p data-testid="ai-detected" style={{ ...HINT, color: 'var(--gw-danger, #f87171)' }}>
-          {STR.AI_DETECTED_UNKNOWN}
-        </p>
-      ) : (
-        <p data-testid="ai-detected" style={{ ...HINT, color: 'var(--gw-accent-text, #a5b4fc)' }}>
-          {STR.AI_DETECTED_PROVIDER(titleCaseKind(detection.kind), detection.confidence)}
-        </p>
-      )}
+      <div className="gw-field gw-workflow-field">
+        <label htmlFor="ai-key-input-control" className="gw-workflow-label">
+          {STR.AI_KEY_INPUT_LABEL}
+        </label>
+        <input
+          id="ai-key-input-control"
+          data-testid="ai-key-input"
+          type="password"
+          value={apiKey}
+          onChange={(e) => void handleKeyChange(e.target.value)}
+          placeholder={STR.AI_KEY_PLACEHOLDER}
+          aria-describedby="ai-key-detection"
+          className="gw-workflow-input gw-workflow-mono"
+        />
+        {detection === null ? (
+          <p id="ai-key-detection" className="gw-workflow-hint">
+            {STR.AI_KEY_DETECT_HINT}
+          </p>
+        ) : isUnknown ? (
+          <p
+            id="ai-key-detection"
+            data-testid="ai-detected"
+            className="gw-workflow-hint"
+            role="status"
+            style={{ color: 'var(--gw-danger, #f87171)' }}
+          >
+            {STR.AI_DETECTED_UNKNOWN}
+          </p>
+        ) : (
+          <p
+            id="ai-key-detection"
+            data-testid="ai-detected"
+            className="gw-workflow-hint"
+            role="status"
+            style={{ color: 'var(--gw-accent-text, #a5b4fc)' }}
+          >
+            {STR.AI_DETECTED_PROVIDER(titleCaseKind(detection.kind), detection.confidence)}
+          </p>
+        )}
+      </div>
 
       {showBaseUrl && (
-        <div style={{ marginTop: 14 }}>
-          <label style={LABEL}>{STR.AI_BASEURL_LABEL}</label>
+        <div className="gw-field gw-workflow-field" style={{ marginTop: 16 }}>
+          <label htmlFor="ai-baseurl-control" className="gw-workflow-label">
+            {STR.AI_BASEURL_LABEL}
+          </label>
           <input
+            id="ai-baseurl-control"
             data-testid="ai-baseurl-input"
             type="text"
             value={baseUrl}
             onChange={(e) => setBaseUrl(e.target.value)}
-            style={INPUT}
+            aria-describedby="ai-baseurl-hint"
+            className="gw-workflow-input gw-workflow-mono"
           />
-          <p style={HINT}>
+          <p id="ai-baseurl-hint" className="gw-workflow-hint">
             {detection?.confidence === 'medium'
               ? STR.AI_BASEURL_HINT_AMBIGUOUS
               : STR.AI_BASEURL_HINT_LOCAL}
@@ -200,29 +170,31 @@ function SetupForm(): React.ReactElement {
         </div>
       )}
 
-      <div style={{ marginTop: 18, display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div
+        className="gw-toolbar gw-workflow-actions gw-workflow-actions--wrap"
+        style={{ marginTop: 18 }}
+      >
         <button
+          type="button"
           data-testid="ai-save-connection"
           disabled={!canSave}
           onClick={() => void handleSave()}
-          style={{
-            ...PRIMARY_BTN,
-            opacity: canSave ? 1 : 0.5,
-            cursor: canSave ? 'pointer' : 'not-allowed',
-          }}
+          className="gw-button gw-button--primary gw-workflow-button"
         >
           {STR.AI_SAVE_CONNECTION}
         </button>
         {error && (
           <span
             data-testid="ai-save-error"
-            style={{ fontSize: 13, color: 'var(--gw-danger, #f87171)' }}
+            className="gw-ai-status"
+            role="alert"
+            style={{ color: 'var(--gw-danger, #f87171)' }}
           >
             {error}
           </span>
         )}
       </div>
-    </div>
+    </section>
   )
 }
 
@@ -356,29 +328,37 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
   }
 
   return (
-    <div style={CARD} data-testid="ai-connection-card">
-      <div style={SECTION_TITLE}>{STR.AI_SECTION_LABEL}</div>
+    <section
+      className="gw-card gw-workflow-card gw-ai-card"
+      data-testid="ai-connection-card"
+      aria-labelledby="ai-connection-title"
+    >
+      <h2 id="ai-connection-title" className="gw-workflow-card-title">
+        {STR.AI_SECTION_LABEL}
+      </h2>
 
-      <div style={{ fontSize: 12, color: 'var(--gw-text-faint, #71717a)', marginBottom: 16 }}>
+      <div className="gw-ai-provider">
         {titleCaseKind(conn.kind)}
         {conn.baseUrl ? ` · ${conn.baseUrl}` : ''}
       </div>
 
       {/* Credential first — a stored key is required before the model list can load. */}
-      <div>
-        <label style={LABEL}>{STR.AI_CRED_LABEL}</label>
+      <div className="gw-field gw-workflow-field">
+        <div className="gw-workflow-label">{STR.AI_CRED_LABEL}</div>
         {credentialMeta && !editingCredential ? (
-          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+          <div className="gw-toolbar gw-workflow-actions gw-workflow-actions--wrap">
             <code
               data-testid="ai-cred-masked"
+              className="gw-workflow-break"
               style={{ fontSize: 13, color: 'var(--gw-text, #f4f4f5)' }}
             >
               {STR.AI_CRED_MASKED(credentialMeta.maskedPreview)}
             </code>
             <button
+              type="button"
               data-testid="ai-cred-change"
               onClick={handleStartCredentialEdit}
-              style={SUBTLE_BTN}
+              className="gw-button gw-button--secondary gw-workflow-button"
             >
               {STR.AI_CRED_CHANGE}
             </button>
@@ -386,12 +366,13 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
         ) : (
           <div>
             {!credentialMeta && (
-              <p data-testid="ai-cred-none" style={{ ...HINT, marginTop: 0 }}>
+              <p id="ai-cred-help" data-testid="ai-cred-none" className="gw-workflow-hint">
                 {STR.AI_CRED_NONE}
               </p>
             )}
-            <div style={{ display: 'flex', gap: 8, marginTop: credentialMeta ? 0 : 8 }}>
+            <div className="gw-ai-field-row" style={{ marginTop: credentialMeta ? 0 : 8 }}>
               <input
+                id="ai-credential-input"
                 data-testid="ai-cred-key-input"
                 type="password"
                 value={credKey}
@@ -400,26 +381,25 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
                   setCredError(null)
                 }}
                 placeholder={STR.AI_KEY_PLACEHOLDER}
-                style={INPUT}
+                aria-label={STR.AI_CRED_LABEL}
+                aria-describedby={!credentialMeta ? 'ai-cred-help' : undefined}
+                className="gw-workflow-input gw-workflow-mono"
               />
               <button
+                type="button"
                 data-testid="ai-cred-save"
                 disabled={credKey.trim().length === 0 || credSaving}
                 onClick={() => void handleSaveCredential()}
-                style={{
-                  ...PRIMARY_BTN,
-                  flexShrink: 0,
-                  opacity: credKey.trim().length === 0 || credSaving ? 0.5 : 1,
-                  cursor: credKey.trim().length === 0 || credSaving ? 'not-allowed' : 'pointer',
-                }}
+                className="gw-button gw-button--primary gw-workflow-button"
               >
                 {credSaving ? STR.AI_MODELS_FETCHING : STR.AI_CRED_SAVE_KEY}
               </button>
               {credentialMeta && (
                 <button
+                  type="button"
                   data-testid="ai-cred-cancel"
                   onClick={handleCancelCredentialEdit}
-                  style={{ ...SUBTLE_BTN, flexShrink: 0 }}
+                  className="gw-button gw-button--secondary gw-workflow-button"
                 >
                   {STR.BTN_CANCEL}
                 </button>
@@ -428,7 +408,9 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
             {credError && (
               <p
                 data-testid="ai-cred-error"
-                style={{ ...HINT, color: 'var(--gw-danger, #f87171)' }}
+                className="gw-workflow-hint"
+                role="alert"
+                style={{ color: 'var(--gw-danger, #f87171)' }}
               >
                 {credError}
               </p>
@@ -439,28 +421,26 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
 
       {/* Model — only relevant once a credential is stored; the list auto-loads then. */}
       {credentialMeta && (
-        <div
-          style={{
-            marginTop: 18,
-            paddingTop: 16,
-            borderTop: '1px solid var(--gw-border, #27272a)',
-          }}
-        >
-          <label style={LABEL}>{STR.AI_MODEL_LABEL}</label>
-          <p style={{ ...HINT, marginTop: 0, marginBottom: 10 }}>{STR.AI_MODEL_HINT}</p>
+        <div className="gw-ai-divider gw-field gw-workflow-field">
+          <div id="ai-model-label" className="gw-workflow-label">
+            {STR.AI_MODEL_LABEL}
+          </div>
+          <p id="ai-model-hint" className="gw-workflow-hint">
+            {STR.AI_MODEL_HINT}
+          </p>
           {modelStatus && (
-            <p data-testid="ai-model-status" style={{ ...HINT, marginTop: 0, marginBottom: 10 }}>
+            <p data-testid="ai-model-status" className="gw-workflow-hint" role="status">
               {modelStatus}
             </p>
           )}
           {modelsLoading && models.length === 0 ? (
-            <p data-testid="ai-models-loading" style={HINT}>
+            <p data-testid="ai-models-loading" className="gw-workflow-hint" role="status">
               {STR.AI_MODELS_LOADING}
             </p>
           ) : models.length > 0 ? (
             <Dropdown
               testId="ai-model-select"
-              ariaLabel={STR.AI_MODEL_LABEL}
+              ariaLabelledBy="ai-model-label"
               placeholder={STR.AI_MODEL_PLACEHOLDER}
               value={model}
               block
@@ -472,10 +452,11 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
                 setModel(v)
                 setSaved(false)
               }}
-              triggerStyle={{ ...INPUT, fontFamily: 'inherit' }}
+              triggerClassName="gw-workflow-input gw-ai-model-trigger"
             />
           ) : (
             <input
+              id="ai-edit-model-control"
               data-testid="ai-edit-model-input"
               type="text"
               value={model}
@@ -484,26 +465,30 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
                 setSaved(false)
               }}
               placeholder={STR.AI_MODEL_PLACEHOLDER}
-              style={INPUT}
+              aria-labelledby="ai-model-label"
+              aria-describedby="ai-model-hint"
+              className="gw-workflow-input gw-workflow-mono"
             />
           )}
-          <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div
+            className="gw-toolbar gw-workflow-actions gw-workflow-actions--wrap"
+            style={{ marginTop: 8 }}
+          >
             <button
+              type="button"
               data-testid="ai-save-changes"
               disabled={!dirty}
               onClick={() => void handleSaveChanges()}
-              style={{
-                ...PRIMARY_BTN,
-                opacity: dirty ? 1 : 0.5,
-                cursor: dirty ? 'pointer' : 'not-allowed',
-              }}
+              className="gw-button gw-button--primary gw-workflow-button"
             >
               {STR.BTN_SAVE}
             </button>
             {saved && (
               <span
                 data-testid="ai-saved-msg"
-                style={{ fontSize: 13, color: 'var(--gw-success, #4ade80)' }}
+                className="gw-ai-status"
+                role="status"
+                style={{ color: 'var(--gw-success, #4ade80)' }}
               >
                 {STR.AI_SAVED}
               </span>
@@ -513,47 +498,41 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
       )}
 
       {/* Delete the connection (and its credential). */}
-      <div
-        style={{
-          marginTop: 18,
-          paddingTop: 16,
-          borderTop: '1px solid var(--gw-border, #27272a)',
-          display: 'flex',
-          gap: 10,
-          alignItems: 'center',
-        }}
-      >
+      <div className="gw-ai-divider gw-ai-danger-zone" aria-live="polite">
         {confirmDelete ? (
           <>
-            <span style={{ fontSize: 12, color: 'var(--gw-danger, #f87171)' }}>
+            <span className="gw-ai-status" style={{ color: 'var(--gw-danger, #f87171)' }}>
               {STR.AI_CONN_DELETE_CONFIRM}
             </span>
             <button
+              type="button"
               data-testid="ai-delete-confirm"
               onClick={() => void deleteConnection(conn.id)}
-              style={{
-                ...SUBTLE_BTN,
-                borderColor: 'var(--gw-danger, #f87171)',
-                color: 'var(--gw-danger, #f87171)',
-              }}
+              className="gw-button gw-button--danger gw-workflow-button"
             >
               {STR.BTN_DELETE}
             </button>
-            <button onClick={() => setConfirmDelete(false)} style={SUBTLE_BTN}>
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(false)}
+              className="gw-button gw-button--secondary gw-workflow-button"
+            >
               {STR.BTN_CANCEL}
             </button>
           </>
         ) : (
           <button
+            type="button"
             data-testid="ai-delete-connection"
             onClick={() => setConfirmDelete(true)}
-            style={{ ...SUBTLE_BTN, color: 'var(--gw-danger, #f87171)' }}
+            className="gw-button gw-button--ghost gw-workflow-button"
+            style={{ color: 'var(--gw-danger, #f87171)' }}
           >
             {STR.AI_CONN_DELETE_BTN}
           </button>
         )}
       </div>
-    </div>
+    </section>
   )
 }
 
@@ -569,7 +548,7 @@ export default function AiConnectionSettings(): React.ReactElement {
   const active = connections.find((c) => c.id === activeConnectionId) ?? connections[0] ?? null
 
   return (
-    <div data-testid="ai-section">
+    <div data-testid="ai-section" className="gw-workflow-section">
       {active ? <ActiveConnectionCard conn={active} /> : <SetupForm />}
     </div>
   )

@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 export interface DropdownOption {
@@ -18,6 +18,7 @@ interface DropdownProps {
   placeholder?: string
   disabled?: boolean
   ariaLabel?: string
+  ariaLabelledBy?: string
   /** Render the trigger full-width with label/caret pushed apart (for form fields). */
   block?: boolean
   monospace?: boolean
@@ -134,6 +135,11 @@ function matchesQuery(option: DropdownOption, query: string): boolean {
   return option.label.toLowerCase().includes(q) || option.value.toLowerCase().includes(q)
 }
 
+function optionDomId(listboxId: string, value: string): string {
+  const encodedValue = encodeURIComponent(value) || 'empty'
+  return `${listboxId}-option-${encodedValue}`
+}
+
 export default function Dropdown({
   value,
   options,
@@ -142,6 +148,7 @@ export default function Dropdown({
   placeholder = 'Select…',
   disabled = false,
   ariaLabel,
+  ariaLabelledBy,
   block = false,
   monospace = false,
   searchable = false,
@@ -157,6 +164,8 @@ export default function Dropdown({
   portaled = true,
   placement = 'auto',
 }: DropdownProps): React.ReactElement {
+  const generatedId = useId().replace(/[^a-zA-Z0-9_-]/g, '')
+  const listboxId = `gw-dropdown-${generatedId}-listbox`
   const [open, setOpen] = useState(false)
   // Keyed by option VALUE, not a raw index (W17): the index is re-derived from this
   // value against the CURRENT filteredOptions on every render, so a list that
@@ -168,6 +177,7 @@ export default function Dropdown({
   const triggerRef = useRef<HTMLButtonElement>(null)
   const popupRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
+  const searchFocusPendingRef = useRef(false)
 
   const filteredOptions = searchable ? options.filter((o) => matchesQuery(o, query)) : options
   const inlinePlacement: 'above' | 'below' = placement === 'below' ? 'below' : 'above'
@@ -181,6 +191,9 @@ export default function Dropdown({
     0,
     highlightValue !== null ? filteredOptions.findIndex((o) => o.value === highlightValue) : -1
   )
+  const highlightedOption = filteredOptions[highlightIndex]
+  const activeDescendant =
+    open && highlightedOption ? optionDomId(listboxId, highlightedOption.value) : undefined
 
   const reposition = (): void => {
     if (!portaled || !triggerRef.current) return
@@ -199,18 +212,29 @@ export default function Dropdown({
 
   useLayoutEffect(() => {
     if (open) {
+      searchFocusPendingRef.current = searchable
       if (portaled) {
         reposition()
         requestAnimationFrame(() => reposition())
       }
       setHighlightValue(value)
-      if (searchable) searchRef.current?.focus()
     } else {
+      searchFocusPendingRef.current = false
       setQuery('')
       if (portaled) setLayout(null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
+
+  useLayoutEffect(() => {
+    if (!open || !searchable || !searchFocusPendingRef.current) return
+    if (portaled && layout === null) return
+
+    const search = searchRef.current
+    if (!search) return
+    searchFocusPendingRef.current = false
+    search.focus()
+  }, [layout, open, portaled, searchable])
 
   useLayoutEffect(() => {
     if (!open || !portaled) return
@@ -302,6 +326,8 @@ export default function Dropdown({
       e.preventDefault()
       setOpen(false)
       triggerRef.current?.focus()
+    } else if (e.key === 'Tab') {
+      setOpen(false)
     }
   }
 
@@ -311,9 +337,13 @@ export default function Dropdown({
       type="button"
       data-testid={testId}
       className={['gw-dd-trigger', triggerClassName].filter(Boolean).join(' ')}
+      role={searchable ? undefined : 'combobox'}
       aria-haspopup="listbox"
       aria-expanded={open}
+      aria-controls={listboxId}
+      aria-activedescendant={searchable ? undefined : activeDescendant}
       aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
       data-tooltip={tooltip || undefined}
       data-tooltip-pos={tooltipPos}
       disabled={disabled}
@@ -368,7 +398,6 @@ export default function Dropdown({
     open && (portaled ? layout : true) ? (
       <div
         ref={popupRef}
-        role="listbox"
         data-testid={testId ? `${testId}-popup` : undefined}
         style={
           portaled
@@ -390,7 +419,6 @@ export default function Dropdown({
               }
             : inlinePopupStyle(inlinePlacement, searchable, popupMinWidth, popupMaxWidth)
         }
-        onKeyDown={onPopupKeyDown}
       >
         {searchable && (
           <div
@@ -408,7 +436,13 @@ export default function Dropdown({
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={onSearchKeyDown}
               placeholder={searchPlaceholder}
+              role="combobox"
               aria-label={searchPlaceholder}
+              aria-haspopup="listbox"
+              aria-expanded="true"
+              aria-controls={listboxId}
+              aria-activedescendant={activeDescendant}
+              aria-autocomplete="list"
               data-testid={testId ? `${testId}-search` : undefined}
               style={{
                 width: '100%',
@@ -424,71 +458,81 @@ export default function Dropdown({
             />
           </div>
         )}
-        {options.length === 0 && (
-          <div
-            style={{
-              padding: '6px 10px',
-              color: 'var(--gw-text-faint, #71717a)',
-              fontSize: 14,
-            }}
-          >
-            No options
-          </div>
-        )}
-        {searchable && options.length > 0 && filteredOptions.length === 0 && (
-          <div
-            data-testid={testId ? `${testId}-no-matches` : undefined}
-            style={{
-              padding: '6px 10px',
-              color: 'var(--gw-text-faint, #71717a)',
-              fontSize: 14,
-            }}
-          >
-            {noMatchesLabel}
-          </div>
-        )}
-        {filteredOptions.map((o, i) => {
-          const isSel = o.value === value
-          const cls = [
-            'gw-dd-option',
-            isSel ? 'gw-dd-option--selected' : '',
-            o.disabled ? 'gw-dd-option--disabled' : '',
-            i === highlightIndex && !o.disabled ? 'gw-dd-option--active' : '',
-          ]
-            .filter(Boolean)
-            .join(' ')
-          return (
+        <div id={listboxId} role="listbox" aria-label={ariaLabel} aria-labelledby={ariaLabelledBy}>
+          {options.length === 0 && (
             <div
-              key={o.value}
               role="option"
-              aria-selected={isSel}
-              data-testid={testId ? `${testId}-option-${o.value}` : undefined}
-              className={cls}
-              title={o.title}
-              onMouseEnter={() => setHighlightValue(o.value)}
-              onClick={() => !o.disabled && choose(o.value)}
+              aria-selected="false"
+              aria-disabled="true"
               style={{
-                fontFamily: monospace ? 'monospace' : 'inherit',
-                alignItems: searchable ? 'flex-start' : 'center',
+                padding: '6px 10px',
+                color: 'var(--gw-text-faint, #71717a)',
+                fontSize: 14,
               }}
             >
-              <span className="gw-dd-check" aria-hidden="true">
-                {isSel ? '✓' : ''}
-              </span>
-              <span
+              No options
+            </div>
+          )}
+          {searchable && options.length > 0 && filteredOptions.length === 0 && (
+            <div
+              role="option"
+              aria-selected="false"
+              aria-disabled="true"
+              data-testid={testId ? `${testId}-no-matches` : undefined}
+              style={{
+                padding: '6px 10px',
+                color: 'var(--gw-text-faint, #71717a)',
+                fontSize: 14,
+              }}
+            >
+              {noMatchesLabel}
+            </div>
+          )}
+          {filteredOptions.map((o, i) => {
+            const isSel = o.value === value
+            const cls = [
+              'gw-dd-option',
+              isSel ? 'gw-dd-option--selected' : '',
+              o.disabled ? 'gw-dd-option--disabled' : '',
+              i === highlightIndex && !o.disabled ? 'gw-dd-option--active' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')
+            return (
+              <div
+                key={o.value}
+                id={optionDomId(listboxId, o.value)}
+                role="option"
+                aria-selected={isSel}
+                aria-disabled={o.disabled || undefined}
+                data-testid={testId ? `${testId}-option-${o.value}` : undefined}
+                className={cls}
+                title={o.title}
+                onMouseEnter={() => setHighlightValue(o.value)}
+                onClick={() => !o.disabled && choose(o.value)}
                 style={{
-                  overflow: searchable ? 'visible' : 'hidden',
-                  textOverflow: searchable ? 'clip' : 'ellipsis',
-                  whiteSpace: searchable ? 'normal' : 'nowrap',
-                  wordBreak: searchable ? 'break-word' : undefined,
-                  lineHeight: searchable ? 1.35 : undefined,
+                  fontFamily: monospace ? 'monospace' : 'inherit',
+                  alignItems: searchable ? 'flex-start' : 'center',
                 }}
               >
-                {o.label}
-              </span>
-            </div>
-          )
-        })}
+                <span className="gw-dd-check" aria-hidden="true">
+                  {isSel ? '✓' : ''}
+                </span>
+                <span
+                  style={{
+                    overflow: searchable ? 'visible' : 'hidden',
+                    textOverflow: searchable ? 'clip' : 'ellipsis',
+                    whiteSpace: searchable ? 'normal' : 'nowrap',
+                    wordBreak: searchable ? 'break-word' : undefined,
+                    lineHeight: searchable ? 1.35 : undefined,
+                  }}
+                >
+                  {o.label}
+                </span>
+              </div>
+            )
+          })}
+        </div>
       </div>
     ) : null
 

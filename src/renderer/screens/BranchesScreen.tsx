@@ -14,6 +14,28 @@ const ROW: React.CSSProperties = {
   borderBottom: '1px solid var(--gw-border, #27272a)',
 }
 
+const CURRENT_ROW: React.CSSProperties = {
+  ...ROW,
+  background: 'var(--gw-accent-soft, rgba(99, 102, 241, 0.14))',
+  borderBottomColor: 'var(--gw-accent-ring, rgba(99, 102, 241, 0.34))',
+  boxShadow: 'inset 3px 0 0 var(--gw-accent, #6366f1)',
+}
+
+const CURRENT_BRANCH_BADGE: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 4,
+  flexShrink: 0,
+  padding: '3px 8px',
+  borderRadius: 999,
+  background: 'var(--gw-accent, #6366f1)',
+  color: 'var(--gw-on-solid, #ffffff)',
+  fontSize: 11,
+  fontWeight: 700,
+  letterSpacing: '0.02em',
+  lineHeight: 1,
+}
+
 const BTN: React.CSSProperties = {
   fontSize: 14,
   padding: '2px 8px',
@@ -309,19 +331,25 @@ export default function BranchesScreen(): React.ReactElement {
             {localBranches.map((b) => {
               const checkedOutElsewhere = isCheckedOutInAnotherWorktree(b, repoPath)
               return (
-                <div key={b.name} data-testid={`branches-local-item-${b.name}`} style={ROW}>
+                <div
+                  key={b.name}
+                  data-testid={`branches-local-item-${b.name}`}
+                  aria-current={b.isCurrent ? 'true' : undefined}
+                  style={b.isCurrent ? CURRENT_ROW : ROW}
+                >
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div
                       style={{
                         fontSize: 14,
                         fontFamily: 'monospace',
-                        color: b.isCurrent
-                          ? 'var(--gw-accent, #6366f1)'
-                          : 'var(--gw-text, #f4f4f5)',
-                        fontWeight: b.isCurrent ? 600 : 400,
+                        color: 'var(--gw-text, #f4f4f5)',
+                        fontWeight: b.isCurrent ? 650 : 400,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
                       }}
+                      title={b.name}
                     >
-                      {b.isCurrent ? '* ' : '  '}
                       {b.name}
                     </div>
                     {checkedOutElsewhere && (
@@ -342,6 +370,28 @@ export default function BranchesScreen(): React.ReactElement {
                       </div>
                     )}
                   </div>
+
+                  {b.isCurrent && (
+                    <span data-testid="branches-current-badge" style={CURRENT_BRANCH_BADGE}>
+                      <svg
+                        aria-hidden="true"
+                        focusable="false"
+                        width="12"
+                        height="12"
+                        viewBox="0 0 12 12"
+                        fill="none"
+                      >
+                        <path
+                          d="m2.25 6.15 2.25 2.2 5.25-5"
+                          stroke="currentColor"
+                          strokeWidth="1.6"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      {STR.BRANCH_CURRENT_BADGE}
+                    </span>
+                  )}
 
                   {/* W22: a worktree deleted out-of-band (Finder/Explorer, not `git
                       worktree remove`) keeps this branch permanently badged — offer

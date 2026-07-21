@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import type { NavScreen, RightPanelTab } from '../store/appStore'
 import { useAppStore } from '../store/appStore'
 import { STR } from '../strings'
+import { useDialogFocus } from '../hooks/useDialogFocus'
 
 type Placement = 'center' | 'top' | 'right' | 'bottom' | 'left'
 
@@ -170,10 +171,13 @@ export default function OnboardingTour({
   const [stepIndex, setStepIndex] = useState(0)
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null)
   const nextButtonRef = useRef<HTMLButtonElement>(null)
+  const cardRef = useRef<HTMLElement>(null)
 
   const step = steps[stepIndex]
   const isFirst = stepIndex === 0
   const isLast = stepIndex === steps.length - 1
+
+  useDialogFocus(open, cardRef, onSkip, nextButtonRef)
 
   useEffect(() => {
     if (open) setStepIndex(0)
@@ -293,7 +297,10 @@ export default function OnboardingTour({
       )}
 
       <section
+        ref={cardRef}
         data-testid="onboarding-card"
+        className="gw-dialog gw-onboarding-card"
+        tabIndex={-1}
         style={{
           position: 'fixed',
           width: TOOLTIP_WIDTH,

@@ -18,54 +18,65 @@ export default function RightPanel({ width }: { width: number }): React.ReactEle
   const inspectorOpen = useAppStore((s) => s.inspectorOpen)
   const rightPanelTab = useAppStore((s) => s.rightPanelTab)
   const setRightPanelTab = useAppStore((s) => s.setRightPanelTab)
+  const tabRefs = React.useRef<Record<RightPanelTab, HTMLButtonElement | null>>({
+    context: null,
+    chat: null,
+  })
+
+  const handleTabKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    currentIndex: number
+  ): void => {
+    let nextIndex: number | undefined
+
+    if (event.key === 'ArrowRight') {
+      nextIndex = (currentIndex + 1) % TABS.length
+    } else if (event.key === 'ArrowLeft') {
+      nextIndex = (currentIndex - 1 + TABS.length) % TABS.length
+    } else if (event.key === 'Home') {
+      nextIndex = 0
+    } else if (event.key === 'End') {
+      nextIndex = TABS.length - 1
+    }
+
+    if (nextIndex === undefined) return
+
+    event.preventDefault()
+    const nextTab = TABS[nextIndex]
+    setRightPanelTab(nextTab.id)
+    tabRefs.current[nextTab.id]?.focus()
+  }
 
   if (!inspectorOpen) return <></>
 
   return (
     <aside
+      id="gitwarden-right-panel"
       data-testid="right-panel"
+      className="gw-right-panel"
       style={{
         width,
         flex: `0 0 ${width}px`,
-        minWidth: 0,
-        background: 'var(--gw-surface, #18181b)',
-        borderLeft: '1px solid var(--gw-border, #27272a)',
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: 0,
-        overflow: 'hidden',
       }}
     >
-      <div
-        role="tablist"
-        style={{
-          display: 'flex',
-          flexShrink: 0,
-          borderBottom: '1px solid var(--gw-border, #27272a)',
-        }}
-      >
-        {TABS.map((tab) => {
+      <div role="tablist" aria-orientation="horizontal" className="gw-right-panel__tabs">
+        {TABS.map((tab, index) => {
           const selected = rightPanelTab === tab.id
           return (
             <button
               key={tab.id}
+              id={`right-panel-tab-${tab.id}`}
               role="tab"
               aria-selected={selected}
+              aria-controls={`right-panel-tabpanel-${tab.id}`}
+              tabIndex={selected ? 0 : -1}
               data-testid={tab.testId}
-              onClick={() => setRightPanelTab(tab.id)}
-              style={{
-                flex: 1,
-                padding: '8px 6px',
-                background: 'none',
-                border: 'none',
-                borderBottom: selected
-                  ? '2px solid var(--gw-accent, #6366f1)'
-                  : '2px solid transparent',
-                color: selected ? 'var(--gw-text, #f4f4f5)' : 'var(--gw-text-muted, #a1a1aa)',
-                fontSize: 14,
-                fontWeight: selected ? 600 : 400,
-                cursor: 'pointer',
+              className="gw-right-panel__tab"
+              ref={(node) => {
+                tabRefs.current[tab.id] = node
               }}
+              onClick={() => setRightPanelTab(tab.id)}
+              onKeyDown={(event) => handleTabKeyDown(event, index)}
             >
               {tab.label}
             </button>
@@ -73,8 +84,23 @@ export default function RightPanel({ width }: { width: number }): React.ReactEle
         })}
       </div>
 
-      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-        {rightPanelTab === 'chat' ? <AiChatPanel /> : <Inspector />}
+      <div className="gw-right-panel__body">
+        {TABS.map((tab) => {
+          const selected = rightPanelTab === tab.id
+          return (
+            <div
+              key={tab.id}
+              id={`right-panel-tabpanel-${tab.id}`}
+              role="tabpanel"
+              aria-labelledby={`right-panel-tab-${tab.id}`}
+              tabIndex={selected ? 0 : -1}
+              hidden={!selected}
+              className="gw-right-panel__tabpanel"
+            >
+              {selected && (tab.id === 'chat' ? <AiChatPanel /> : <Inspector />)}
+            </div>
+          )
+        })}
       </div>
     </aside>
   )

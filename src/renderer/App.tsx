@@ -60,6 +60,7 @@ const RIGHT_PANEL_MAX_WIDTH = 520
 const SIDEBAR_COLLAPSED_WIDTH = 52
 const SIDEBAR_TRANSITION_MS = 200
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'gitwarden.layout.sidebarCollapsed.v1'
+const COMPACT_PANEL_BREAKPOINT = 760
 const STARTUP_LOADER_MIN_MS = 900
 const STARTUP_LOADER_EXIT_MS = 220
 /** Ignore extra focus/visibility events within this window of the last trigger —
@@ -74,7 +75,7 @@ const COLLAPSE_TOGGLE_STYLE: React.CSSProperties = {
   justifyContent: 'center',
   background: 'transparent',
   border: 'none',
-  borderRadius: 4,
+  borderRadius: 'var(--gw-radius-sm, 6px)',
   color: 'var(--gw-text-faint, #71717a)',
   cursor: 'pointer',
   padding: 0,
@@ -265,6 +266,7 @@ export default function App(): React.ReactElement {
   const openRightPanel = useAppStore((s) => s.openRightPanel)
   const requestChatFocus = useAppStore((s) => s.requestChatFocus)
   const inspectorOpen = useAppStore((s) => s.inspectorOpen)
+  const toggleInspector = useAppStore((s) => s.toggleInspector)
   // Signal for tests: set to true once all initial store loads complete.
   const [storesReady, setStoresReady] = useState(false)
   const [startupLoaderVisible, setStartupLoaderVisible] = useState(true)
@@ -278,6 +280,7 @@ export default function App(): React.ReactElement {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(readSavedSidebarCollapsed)
   const [sidebarAnimating, setSidebarAnimating] = useState(false)
   const [isMacTitlebar] = useState(readIsMacPlatform)
+  const compactPanelAutoCloseRef = useRef(false)
 
   const measureShellWidth = useCallback((): number => {
     return shellRef.current?.getBoundingClientRect().width ?? getViewportWidth()
@@ -408,6 +411,18 @@ export default function App(): React.ReactElement {
       return samePanelWidths(current, next) ? current : next
     })
   }, [inspectorOpen, shellWidth])
+
+  useEffect(() => {
+    const compact = shellWidth <= COMPACT_PANEL_BREAKPOINT
+    if (!compact) {
+      compactPanelAutoCloseRef.current = false
+      return
+    }
+
+    if (compactPanelAutoCloseRef.current) return
+    compactPanelAutoCloseRef.current = true
+    if (inspectorOpen) toggleInspector()
+  }, [inspectorOpen, shellWidth, toggleInspector])
 
   useEffect(() => {
     savePanelWidths(panelWidths)
@@ -630,6 +645,7 @@ export default function App(): React.ReactElement {
 
   return (
     <div
+      className="gw-app-shell"
       data-testid="app-root"
       data-ready={appReady ? 'true' : undefined}
       aria-busy={!appReady}
@@ -637,10 +653,9 @@ export default function App(): React.ReactElement {
         display: 'flex',
         flexDirection: 'column',
         height: '100vh',
-        background: 'var(--gw-bg, #09090b)',
+        background: 'var(--gw-canvas, var(--gw-bg, #09090b))',
         color: 'var(--gw-text, #f4f4f5)',
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+        fontFamily: 'var(--gw-font-sans)',
         overflow: 'hidden',
       }}
     >
@@ -667,7 +682,11 @@ export default function App(): React.ReactElement {
 
       <GlobalHeader />
 
-      <div ref={shellRef} style={{ display: 'flex', flex: 1, minHeight: 0, minWidth: 0 }}>
+      <div
+        ref={shellRef}
+        className="gw-shell-body"
+        style={{ display: 'flex', flex: 1, minHeight: 0, minWidth: 0 }}
+      >
         <Sidebar
           width={effectiveLeftWidth}
           collapsed={sidebarCollapsed}
@@ -689,12 +708,13 @@ export default function App(): React.ReactElement {
         )}
 
         <main
+          className="gw-main-content"
           data-testid="main-content"
           style={{
             flex: 1,
             minWidth: 0,
             overflow: 'auto',
-            background: 'var(--gw-bg, #09090b)',
+            background: 'var(--gw-canvas, var(--gw-bg, #09090b))',
           }}
         >
           <Suspense fallback={null}>

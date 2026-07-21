@@ -2,6 +2,12 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 const HANDLE_WIDTH = 8
 const RESIZE_STEP = 16
+const COMPACT_PANE_FLOOR = 160
+
+interface WidthBounds {
+  min: number
+  max: number
+}
 
 function clampNumber(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), Math.max(min, max))
@@ -58,21 +64,27 @@ export default function ResizableMainSplit({
     clampNumber(readSavedWidth(storageKey, defaultStartWidth), minStartWidth, maxStartWidth)
   )
 
-  const maxWidthForContainer = useCallback(
-    (width: number): number => {
-      const available = width - HANDLE_WIDTH - minEndWidth
-      return Math.floor(Math.min(maxStartWidth, Math.max(minStartWidth, available)))
+  const widthBoundsForContainer = useCallback(
+    (width: number): WidthBounds => {
+      const available = Math.max(0, Math.floor(width) - HANDLE_WIDTH)
+      const compactPaneWidth = Math.min(COMPACT_PANE_FLOOR, Math.floor(available / 2))
+      const reservedEndWidth = Math.min(
+        minEndWidth,
+        Math.max(0, available - Math.min(minStartWidth, compactPaneWidth))
+      )
+      const max = Math.max(0, Math.floor(Math.min(maxStartWidth, available - reservedEndWidth)))
+      const min = Math.max(0, Math.floor(Math.min(minStartWidth, max)))
+      return { min, max: Math.max(min, max) }
     },
     [maxStartWidth, minEndWidth, minStartWidth]
   )
 
   const clampStartWidth = useCallback(
     (width: number, availableWidth = containerWidth): number => {
-      return Math.round(
-        clampNumber(width, minStartWidth, maxWidthForContainer(availableWidth || window.innerWidth))
-      )
+      const bounds = widthBoundsForContainer(availableWidth || window.innerWidth)
+      return Math.round(clampNumber(width, bounds.min, bounds.max))
     },
-    [containerWidth, maxWidthForContainer, minStartWidth]
+    [containerWidth, widthBoundsForContainer]
   )
 
   useEffect(() => {
@@ -121,7 +133,7 @@ export default function ResizableMainSplit({
       event.currentTarget.setPointerCapture(event.pointerId)
 
       const startX = event.clientX
-      const initialWidth = startWidth
+      const initialWidth = clampStartWidth(startWidth)
       const initialContainerWidth =
         containerRef.current?.getBoundingClientRect().width ?? containerWidth
       const previousBodyCursor = document.body.style.cursor
@@ -171,20 +183,22 @@ export default function ResizableMainSplit({
         setWidth(startWidth + RESIZE_STEP)
       } else if (event.key === 'Home') {
         event.preventDefault()
-        setWidth(minStartWidth)
+        setWidth(widthBoundsForContainer(containerWidth || window.innerWidth).min)
       } else if (event.key === 'End') {
         event.preventDefault()
-        setWidth(maxWidthForContainer(containerWidth || window.innerWidth))
+        setWidth(widthBoundsForContainer(containerWidth || window.innerWidth).max)
       }
     },
-    [containerWidth, maxWidthForContainer, minStartWidth, setWidth, startWidth]
+    [containerWidth, setWidth, startWidth, widthBoundsForContainer]
   )
 
-  const maxWidth = maxWidthForContainer(containerWidth || window.innerWidth)
+  const widthBounds = widthBoundsForContainer(containerWidth || window.innerWidth)
+  const renderedStartWidth = Math.round(clampNumber(startWidth, widthBounds.min, widthBounds.max))
 
   return (
     <div
       ref={containerRef}
+      className="gw-main-split"
       style={{
         display: 'flex',
         flex: 1,
@@ -195,9 +209,10 @@ export default function ResizableMainSplit({
     >
       <div
         data-testid={startPaneTestId}
+        className="gw-main-split__pane gw-main-split__pane--start"
         style={{
-          width: startWidth,
-          flex: `0 0 ${startWidth}px`,
+          width: renderedStartWidth,
+          flex: `0 0 ${renderedStartWidth}px`,
           minWidth: 0,
           minHeight: 0,
           display: 'flex',
@@ -212,9 +227,9 @@ export default function ResizableMainSplit({
         role="separator"
         aria-label={resizeLabel}
         aria-orientation="vertical"
-        aria-valuemin={minStartWidth}
-        aria-valuemax={maxWidth}
-        aria-valuenow={startWidth}
+        aria-valuemin={widthBounds.min}
+        aria-valuemax={widthBounds.max}
+        aria-valuenow={renderedStartWidth}
         className={`gw-resize-handle gw-resize-handle--main${resizing ? ' gw-resize-handle--active' : ''}`}
         data-testid={handleTestId}
         tabIndex={0}
@@ -224,6 +239,7 @@ export default function ResizableMainSplit({
 
       <div
         data-testid={endPaneTestId}
+        className="gw-main-split__pane gw-main-split__pane--end"
         style={{
           flex: 1,
           minWidth: 0,

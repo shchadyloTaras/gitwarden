@@ -8,6 +8,7 @@ import { remediationForSafetyCode } from '../../core/safety/remediation'
 import RemediationButton from '../components/RemediationButton'
 import { FileStatusBadge } from '../components/FileStatusBadge'
 import { STR } from '../strings'
+import './workflowScreens.css'
 
 export default function CommitScreen(): React.ReactElement {
   const activeRepo = useAppStore((s) => s.activeRepo)
@@ -93,175 +94,112 @@ export default function CommitScreen(): React.ReactElement {
   }
 
   return (
-    <div
+    <section
       data-testid="screen-commit"
-      style={{ padding: '24px', maxWidth: '720px', fontFamily: 'inherit' }}
+      className="gw-page gw-workflow-page"
+      aria-labelledby="commit-page-title"
+      aria-busy={loading}
     >
-      <h2 style={{ margin: '0 0 20px', fontSize: '18px', fontWeight: 600 }}>Commit</h2>
+      <header className="gw-page-header gw-workflow-page-header">
+        <h1 id="commit-page-title" className="gw-page-title gw-workflow-page-title">
+          Commit
+        </h1>
+      </header>
 
       {loading && (
-        <div
-          style={{ color: 'var(--gw-text-faint, #71717a)', fontSize: '14px', marginBottom: '16px' }}
-        >
+        <div className="gw-empty-state gw-workflow-state" role="status">
           Loading…
         </div>
       )}
 
       {!loading && !repository && !activeRepo && (
-        <div style={{ color: 'var(--gw-text-dim, #52525b)', fontSize: '14px' }}>
-          Add a repository to get started.
-        </div>
+        <div className="gw-empty-state gw-workflow-empty">Add a repository to get started.</div>
       )}
 
       {!loading && repository && (
-        <>
+        <div className="gw-workflow-stack">
           {/* Staged changes summary */}
-          <div style={{ marginBottom: '16px' }}>
-            <div
-              style={{
-                fontSize: '14px',
-                color: 'var(--gw-text-faint, #71717a)',
-                marginBottom: '6px',
-              }}
-            >
+          <section className="gw-workflow-section" aria-labelledby="commit-staged-heading">
+            <h2 id="commit-staged-heading" className="gw-workflow-section-heading">
               Staged Changes ({stagedFiles.length})
-            </div>
+            </h2>
             <div
               data-testid="commit-staged-summary"
-              style={{
-                background: 'var(--gw-surface, #18181b)',
-                border: '1px solid var(--gw-border, #27272a)',
-                borderRadius: '4px',
-                padding: stagedFiles.length ? '8px' : '10px 12px',
-                fontSize: '14px',
-                maxHeight: '120px',
-                overflowY: 'auto',
-              }}
+              className={`gw-card gw-workflow-card gw-commit-staged-list${
+                stagedFiles.length === 0 ? ' gw-commit-staged-list--empty' : ''
+              }`}
             >
               {stagedFiles.length === 0 ? (
-                <span style={{ color: 'var(--gw-text-dim, #52525b)' }}>No staged changes</span>
+                <span>No staged changes</span>
               ) : (
                 stagedFiles.map((f) => (
-                  <div
-                    key={f.path}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '2px 0',
-                    }}
-                  >
+                  <div key={f.path} className="gw-commit-file">
                     <FileStatusBadge kind={f.indexStatus} />
-                    <span style={{ color: 'var(--gw-text, #f4f4f5)' }}>
+                    <span className="gw-commit-file-path">
                       {f.originalPath ? `${f.path} ← ${f.originalPath}` : f.path}
                     </span>
                   </div>
                 ))
               )}
             </div>
-          </div>
+          </section>
 
           {/* Commit message (with the one and only Commit-tab AI affordance) */}
-          <div style={{ marginBottom: '16px' }}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '8px',
-                marginBottom: '4px',
-              }}
-            >
-              <label
-                style={{
-                  fontSize: '14px',
-                  color: 'var(--gw-text-faint, #71717a)',
-                }}
-              >
+          <section className="gw-field gw-workflow-field gw-workflow-section">
+            <div className="gw-commit-message-header">
+              <label htmlFor="commit-message-input" className="gw-workflow-label">
                 Commit Message
               </label>
               {aiAvailable && (
                 <button
+                  type="button"
                   data-testid="ai-commit-draft-toggle"
                   onClick={() => void draftMessage()}
                   disabled={draftLoading}
                   data-tooltip={STR.AI_COMMIT_ASSISTANT_HINT}
-                  style={{
-                    background: 'none',
-                    color: 'var(--gw-accent-text, #a5b4fc)',
-                    border: '1px solid var(--gw-surface3, #3f3f46)',
-                    borderRadius: '4px',
-                    padding: '4px 10px',
-                    fontSize: '14px',
-                    cursor: draftLoading ? 'wait' : 'pointer',
-                  }}
+                  className="gw-button gw-button--secondary gw-workflow-button"
                 >
                   {draftLoading ? STR.AI_COMMIT_DRAFT_LOADING : STR.AI_COMMIT_DRAFT_TOGGLE}
                 </button>
               )}
             </div>
             <textarea
+              id="commit-message-input"
               data-testid="commit-message"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Describe your changes…"
               rows={10}
-              style={{
-                width: '100%',
-                minHeight: '200px',
-                padding: '8px',
-                background: 'var(--gw-input-bg, #09090b)',
-                border: '1px solid var(--gw-border-subtle, #3f3f46)',
-                borderRadius: '4px',
-                color: 'var(--gw-text, #f4f4f5)',
-                fontSize: '14px',
-                resize: 'vertical',
-                fontFamily: 'inherit',
-                boxSizing: 'border-box',
-              }}
+              aria-describedby={draftError ? 'commit-draft-error' : undefined}
+              className="gw-workflow-input gw-commit-message"
             />
 
             {draftError && (
               <div
+                id="commit-draft-error"
                 data-testid="ai-commit-assistant-error"
-                style={{
-                  marginTop: '8px',
-                  color: 'var(--gw-danger, #f87171)',
-                  fontSize: 14,
-                }}
+                className="gw-notice gw-notice--danger gw-workflow-notice gw-workflow-notice--danger"
+                role="alert"
               >
                 {draftError}
               </div>
             )}
-          </div>
+          </section>
 
           {/* Safety issues */}
           {safetyResult && safetyResult.issues.length > 0 && (
-            <div
+            <section
               data-testid="commit-safety-issues"
-              style={{
-                marginBottom: '16px',
-                border: '1px solid var(--gw-border, #27272a)',
-                borderRadius: '4px',
-                overflow: 'hidden',
-              }}
+              className="gw-card gw-workflow-card gw-workflow-card--flush gw-commit-issues"
+              aria-live="polite"
             >
               {blockers.map((issue) => (
                 <div
                   key={issue.code}
                   data-testid="commit-blocker"
-                  style={{
-                    padding: '8px 12px',
-                    background: 'var(--gw-danger-bg, #450a0a)',
-                    borderBottom: '1px solid var(--gw-danger-border, #991b1b)',
-                    fontSize: '14px',
-                    color: 'var(--gw-danger, #f87171)',
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '8px',
-                  }}
+                  className="gw-notice gw-notice--danger gw-workflow-notice--danger gw-commit-issue"
                 >
-                  <span style={{ flexShrink: 0 }}>⛔</span>
+                  <span aria-hidden="true">⛔</span>
                   <span>{issue.message}</span>
                 </div>
               ))}
@@ -269,35 +207,16 @@ export default function CommitScreen(): React.ReactElement {
                 <div
                   key={issue.code}
                   data-testid="commit-warning"
-                  style={{
-                    padding: '8px 12px',
-                    background: 'var(--gw-warning-bg, #422006)',
-                    borderBottom: '1px solid var(--gw-warning-border, #78350f)',
-                    fontSize: '14px',
-                    color: 'var(--gw-warning, #fbbf24)',
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '8px',
-                  }}
+                  className="gw-notice gw-notice--warning gw-workflow-notice--warning gw-commit-issue"
                 >
-                  <span style={{ flexShrink: 0 }}>⚠</span>
+                  <span aria-hidden="true">⚠</span>
                   <span>{issue.message}</span>
                 </div>
               ))}
               {issueRemediations.length > 0 && (
                 <div
                   data-testid="commit-remediations"
-                  style={{
-                    padding: '10px 12px',
-                    background: 'var(--gw-accent-soft, #1e1b4b)',
-                    borderTop:
-                      blockers.length + warnings.length > 0
-                        ? '1px solid var(--gw-accent-soft, #1e1b4b)'
-                        : 'none',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '10px',
-                  }}
+                  className="gw-toolbar gw-commit-remediations"
                 >
                   {issueRemediations.map((rem) => (
                     <RemediationButton
@@ -315,13 +234,14 @@ export default function CommitScreen(): React.ReactElement {
                   ))}
                 </div>
               )}
-            </div>
+            </section>
           )}
 
           {/* Commit error */}
           {error && (
             <div
-              style={{ color: 'var(--gw-danger, #f87171)', fontSize: '14px', marginBottom: '12px' }}
+              className="gw-notice gw-notice--danger gw-workflow-notice gw-workflow-notice--danger"
+              role="alert"
             >
               {error}
             </div>
@@ -331,22 +251,15 @@ export default function CommitScreen(): React.ReactElement {
           {committedHash && (
             <div
               data-testid="commit-success"
-              style={{
-                padding: '10px 14px',
-                background: 'var(--gw-success-bg, #052e16)',
-                border: '1px solid var(--gw-success-border, #2d4a2d)',
-                borderRadius: '4px',
-                fontSize: '14px',
-                color: 'var(--gw-success, #4ade80)',
-                marginBottom: '16px',
-              }}
+              className="gw-notice gw-notice--success gw-workflow-notice gw-workflow-notice--success"
+              role="status"
             >
               ✓ Committed {committedHash}
             </div>
           )}
 
           {/* Commit button */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div className="gw-toolbar gw-workflow-actions gw-workflow-actions--end">
             <span
               data-tooltip={
                 safetyResult?.canCommit
@@ -362,26 +275,14 @@ export default function CommitScreen(): React.ReactElement {
                 data-testid="commit-btn"
                 onClick={handleCommit}
                 disabled={!safetyResult?.canCommit || commitLoading}
-                style={{
-                  background: safetyResult?.canCommit
-                    ? 'var(--gw-primary, #2563eb)'
-                    : 'var(--gw-primary-disabled-bg, #333333)',
-                  color: safetyResult?.canCommit
-                    ? 'var(--gw-on-solid, #fff)'
-                    : 'var(--gw-primary-disabled-text, #555555)',
-                  border: 'none',
-                  borderRadius: '4px',
-                  padding: '8px 20px',
-                  fontSize: '14px',
-                  cursor: safetyResult?.canCommit ? 'pointer' : 'not-allowed',
-                }}
+                className="gw-button gw-button--primary gw-workflow-button"
               >
                 {commitLoading ? 'Committing…' : 'Commit Changes'}
               </button>
             </span>
           </div>
-        </>
+        </div>
       )}
-    </div>
+    </section>
   )
 }

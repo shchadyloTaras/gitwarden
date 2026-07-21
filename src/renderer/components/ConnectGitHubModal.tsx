@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import type { GitHubAccount, GitHubAuthErrorCode, GitHubDeviceCode } from '../../core/types'
 import { STR } from '../strings'
+import { useDialogFocus } from '../hooks/useDialogFocus'
 
 type Status = 'starting' | 'awaitingUser' | 'authorized' | 'denied' | 'expired' | 'error'
 
@@ -36,6 +37,9 @@ export default function ConnectGitHubModal({
   const [checking, setChecking] = useState(false)
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const checkingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const modalRef = useRef<HTMLElement>(null)
+  const cancelActionRef = useRef<HTMLButtonElement>(null)
+  const terminalActionRef = useRef<HTMLButtonElement>(null)
   // Keep the latest callback without re-subscribing the event listener.
   const onAuthorizedRef = useRef(onAuthorized)
   onAuthorizedRef.current = onAuthorized
@@ -177,26 +181,61 @@ export default function ConnectGitHubModal({
     setAttempt((a) => a + 1)
   }
 
+  useDialogFocus(true, modalRef, status === 'authorized' ? onClose : handleCancel, cancelActionRef)
+
   const isTerminalFailure = status === 'denied' || status === 'expired' || status === 'error'
   const isReauth = status === 'error' && errorCode === 'tokenInvalid'
+  const terminalErrorText = isReauth
+    ? STR.GITHUB_MODAL_REAUTH
+    : status === 'denied'
+      ? STR.GITHUB_MODAL_DENIED
+      : status === 'expired'
+        ? STR.GITHUB_MODAL_EXPIRED
+        : STR.GITHUB_MODAL_ERROR
+  const liveStatusText =
+    status === 'starting'
+      ? STR.GITHUB_MODAL_STARTING
+      : status === 'awaitingUser'
+        ? checking
+          ? STR.GITHUB_MODAL_CHECKING
+          : STR.GITHUB_MODAL_WAITING
+        : status === 'authorized'
+          ? STR.GITHUB_MODAL_SUCCESS(authorizedLogin ?? '')
+          : terminalErrorText
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      if (status === 'authorized' || isTerminalFailure) terminalActionRef.current?.focus()
+      else cancelActionRef.current?.focus()
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [isTerminalFailure, status])
 
   return (
     <div
       data-testid="github-connect-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="github-connect-title"
+      className="gw-dialog-backdrop"
       style={overlayStyle}
       onClick={status === 'authorized' ? onClose : handleCancel}
     >
       <section
+        ref={modalRef}
         data-testid="github-connect-modal"
+        className="gw-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="github-connect-title"
+        tabIndex={-1}
         style={cardStyle}
         onClick={(e) => e.stopPropagation()}
       >
         <h2 id="github-connect-title" style={titleStyle}>
           {status === 'authorized' ? STR.GITHUB_MODAL_SUCCESS_TITLE : STR.GITHUB_MODAL_TITLE}
         </h2>
+
+        <p className="gw-visually-hidden" role="status" aria-live="polite" aria-atomic="true">
+          {liveStatusText}
+        </p>
 
         {status === 'starting' && (
           <p data-testid="github-connect-status" style={bodyStyle}>
@@ -242,13 +281,7 @@ export default function ConnectGitHubModal({
             data-testid="github-connect-error"
             style={{ ...bodyStyle, color: 'var(--gw-danger, #f87171)' }}
           >
-            {isReauth
-              ? STR.GITHUB_MODAL_REAUTH
-              : status === 'denied'
-                ? STR.GITHUB_MODAL_DENIED
-                : status === 'expired'
-                  ? STR.GITHUB_MODAL_EXPIRED
-                  : STR.GITHUB_MODAL_ERROR}
+            {terminalErrorText}
           </p>
         )}
 
@@ -256,6 +289,7 @@ export default function ConnectGitHubModal({
           {(status === 'starting' || status === 'awaitingUser') && (
             <>
               <button
+                ref={cancelActionRef}
                 type="button"
                 data-testid="github-connect-cancel"
                 onClick={handleCancel}
@@ -288,12 +322,10 @@ export default function ConnectGitHubModal({
               </button>
               <div style={{ flex: 1 }} />
               <button
+                ref={terminalActionRef}
                 type="button"
                 data-testid="github-connect-retry"
                 onClick={handleRetry}
-                // Autofocus keeps it the obvious next action for a code that expired during a
-                // long signup detour — the user returns straight to the primary CTA.
-                autoFocus={status === 'expired'}
                 style={primaryBtn}
               >
                 {STR.GITHUB_MODAL_RETRY_BTN}
@@ -305,6 +337,7 @@ export default function ConnectGitHubModal({
             <>
               <div style={{ flex: 1 }} />
               <button
+                ref={terminalActionRef}
                 type="button"
                 data-testid="github-connect-done"
                 onClick={onClose}

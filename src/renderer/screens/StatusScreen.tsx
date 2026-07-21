@@ -8,6 +8,7 @@ import ResizableMainSplit from '../components/ResizableMainSplit'
 import { FileStatusBadge as StatusBadge } from '../components/FileStatusBadge'
 import WorkingCopyDestinationCard from '../components/WorkingCopyDestinationCard'
 import { STR } from '../strings'
+import './dataScreens.css'
 
 function isStagedChange(f: FileChange): boolean {
   return (
@@ -69,35 +70,47 @@ function FileRow({
   const isIrreversible = extraAction?.danger === true
 
   return (
-    <div style={{ borderBottom: '1px solid var(--gw-border, #27272a)' }}>
+    <div
+      className="gw-status-file-item"
+      style={{ borderBottom: '1px solid var(--gw-border, #27272a)' }}
+    >
       <div
         data-testid={rowTestId}
-        onClick={onSelect}
+        className={`gw-list-row gw-status-file-row${selected ? ' gw-status-file-row--selected' : ''}`}
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: 8,
           padding: '5px 12px',
           fontSize: 14,
-          cursor: 'pointer',
           background: selected ? 'var(--gw-surface2, #27272a)' : 'transparent',
         }}
       >
-        <StatusBadge kind={kindKey} />
-        <span
-          style={{
-            flex: 1,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            fontFamily: 'monospace',
-            color: 'var(--gw-text, #f4f4f5)',
-          }}
-          title={displayPath}
-        >
-          {displayPath}
-        </span>
         <button
+          type="button"
+          className="gw-status-file-select"
+          aria-label={displayPath}
+          aria-pressed={selected}
+          onClick={onSelect}
+        >
+          <StatusBadge kind={kindKey} />
+          <span
+            style={{
+              flex: 1,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              fontFamily: 'monospace',
+              color: 'var(--gw-text, #f4f4f5)',
+            }}
+            title={displayPath}
+          >
+            {displayPath}
+          </span>
+        </button>
+        <button
+          type="button"
+          className="gw-button gw-button--compact gw-status-row-action"
           data-testid={actionTestId}
           data-tooltip={actionTooltip}
           onClick={(e) => {
@@ -120,6 +133,8 @@ function FileRow({
         </button>
         {extraAction && !isConfirming && (
           <button
+            type="button"
+            className={`gw-button gw-button--compact gw-status-row-action${extraAction.danger ? ' gw-button--danger-ghost' : ''}`}
             data-testid={extraAction.testId}
             data-tooltip={extraAction.tooltip}
             onClick={(e) => {
@@ -155,6 +170,8 @@ function FileRow({
                 : STR.DISCARD_TRACKED_CONFIRM_PROMPT}
             </span>
             <button
+              type="button"
+              className="gw-button gw-button--compact gw-button--danger"
               data-testid={`${extraAction.testId}-confirm`}
               onClick={(e) => {
                 e.stopPropagation()
@@ -177,6 +194,8 @@ function FileRow({
               {isIrreversible ? STR.DELETE_UNTRACKED_CONFIRM_BTN : STR.DISCARD_TRACKED_CONFIRM_BTN}
             </button>
             <button
+              type="button"
+              className="gw-button gw-button--compact gw-button--secondary"
               data-testid={`${extraAction.testId}-cancel`}
               onClick={(e) => {
                 e.stopPropagation()
@@ -258,8 +277,10 @@ function SectionHeader({
       }}
     >
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, minWidth: 0 }}>
-        <span
+        <h2
+          className="gw-status-section-title"
           style={{
+            margin: 0,
             fontSize: 14,
             fontWeight: 700,
             letterSpacing: '0.06em',
@@ -267,7 +288,7 @@ function SectionHeader({
           }}
         >
           {title}
-        </span>
+        </h2>
         {subtitle && (
           <span style={{ fontSize: 12, color: 'var(--gw-text-dim, #52525b)' }}>{subtitle}</span>
         )}
@@ -276,6 +297,8 @@ function SectionHeader({
       <div style={{ flex: 1 }} />
       {count > 0 && (
         <button
+          type="button"
+          className="gw-button gw-button--compact gw-button--secondary"
           data-testid={bulkTestId}
           onClick={onBulk}
           style={{
@@ -352,6 +375,7 @@ function DiffPanel({
   if (!file) {
     return (
       <div
+        className="gw-empty-state gw-status-diff-empty"
         data-testid="diff-empty"
         style={{
           display: 'flex',
@@ -373,6 +397,7 @@ function DiffPanel({
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Diff toolbar */}
       <div
+        className="gw-toolbar gw-status-diff-toolbar"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -399,7 +424,10 @@ function DiffPanel({
         {!isUntracked && (
           <div style={{ display: 'flex', gap: 4 }}>
             <button
+              type="button"
+              className="gw-button gw-button--compact gw-status-view-toggle"
               data-testid="diff-toggle-staged"
+              aria-pressed={diffMode === 'staged'}
               onClick={() => onToggle('staged')}
               disabled={!canViewStaged}
               style={{
@@ -416,7 +444,10 @@ function DiffPanel({
               Staged
             </button>
             <button
+              type="button"
+              className="gw-button gw-button--compact gw-status-view-toggle"
               data-testid="diff-toggle-unstaged"
+              aria-pressed={diffMode === 'unstaged'}
               onClick={() => onToggle('unstaged')}
               disabled={!canViewUnstaged}
               style={{
@@ -560,10 +591,13 @@ export default function StatusScreen(): React.ReactElement {
   return (
     <div
       data-testid="screen-status"
+      className="gw-page gw-status-page"
       style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
     >
+      <h1 className="gw-visually-hidden">{STR.NAV_STATUS}</h1>
       {/* Toolbar */}
       <div
+        className="gw-toolbar gw-status-toolbar"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -576,6 +610,8 @@ export default function StatusScreen(): React.ReactElement {
       >
         {activeRepo && (
           <button
+            type="button"
+            className="gw-button gw-button--compact gw-button--secondary"
             data-testid="status-refresh"
             data-tooltip={STR.TT_STATUS_REFRESH}
             onClick={() => act(() => loadStatus(activeRepo.localPath))}
@@ -610,6 +646,7 @@ export default function StatusScreen(): React.ReactElement {
       {stashPopConflict && (
         <div
           data-testid="status-stash-pop-conflict"
+          className="gw-card gw-status-alert gw-status-alert--warning"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -630,6 +667,8 @@ export default function StatusScreen(): React.ReactElement {
             )}
           </span>
           <button
+            type="button"
+            className="gw-button gw-button--compact"
             data-testid="status-stash-pop-conflict-dismiss"
             onClick={clearStashPopConflict}
             style={{
@@ -654,6 +693,7 @@ export default function StatusScreen(): React.ReactElement {
       <div style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
         {!activeRepo && (
           <div
+            className="gw-empty-state gw-status-empty-state"
             style={{
               flex: 1,
               display: 'flex',
@@ -680,6 +720,7 @@ export default function StatusScreen(): React.ReactElement {
             minEndWidth={220}
             start={
               <div
+                className="gw-status-changes-pane"
                 style={{
                   flex: 1,
                   minHeight: 0,
@@ -692,6 +733,7 @@ export default function StatusScreen(): React.ReactElement {
                 {loading && !status && (
                   <div
                     data-testid="status-loading"
+                    className="gw-empty-state gw-status-loading-state"
                     style={{ padding: 24, color: 'var(--gw-text-faint, #71717a)', fontSize: 14 }}
                   >
                     Loading…
@@ -701,6 +743,7 @@ export default function StatusScreen(): React.ReactElement {
                 {(error || opError) && (
                   <div
                     data-testid="status-error"
+                    className="gw-status-alert gw-status-alert--danger"
                     style={{
                       padding: '10px 12px',
                       fontSize: 14,
@@ -713,7 +756,7 @@ export default function StatusScreen(): React.ReactElement {
 
                 {status && (
                   <>
-                    <section data-testid="staged-section">
+                    <section className="gw-status-section" data-testid="staged-section">
                       <SectionHeader
                         title="STAGED CHANGES"
                         count={staged.length}
@@ -724,6 +767,7 @@ export default function StatusScreen(): React.ReactElement {
                       <div data-testid="staged-list">
                         {staged.length === 0 && (
                           <div
+                            className="gw-empty-state gw-status-section-empty"
                             style={{
                               padding: '8px 12px',
                               fontSize: 14,
@@ -750,7 +794,7 @@ export default function StatusScreen(): React.ReactElement {
                       </div>
                     </section>
 
-                    <section data-testid="unstaged-section">
+                    <section className="gw-status-section" data-testid="unstaged-section">
                       <SectionHeader
                         title="UNSTAGED CHANGES"
                         count={unstaged.length}
@@ -761,6 +805,7 @@ export default function StatusScreen(): React.ReactElement {
                       <div data-testid="unstaged-list">
                         {unstaged.length === 0 && (
                           <div
+                            className="gw-empty-state gw-status-section-empty"
                             style={{
                               padding: '8px 12px',
                               fontSize: 14,
@@ -799,7 +844,7 @@ export default function StatusScreen(): React.ReactElement {
                       </div>
                     </section>
 
-                    <section data-testid="untracked-section">
+                    <section className="gw-status-section" data-testid="untracked-section">
                       <SectionHeader
                         title={STR.STATUS_NEW_FILES_HEADING}
                         subtitle={STR.STATUS_NEW_FILES_SUBTITLE}
@@ -811,6 +856,7 @@ export default function StatusScreen(): React.ReactElement {
                       <div data-testid="untracked-list">
                         {untracked.length === 0 && (
                           <div
+                            className="gw-empty-state gw-status-section-empty"
                             style={{
                               padding: '8px 12px',
                               fontSize: 14,
@@ -855,6 +901,7 @@ export default function StatusScreen(): React.ReactElement {
             }
             end={
               <div
+                className="gw-status-diff-pane"
                 style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
               >
                 <DiffPanel

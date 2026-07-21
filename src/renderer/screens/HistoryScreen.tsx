@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useHistoryStore } from '../store/historyStore'
 import { useAppStore } from '../store/appStore'
 import { STR } from '../strings'
+import './dataScreens.css'
 
 type ConfirmAction = 'last' | 'all' | null
 
@@ -29,6 +30,7 @@ function ReturnConfirm({
   return (
     <div
       data-testid={`history-return-${action}-confirm-panel`}
+      className="gw-history-confirm"
       style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}
     >
       <span style={{ fontSize: 14, color: 'var(--gw-text-muted, #a1a1aa)' }}>
@@ -38,6 +40,7 @@ function ReturnConfirm({
         {STR.HISTORY_RETURN_REASSURANCE}
       </span>
       <button
+        className="gw-button gw-button--compact gw-button--primary"
         data-testid={`history-return-${action}-confirm`}
         disabled={disabled}
         onClick={onConfirm}
@@ -56,6 +59,7 @@ function ReturnConfirm({
         {disabled ? 'Returning…' : STR.HISTORY_RETURN_CONFIRM_BTN}
       </button>
       <button
+        className="gw-button gw-button--compact gw-button--secondary"
         data-testid={`history-return-${action}-cancel`}
         disabled={disabled}
         onClick={onCancel}
@@ -119,6 +123,7 @@ export default function HistoryScreen(): React.ReactElement {
   return (
     <div
       data-testid="screen-history"
+      className="gw-page gw-history-page"
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -128,6 +133,7 @@ export default function HistoryScreen(): React.ReactElement {
     >
       {/* Header */}
       <div
+        className="gw-toolbar gw-history-header"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -138,7 +144,9 @@ export default function HistoryScreen(): React.ReactElement {
           flexShrink: 0,
         }}
       >
-        <span style={{ fontWeight: 600, fontSize: 14 }}>{STR.NAV_HISTORY}</span>
+        <h1 className="gw-history-title" style={{ margin: 0, fontWeight: 600, fontSize: 14 }}>
+          {STR.NAV_HISTORY}
+        </h1>
         {activeRepo && !loading && (
           <span style={{ fontSize: 14, color: 'var(--gw-text-faint, #71717a)' }}>
             {commits.length} commits loaded
@@ -150,19 +158,27 @@ export default function HistoryScreen(): React.ReactElement {
       {!activeRepo ? (
         <div
           data-testid="history-empty"
+          className="gw-empty-state gw-history-empty-state"
           style={{ padding: 24, color: 'var(--gw-text-faint, #71717a)', fontSize: 14 }}
         >
           Add a repository to get started.
         </div>
       ) : loading ? (
-        <div style={{ padding: 24, color: 'var(--gw-text-faint, #71717a)', fontSize: 14 }}>
+        <div
+          className="gw-empty-state gw-history-empty-state"
+          style={{ padding: 24, color: 'var(--gw-text-faint, #71717a)', fontSize: 14 }}
+        >
           Loading…
         </div>
       ) : (
-        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+        <div
+          className="gw-history-body"
+          style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}
+        >
           {error && (
             <div
               data-testid="history-error"
+              className="gw-card gw-history-alert gw-history-alert--danger"
               style={{
                 margin: '12px 16px',
                 padding: '8px 12px',
@@ -180,6 +196,7 @@ export default function HistoryScreen(): React.ReactElement {
           {returnError && (
             <div
               data-testid="history-return-error"
+              className="gw-card gw-history-alert gw-history-alert--danger"
               style={{
                 margin: '12px 16px',
                 padding: '8px 12px',
@@ -201,6 +218,7 @@ export default function HistoryScreen(): React.ReactElement {
           {returnSuccessMessage && (
             <div
               data-testid="history-return-success"
+              className="gw-card gw-history-alert gw-history-alert--success"
               style={{
                 margin: '12px 16px',
                 padding: '8px 12px',
@@ -219,6 +237,7 @@ export default function HistoryScreen(): React.ReactElement {
           {unpushedCount >= 1 && (
             <div
               data-testid="history-return-panel"
+              className="gw-card gw-history-return-card"
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -252,6 +271,7 @@ export default function HistoryScreen(): React.ReactElement {
                 <>
                   {eligibility?.canReturnLast ? (
                     <button
+                      className="gw-button gw-button--compact gw-button--secondary"
                       data-testid="history-return-last"
                       onClick={() => startConfirm('last')}
                       style={{
@@ -281,6 +301,7 @@ export default function HistoryScreen(): React.ReactElement {
                   {unpushedCount > 1 &&
                     (eligibility?.canReturnAllUnpushed ? (
                       <button
+                        className="gw-button gw-button--compact gw-button--secondary"
                         data-testid="history-return-all"
                         onClick={() => startConfirm('all')}
                         style={{
@@ -313,7 +334,10 @@ export default function HistoryScreen(): React.ReactElement {
           )}
 
           {commits.length === 0 && !error && (
-            <div style={{ padding: 24, color: 'var(--gw-text-faint, #71717a)', fontSize: 14 }}>
+            <div
+              className="gw-empty-state gw-history-empty-state"
+              style={{ padding: 24, color: 'var(--gw-text-faint, #71717a)', fontSize: 14 }}
+            >
               No commits found in this repository.
             </div>
           )}
@@ -321,6 +345,7 @@ export default function HistoryScreen(): React.ReactElement {
           {/* Column headings */}
           {commits.length > 0 && (
             <div
+              className="gw-history-grid gw-history-grid--header"
               style={{
                 ...ROW,
                 fontSize: 14,
@@ -339,11 +364,16 @@ export default function HistoryScreen(): React.ReactElement {
           )}
 
           {/* Commit rows */}
-          <div data-testid="history-commit-list">
+          <div data-testid="history-commit-list" className="gw-history-commit-list">
             {commits.map((c, idx) => {
               const isUnpushed = idx < unpushedCount
               return (
-                <div key={c.fullHash} data-testid="history-commit-row" style={ROW}>
+                <div
+                  key={c.fullHash}
+                  data-testid="history-commit-row"
+                  className={`gw-list-row gw-history-grid gw-history-commit-row${isUnpushed ? ' gw-history-commit-row--unpushed' : ''}`}
+                  style={ROW}
+                >
                   <span
                     style={{
                       fontFamily: 'monospace',
@@ -417,9 +447,10 @@ export default function HistoryScreen(): React.ReactElement {
 
           {/* Load more */}
           {hasMore && (
-            <div style={{ padding: '12px 16px', flexShrink: 0 }}>
+            <div className="gw-history-load-more" style={{ padding: '12px 16px', flexShrink: 0 }}>
               <button
                 data-testid="history-load-more"
+                className="gw-button gw-button--secondary"
                 disabled={loadingMore}
                 onClick={() => void loadMore()}
                 style={{
