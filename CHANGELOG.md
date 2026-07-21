@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.6.0 — 2026-07-21
+
+### Changed
+
+- Refreshed the entire GitWarden interface — modernized layout, styling, and accessibility across all screens (status, commit, branches, history, profiles, remote, repositories, safety center, and settings) with no change to how features behave.
+
 ## 0.5.4 — 2026-07-15
 
 ### Changed

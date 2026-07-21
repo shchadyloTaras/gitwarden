@@ -1619,6 +1619,10 @@ Moved the v0.5.1 tag to the previous commit and re-triggered: macOS green again,
 
 - Patch release removing the unused **Custom Git Path** and **Default Projects Folder** settings (and the now-empty Settings "Git" tab); GitWarden always auto-detects Git from `PATH`, and the git-not-found messages that referenced the removed setting were rewritten.
 
+### 2026-07-21 — v0.6.0 released
+
+- Minor release shipping the application-wide interface and accessibility refresh (commit `ba88ded`): modernized layout, styling, and accessibility across all renderer screens with no change to product behavior. `CHANGELOG.md` rolled (`## Unreleased` → `## 0.6.0`), `package.json` bumped 0.5.4 → 0.6.0, and the landing changelog copy refreshed; `npm test` green (1077/1077). Push of the commit + tag left to the maintainer.
+
 ### 2026-07-21 — feat(ui): application-wide interface and accessibility refresh
 
 - Built: Refreshed the existing GitWarden renderer without adding product functionality or changing Git, safety, IPC, or core behavior. Introduced a shared dark/light visual system and local SVG navigation icons; clarified the sidebar, header, right-panel, and split-pane hierarchy; made compact-window panels responsive; and standardized layouts, spacing, typography, forms, cards, notices, controls, and empty states across Profiles, Repositories, Status, History, Commit, Remote, Safety Center, Settings, and AI Connections. Accessibility work added semantic keyboard-operated tabs, valid combobox/listbox structure, dialog focus trapping/restoration, live status announcements, stronger contrast, visible focus states, and reduced-motion handling. Follow-up screenshot polish left-aligned repository text with separators between rows and replaced the current-branch `*` marker with a full-row active treatment plus an explicit checked **Current branch** badge.
