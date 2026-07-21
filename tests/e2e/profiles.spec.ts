@@ -1,14 +1,7 @@
 import { test, expect } from '@playwright/test'
-import { _electron as electron } from 'playwright'
 import type { ElectronApplication, Page } from 'playwright'
-import path from 'node:path'
 import { profileFixture, type ProfileInput } from '../fixtures/profiles'
-
-function launchApp(): Promise<ElectronApplication> {
-  return electron.launch({
-    args: [path.resolve(__dirname, '../../out/main/index.js')],
-  })
-}
+import { launchApp } from '../fixtures/launchApp'
 
 /** Delete all profiles and clear activeProfileId via IPC so each test starts clean. */
 async function cleanupProfiles(win: Page): Promise<void> {

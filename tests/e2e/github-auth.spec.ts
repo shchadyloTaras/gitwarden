@@ -1,8 +1,7 @@
 import { test, expect } from '@playwright/test'
-import { _electron as electron } from 'playwright'
 import type { ElectronApplication, Page } from 'playwright'
-import path from 'node:path'
 import { profileFixture } from '../fixtures/profiles'
+import { launchApp as launchIsolatedApp } from '../fixtures/launchApp'
 
 // Phase 25 — IPC Bridge for GitHub Auth.
 //
@@ -14,10 +13,7 @@ import { profileFixture } from '../fixtures/profiles'
 // and re-assert the renderer security flags.
 
 function launchApp(): Promise<ElectronApplication> {
-  return electron.launch({
-    args: [path.resolve(__dirname, '../../out/main/index.js')],
-    env: { ...process.env, GITWARDEN_E2E_FAKE_GITHUB: '1' },
-  })
+  return launchIsolatedApp({ GITWARDEN_E2E_FAKE_GITHUB: '1' })
 }
 
 const PROFILE_INPUT = profileFixture('githubTest')

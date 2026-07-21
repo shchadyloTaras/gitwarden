@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test'
-import { _electron as electron } from 'playwright'
 import type { ElectronApplication, Page } from 'playwright'
 import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { execSync } from 'node:child_process'
 import { profileFixture, type ProfileInput } from '../fixtures/profiles'
+import { launchApp as launchIsolatedApp } from '../fixtures/launchApp'
 
 // Phase 100 (QA Fixes): the exact QA repro — a commit authored `eleken-git
 // <marketing@eleken.co>` reached GitHub with nothing but a soft warning (evidence
@@ -16,10 +16,7 @@ import { profileFixture, type ProfileInput } from '../fixtures/profiles'
 const EMPTY_GIT_CONFIG = path.join(os.tmpdir(), 'gw-wrong-author-empty.gitconfig')
 
 function launchApp(): Promise<ElectronApplication> {
-  return electron.launch({
-    args: [path.resolve(__dirname, '../../out/main/index.js')],
-    env: { ...process.env, GIT_CONFIG_GLOBAL: EMPTY_GIT_CONFIG },
-  })
+  return launchIsolatedApp({ GIT_CONFIG_GLOBAL: EMPTY_GIT_CONFIG })
 }
 
 async function cleanupAll(win: Page): Promise<void> {

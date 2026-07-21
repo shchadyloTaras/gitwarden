@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test'
-import { _electron as electron } from 'playwright'
 import type { ElectronApplication, Page } from 'playwright'
 import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { execSync } from 'node:child_process'
+import { launchApp as launchIsolatedApp } from '../fixtures/launchApp'
 
 // Rapid switching is truthful (acceptance criterion #1): switching main → feature →
 // dev as fast as the picker allows always settles with every tab showing dev's
@@ -18,10 +18,7 @@ import { execSync } from 'node:child_process'
 const EMPTY_GIT_CONFIG = path.join(os.tmpdir(), 'gw-rapid-switch-empty.gitconfig')
 
 function launchApp(): Promise<ElectronApplication> {
-  return electron.launch({
-    args: [path.resolve(__dirname, '../../out/main/index.js')],
-    env: { ...process.env, GIT_CONFIG_GLOBAL: EMPTY_GIT_CONFIG },
-  })
+  return launchIsolatedApp({ GIT_CONFIG_GLOBAL: EMPTY_GIT_CONFIG })
 }
 
 async function cleanupAll(win: Page): Promise<void> {
@@ -127,7 +124,9 @@ test.describe('Rapid-switch staleness', () => {
     await expect(win.getByTestId('branches-current-branch')).toContainText('dev', {
       timeout: 10000,
     })
-    await expect(win.getByTestId('branches-local-list')).toContainText('* dev')
+    // The refreshed UI (v0.6.0) marks the current branch with a row badge, not "* name".
+    const devRow = win.getByTestId('branches-local-item-dev')
+    await expect(devRow.getByTestId('branches-current-badge')).toHaveText('Current branch')
 
     await win.getByTestId('nav-remote').click()
     await expect(win.getByTestId('screen-remote')).toBeVisible()

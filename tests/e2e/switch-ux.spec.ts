@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test'
-import { _electron as electron } from 'playwright'
 import type { ElectronApplication, Page } from 'playwright'
 import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { execSync } from 'node:child_process'
+import { launchApp as launchIsolatedApp } from '../fixtures/launchApp'
 
 // Switch UX (Phase 93, fix B / W3 / #13): the branch picker is non-reentrant, a
 // switch failure surfaces inline (not silently, not buried on the Branches screen),
@@ -15,10 +15,7 @@ const EMPTY_GIT_CONFIG = path.join(os.tmpdir(), 'gw-switch-ux-empty.gitconfig')
 const SHARED_FILE = 'shared.txt'
 
 function launchApp(): Promise<ElectronApplication> {
-  return electron.launch({
-    args: [path.resolve(__dirname, '../../out/main/index.js')],
-    env: { ...process.env, GIT_CONFIG_GLOBAL: EMPTY_GIT_CONFIG },
-  })
+  return launchIsolatedApp({ GIT_CONFIG_GLOBAL: EMPTY_GIT_CONFIG })
 }
 
 async function cleanupAll(win: Page): Promise<void> {

@@ -1,12 +1,9 @@
 import { test, expect } from '@playwright/test'
-import { _electron as electron } from 'playwright'
-import path from 'node:path'
+import { launchApp } from '../fixtures/launchApp'
 
 test.describe('IPC bridge & security', () => {
   test('window.api is exposed; window.require and window.process are absent', async () => {
-    const app = await electron.launch({
-      args: [path.resolve(__dirname, '../../out/main/index.js')],
-    })
+    const app = await launchApp()
 
     try {
       const win = await app.firstWindow()
@@ -29,9 +26,7 @@ test.describe('IPC bridge & security', () => {
   })
 
   test('profiles:list round-trips through IPC', async () => {
-    const app = await electron.launch({
-      args: [path.resolve(__dirname, '../../out/main/index.js')],
-    })
+    const app = await launchApp()
 
     try {
       const win = await app.firstWindow()
@@ -48,9 +43,7 @@ test.describe('IPC bridge & security', () => {
   })
 
   test('profiles:create with invalid payload returns Zod error', async () => {
-    const app = await electron.launch({
-      args: [path.resolve(__dirname, '../../out/main/index.js')],
-    })
+    const app = await launchApp()
 
     try {
       const win = await app.firstWindow()

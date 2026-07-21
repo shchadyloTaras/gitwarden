@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test'
-import { _electron as electron } from 'playwright'
 import type { ElectronApplication, Page } from 'playwright'
-import path from 'node:path'
+import { launchApp as launchIsolatedApp } from '../fixtures/launchApp'
 
 // Phase 26 — "Connect GitHub" UI.
 //
@@ -12,10 +11,7 @@ import path from 'node:path'
 // browser-open seam is a no-op under the flag, so no external browser launches.
 
 function launchApp(): Promise<ElectronApplication> {
-  return electron.launch({
-    args: [path.resolve(__dirname, '../../out/main/index.js')],
-    env: { ...process.env, GITWARDEN_E2E_FAKE_GITHUB: '1' },
-  })
+  return launchIsolatedApp({ GITWARDEN_E2E_FAKE_GITHUB: '1' })
 }
 
 async function cleanupProfiles(win: Page): Promise<void> {

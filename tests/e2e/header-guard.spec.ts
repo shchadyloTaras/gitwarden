@@ -1,21 +1,18 @@
 import { test, expect } from '@playwright/test'
-import { _electron as electron } from 'playwright'
 import type { ElectronApplication, Page } from 'playwright'
 import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { execSync } from 'node:child_process'
 import { profileFixture, type ProfileInput } from '../fixtures/profiles'
+import { launchApp as launchIsolatedApp } from '../fixtures/launchApp'
 
 // Empty global git config so the header guard never inherits a global identity — the
 // identity-unset fixture must read as IDENTITY_UNSET (blocked), not as a global-only warning.
 const EMPTY_GIT_CONFIG = path.join(os.tmpdir(), 'gw-guard-empty.gitconfig')
 
 function launchApp(): Promise<ElectronApplication> {
-  return electron.launch({
-    args: [path.resolve(__dirname, '../../out/main/index.js')],
-    env: { ...process.env, GIT_CONFIG_GLOBAL: EMPTY_GIT_CONFIG },
-  })
+  return launchIsolatedApp({ GIT_CONFIG_GLOBAL: EMPTY_GIT_CONFIG })
 }
 
 async function cleanupAll(win: Page): Promise<void> {

@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test'
-import { _electron as electron } from 'playwright'
 import type { ElectronApplication, Page } from 'playwright'
 import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { execSync } from 'node:child_process'
+import { launchApp as launchIsolatedApp } from '../fixtures/launchApp'
 
 // Merge a Branch (Phase 84) — one-click "Merge into <current>" on the Branches screen.
 // Each scenario gets its own repo (not the shared branches.spec.ts fixture) because a
@@ -14,10 +14,7 @@ import { execSync } from 'node:child_process'
 const EMPTY_GIT_CONFIG = path.join(os.tmpdir(), 'gw-branch-merge-empty.gitconfig')
 
 function launchApp(): Promise<ElectronApplication> {
-  return electron.launch({
-    args: [path.resolve(__dirname, '../../out/main/index.js')],
-    env: { ...process.env, GIT_CONFIG_GLOBAL: EMPTY_GIT_CONFIG },
-  })
+  return launchIsolatedApp({ GIT_CONFIG_GLOBAL: EMPTY_GIT_CONFIG })
 }
 
 async function cleanupAll(win: Page): Promise<void> {

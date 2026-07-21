@@ -1,20 +1,12 @@
 import { expect, test } from '@playwright/test'
-import { _electron as electron } from 'playwright'
 import type { ElectronApplication, Page } from 'playwright'
 import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { launchApp } from '../fixtures/launchApp'
 
-let userDataDir: string
 let fixtureRepo: string
-
-function launchApp(env: Record<string, string> = {}): Promise<ElectronApplication> {
-  return electron.launch({
-    args: [path.resolve(__dirname, '../../out/main/index.js'), `--user-data-dir=${userDataDir}`],
-    env: { ...process.env, ...env },
-  })
-}
 
 async function dismissAutomaticTour(win: Page): Promise<void> {
   const overlay = win.getByTestId('onboarding-overlay')
@@ -35,7 +27,6 @@ async function openApp(
 }
 
 test.beforeAll(() => {
-  userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gw-ui-refresh-userdata-'))
   fixtureRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'gw-ui-refresh-repo-'))
   execFileSync('git', ['init', '-b', 'main'], { cwd: fixtureRepo, stdio: 'pipe' })
   execFileSync('git', ['config', 'user.email', 'ui@example.com'], {
@@ -53,7 +44,6 @@ test.beforeAll(() => {
 })
 
 test.afterAll(() => {
-  fs.rmSync(userDataDir, { recursive: true, force: true })
   fs.rmSync(fixtureRepo, { recursive: true, force: true })
 })
 

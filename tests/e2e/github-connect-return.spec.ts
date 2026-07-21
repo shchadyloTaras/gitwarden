@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test'
-import { _electron as electron } from 'playwright'
 import type { ElectronApplication, Page } from 'playwright'
-import path from 'node:path'
+import { launchApp as launchIsolatedApp } from '../fixtures/launchApp'
 
 // Phase 81 — "Checking with GitHub…" on return + return polish (renderer + e2e).
 //
@@ -16,10 +15,7 @@ import path from 'node:path'
 //   - GITWARDEN_E2E_FAKE_GITHUB_OUTCOME=expire: the poll rejects as an expired code.
 
 function launchApp(env: Record<string, string> = {}): Promise<ElectronApplication> {
-  return electron.launch({
-    args: [path.resolve(__dirname, '../../out/main/index.js')],
-    env: { ...process.env, GITWARDEN_E2E_FAKE_GITHUB: '1', ...env },
-  })
+  return launchIsolatedApp({ GITWARDEN_E2E_FAKE_GITHUB: '1', ...env })
 }
 
 async function createProfile(win: Page, displayName: string): Promise<void> {
@@ -125,10 +121,10 @@ test.describe('Connect-Return Check: "Checking with GitHub…" on return', () =>
     win = await app.firstWindow()
     await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
     // This spec file has no per-test cleanup — profiles accumulate across its own
-    // tests (each launches a fresh app but shares the real userData dir) — so a
-    // lookup keyed on displayName alone could match a DIFFERENT test's leftover
-    // "Personal" profile. Snapshot the existing ids first so the one this test
-    // actually creates can be found unambiguously afterward.
+    // tests (each launches a fresh app against this file's shared scratch userData
+    // dir) — so a lookup keyed on displayName alone could match a DIFFERENT test's
+    // leftover "Personal" profile. Snapshot the existing ids first so the one this
+    // test actually creates can be found unambiguously afterward.
     const idsBefore = await win.evaluate(async () => {
       const api = (window as Window & typeof globalThis).api
       const res = await api.profiles.list()

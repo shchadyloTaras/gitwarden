@@ -1,13 +1,6 @@
 import { test, expect } from '@playwright/test'
-import { _electron as electron } from 'playwright'
 import type { ElectronApplication, Page } from 'playwright'
-import path from 'node:path'
-
-function launchApp(): Promise<ElectronApplication> {
-  return electron.launch({
-    args: [path.resolve(__dirname, '../../out/main/index.js')],
-  })
-}
+import { launchApp } from '../fixtures/launchApp'
 
 // The universal tooltip is driven by a `data-tooltip` attribute and rendered by
 // <TooltipLayer/> into a single portaled bubble ([data-testid="tooltip-bubble"]),

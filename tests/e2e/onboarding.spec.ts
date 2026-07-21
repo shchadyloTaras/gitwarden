@@ -1,13 +1,6 @@
 import { test, expect } from '@playwright/test'
-import { _electron as electron } from 'playwright'
-import type { ElectronApplication, Page } from 'playwright'
-import path from 'node:path'
-
-function launchApp(): Promise<ElectronApplication> {
-  return electron.launch({
-    args: [path.resolve(__dirname, '../../out/main/index.js')],
-  })
-}
+import type { Page } from 'playwright'
+import { launchApp } from '../fixtures/launchApp'
 
 async function resetOnboarding(win: Page): Promise<void> {
   await win.evaluate(async () => {

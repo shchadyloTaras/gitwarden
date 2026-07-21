@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test'
-import { _electron as electron } from 'playwright'
 import type { ElectronApplication } from 'playwright'
-import path from 'node:path'
+import { launchApp as launchIsolatedApp } from '../fixtures/launchApp'
 
 // Launches the built app with GITWARDEN_E2E_FAKE_UPDATES=1, which swaps the real GitHub-releases
 // check for a deterministic fake (no network — AGENTS.md "tests run offline"). Passing
@@ -12,13 +11,11 @@ import path from 'node:path'
 // asserts the header button reflects the result. This proves the core requirement: the Update
 // button is shown only when a newer release actually exists.
 function launchApp(updateAvailable: boolean): Promise<ElectronApplication> {
-  const env = updateAvailable
-    ? { ...process.env, GITWARDEN_E2E_FAKE_UPDATES: '1', GITWARDEN_E2E_UPDATE_AVAILABLE: '1' }
-    : { ...process.env, GITWARDEN_E2E_FAKE_UPDATES: '1' }
-  return electron.launch({
-    args: [path.resolve(__dirname, '../../out/main/index.js')],
-    env,
-  })
+  return launchIsolatedApp(
+    updateAvailable
+      ? { GITWARDEN_E2E_FAKE_UPDATES: '1', GITWARDEN_E2E_UPDATE_AVAILABLE: '1' }
+      : { GITWARDEN_E2E_FAKE_UPDATES: '1' }
+  )
 }
 
 test.describe('Update notifier', () => {

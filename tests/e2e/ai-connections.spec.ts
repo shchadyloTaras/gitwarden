@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test'
-import { _electron as electron } from 'playwright'
 import type { ElectronApplication, Page } from 'playwright'
-import path from 'node:path'
+import { launchApp as launchIsolatedApp } from '../fixtures/launchApp'
 
 // Phase 29 / AI Settings simplification — AI Connections Manager & Credential Store.
 //
@@ -13,10 +12,7 @@ import path from 'node:path'
 //   * the renderer can never read a raw credential back after save.
 
 function launchApp(): Promise<ElectronApplication> {
-  return electron.launch({
-    args: [path.resolve(__dirname, '../../out/main/index.js')],
-    env: { ...process.env, GITWARDEN_E2E_FAKE_AI: '1' },
-  })
+  return launchIsolatedApp({ GITWARDEN_E2E_FAKE_AI: '1' })
 }
 
 async function cleanupAi(win: Page): Promise<void> {

@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test'
-import { _electron as electron } from 'playwright'
 import type { ElectronApplication, Page } from 'playwright'
 import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { execSync } from 'node:child_process'
+import { launchApp as launchIsolatedApp } from '../fixtures/launchApp'
 
 // Guard Quick-Fix Phase 67 — one-click fix UI + failed-push recovery banner.
 // Offline: local bare repos as "remotes"; rejecting remotes use a pre-receive hook whose
@@ -14,14 +14,7 @@ import { execSync } from 'node:child_process'
 const EMPTY_GIT_CONFIG = path.join(os.tmpdir(), 'gw-remediation-empty.gitconfig')
 
 function launchApp(): Promise<ElectronApplication> {
-  return electron.launch({
-    args: [path.resolve(__dirname, '../../out/main/index.js')],
-    env: {
-      ...process.env,
-      GIT_CONFIG_GLOBAL: EMPTY_GIT_CONFIG,
-      GITWARDEN_E2E_FAKE_GITHUB: '1',
-    },
-  })
+  return launchIsolatedApp({ GIT_CONFIG_GLOBAL: EMPTY_GIT_CONFIG, GITWARDEN_E2E_FAKE_GITHUB: '1' })
 }
 
 async function cleanupAll(win: Page): Promise<void> {

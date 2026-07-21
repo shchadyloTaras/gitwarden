@@ -1,17 +1,11 @@
 import { test, expect } from '@playwright/test'
-import { _electron as electron } from 'playwright'
 import type { ElectronApplication, Page } from 'playwright'
 import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { execSync } from 'node:child_process'
 import { profileFixture, type ProfileInput } from '../fixtures/profiles'
-
-function launchApp(): Promise<ElectronApplication> {
-  return electron.launch({
-    args: [path.resolve(__dirname, '../../out/main/index.js')],
-  })
-}
+import { launchApp } from '../fixtures/launchApp'
 
 let fixtureRepo: string
 

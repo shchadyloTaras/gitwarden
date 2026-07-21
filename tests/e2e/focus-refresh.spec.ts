@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test'
-import { _electron as electron } from 'playwright'
 import type { ElectronApplication, Page } from 'playwright'
 import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { execSync } from 'node:child_process'
+import { launchApp as launchIsolatedApp } from '../fixtures/launchApp'
 
 // Focus revalidation (Phase 95, W4-cheap): coming back to the app re-reads reality
 // instead of leaving whatever screen the user is on stale until they switch repos or
@@ -17,10 +17,7 @@ const EMPTY_GIT_CONFIG = path.join(os.tmpdir(), 'gw-focus-refresh-empty.gitconfi
 const TRACKED_FILE = 'tracked.txt'
 
 function launchApp(): Promise<ElectronApplication> {
-  return electron.launch({
-    args: [path.resolve(__dirname, '../../out/main/index.js')],
-    env: { ...process.env, GIT_CONFIG_GLOBAL: EMPTY_GIT_CONFIG },
-  })
+  return launchIsolatedApp({ GIT_CONFIG_GLOBAL: EMPTY_GIT_CONFIG })
 }
 
 async function cleanupAll(win: Page): Promise<void> {
