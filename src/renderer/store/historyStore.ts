@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { GitCommit, RepositoryRecord } from '../../core/types'
+import type { GitCommit, GitCommitDetails, RepositoryRecord } from '../../core/types'
 import type { UncommitEligibility } from '../../core/history/uncommit'
 import { useAppStore } from './appStore'
 import { createRequestTracker } from '../../core/concurrency/requestGuard'
@@ -8,8 +8,10 @@ import { STR } from '../strings'
 // Phase 112: load() (target changes + same-target refreshes) and loadMore() (pagination)
 // each get their OWN guard — sharing one tracker was the root cause of a same-target
 // refresh silently discarding an in-flight Load-more response (see the plan's finding #3).
+// Phase 113 adds a third, independent guard for commit-detail selection.
 const targetTracker = createRequestTracker()
 const paginationTracker = createRequestTracker()
+const detailTracker = createRequestTracker()
 
 const PAGE_SIZE = 50
 
@@ -54,11 +56,29 @@ interface HistoryState {
    */
   returnSuccessMessage: string | null
 
+  /** The selected commit's full hash (Phase 113) — null until a row is selected. */
+  selectedHash: string | null
+  /** The selected commit's full detail (metadata, changed files, patch); null until it loads. */
+  detail: GitCommitDetails | null
+  detailLoading: boolean
+  detailError: string | null
+
   load(repoPath: string, repository: RepositoryRecord, branch?: string | null): Promise<void>
   loadMore(): Promise<void>
+  selectCommit(fullHash: string): Promise<void>
   returnLast(): Promise<void>
   returnAllUnpushed(): Promise<void>
   clearReturnError(): void
+}
+
+/**
+ * True if the selection should survive a same-target refresh/pagination response
+ * (Phase 113): the previously selected hash is still present in the newly applied
+ * visible snapshot. A target change already clears selection unconditionally, so this
+ * only matters for the same-target paths.
+ */
+function selectionSurvives(commits: GitCommit[], selectedHash: string | null): boolean {
+  return selectedHash !== null && commits.some((c) => c.fullHash === selectedHash)
 }
 
 export const useHistoryStore = create<HistoryState>((set, get) => ({
@@ -76,6 +96,10 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
   returning: false,
   returnError: null,
   returnSuccessMessage: null,
+  selectedHash: null,
+  detail: null,
+  detailLoading: false,
+  detailError: null,
 
   async load(repoPath, repository, branch = null) {
     const prev = get()
@@ -100,6 +124,10 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
             unpushedCount: 0,
             returnError: null,
             returnSuccessMessage: null,
+            selectedHash: null,
+            detail: null,
+            detailLoading: false,
+            detailError: null,
           }
         : {}),
     })
@@ -114,7 +142,12 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
       // depth past what this fetch requested — applying it now would revert pagination.
       if (targetTracker.isCurrent(token) && get().visibleLimit === visibleLimit) {
         const deduped = dedupeByFullHash(historyRes.data)
-        set({ commits: deduped.slice(0, visibleLimit), hasMore: deduped.length > visibleLimit })
+        const nextCommits = deduped.slice(0, visibleLimit)
+        set({ commits: nextCommits, hasMore: deduped.length > visibleLimit })
+        // Same-target refresh: keep the selection only if the hash is still visible.
+        if (!selectionSurvives(nextCommits, get().selectedHash)) {
+          set({ selectedHash: null, detail: null, detailLoading: false, detailError: null })
+        }
         if (returnStateRes.ok) {
           set({
             eligibility: returnStateRes.data.eligibility,
@@ -148,7 +181,11 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
       // longer exists on screen, so it is dropped without touching current state.
       if (paginationTracker.isCurrent(token) && isSameTarget) {
         const deduped = dedupeByFullHash(res.data)
-        set({ commits: deduped.slice(0, requestedLimit), hasMore: deduped.length > requestedLimit })
+        const nextCommits = deduped.slice(0, requestedLimit)
+        set({ commits: nextCommits, hasMore: deduped.length > requestedLimit })
+        if (!selectionSurvives(nextCommits, get().selectedHash)) {
+          set({ selectedHash: null, detail: null, detailLoading: false, detailError: null })
+        }
       }
     } catch {
       const isSameTarget = get().repoPath === repoPath && get().branch === branch
@@ -157,6 +194,33 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
       }
     } finally {
       set({ loadingMore: false })
+    }
+  },
+
+  async selectCommit(fullHash) {
+    const { repoPath, selectedHash, detail, detailLoading } = get()
+    if (!repoPath) return
+    // Re-clicking the already-selected (loaded or loading) row is a no-op.
+    if (selectedHash === fullHash && (detail !== null || detailLoading)) return
+    const token = detailTracker.begin()
+    set({ selectedHash: fullHash, detail: null, detailLoading: true, detailError: null })
+    try {
+      const res = await window.api.git.getCommitDetails(repoPath, fullHash)
+      if (!res.ok) throw new Error(res.error)
+      // Apply only if this is still the current selection — a newer selectCommit()
+      // call, a repository/branch change, or a same-target refresh/pagination that
+      // pruned this hash from the visible list would all have moved selectedHash on.
+      if (detailTracker.isCurrent(token) && get().selectedHash === fullHash) {
+        set({ detail: res.data })
+      }
+    } catch (err) {
+      if (detailTracker.isCurrent(token) && get().selectedHash === fullHash) {
+        set({ detailError: err instanceof Error ? err.message : String(err) })
+      }
+    } finally {
+      if (detailTracker.isCurrent(token) && get().selectedHash === fullHash) {
+        set({ detailLoading: false })
+      }
     }
   },
 

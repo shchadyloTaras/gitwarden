@@ -7,6 +7,7 @@ import { useBranchStore } from '../store/branchStore'
 import ResizableMainSplit from '../components/ResizableMainSplit'
 import { FileStatusBadge as StatusBadge } from '../components/FileStatusBadge'
 import WorkingCopyDestinationCard from '../components/WorkingCopyDestinationCard'
+import UnifiedDiff from '../components/UnifiedDiff'
 import { STR } from '../strings'
 import './dataScreens.css'
 
@@ -318,43 +319,6 @@ function SectionHeader({
   )
 }
 
-function DiffLine({ line }: { line: string }): React.ReactElement {
-  let color = 'var(--gw-text-muted, #a1a1aa)'
-  let bg = 'transparent'
-  if (line.startsWith('+') && !line.startsWith('+++')) {
-    color = 'var(--gw-success, #4ade80)'
-    bg = 'var(--gw-success-bg, #052e16)'
-  } else if (line.startsWith('-') && !line.startsWith('---')) {
-    color = 'var(--gw-danger, #f87171)'
-    bg = 'var(--gw-danger-bg, #450a0a)'
-  } else if (line.startsWith('@')) {
-    color = 'var(--gw-accent-text, #a5b4fc)'
-    bg = 'var(--gw-accent-soft, #1e1b4b)'
-  } else if (
-    line.startsWith('diff ') ||
-    line.startsWith('index ') ||
-    line.startsWith('+++') ||
-    line.startsWith('---')
-  ) {
-    color = 'var(--gw-text-faint, #71717a)'
-  }
-  return (
-    <div
-      style={{
-        color,
-        background: bg,
-        padding: '0 12px',
-        fontFamily: 'monospace',
-        fontSize: 14,
-        whiteSpace: 'pre',
-        lineHeight: '18px',
-      }}
-    >
-      {line}
-    </div>
-  )
-}
-
 function DiffPanel({
   file,
   diff,
@@ -484,13 +448,7 @@ function DiffPanel({
             No diff in this view.
           </div>
         )}
-        {!loading && !isUntracked && diff && diff.length > 0 && (
-          <div data-testid="diff-panel" style={{ paddingBottom: 16 }}>
-            {diff.split('\n').map((line, i) => (
-              <DiffLine key={i} line={line} />
-            ))}
-          </div>
-        )}
+        {!loading && !isUntracked && diff && diff.length > 0 && <UnifiedDiff patch={diff} />}
       </div>
     </div>
   )

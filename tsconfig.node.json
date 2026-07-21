@@ -54,6 +54,7 @@
     "tests/unit/safety-center-store-guard-sync.test.ts",
     "tests/unit/branch-store-worktree-prune.test.ts",
     "tests/unit/branch-store-outcome-survival.test.ts",
-    "tests/unit/history-store-outcome-survival.test.ts"
+    "tests/unit/history-store-outcome-survival.test.ts",
+    "tests/unit/history-store-selection.test.ts"
   ]
 }

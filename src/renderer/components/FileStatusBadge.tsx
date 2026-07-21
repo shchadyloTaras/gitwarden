@@ -8,6 +8,9 @@ export const KIND_COLOR: Record<string, string> = {
   copied: 'var(--gw-teal, #34d399)',
   conflicted: 'var(--gw-warning, #fbbf24)',
   untracked: 'var(--gw-code-muted, #94a3b8)',
+  // History Commit Details (Phase 113): GitCommitFileStatus's two extra statuses.
+  typeChanged: 'var(--gw-purple, #a78bfa)',
+  unmerged: 'var(--gw-warning, #fbbf24)',
 }
 
 export const KIND_ABBREV: Record<string, string> = {
@@ -20,6 +23,8 @@ export const KIND_ABBREV: Record<string, string> = {
   untracked: '?',
   unmodified: ' ',
   ignored: 'I',
+  typeChanged: 'T',
+  unmerged: '!',
 }
 
 export function FileStatusBadge({ kind }: { kind: string }): React.ReactElement {

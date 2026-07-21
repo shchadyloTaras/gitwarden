@@ -204,6 +204,21 @@ export const STR = {
   HISTORY_LOAD_MORE_FAILED: 'Could not load more commits. Try again.',
   HISTORY_EMPTY_STATE: 'No commits found in this repository.',
   HISTORY_NO_REPOSITORY: 'Add a repository to get started.',
+  // Phase 113: resizable commit-detail browser.
+  HISTORY_SPLIT_RESIZE_LABEL: 'Resize commit list',
+  HISTORY_COMMIT_LIST_LABEL: 'Commits',
+  HISTORY_COMMIT_ROW_LABEL: (subject: string, shortHash: string): string =>
+    `${subject} (${shortHash})`,
+  HISTORY_DETAIL_EMPTY_STATE: 'Select a commit to view its changes',
+  HISTORY_DETAIL_LOADING: 'Loading commit…',
+  HISTORY_DETAIL_FILE_COUNT: (count: number): string =>
+    `${count} changed file${count === 1 ? '' : 's'}`,
+  HISTORY_DETAIL_ROOT_CONTEXT: 'Root commit — no parent',
+  HISTORY_DETAIL_MERGE_CONTEXT: (parentCount: number): string =>
+    `Merge commit — ${parentCount} parents (showing changes vs. first parent)`,
+  HISTORY_DETAIL_NO_CHANGES: 'This commit introduces no changes.',
+  HISTORY_DETAIL_FILES_HEADING: 'Changed files',
+  HISTORY_DETAIL_PATCH_HEADING: 'Patch',
   // Phase 105: QA saw the refusal text ("Merge commits can't be returned this way.")
   // floating with no indication of what feature it belongs to — label the panel.
   HISTORY_RETURN_PANEL_TITLE: 'Undo a commit (keeps your changes)',

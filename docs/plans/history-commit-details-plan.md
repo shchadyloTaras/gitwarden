@@ -1,6 +1,6 @@
 # Plan — History Commit Details: reliable browsing and inspectable commits
 
-**Status:** ⬜ not started — Phases 110–113 — **derived view**; the authoritative state is the
+**Status:** ✅ complete — Phases 110–113 — **derived view**; the authoritative state is the
 Phase Checklist in [`docs/progress-log.md`](../progress-log.md).
 **Phases:** 110 → 113.
 **Feature-complete stop point:** Phase 113.

@@ -269,6 +269,11 @@ test.describe('History', () => {
       await expect(win.getByTestId('history-commit-row')).toHaveCount(1, { timeout: 10_000 })
       await expect(win.getByTestId('history-commit-list')).toContainText('base commit')
 
+      // Select the only commit before switching — the detail pane must reset, not keep
+      // showing stale details from a commit that no longer belongs to the active branch.
+      await win.getByTestId('history-commit-row').click()
+      await expect(win.getByTestId('history-detail-subject')).toHaveText('base commit')
+
       // Switch branch via the HEADER dropdown — not the Branches screen — while staying
       // on the History screen the whole time (no navigation, no reload).
       await win.getByTestId('header-branch-select').click()
@@ -280,8 +285,123 @@ test.describe('History', () => {
       // History must reflect feature-a's 2 commits, not main's stale 1.
       await expect(win.getByTestId('history-commit-row')).toHaveCount(2, { timeout: 10_000 })
       await expect(win.getByTestId('history-commit-list')).toContainText('feature-a commit')
+      await expect(win.getByTestId('history-detail-empty')).toBeVisible()
     } finally {
       fs.rmSync(branchRepo, { recursive: true, force: true })
     }
+  })
+
+  test('selecting a commit shows authoritative metadata, changed files, and the diff — root, rename, and binary states', async () => {
+    const detailRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'gw-history-detail-'))
+    execSync('git init -b main', { cwd: detailRepo, stdio: 'pipe' })
+    execSync('git config user.email "alice@example.com"', { cwd: detailRepo, stdio: 'pipe' })
+    execSync('git config user.name "Alice Dev"', { cwd: detailRepo, stdio: 'pipe' })
+
+    fs.writeFileSync(path.join(detailRepo, 'base.txt'), 'v1\n')
+    execSync('git add base.txt', { cwd: detailRepo, stdio: 'pipe' })
+    execSync('git commit -m "root commit"', { cwd: detailRepo, stdio: 'pipe' })
+
+    fs.writeFileSync(path.join(detailRepo, 'base.txt'), 'v2\n')
+    execSync('git add base.txt', { cwd: detailRepo, stdio: 'pipe' })
+    execSync('git commit -m "update base"', { cwd: detailRepo, stdio: 'pipe' })
+
+    execSync('git mv base.txt renamed.txt', { cwd: detailRepo, stdio: 'pipe' })
+    execSync('git commit -m "rename base"', { cwd: detailRepo, stdio: 'pipe' })
+
+    fs.writeFileSync(path.join(detailRepo, 'asset.bin'), Buffer.from([0x00, 0x01, 0x02, 0xff]))
+    execSync('git add asset.bin', { cwd: detailRepo, stdio: 'pipe' })
+    execSync('git commit -m "add binary asset"', { cwd: detailRepo, stdio: 'pipe' })
+
+    try {
+      await win.evaluate(async (repoPath: string) => {
+        const api = (window as Window & typeof globalThis).api
+        await api.repositories.create({
+          name: 'history-detail-fixture',
+          localPath: repoPath,
+          isFavorite: false,
+        })
+      }, detailRepo)
+
+      await win.reload()
+      await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
+      await win.getByTestId('nav-history').click()
+      await expect(win.getByTestId('screen-history')).toBeVisible()
+      await expect(win.getByTestId('history-commit-row')).toHaveCount(4, { timeout: 10_000 })
+
+      // Nothing selected yet.
+      await expect(win.getByTestId('history-detail-empty')).toBeVisible()
+
+      const rows = win.getByTestId('history-commit-row')
+
+      // git log order is newest-first: binary → rename → update → root.
+      await rows.nth(0).click()
+      await expect(win.getByTestId('history-detail-subject')).toHaveText('add binary asset')
+      await expect(win.getByTestId('history-detail-file-count')).toHaveText('1 changed file')
+      await expect(win.getByTestId('history-detail-file-row')).toContainText('asset.bin')
+      await expect(win.getByTestId('history-diff-panel')).toContainText('Binary files')
+      await expect(rows.nth(0)).toHaveAttribute('aria-selected', 'true')
+
+      await rows.nth(1).click()
+      await expect(win.getByTestId('history-detail-subject')).toHaveText('rename base')
+      await expect(win.getByTestId('history-detail-file-row')).toContainText(
+        'base.txt → renamed.txt'
+      )
+      await expect(rows.nth(0)).toHaveAttribute('aria-selected', 'false')
+      await expect(rows.nth(1)).toHaveAttribute('aria-selected', 'true')
+
+      await rows.nth(2).click()
+      await expect(win.getByTestId('history-detail-subject')).toHaveText('update base')
+      await expect(win.getByTestId('history-diff-panel')).toContainText('-v1')
+      await expect(win.getByTestId('history-diff-panel')).toContainText('+v2')
+
+      await rows.nth(3).click()
+      await expect(win.getByTestId('history-detail-subject')).toHaveText('root commit')
+      await expect(win.getByTestId('history-detail-context')).toContainText('Root commit')
+      await expect(win.getByTestId('history-detail-file-row')).toContainText('base.txt')
+    } finally {
+      fs.rmSync(detailRepo, { recursive: true, force: true })
+    }
+  })
+
+  test('keyboard selection: focusing a row and pressing Enter selects it', async () => {
+    await registerFixtureRepo()
+
+    await win.getByTestId('nav-history').click()
+    await expect(win.getByTestId('screen-history')).toBeVisible()
+    await expect(win.getByTestId('history-commit-row')).toHaveCount(6, { timeout: 10_000 })
+
+    const firstRow = win.getByTestId('history-commit-row').first()
+    await firstRow.focus()
+    await win.keyboard.press('Enter')
+
+    await expect(firstRow).toHaveAttribute('aria-selected', 'true')
+    await expect(win.getByTestId('history-detail-subject')).toHaveText('commit number 6')
+  })
+
+  test('the resize handle supports keyboard resizing within its bounds', async () => {
+    await registerFixtureRepo()
+
+    await win.getByTestId('nav-history').click()
+    await expect(win.getByTestId('screen-history')).toBeVisible()
+    await expect(win.getByTestId('history-commit-row')).toHaveCount(6, { timeout: 10_000 })
+
+    const handle = win.getByTestId('history-main-resize-handle')
+    await expect(handle).toBeVisible()
+    await handle.focus()
+
+    const initialNow = Number(await handle.getAttribute('aria-valuenow'))
+    await win.keyboard.press('ArrowRight')
+    const afterRight = Number(await handle.getAttribute('aria-valuenow'))
+    expect(afterRight).toBeGreaterThan(initialNow)
+
+    await handle.press('End')
+    const max = Number(await handle.getAttribute('aria-valuemax'))
+    const afterEnd = Number(await handle.getAttribute('aria-valuenow'))
+    expect(afterEnd).toBe(max)
+
+    await handle.press('Home')
+    const min = Number(await handle.getAttribute('aria-valuemin'))
+    const afterHome = Number(await handle.getAttribute('aria-valuenow'))
+    expect(afterHome).toBe(min)
   })
 })

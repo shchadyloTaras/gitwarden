@@ -413,6 +413,7 @@ button.gw-status-file-select:active:not(:disabled) {
 .gw-history-commit-row {
   min-height: 43px;
   padding: 8px 12px !important;
+  cursor: pointer;
   transition: background-color 0.14s ease;
 }
 
@@ -420,8 +421,20 @@ button.gw-status-file-select:active:not(:disabled) {
   background: var(--gw-hover-bg, rgba(255, 255, 255, 0.06));
 }
 
+/* Phase 113: rows are keyboard-operable `role="option"` elements now, not plain text —
+   a visible focus ring is required (AGENTS.md accessibility bar), offset inward so it
+   doesn't get clipped by `.gw-history-commit-list`'s own rounded-corner overflow:hidden. */
+.gw-history-commit-row:focus-visible {
+  outline: 2px solid var(--gw-accent, #6366f1);
+  outline-offset: -2px;
+}
+
 .gw-history-commit-row--unpushed {
   box-shadow: inset 3px 0 0 var(--gw-accent, #6366f1);
+}
+
+.gw-history-commit-row--selected {
+  background: var(--gw-surface2, #27272a);
 }
 
 /* Phase 112: sticky, opaque, top-bordered — pinned to the bottom of `.gw-history-body`
@@ -453,6 +466,84 @@ button.gw-status-file-select:active:not(:disabled) {
   margin: 16px;
 }
 
+/* ── History commit-detail pane (Phase 113) ────────────────────────────── */
+
+.gw-history-detail {
+  background: var(--gw-bg, #09090b);
+}
+
+.gw-history-detail-empty {
+  min-height: 180px;
+}
+
+.gw-history-detail-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border-bottom: 1px solid var(--gw-border, #27272a);
+  flex-shrink: 0;
+}
+
+.gw-history-detail-subject {
+  color: var(--gw-text, #f4f4f5);
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.gw-history-detail-hash {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.gw-history-detail-short-hash {
+  color: var(--gw-accent, #6366f1);
+  font-family: monospace;
+  font-size: 14px;
+}
+
+.gw-history-detail-full-hash {
+  color: var(--gw-text-faint, #71717a);
+  font-family: monospace;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.gw-history-detail-author,
+.gw-history-detail-date,
+.gw-history-detail-parent-context,
+.gw-history-detail-file-count {
+  color: var(--gw-text-muted, #a1a1aa);
+  font-size: 13px;
+}
+
+.gw-history-detail-files {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--gw-border, #27272a);
+}
+
+.gw-history-detail-file-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 16px;
+  color: var(--gw-text-muted, #a1a1aa);
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.gw-history-detail-file-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gw-history-detail-patch {
+  flex-shrink: 0;
+}
+
 /* ── Compact app windows ───────────────────────────────────────────────── */
 
 @media (max-width: 760px) {
@@ -474,6 +565,14 @@ button.gw-status-file-select:active:not(:disabled) {
 
   .gw-status-file-row {
     flex-wrap: wrap;
+  }
+
+  .gw-history-detail-meta {
+    padding: 12px;
+  }
+
+  .gw-history-detail-file-row {
+    padding: 4px 12px;
   }
 
   .gw-history-grid {
