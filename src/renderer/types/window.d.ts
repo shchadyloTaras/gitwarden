@@ -7,6 +7,7 @@ import type {
   GitRemote,
   GitBranch,
   GitCommit,
+  GitCommitDetails,
   StashSwitchResult,
   GitHubDeviceCode,
   LinkedGitHubAccount,
@@ -181,6 +182,7 @@ interface ElectronAPI {
     pruneWorktrees(repoPath: string): Promise<IpcResult<void>>
     merge(repoPath: string, branch: string, expectedTargetBranch?: string): Promise<IpcResult<void>>
     getCommitHistory(repoPath: string, limit: number, skip: number): Promise<IpcResult<GitCommit[]>>
+    getCommitDetails(repoPath: string, fullHash: string): Promise<IpcResult<GitCommitDetails>>
     discardFile(repoPath: string, filePath: string): Promise<IpcResult<void>>
     cleanFile(repoPath: string, filePath: string): Promise<IpcResult<void>>
   }

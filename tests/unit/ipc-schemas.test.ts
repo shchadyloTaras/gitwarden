@@ -10,6 +10,7 @@ import {
   RepositoryDeletePayload,
   SettingsUpdatePayload,
   GitRepoPathPayload,
+  GitCommitDetailsPayload,
   GitMergePayload,
   GitPullPayload,
   HistoryReturnPayload,
@@ -165,6 +166,51 @@ describe('GitRepoPathPayload', () => {
   })
   it('rejects null', () => {
     expect(() => GitRepoPathPayload.parse(null)).toThrow()
+  })
+})
+
+// Phase 111: full-hash-only — must reject anything Git could interpret as an option or a
+// revision expression rather than a literal object id.
+describe('GitCommitDetailsPayload', () => {
+  const repoPath = '/home/alice/repo'
+
+  it('accepts a lowercase 40-char full hash', () => {
+    expect(() =>
+      GitCommitDetailsPayload.parse({ repoPath, fullHash: 'a'.repeat(40) })
+    ).not.toThrow()
+  })
+  it('accepts an uppercase 40-char full hash', () => {
+    expect(() =>
+      GitCommitDetailsPayload.parse({ repoPath, fullHash: 'A'.repeat(40) })
+    ).not.toThrow()
+  })
+  it('accepts a 64-char full hash (SHA-256 length)', () => {
+    expect(() =>
+      GitCommitDetailsPayload.parse({ repoPath, fullHash: 'f'.repeat(64) })
+    ).not.toThrow()
+  })
+  it('rejects an abbreviated hash', () => {
+    expect(() => GitCommitDetailsPayload.parse({ repoPath, fullHash: 'abc123' })).toThrow()
+  })
+  it('rejects revision syntax', () => {
+    expect(() => GitCommitDetailsPayload.parse({ repoPath, fullHash: 'HEAD~1' })).toThrow()
+  })
+  it('rejects a leading dash (option-like)', () => {
+    expect(() =>
+      GitCommitDetailsPayload.parse({ repoPath, fullHash: '-' + 'a'.repeat(39) })
+    ).toThrow()
+  })
+  it('rejects an empty hash', () => {
+    expect(() => GitCommitDetailsPayload.parse({ repoPath, fullHash: '' })).toThrow()
+  })
+  it('rejects a non-hex character', () => {
+    expect(() => GitCommitDetailsPayload.parse({ repoPath, fullHash: 'g'.repeat(40) })).toThrow()
+  })
+  it('rejects a hash longer than 64 characters', () => {
+    expect(() => GitCommitDetailsPayload.parse({ repoPath, fullHash: 'a'.repeat(65) })).toThrow()
+  })
+  it('rejects missing repoPath', () => {
+    expect(() => GitCommitDetailsPayload.parse({ fullHash: 'a'.repeat(40) })).toThrow()
   })
 })
 

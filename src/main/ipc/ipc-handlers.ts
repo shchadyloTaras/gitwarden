@@ -63,6 +63,7 @@ import {
   GitMergePayload,
   GitCreateBranchPayload,
   GitHistoryPayload,
+  GitCommitDetailsPayload,
   HistoryReturnPayload,
   GitHubStartDeviceAuthPayload,
   GitHubCancelDeviceAuthPayload,
@@ -488,6 +489,13 @@ export function registerIpcHandlers(services: Services): void {
     wrap(async () => {
       const { repoPath, limit, skip } = GitHistoryPayload.parse(raw)
       return services.git.getCommitHistory(repoPath, limit, skip)
+    })
+  )
+
+  ipcMain.handle('git:getCommitDetails', (_e, raw: unknown) =>
+    wrap(async () => {
+      const { repoPath, fullHash } = GitCommitDetailsPayload.parse(raw)
+      return services.git.getCommitDetails(repoPath, fullHash)
     })
   )
 

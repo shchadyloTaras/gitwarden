@@ -7,10 +7,12 @@ import type {
   GitRemote,
   GitBranch,
   GitCommit,
+  GitCommitDetails,
   StashSwitchResult,
   StagedDiff,
 } from '../../core/types.js'
 import { parsePorcelainV2 } from '../../core/parsers/PorcelainParser.js'
+import { parseCommitDetails, parseCommitMetadata } from '../../core/parsers/CommitDetailsParser.js'
 import type { UncommitContext } from '../../core/history/uncommit.js'
 import type { GitRunner, GitInvocation, GitResult } from '../git/GitRunner.js'
 import { buildAskpassEnv, ensureAskpassHelper } from '../git/askpass.js'
@@ -32,6 +34,13 @@ export interface PushAuth {
  * fast local writes intentionally have none.
  */
 const READ_TIMEOUT_MS = 15_000
+
+/**
+ * Git's well-known empty-tree object hash (the SHA-1 of `git hash-object -t tree /dev/null`,
+ * identical in every repository). Diffing a root commit against it yields every file as
+ * "added" without requiring a real "before" commit to compare against.
+ */
+const EMPTY_TREE_HASH = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 
 function parseRemoteHost(url: string): string | undefined {
   // SSH style: git@github.com:user/repo.git or git@github.com-work:user/repo.git
@@ -591,6 +600,48 @@ export class GitService {
       })
     }
     return commits
+  }
+
+  /**
+   * Authoritative read-only detail for one full commit hash (History Commit Details, Phase 111):
+   * metadata, changed files, and the unified patch. Merge commits compare against their first
+   * parent only (all parent hashes are still retained in metadata); a root commit compares
+   * against git's well-known empty-tree object so it shows every file as added. `fullHash` must
+   * already be Zod-validated (40–64 hex chars) by the IPC layer before this runs.
+   */
+  async getCommitDetails(repoPath: string, fullHash: string): Promise<GitCommitDetails> {
+    const metaResult = await this.readOnly({
+      args: ['log', '-n', '1', '--format=%H%x00%h%x00%an%x00%ae%x00%aI%x00%s%x00%P', fullHash],
+      cwd: repoPath,
+    })
+    const metadataRaw = metaResult.stdout.toString('utf8').replace(/\n$/, '')
+    const { parentHashes } = parseCommitMetadata(metadataRaw)
+    const compareRef = parentHashes.length > 0 ? parentHashes[0] : EMPTY_TREE_HASH
+
+    const [nameStatusResult, patchResult] = await Promise.all([
+      this.readOnly({
+        args: [
+          'diff',
+          '--name-status',
+          '-z',
+          '--find-renames',
+          '--find-copies',
+          compareRef,
+          fullHash,
+        ],
+        cwd: repoPath,
+      }),
+      this.readOnly({
+        args: ['diff', '--no-color', '--find-renames', '--find-copies', compareRef, fullHash],
+        cwd: repoPath,
+      }),
+    ])
+
+    return parseCommitDetails({
+      metadataRaw,
+      nameStatusRaw: nameStatusResult.stdout.toString('utf8'),
+      patch: patchResult.stdout.toString('utf8'),
+    })
   }
 
   /**

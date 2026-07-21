@@ -130,6 +130,13 @@ export const GitHistoryPayload = z.object({
   skip: z.number().int().min(0),
 })
 
+// History Commit Details (Phase 111): the anchored regex rejects revision syntax, leading
+// dashes, abbreviated hashes, and empty values — Git only ever runs with a full object id.
+export const GitCommitDetailsPayload = z.object({
+  repoPath: z.string(),
+  fullHash: z.string().regex(/^[0-9a-fA-F]{40,64}$/),
+})
+
 // Uncommit to Working Changes (Phase 91, W1): the two return-commit WRITE channels
 // gain expectedHeadBranch — history:getReturnState stays on the plain
 // GitRepoPathPayload since it's a read, not a mutation.

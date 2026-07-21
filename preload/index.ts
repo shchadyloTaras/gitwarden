@@ -9,6 +9,7 @@ import type {
   GitRemote,
   GitBranch,
   GitCommit,
+  GitCommitDetails,
   StashSwitchResult,
   GitHubDeviceCode,
   LinkedGitHubAccount,
@@ -226,6 +227,8 @@ export const api = {
       limit: number,
       skip: number
     ): Promise<IpcResult<GitCommit[]>> => invoke('git:getCommitHistory', { repoPath, limit, skip }),
+    getCommitDetails: (repoPath: string, fullHash: string): Promise<IpcResult<GitCommitDetails>> =>
+      invoke('git:getCommitDetails', { repoPath, fullHash }),
     discardFile: (repoPath: string, filePath: string): Promise<IpcResult<void>> =>
       invoke('git:discardFile', { repoPath, filePath }),
     cleanFile: (repoPath: string, filePath: string): Promise<IpcResult<void>> =>
