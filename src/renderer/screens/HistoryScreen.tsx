@@ -103,7 +103,7 @@ export default function HistoryScreen(): React.ReactElement {
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null)
 
   useEffect(() => {
-    if (activeRepo) void load(activeRepo.localPath, activeRepo)
+    if (activeRepo) void load(activeRepo.localPath, activeRepo, currentBranch)
   }, [activeRepo, currentBranch, load])
 
   function startConfirm(action: 'last' | 'all'): void {
@@ -149,7 +149,7 @@ export default function HistoryScreen(): React.ReactElement {
         </h1>
         {activeRepo && !loading && (
           <span style={{ fontSize: 14, color: 'var(--gw-text-faint, #71717a)' }}>
-            {commits.length} commits loaded
+            {STR.HISTORY_LOADED_COUNT(commits.length)}
           </span>
         )}
       </div>
@@ -161,20 +161,17 @@ export default function HistoryScreen(): React.ReactElement {
           className="gw-empty-state gw-history-empty-state"
           style={{ padding: 24, color: 'var(--gw-text-faint, #71717a)', fontSize: 14 }}
         >
-          Add a repository to get started.
+          {STR.HISTORY_NO_REPOSITORY}
         </div>
       ) : loading ? (
         <div
           className="gw-empty-state gw-history-empty-state"
           style={{ padding: 24, color: 'var(--gw-text-faint, #71717a)', fontSize: 14 }}
         >
-          Loading…
+          {STR.HISTORY_LOADING}
         </div>
       ) : (
-        <div
-          className="gw-history-body"
-          style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}
-        >
+        <div data-testid="history-body" className="gw-history-body">
           {error && (
             <div
               data-testid="history-error"
@@ -338,7 +335,7 @@ export default function HistoryScreen(): React.ReactElement {
               className="gw-empty-state gw-history-empty-state"
               style={{ padding: 24, color: 'var(--gw-text-faint, #71717a)', fontSize: 14 }}
             >
-              No commits found in this repository.
+              {STR.HISTORY_EMPTY_STATE}
             </div>
           )}
 
@@ -445,9 +442,11 @@ export default function HistoryScreen(): React.ReactElement {
             })}
           </div>
 
-          {/* Load more */}
+          {/* Sticky pagination footer (Phase 112): pinned to the bottom of the scroll
+              pane so it stays reachable no matter how many pages have loaded, instead
+              of receding to the physical end of an ever-growing list. */}
           {hasMore && (
-            <div className="gw-history-load-more" style={{ padding: '12px 16px', flexShrink: 0 }}>
+            <div className="gw-history-load-more" data-testid="history-load-more-footer">
               <button
                 data-testid="history-load-more"
                 className="gw-button gw-button--secondary"
@@ -465,7 +464,7 @@ export default function HistoryScreen(): React.ReactElement {
                   cursor: loadingMore ? 'default' : 'pointer',
                 }}
               >
-                {loadingMore ? 'Loading…' : 'Load more'}
+                {loadingMore ? STR.HISTORY_LOADING_MORE : STR.HISTORY_LOAD_MORE}
               </button>
             </div>
           )}

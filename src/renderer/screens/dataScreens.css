@@ -3,12 +3,26 @@
    file keeps the screen-specific composition local to these flows. */
 
 .gw-management-page,
-.gw-status-page,
+.gw-status-page {
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  background: var(--gw-bg, #09090b);
+}
+
+/* Phase 112: History is its own bounded, overflow-hidden flex column — the outer app
+   <main> (App.tsx) already scrolls, so without this the whole page (not just the
+   commit list) became the scroll owner and the sticky header/footer below never had a
+   real containing scrollport to stick within. */
 .gw-history-page {
   height: 100%;
   min-width: 0;
   min-height: 0;
   padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   background: var(--gw-bg, #09090b);
 }
 
@@ -333,7 +347,16 @@ button.gw-status-file-select:active:not(:disabled) {
   letter-spacing: -0.01em;
 }
 
+/* Phase 112: the ONLY vertical scroll owner inside History — `min-height: 0` is what
+   actually lets a flex child clip to its parent's available height instead of
+   growing to its content's natural height (the classic flexbox scroll-containment
+   bug the previous inline-only styling fell into). */
 .gw-history-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   background: var(--gw-bg, #09090b);
 }
 
@@ -359,6 +382,7 @@ button.gw-status-file-select:active:not(:disabled) {
 
 .gw-history-grid--header {
   z-index: 2;
+  flex-shrink: 0;
   margin: 12px 16px 0;
   padding: 9px 12px !important;
   border: 1px solid var(--gw-border, #27272a) !important;
@@ -370,7 +394,14 @@ button.gw-status-file-select:active:not(:disabled) {
   text-transform: uppercase;
 }
 
+/* Phase 112: `flex-shrink: 0` is essential here. This is a flex item inside the
+   `.gw-history-body` column, and its own `overflow: hidden` (kept for the rounded
+   bottom corners) gives it a CSS-spec "automatic minimum size" of 0 — without an
+   explicit flex-shrink override, the flex algorithm was compressing it down to
+   whatever fit and silently clipping the rest, instead of letting it size to its
+   full content and overflow `.gw-history-body`'s bounds for a real scrollbar. */
 .gw-history-commit-list {
+  flex-shrink: 0;
   margin: 0 16px 12px;
   overflow: hidden;
   border: 1px solid var(--gw-border, #27272a);
@@ -393,9 +424,21 @@ button.gw-status-file-select:active:not(:disabled) {
   box-shadow: inset 3px 0 0 var(--gw-accent, #6366f1);
 }
 
+/* Phase 112: sticky, opaque, top-bordered — pinned to the bottom of `.gw-history-body`
+   while scrolling so it stays reachable no matter how many pages have loaded, instead
+   of receding to the physical end of a growing list. Sticky items stay in normal flow,
+   so once the user genuinely scrolls past the last row it settles there rather than
+   ever overlaying content above it. */
 .gw-history-load-more {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
   display: flex;
   justify-content: center;
+  flex-shrink: 0;
+  padding: 12px 16px;
+  background: var(--gw-surface, #18181b);
+  border-top: 1px solid var(--gw-border, #27272a);
 }
 
 .gw-history-empty-state {

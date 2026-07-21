@@ -71,7 +71,10 @@ describe('historyStore operation-outcome survival (Phase 102)', () => {
   })
 
   it('returnLast sets returnSuccessMessage on success', async () => {
-    useHistoryStore.setState({ repoPath: repoA.localPath, repository: repoA })
+    // branch: 'main' matches useAppStore's currentBranch (set in beforeEach) — in the
+    // real app HistoryScreen's effect keeps these in sync, so returnLast's internal
+    // reload correctly sees a same-target refresh (Phase 112), not a branch change.
+    useHistoryStore.setState({ repoPath: repoA.localPath, repository: repoA, branch: 'main' })
     returnLastCommit.mockResolvedValue({ ok: true, data: { ok: true } })
 
     await useHistoryStore.getState().returnLast()
@@ -82,7 +85,12 @@ describe('historyStore operation-outcome survival (Phase 102)', () => {
   })
 
   it('returnAllUnpushed sets returnSuccessMessage naming the unpushed count', async () => {
-    useHistoryStore.setState({ repoPath: repoA.localPath, repository: repoA, unpushedCount: 3 })
+    useHistoryStore.setState({
+      repoPath: repoA.localPath,
+      repository: repoA,
+      branch: 'main',
+      unpushedCount: 3,
+    })
     returnUnpushed.mockResolvedValue({ ok: true, data: { ok: true } })
 
     await useHistoryStore.getState().returnAllUnpushed()

@@ -195,6 +195,15 @@ export const STR = {
 
   // ── History screen — return an unpushed commit to working changes (Phase 79) ──
   HISTORY_UNPUSHED_MARKER: 'Unpushed',
+  // Phase 112: pagination/scroll strings, externalized off HistoryScreen's inline JSX.
+  HISTORY_LOADED_COUNT: (count: number): string =>
+    `${count} commit${count === 1 ? '' : 's'} loaded`,
+  HISTORY_LOADING: 'Loading…',
+  HISTORY_LOAD_MORE: 'Load more',
+  HISTORY_LOADING_MORE: 'Loading…',
+  HISTORY_LOAD_MORE_FAILED: 'Could not load more commits. Try again.',
+  HISTORY_EMPTY_STATE: 'No commits found in this repository.',
+  HISTORY_NO_REPOSITORY: 'Add a repository to get started.',
   // Phase 105: QA saw the refusal text ("Merge commits can't be returned this way.")
   // floating with no indication of what feature it belongs to — label the panel.
   HISTORY_RETURN_PANEL_TITLE: 'Undo a commit (keeps your changes)',

@@ -60,7 +60,11 @@ export async function refreshActiveRepo(scope: RefreshScope = 'full'): Promise<v
       break
     case 'history':
       if (scope === 'full')
-        tasks.push(useHistoryStore.getState().load(activeRepo.localPath, activeRepo))
+        tasks.push(
+          useHistoryStore
+            .getState()
+            .load(activeRepo.localPath, activeRepo, useAppStore.getState().currentBranch)
+        )
       break
     case 'safety-center':
       if (scope === 'full') {

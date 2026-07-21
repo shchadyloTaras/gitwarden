@@ -3,15 +3,38 @@ import type { GitCommit, RepositoryRecord } from '../../core/types'
 import type { UncommitEligibility } from '../../core/history/uncommit'
 import { useAppStore } from './appStore'
 import { createRequestTracker } from '../../core/concurrency/requestGuard'
+import { STR } from '../strings'
 
-const tracker = createRequestTracker()
+// Phase 112: load() (target changes + same-target refreshes) and loadMore() (pagination)
+// each get their OWN guard — sharing one tracker was the root cause of a same-target
+// refresh silently discarding an in-flight Load-more response (see the plan's finding #3).
+const targetTracker = createRequestTracker()
+const paginationTracker = createRequestTracker()
 
 const PAGE_SIZE = 50
 
+function dedupeByFullHash(commits: GitCommit[]): GitCommit[] {
+  const seen = new Set<string>()
+  const result: GitCommit[] = []
+  for (const commit of commits) {
+    if (seen.has(commit.fullHash)) continue
+    seen.add(commit.fullHash)
+    result.push(commit)
+  }
+  return result
+}
+
 interface HistoryState {
   repoPath: string | null
+  /** The load target's branch identity (Phase 112) — paired with repoPath to decide
+   *  whether a load() call is a genuine target change or a same-target refresh. */
+  branch: string | null
   repository: RepositoryRecord | null
   commits: GitCommit[]
+  /** How many commits the user has asked to see (Phase 112) — 50 initially, +50 per
+   *  accepted `loadMore()`. Every fetch requests `visibleLimit + 1` from offset zero and
+   *  slices to `visibleLimit`, so pagination never depends on offset/skip arithmetic. */
+  visibleLimit: number
   loading: boolean
   loadingMore: boolean
   error: string | null
@@ -31,7 +54,7 @@ interface HistoryState {
    */
   returnSuccessMessage: string | null
 
-  load(repoPath: string, repository: RepositoryRecord): Promise<void>
+  load(repoPath: string, repository: RepositoryRecord, branch?: string | null): Promise<void>
   loadMore(): Promise<void>
   returnLast(): Promise<void>
   returnAllUnpushed(): Promise<void>
@@ -40,8 +63,10 @@ interface HistoryState {
 
 export const useHistoryStore = create<HistoryState>((set, get) => ({
   repoPath: null,
+  branch: null,
   repository: null,
   commits: [],
+  visibleLimit: PAGE_SIZE,
   loading: false,
   loadingMore: false,
   error: null,
@@ -52,32 +77,44 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
   returnError: null,
   returnSuccessMessage: null,
 
-  async load(repoPath, repository) {
-    const token = tracker.begin()
-    // Phase 102: returnSuccessMessage is an operation OUTCOME, not loaded data — a
-    // same-repo refresh must not wipe it. Resets only on an actual repo change here;
-    // returnLast/returnAllUnpushed clear it themselves at the start of a new attempt.
-    const isRepoChange = get().repoPath !== repoPath
+  async load(repoPath, repository, branch = null) {
+    const prev = get()
+    // A repository OR branch change is a genuine target change — reset depth to 50 and
+    // clear stale content. A same-target refresh (e.g. a `.git` watcher event, focus
+    // revalidation, or a post-fetch/pull reload) keeps whatever depth the user reached.
+    const isTargetChange = prev.repoPath !== repoPath || prev.branch !== branch
+    const token = targetTracker.begin()
+    const visibleLimit = isTargetChange ? PAGE_SIZE : prev.visibleLimit
     set({
       loading: true,
       error: null,
       repoPath,
+      branch,
       repository,
-      commits: [],
-      hasMore: false,
-      eligibility: null,
-      unpushedCount: 0,
-      returnError: null,
-      ...(isRepoChange ? { returnSuccessMessage: null } : {}),
+      visibleLimit,
+      ...(isTargetChange
+        ? {
+            commits: [],
+            hasMore: false,
+            eligibility: null,
+            unpushedCount: 0,
+            returnError: null,
+            returnSuccessMessage: null,
+          }
+        : {}),
     })
     try {
       const [historyRes, returnStateRes] = await Promise.all([
-        window.api.git.getCommitHistory(repoPath, PAGE_SIZE, 0),
+        window.api.git.getCommitHistory(repoPath, visibleLimit + 1, 0),
         window.api.history.getReturnState(repoPath),
       ])
       if (!historyRes.ok) throw new Error(historyRes.error)
-      if (tracker.isCurrent(token)) {
-        set({ commits: historyRes.data, hasMore: historyRes.data.length === PAGE_SIZE })
+      // Drop this response if superseded by a newer load() (repo/branch switch or
+      // another refresh), OR if a concurrent loadMore() already raised the visible
+      // depth past what this fetch requested — applying it now would revert pagination.
+      if (targetTracker.isCurrent(token) && get().visibleLimit === visibleLimit) {
+        const deduped = dedupeByFullHash(historyRes.data)
+        set({ commits: deduped.slice(0, visibleLimit), hasMore: deduped.length > visibleLimit })
         if (returnStateRes.ok) {
           set({
             eligibility: returnStateRes.data.eligibility,
@@ -86,33 +123,39 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
         }
       }
     } catch (err) {
-      if (tracker.isCurrent(token)) set({ error: err instanceof Error ? err.message : String(err) })
+      if (targetTracker.isCurrent(token))
+        set({ error: err instanceof Error ? err.message : String(err) })
     } finally {
-      if (tracker.isCurrent(token)) set({ loading: false })
+      if (targetTracker.isCurrent(token)) set({ loading: false })
     }
   },
 
   async loadMore() {
-    const { repoPath, commits } = get()
-    if (!repoPath) return
-    const token = tracker.begin()
-    set({ loadingMore: true, error: null })
+    const prev = get()
+    // Single-flight: a rapid second click while the first is in flight is a no-op, not
+    // a duplicate read. `!hasMore` also refuses — there is nothing left to request.
+    if (!prev.repoPath || prev.loadingMore || !prev.hasMore) return
+    const { repoPath, branch, visibleLimit: previousLimit } = prev
+    const requestedLimit = previousLimit + PAGE_SIZE
+    const token = paginationTracker.begin()
+    set({ loadingMore: true, error: null, visibleLimit: requestedLimit })
     try {
-      const res = await window.api.git.getCommitHistory(repoPath, PAGE_SIZE, commits.length)
+      const res = await window.api.git.getCommitHistory(repoPath, requestedLimit + 1, 0)
       if (!res.ok) throw new Error(res.error)
-      // #6: a load() (e.g. a branch/repo switch) that started after this page was
-      // requested must win — an appended page from the wrong branch is worse than none.
-      if (tracker.isCurrent(token)) {
-        set((s) => ({
-          commits: [...s.commits, ...res.data],
-          hasMore: res.data.length === PAGE_SIZE,
-        }))
+      const isSameTarget = get().repoPath === repoPath && get().branch === branch
+      // A target change mid-flight means the new target's own load() already reset
+      // visibleLimit/commits for itself — this response is for a target that no
+      // longer exists on screen, so it is dropped without touching current state.
+      if (paginationTracker.isCurrent(token) && isSameTarget) {
+        const deduped = dedupeByFullHash(res.data)
+        set({ commits: deduped.slice(0, requestedLimit), hasMore: deduped.length > requestedLimit })
       }
-    } catch (err) {
-      if (tracker.isCurrent(token)) set({ error: err instanceof Error ? err.message : String(err) })
+    } catch {
+      const isSameTarget = get().repoPath === repoPath && get().branch === branch
+      if (paginationTracker.isCurrent(token) && isSameTarget) {
+        set({ visibleLimit: previousLimit, error: STR.HISTORY_LOAD_MORE_FAILED })
+      }
     } finally {
-      // loadingMore is exclusive to this method — always clear it, regardless of
-      // whether a later load() has since superseded this call's token.
       set({ loadingMore: false })
     }
   },
@@ -135,7 +178,7 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
       set({ returnSuccessMessage: 'Returned the last commit to your working changes.' })
       // load() re-takes a token and applies its own guard; a superseded reload from
       // here is dropped exactly as any other load() call would be.
-      await get().load(repoPath, repository)
+      await get().load(repoPath, repository, useAppStore.getState().currentBranch)
       useAppStore.getState().navigate('status')
     } catch (err) {
       set({ returnError: err instanceof Error ? err.message : String(err) })
@@ -159,7 +202,7 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
       set({
         returnSuccessMessage: `Returned ${unpushedCount} unpushed commit${unpushedCount === 1 ? '' : 's'} to your working changes.`,
       })
-      await get().load(repoPath, repository)
+      await get().load(repoPath, repository, useAppStore.getState().currentBranch)
       useAppStore.getState().navigate('status')
     } catch (err) {
       set({ returnError: err instanceof Error ? err.message : String(err) })

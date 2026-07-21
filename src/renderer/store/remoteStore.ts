@@ -144,7 +144,9 @@ export const useRemoteStore = create<RemoteState>((set, get) => ({
         await Promise.all([
           get().load(repoPath, repository),
           useBranchStore.getState().load(repoPath, repository),
-          useHistoryStore.getState().load(repoPath, repository),
+          useHistoryStore
+            .getState()
+            .load(repoPath, repository, useAppStore.getState().currentBranch),
         ])
       }
     } catch (err) {

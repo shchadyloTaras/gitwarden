@@ -174,6 +174,66 @@ test.describe('History', () => {
     }
   })
 
+  test('History scrolls internally with a reachable sticky header/footer at a constrained height', async () => {
+    // 55 commits so PAGE_SIZE=50 also exercises pagination inside the constrained pane.
+    const scrollRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'gw-history-scroll-'))
+    execSync('git init -b main', { cwd: scrollRepo, stdio: 'pipe' })
+    execSync('git config user.email "alice@example.com"', { cwd: scrollRepo, stdio: 'pipe' })
+    execSync('git config user.name "Alice Dev"', { cwd: scrollRepo, stdio: 'pipe' })
+    for (let i = 1; i <= 55; i++) {
+      fs.writeFileSync(path.join(scrollRepo, `s${i}.txt`), `${i}\n`)
+      execSync(`git add s${i}.txt`, { cwd: scrollRepo, stdio: 'pipe' })
+      execSync(`git commit -m "scroll commit ${i}"`, { cwd: scrollRepo, stdio: 'pipe' })
+    }
+
+    try {
+      await win.evaluate(async (repoPath: string) => {
+        const api = (window as Window & typeof globalThis).api
+        await api.repositories.create({
+          name: 'history-scroll',
+          localPath: repoPath,
+          isFavorite: false,
+        })
+      }, scrollRepo)
+
+      await win.setViewportSize({ width: 1000, height: 480 })
+      await win.reload()
+      await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
+
+      await win.getByTestId('nav-history').click()
+      await expect(win.getByTestId('screen-history')).toBeVisible()
+      await expect(win.getByTestId('history-commit-row')).toHaveCount(50, { timeout: 10_000 })
+
+      // The commit list itself has real scroll overflow — not the outer app shell.
+      const body = win.getByTestId('history-body')
+      await expect(body).toBeVisible()
+      const hasRealOverflow = await body.evaluate((el) => el.scrollHeight > el.clientHeight + 1)
+      expect(hasRealOverflow).toBe(true)
+
+      // Scroll the internal pane to the bottom — the sticky footer stays reachable and
+      // the sticky header stays visible, without resizing the window.
+      await body.evaluate((el) => {
+        el.scrollTop = el.scrollHeight
+      })
+      await expect(win.getByTestId('history-load-more')).toBeVisible()
+      await expect(
+        win.getByTestId('screen-history').locator('.gw-history-grid--header')
+      ).toBeVisible()
+
+      await win.getByTestId('history-load-more').click()
+      await expect(win.getByTestId('history-commit-row')).toHaveCount(55, { timeout: 10_000 })
+
+      const rows = await win
+        .getByTestId('history-commit-list')
+        .locator('[data-testid="history-commit-row"]')
+        .allTextContents()
+      expect(rows.length).toBe(new Set(rows).size)
+      await expect(win.getByTestId('history-load-more')).not.toBeVisible()
+    } finally {
+      fs.rmSync(scrollRepo, { recursive: true, force: true })
+    }
+  })
+
   test('switching branch via the header dropdown refreshes the commit list without navigating away', async () => {
     const branchRepo = fs.mkdtempSync(path.join(os.tmpdir(), 'gw-history-branch-'))
     execSync('git init -b main', { cwd: branchRepo, stdio: 'pipe' })

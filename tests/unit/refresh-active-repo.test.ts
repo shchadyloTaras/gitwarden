@@ -90,7 +90,7 @@ describe('refreshActiveRepo (Phase 90)', () => {
     useAppStore.setState({ activeScreen: 'history' })
 
     await refreshActiveRepo()
-    expect(loadHistory).toHaveBeenCalledWith('/r1', repo)
+    expect(loadHistory).toHaveBeenCalledWith('/r1', repo, null)
   })
 
   it('refreshes safetyCenterStore when on the Safety Center screen', async () => {
