@@ -64,7 +64,9 @@ test.describe('Connect-Return Check: "Checking with GitHub…" on return', () =>
     await simulateReturnFocus(win)
 
     await expect(win.getByTestId('github-connect-waiting-line')).toHaveText('Checking with GitHub…')
+    await expect(win.getByTestId('github-connect-loader')).toBeVisible()
     await expect(win.getByTestId('github-connect-success')).toBeVisible({ timeout: 5000 })
+    await expect(win.getByTestId('github-connect-loader')).toHaveCount(0)
   })
 
   test('not yet authorized: "Checking…" settles back to "Waiting…" with no stuck spinner', async () => {
@@ -78,12 +80,14 @@ test.describe('Connect-Return Check: "Checking with GitHub…" on return', () =>
     await simulateReturnFocus(win)
 
     await expect(win.getByTestId('github-connect-waiting-line')).toHaveText('Checking with GitHub…')
+    await expect(win.getByTestId('github-connect-loader')).toBeVisible()
     // The fallback timeout (2s) fires because the poke found nothing new — settles back
     // to the plain waiting line instead of leaving the spinner up forever.
     await expect(win.getByTestId('github-connect-waiting-line')).toHaveText(
       'Waiting for you to authorize on GitHub…',
       { timeout: 4000 }
     )
+    await expect(win.getByTestId('github-connect-loader')).toHaveCount(0)
     // Still awaiting the user — no premature authorization.
     await expect(win.getByTestId('github-connect-modal')).toBeVisible()
     await expect(win.getByTestId('github-connect-success')).toHaveCount(0)

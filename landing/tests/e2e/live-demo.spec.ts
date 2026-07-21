@@ -46,8 +46,13 @@ test('mirrors the real GitWarden shell instead of inventing demo-only app chrome
 
   await expect(titlebar).toBeVisible()
   await expect(appHeader).toBeVisible()
-  await expect(titlebar).toHaveCSS('height', '48px')
-  await expect(appHeader).toHaveCSS('height', '48px')
+  await expect(titlebar).toHaveCSS('height', '40px')
+  await expect(appHeader).toHaveCSS('height', '44px')
+  await expect(appHeader.locator('.live-demo-brand-mark')).toHaveCount(1)
+  await expect(appHeader.locator('.live-demo-header-picker')).toHaveCount(2)
+  await expect(sidebar.locator('.live-demo-nav-svg')).toHaveCount(9)
+  await expect(sidebar.locator('.live-demo-nav-item.is-selected')).toContainText('Commit')
+  await expect(sidebar.locator('.live-demo-nav-item.is-selected')).toHaveCSS('min-height', '36px')
   await expect(sidebar.locator('[data-live-nav-label]')).toHaveText([
     'Profiles',
     'Repositories',
@@ -189,17 +194,17 @@ test('uses the app dark/light Guard tokens and removes motion when requested', a
   await page.goto('/')
   const guard = page.getByTestId('live-demo-guard')
 
-  await expect(guard).toHaveCSS('background-color', 'rgb(220, 38, 38)')
+  await expect(guard).toHaveCSS('background-color', 'rgb(201, 61, 75)')
   await expect(guard).toHaveCSS('color', 'rgb(255, 255, 255)')
   await expect(guard).toHaveCSS('transition-duration', '0s')
   await page.getByRole('radio', { name: 'Client' }).check()
-  await expect(guard).toHaveCSS('background-color', 'rgb(22, 163, 74)')
+  await expect(guard).toHaveCSS('background-color', 'rgb(29, 130, 85)')
   await page.getByRole('radio', { name: 'Personal' }).check()
 
   await page.getByRole('button', { name: /toggle light and dark/i }).click()
-  await expect(guard).toHaveCSS('background-color', 'rgb(184, 24, 66)')
+  await expect(guard).toHaveCSS('background-color', 'rgb(189, 52, 68)')
   await page.getByRole('radio', { name: 'Client' }).check()
-  await expect(guard).toHaveCSS('background-color', 'rgb(21, 122, 88)')
+  await expect(guard).toHaveCSS('background-color', 'rgb(24, 116, 79)')
 })
 
 test('keeps the full interaction readable and tappable at 375px', async ({ page }) => {

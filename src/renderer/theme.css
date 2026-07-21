@@ -481,6 +481,28 @@ body {
     0 0 0 5px var(--gw-accent-ring) !important;
 }
 
+.gw-github-connect__status-line {
+  display: flex;
+  align-items: center;
+  gap: var(--gw-space-2);
+}
+
+.gw-github-connect__loader {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  border: 2px solid var(--gw-border-strong);
+  border-top-color: var(--gw-accent);
+  border-radius: 50%;
+  animation: gw-github-connect-spin 0.72s linear infinite;
+}
+
+@keyframes gw-github-connect-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .gw-onboarding-card {
   border-radius: var(--gw-radius-lg) !important;
   box-shadow: var(--gw-shadow-lg) !important;

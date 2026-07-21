@@ -260,8 +260,19 @@ export default function ConnectGitHubModal({
                 {copied ? STR.GITHUB_MODAL_COPIED : STR.GITHUB_MODAL_COPY_BTN}
               </button>
             </div>
-            <p data-testid="github-connect-waiting-line" style={{ ...bodyStyle, marginTop: 12 }}>
-              {checking ? STR.GITHUB_MODAL_CHECKING : STR.GITHUB_MODAL_WAITING}
+            <p
+              data-testid="github-connect-waiting-line"
+              className="gw-github-connect__status-line"
+              style={{ ...bodyStyle, marginTop: 12 }}
+            >
+              {checking && (
+                <span
+                  data-testid="github-connect-loader"
+                  className="gw-github-connect__loader"
+                  aria-hidden="true"
+                />
+              )}
+              <span>{checking ? STR.GITHUB_MODAL_CHECKING : STR.GITHUB_MODAL_WAITING}</span>
             </p>
             <p style={hintStyle}>{STR.GITHUB_MODAL_NO_ACCOUNT_HINT}</p>
           </div>
