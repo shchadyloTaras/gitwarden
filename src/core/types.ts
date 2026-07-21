@@ -185,6 +185,41 @@ export interface GitCommit {
   date: string
 }
 
+/**
+ * History Commit Details (Phase 110). Mirrors git's raw `--name-status` codes: `renamed`/`copied`
+ * carry `previousPath` + `similarity`; `unknown` preserves a status code git added later without
+ * losing the path.
+ */
+export type GitCommitFileStatus =
+  | 'added'
+  | 'modified'
+  | 'deleted'
+  | 'renamed'
+  | 'copied'
+  | 'typeChanged'
+  | 'unmerged'
+  | 'unknown'
+
+export interface GitCommitFileChange {
+  status: GitCommitFileStatus
+  path: string
+  previousPath?: string
+  similarity?: number
+}
+
+/**
+ * Full detail for one commit (History Commit Details, Phase 110). `parentHashes` retains every
+ * parent for a merge commit even though `files`/`patch` compare against the first parent only
+ * (Phase 111 assembles those against the first-parent diff). `patch` is opaque unparsed text —
+ * the renderer-only shared UnifiedDiff component (Phase 113) is the only place that interprets it.
+ */
+export interface GitCommitDetails {
+  commit: GitCommit
+  parentHashes: string[]
+  files: GitCommitFileChange[]
+  patch: string
+}
+
 export interface GitRemote {
   name: string
   url: string

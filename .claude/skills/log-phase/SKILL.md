@@ -76,6 +76,8 @@ Look up which track owns phase `$N`:
 | 98–105      | QA Fixes                     |
 | 106–107     | Working-Copy Destination     |
 | 108–109     | Landing Live Demo            |
+| 110–113     | History Commit Details       |
+| 114–116     | Unified Commit & Remote      |
 | DX-0–DX-6   | Agentic DX                   |
 
 Count that track's checklist entries:

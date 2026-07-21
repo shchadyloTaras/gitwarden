@@ -176,6 +176,19 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] Phase 108 — Scripted demo model and copy contract (landing-local pure TypeScript)
 - [x] Phase 109 — App-faithful Live Demo UI and landing integration (Astro + e2e)
 
+### History Commit Details feature (plan: `docs/plans/history-commit-details-plan.md`, prompts: `docs/prompts/history-commit-details-prompts.md`)
+
+- [x] Phase 110 — Commit-detail contracts and parsers (pure core)
+- [ ] Phase 111 — Read-only GitService and typed IPC (main + preload)
+- [ ] Phase 112 — Reliable pagination and scroll containment (renderer store + layout)
+- [ ] Phase 113 — Resizable commit-detail browser (renderer + e2e) — feature-complete stop point
+
+### Unified Commit & Remote feature (plan: `docs/plans/unified-commit-remote-plan.md`, prompts: `docs/prompts/unified-commit-remote-prompts.md`)
+
+- [ ] Phase 114 — Commit & Push core: push target, combined gate, flow model (pure core)
+- [ ] Phase 115 — One "Commit & Push" tab replacing Commit and Remote (renderer + e2e)
+- [ ] Phase 116 — The Commit & Push button with one confirmation (renderer + e2e)
+
 ### Agentic DX track (plan: `docs/plans/agentic-dx-plan.md`, prompts: `docs/prompts/dx-execution-prompts.md`)
 
 > Not product phases — a separate developer-experience track (steps DX-0…DX-6, no global phase
@@ -218,6 +231,8 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | QA Fixes                     | 98–105    | ✅ complete                                                   |
 | Working-Copy Destination     | 106–107   | ✅ complete                                                   |
 | Landing Live Demo            | 108–109   | ✅ complete                                                   |
+| History Commit Details       | 110–113   | 🟡 Phase 110 done; 111–113 open                               |
+| Unified Commit & Remote      | 114–116   | ⬜ not started                                                |
 | Agentic DX                   | DX-0–DX-6 | ✅ complete (DX-6 = à la carte; project-factory/sdd deferred) |
 
 ## Progress Log
@@ -1651,3 +1666,11 @@ Moved the v0.5.1 tag to the previous commit and re-triggered: macOS green again,
 - Files: added `tests/fixtures/launchApp.ts` and `tests/unit/e2e-userdata-isolation.test.ts`; migrated all 39 `tests/e2e/*.spec.ts` (removing the now-redundant local isolation plumbing in `diff.spec.ts` / `ui-ux-refresh.spec.ts`); updated the `playwright.config.ts` comment; fixed a stale pre-v0.6.0 assertion in `rapid-switch-staleness.spec.ts` (old `* dev` list marker → `branches-current-badge`), which surfaced only once the suite ran against a freshly built renderer instead of a stale `out/`.
 - Tests: guard test was watched failing first (39 offending specs + missing helper), green after migration. `npm test` **1080/1080** (120 files), both TypeScript project builds, and `npm run lint` passed. Full Electron e2e passed in four chunks **145/145**. Isolation proof: md5 of the real `profiles.json` / `settings.json` identical before and after the full e2e run, and zero scratch dirs left behind.
 - Notes / follow-ups: unnumbered test-infrastructure fix — Phase Checklist and Feature Track Status unchanged. The owner's real app still contains the junk profiles from the earlier polluted run; removing them stays a separate, user-confirmed cleanup.
+
+### 2026-07-22 — Phase 110: Commit-detail contracts and parsers (pure core)
+
+- Built: A framework-free commit-detail model ahead of any Git execution, IPC, or UI work. `GitCommitFileStatus`, `GitCommitFileChange`, and `GitCommitDetails` extend `src/core/types.ts` exactly per the plan's contract, leaving the existing compact `GitCommit` list shape untouched. `src/core/parsers/CommitDetailsParser.ts` adds pure `parseCommitMetadata` (one NUL-delimited `<fullHash>\0<shortHash>\0<authorName>\0<authorEmail>\0<date>\0<subject>\0<parentHashes>` record), `parseNameStatus` (a `--name-status -z`-shaped token stream, mapping `A/M/D/R/C/T/U` to typed statuses, preserving unknown codes with their path, and parsing rename/copy similarity scores), and `parseCommitDetails` (assembles both plus a caller-supplied opaque patch string into `GitCommitDetails`). A typed `CommitDetailsParseError` rejects structurally incomplete metadata (wrong field count, missing hash) and truncated rename/copy records without throwing away partial data silently.
+- Files: edited `src/core/types.ts`; added `src/core/parsers/CommitDetailsParser.ts` and `tests/unit/commit-details-parser.test.ts`.
+- Tests: focused `tests/unit/commit-details-parser.test.ts` passed **19/19** (normal/root/multi-parent metadata, spaces/Unicode, malformed-metadata rejection, added/modified/deleted/type-changed/unmerged/unknown file statuses, rename/copy similarity scores, empty file output, truncated rename/copy rejection, and binary-patch pass-through). Both `npx tsc --noEmit -p tsconfig.node.json` and `-p tsconfig.web.json` passed clean. Full `npm test` passed **1099/1099** (121 files). `npm run lint` (ESLint + Prettier) passed clean after an automatic Prettier reformat of the two new files.
+- Exit criteria: ✅ met — both TypeScript configs clean, focused parser tests and full Vitest suite green, lint green, and the core-purity-reviewer subagent confirmed no Node/Electron/DOM dependency in the new parser or type additions (`CLEAN — src/core/ purity confirmed`).
+- Notes / follow-ups: No barrel export was added — `src/core/` has no existing parser barrel (`PorcelainParser.ts` is already imported directly by path elsewhere), so `CommitDetailsParser.ts` follows the same convention. The metadata field order and the NUL-delimited format are this phase's own design (the plan specifies the `GitCommitDetails` contract but not the raw wire format); Phase 111's `GitService.getCommitDetails()` must produce `git log`/`git diff` output in exactly this shape (`%H%x00%h%x00%an%x00%ae%x00%aI%x00%s%x00%P` for metadata) for the parser to consume. Similarity scores are stored as the raw percentage integer git reports (e.g. `R100` → 100, `C075` → 75), not a 0–1 fraction. Next: Phase 111 — Read-only GitService and typed IPC (main + preload).

@@ -48,6 +48,8 @@ Use `AGENTS.md` "Reference docs" section to map the phase number to its plan + p
 | 98–105      | `docs/plans/qa-fixes-plan.md`                    | `docs/prompts/qa-fixes-prompts.md`                    |
 | 106–107     | `docs/plans/working-copy-destination-plan.md`    | `docs/prompts/working-copy-destination-prompts.md`    |
 | 108–109     | `docs/plans/landing-live-demo-plan.md`           | `docs/prompts/landing-live-demo-prompts.md`           |
+| 110–113     | `docs/plans/history-commit-details-plan.md`      | `docs/prompts/history-commit-details-prompts.md`      |
+| 114–116     | `docs/plans/unified-commit-remote-plan.md`       | `docs/prompts/unified-commit-remote-prompts.md`       |
 | DX-0–DX-6   | `docs/plans/agentic-dx-plan.md`                  | `docs/prompts/dx-execution-prompts.md`                |
 
 ## Step 3 — Read the plan section and prompts
