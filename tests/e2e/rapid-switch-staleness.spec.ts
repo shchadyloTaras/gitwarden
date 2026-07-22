@@ -128,8 +128,8 @@ test.describe('Rapid-switch staleness', () => {
     const devRow = win.getByTestId('branches-local-item-dev')
     await expect(devRow.getByTestId('branches-current-badge')).toHaveText('Current branch')
 
-    await win.getByTestId('nav-remote').click()
-    await expect(win.getByTestId('screen-remote')).toBeVisible()
+    await win.getByTestId('nav-commit').click()
+    await expect(win.getByTestId('screen-commit')).toBeVisible()
     await expect(win.getByTestId('remote-current-branch')).toContainText('dev', {
       timeout: 10000,
     })

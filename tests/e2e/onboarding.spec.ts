@@ -35,7 +35,7 @@ test.describe('Onboarding walkthrough', () => {
 
       await openTourFromSettings(win)
       await expectTitle(win, 'Welcome to Git Warden')
-      await expect(win.getByTestId('onboarding-progress')).toHaveText('1 of 12')
+      await expect(win.getByTestId('onboarding-progress')).toHaveText('1 of 11')
 
       await win.getByTestId('onboarding-next').click()
       await expectTitle(win, 'Global header')
@@ -84,12 +84,8 @@ test.describe('Onboarding walkthrough', () => {
       await expect(win.getByTestId('screen-status')).toBeVisible()
 
       await win.getByTestId('onboarding-next').click()
-      await expectTitle(win, 'Commit with safety checks')
+      await expectTitle(win, 'Commit & Push, safely')
       await expect(win.getByTestId('screen-commit')).toBeVisible()
-
-      await win.getByTestId('onboarding-next').click()
-      await expectTitle(win, 'Push only after confirmation')
-      await expect(win.getByTestId('screen-remote')).toBeVisible()
 
       await win.getByTestId('onboarding-next').click()
       await expectTitle(win, 'Use Safety Center')

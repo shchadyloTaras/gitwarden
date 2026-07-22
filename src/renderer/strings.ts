@@ -43,8 +43,7 @@ export const STR = {
   // profiles come first so every repository gets an identity to be assigned to.
   NAV_REPOSITORIES_LOCKED_HINT: 'Add a profile first',
   NAV_STATUS: 'Status',
-  NAV_COMMIT: 'Commit',
-  NAV_REMOTE: 'Remote',
+  NAV_COMMIT_PUSH: 'Commit & Push',
   NAV_BRANCHES: 'Branches',
   NAV_HISTORY: 'History',
   NAV_SAFETY_CENTER: 'Safety Center',
@@ -127,7 +126,7 @@ export const STR = {
     'Pick the active repository and branch, watch the safety badge, see your profile, and open AI chat from here while you work.',
   ONBOARDING_STEP_NAV_TITLE: 'Navigation',
   ONBOARDING_STEP_NAV_BODY:
-    'Manage covers profiles and repositories. Git covers status, commits, remotes, branches, history, and the Safety Center. Settings holds appearance, AI connections, and this walkthrough.',
+    'Manage covers profiles and repositories. Git covers status, commit & push, branches, history, and the Safety Center. Settings holds appearance, AI connections, and this walkthrough.',
   ONBOARDING_STEP_PROFILES_TITLE: 'Create profiles first',
   ONBOARDING_STEP_PROFILES_BODY:
     'Profiles hold your Git author name, email, GitHub username, SSH alias, and allowed remote hosts. Connect GitHub on a profile to auto-fill identity and verify pushes.',
@@ -137,12 +136,9 @@ export const STR = {
   ONBOARDING_STEP_STATUS_TITLE: 'Review and stage changes',
   ONBOARDING_STEP_STATUS_BODY:
     'Status separates staged, unstaged, and untracked files. Pick a repository, inspect the diff, then stage only what belongs in the next commit.',
-  ONBOARDING_STEP_COMMIT_TITLE: 'Commit with safety checks',
-  ONBOARDING_STEP_COMMIT_BODY:
-    'The Commit screen checks profile assignment, local Git identity, staged changes, conflicts, and message before enabling a commit. An optional AI helper can draft commit messages here.',
-  ONBOARDING_STEP_REMOTE_TITLE: 'Push only after confirmation',
-  ONBOARDING_STEP_REMOTE_BODY:
-    'Remote operations use a confirmation sheet with branch, remote host, profile, identity, and safety blockers before anything leaves your machine.',
+  ONBOARDING_STEP_COMMIT_PUSH_TITLE: 'Commit & Push, safely',
+  ONBOARDING_STEP_COMMIT_PUSH_BODY:
+    'One tab covers the whole journey. Committing checks profile assignment, local Git identity, staged changes, conflicts, and message — with an optional AI helper to draft the message. Pushing uses a confirmation sheet with branch, remote host, profile, identity, and safety blockers before anything leaves your machine.',
   ONBOARDING_STEP_SAFETY_TITLE: 'Use Safety Center',
   ONBOARDING_STEP_SAFETY_BODY:
     'Safety Center audits identity, remote host, branch, and profile assignment in one place. Its verdict matches the commit and push gates.',

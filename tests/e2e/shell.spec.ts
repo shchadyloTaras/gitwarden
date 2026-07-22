@@ -133,7 +133,6 @@ test.describe('App shell & navigation', () => {
         { nav: 'nav-repositories', testId: 'screen-repositories' },
         { nav: 'nav-status', testId: 'screen-status' },
         { nav: 'nav-commit', testId: 'screen-commit' },
-        { nav: 'nav-remote', testId: 'screen-remote' },
         { nav: 'nav-branches', testId: 'screen-branches' },
         { nav: 'nav-history', testId: 'screen-history' },
         { nav: 'nav-safety-center', testId: 'screen-safety-center' },

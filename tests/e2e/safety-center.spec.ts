@@ -108,7 +108,7 @@ test.describe('Safety Center', () => {
     await app.close()
   })
 
-  test('IDENTITY_UNSET: Safety Center blocks commit, matches CommitScreen gate', async () => {
+  test('IDENTITY_UNSET: Safety Center blocks commit, matches the merged Commit & Push gate', async () => {
     // Profile whose email won't match (no local identity set)
     const aliceInput = profileFixture('alice')
     const profileId = await win.evaluate(async (input: ProfileInput) => {
@@ -152,7 +152,7 @@ test.describe('Safety Center', () => {
     await expect(win.getByTestId('safety-can-commit')).toContainText('No')
     await expect(win.getByTestId('safety-issue-IDENTITY_UNSET')).toBeVisible()
 
-    // --- Verify CommitScreen agrees (same repo still active) ---
+    // --- Verify the merged Commit & Push tab agrees (same repo still active) ---
     await win.getByTestId('nav-commit').click()
     await expect(win.getByTestId('screen-commit')).toBeVisible()
     await expect(win.getByTestId('commit-staged-summary')).toBeVisible({ timeout: 10000 })
@@ -265,7 +265,7 @@ test.describe('Safety Center', () => {
     await expect(win.getByTestId('safety-assigned-profile-name')).toContainText('Eleken')
   })
 
-  test('REMOTE_HOST_MISMATCH: Safety Center blocks push, matches RemoteScreen gate', async () => {
+  test('REMOTE_HOST_MISMATCH: Safety Center blocks push, matches the merged Commit & Push gate', async () => {
     // Profile with github.com constraint — local bare repo has no host
     const workInput = profileFixture('work', {
       gitAuthorName: 'Alice Dev',
@@ -315,9 +315,9 @@ test.describe('Safety Center', () => {
     await expect(win.getByTestId('safety-can-push')).toContainText('No')
     await expect(win.getByTestId('safety-issue-REMOTE_HOST_MISMATCH')).toBeVisible()
 
-    // --- Verify RemoteScreen agrees (same repo still active) ---
-    await win.getByTestId('nav-remote').click()
-    await expect(win.getByTestId('screen-remote')).toBeVisible()
+    // --- Verify the merged Commit & Push tab agrees (same repo still active) ---
+    await win.getByTestId('nav-commit').click()
+    await expect(win.getByTestId('screen-commit')).toBeVisible()
     await expect(win.getByTestId('remote-current-branch')).toBeVisible({ timeout: 10000 })
 
     await win.getByTestId('remote-op-push').click()

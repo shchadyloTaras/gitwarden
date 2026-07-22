@@ -106,7 +106,7 @@ test.describe('Universal data-tooltip', () => {
     const bubble = win.getByTestId('tooltip-bubble')
     await expect(bubble).toBeVisible()
 
-    await win.keyboard.press('Control+9') // profiles(1) … settings(9)
+    await win.keyboard.press('Control+8') // profiles(1) … settings(8) — Commit & Push merge dropped one nav slot
     await expect(win.getByTestId('screen-settings')).toBeVisible()
     await expect(newBtn).toHaveCount(0)
 

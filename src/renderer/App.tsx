@@ -19,8 +19,7 @@ import { applyTheme } from './theme'
 import RepositoriesScreen from './screens/RepositoriesScreen'
 import ProfilesScreen from './screens/ProfilesScreen'
 import StatusScreen from './screens/StatusScreen'
-import CommitScreen from './screens/CommitScreen'
-import RemoteScreen from './screens/RemoteScreen'
+import CommitPushScreen from './screens/CommitPushScreen'
 import BranchesScreen from './screens/BranchesScreen'
 import HistoryScreen from './screens/HistoryScreen'
 import SafetyCenterScreen from './screens/SafetyCenterScreen'
@@ -34,7 +33,6 @@ const NAV_ORDER: NavScreen[] = [
   'repositories',
   'status',
   'commit',
-  'remote',
   'branches',
   'history',
   'safety-center',
@@ -225,9 +223,8 @@ function MainContent(): React.ReactElement {
     case 'status':
       return <StatusScreen />
     case 'commit':
-      return <CommitScreen />
     case 'remote':
-      return <RemoteScreen />
+      return <CommitPushScreen />
     case 'branches':
       return <BranchesScreen />
     case 'history':

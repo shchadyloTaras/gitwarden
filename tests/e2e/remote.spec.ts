@@ -115,8 +115,8 @@ test.describe('Remote Operations', () => {
     await win.reload()
     await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
-    await win.getByTestId('nav-remote').click()
-    await expect(win.getByTestId('screen-remote')).toBeVisible()
+    await win.getByTestId('nav-commit').click()
+    await expect(win.getByTestId('screen-commit')).toBeVisible()
 
     // work-repo is auto-selected as active repo
     await expect(win.getByTestId('remote-current-branch')).toBeVisible({ timeout: 10000 })
@@ -169,8 +169,8 @@ test.describe('Remote Operations', () => {
     await win.reload()
     await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
-    await win.getByTestId('nav-remote').click()
-    await expect(win.getByTestId('screen-remote')).toBeVisible()
+    await win.getByTestId('nav-commit').click()
+    await expect(win.getByTestId('screen-commit')).toBeVisible()
 
     // work-repo is auto-selected as active repo
     await expect(win.getByTestId('remote-current-branch')).toBeVisible({ timeout: 10000 })

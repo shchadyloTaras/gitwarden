@@ -83,7 +83,11 @@ export const useAppStore = create<AppState>((set) => ({
   rightPanelTab: 'context',
   chatFocusNonce: 0,
 
-  navigate: (screen) => set({ activeScreen: screen }),
+  // 'remote' is a legacy id from before the Commit and Remote tabs were unified into
+  // one "Commit & Push" tab. NavScreen and core's NavTarget both keep it as a stable
+  // id (existing remediations still route `configure-remote` there), but the renderer
+  // has only one screen for it now — normalize here so every caller lands correctly.
+  navigate: (screen) => set({ activeScreen: screen === 'remote' ? 'commit' : screen }),
   setActiveRepo: (repo) => {
     let shouldSyncProfile = false
     set((s) => {

@@ -274,17 +274,21 @@ test.describe('Guard Quick-Fix — one-click fixes & recovery banner', () => {
         .getByTestId('profile-active-badge')
     ).toBeVisible({ timeout: 10000 })
 
-    await win.getByTestId('nav-remote').click()
-    await expect(win.getByTestId('screen-remote')).toBeVisible()
+    await win.getByTestId('nav-commit').click()
+    await expect(win.getByTestId('screen-commit')).toBeVisible()
     await expect(win.getByTestId('remote-current-branch')).toBeVisible({ timeout: 10000 })
 
     await win.getByTestId('remote-op-push').click()
     await expect(win.getByTestId('remote-push-sheet')).toBeVisible({ timeout: 5000 })
 
-    // Profile mismatch blocks the push; the one-click fix offers to switch to Work.
+    // Profile mismatch blocks the push; the one-click fix offers to switch to Work. The
+    // same remediation also renders in the always-visible commit-issues section behind
+    // the sheet (PROFILE_MISMATCH blocks commit too) — scope to the sheet's own copy.
     await expect(win.getByTestId('remote-push-issue-PROFILE_MISMATCH')).toBeVisible()
     await expect(win.getByTestId('remote-push-confirm-btn')).toBeDisabled()
-    const switchBtn = win.getByTestId('remediation-executable-switch-active-profile')
+    const switchBtn = win
+      .getByTestId('remote-push-remediations')
+      .getByTestId('remediation-executable-switch-active-profile')
     await expect(switchBtn).toContainText('Work')
     await switchBtn.click()
 
@@ -310,7 +314,7 @@ test.describe('Guard Quick-Fix — one-click fixes & recovery banner', () => {
     await win.reload()
     await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
-    await win.getByTestId('nav-remote').click()
+    await win.getByTestId('nav-commit').click()
     await expect(win.getByTestId('remote-current-branch')).toBeVisible({ timeout: 10000 })
     await win.getByTestId('remote-op-push').click()
     await expect(win.getByTestId('remote-push-sheet')).toBeVisible({ timeout: 5000 })
@@ -340,7 +344,7 @@ test.describe('Guard Quick-Fix — one-click fixes & recovery banner', () => {
     await win.reload()
     await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
-    await win.getByTestId('nav-remote').click()
+    await win.getByTestId('nav-commit').click()
     await expect(win.getByTestId('remote-current-branch')).toBeVisible({ timeout: 10000 })
     await win.getByTestId('remote-op-push').click()
     await expect(win.getByTestId('remote-push-sheet')).toBeVisible({ timeout: 5000 })
@@ -423,7 +427,7 @@ test.describe('Diverged-Branch Merge — one-click local merge (Phase 71, featur
     await win.reload()
     await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
-    await win.getByTestId('nav-remote').click()
+    await win.getByTestId('nav-commit').click()
     await expect(win.getByTestId('remote-current-branch')).toBeVisible({ timeout: 10000 })
     await win.getByTestId('remote-op-pull').click()
 
@@ -464,7 +468,7 @@ test.describe('Diverged-Branch Merge — one-click local merge (Phase 71, featur
     await win.reload()
     await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
-    await win.getByTestId('nav-remote').click()
+    await win.getByTestId('nav-commit').click()
     await expect(win.getByTestId('remote-current-branch')).toBeVisible({ timeout: 10000 })
     await win.getByTestId('remote-op-pull').click()
 
@@ -504,7 +508,7 @@ test.describe('Diverged-Branch Merge — one-click local merge (Phase 71, featur
     await win.reload()
     await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
-    await win.getByTestId('nav-remote').click()
+    await win.getByTestId('nav-commit').click()
     await expect(win.getByTestId('remote-current-branch')).toBeVisible({ timeout: 10000 })
     await win.getByTestId('remote-op-pull').click()
 

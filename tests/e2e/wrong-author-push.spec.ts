@@ -124,8 +124,8 @@ test.describe('Outgoing-authorship push gate', () => {
     await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
 
     // Open the push sheet — the wrong-author commit is still in the outgoing range.
-    await win.getByTestId('nav-remote').click()
-    await expect(win.getByTestId('screen-remote')).toBeVisible()
+    await win.getByTestId('nav-commit').click()
+    await expect(win.getByTestId('screen-commit')).toBeVisible()
     await expect(win.getByTestId('remote-current-branch')).toBeVisible({ timeout: 10000 })
 
     await win.getByTestId('remote-op-push').click()
@@ -165,8 +165,8 @@ test.describe('Outgoing-authorship push gate', () => {
     await win.getByTestId('commit-btn').click()
 
     // Push again — the outgoing range is now correctly authored, and it succeeds.
-    await win.getByTestId('nav-remote').click()
-    await expect(win.getByTestId('screen-remote')).toBeVisible()
+    await win.getByTestId('nav-commit').click()
+    await expect(win.getByTestId('screen-commit')).toBeVisible()
     await win.getByTestId('remote-op-push').click()
     await expect(win.getByTestId('remote-push-sheet')).toBeVisible({ timeout: 5000 })
 

@@ -150,8 +150,8 @@ test.describe('Branches', () => {
     await registerFixtureRepo()
 
     // Land on the Remote screen first so it loads its own view of the current branch.
-    await win.getByTestId('nav-remote').click()
-    await expect(win.getByTestId('screen-remote')).toBeVisible()
+    await win.getByTestId('nav-commit').click()
+    await expect(win.getByTestId('screen-commit')).toBeVisible()
     await expect(win.getByTestId('remote-current-branch')).toBeVisible({ timeout: 10000 })
     await expect(win.getByTestId('remote-current-branch')).toContainText('main')
 

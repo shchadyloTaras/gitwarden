@@ -23,8 +23,7 @@ const NAV_ITEMS: NavItem[] = [
     group: 'manage',
   },
   { screen: 'status', label: STR.NAV_STATUS, icon: 'status', group: 'git' },
-  { screen: 'commit', label: STR.NAV_COMMIT, icon: 'commit', group: 'git' },
-  { screen: 'remote', label: STR.NAV_REMOTE, icon: 'remote', group: 'git' },
+  { screen: 'commit', label: STR.NAV_COMMIT_PUSH, icon: 'commit', group: 'git' },
   { screen: 'branches', label: STR.NAV_BRANCHES, icon: 'branches', group: 'git' },
   { screen: 'history', label: STR.NAV_HISTORY, icon: 'history', group: 'git' },
   {

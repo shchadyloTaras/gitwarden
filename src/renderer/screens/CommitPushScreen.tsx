@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useProfilesStore } from '../store/profilesStore'
+import { useCommitStore } from '../store/commitStore'
 import { useRemoteStore } from '../store/remoteStore'
 import { useAppStore } from '../store/appStore'
+import { useAiStore } from '../store/aiStore'
 import { safetyCheckService, type SafetyCode } from '../../core/safety/SafetyCheckService'
 import type { GitHubPushContext } from '../../core/safety/SafetyCheckService'
 import { remediationForGitError, remediationForSafetyCode } from '../../core/safety/remediation'
@@ -9,6 +11,7 @@ import { isHttpsGitHubRemoteUrl } from '../../core/github/remoteUrl'
 import { matchesAnyPattern } from '../../core/safety/branchPatterns'
 import type { GitRemote } from '../../core/types'
 import { STR } from '../strings'
+import { FileStatusBadge } from '../components/FileStatusBadge'
 import SafetyIssueRow from '../components/SafetyIssueRow'
 import RemediationButton from '../components/RemediationButton'
 import { useDialogFocus } from '../hooks/useDialogFocus'
@@ -17,23 +20,50 @@ import './workflowScreens.css'
 /** Renderer-side mirror of the main GitHubPushStatus (token-free). */
 type PushStatus = { hasToken: boolean; tokenInvalid: boolean; effectiveLogin?: string }
 
-export default function RemoteScreen(): React.ReactElement {
+export default function CommitPushScreen(): React.ReactElement {
   const activeRepo = useAppStore((s) => s.activeRepo)
   const currentBranch = useAppStore((s) => s.currentBranch)
   const { profiles, activeProfileId } = useProfilesStore()
+  const activeProfile = profiles.find((p) => p.id === activeProfileId)
+
   const {
-    repository,
+    repository: commitRepository,
+    message,
+    status,
+    identity: commitIdentity,
+    stagedDiffs,
+    loading: commitInitialLoading,
+    commitLoading,
+    draftLoading,
+    draftError,
+    error: commitError,
+    committedHash,
+    load: loadCommit,
+    setMessage,
+    doCommit,
+    draftMessage,
+  } = useCommitStore()
+
+  const loadAi = useAiStore((s) => s.load)
+  const aiEnabled = useAiStore((s) => s.aiEnabled)
+  const connections = useAiStore((s) => s.connections)
+  // AI on this tab is limited to the commit message. It is offered only when a
+  // connection exists and AI is enabled; redaction/enablement rules still apply per send.
+  const aiAvailable = aiEnabled && connections.length > 0
+
+  const {
+    repository: remoteRepository,
     remotes,
     upstream,
     upstreamGone,
-    identity,
-    loading,
+    identity: remoteIdentity,
+    loading: remoteInitialLoading,
     fetchLoading,
     pullLoading,
     pushLoading,
-    error,
+    error: remoteError,
     successMessage,
-    load,
+    load: loadRemote,
     doFetch,
     doPull,
     doRemotePush,
@@ -56,15 +86,77 @@ export default function RemoteScreen(): React.ReactElement {
   const pushSheetRef = useRef<HTMLDivElement>(null)
   const pushCancelRef = useRef<HTMLButtonElement>(null)
 
-  const activeProfile = profiles.find((p) => p.id === activeProfileId)
-
-  const assignedProfile = repository?.assignedProfileId
-    ? profiles.find((p) => p.id === repository.assignedProfileId)
+  const assignedProfile = remoteRepository?.assignedProfileId
+    ? profiles.find((p) => p.id === remoteRepository.assignedProfileId)
     : undefined
 
+  // One mount effect fires both stores' loads in parallel — a screen merge, not a
+  // store rewrite (both stores survive unchanged).
   useEffect(() => {
-    if (activeRepo) void load(activeRepo.localPath, activeRepo)
-  }, [load, activeRepo, currentBranch])
+    if (!activeRepo) return
+    void loadCommit(activeRepo.localPath, activeRepo)
+    void loadRemote(activeRepo.localPath, activeRepo)
+  }, [loadCommit, loadRemote, activeRepo, currentBranch])
+
+  // Keep the AI enablement/connection state fresh so the commit-message affordance
+  // reflects what the user set up in the AI Chat panel / Settings.
+  useEffect(() => {
+    void loadAi()
+  }, [loadAi])
+
+  // A remediation (e.g. fixing local identity) can affect both the commit gate and
+  // the push gate, so refresh both stores after any of the remediation buttons below
+  // succeeds — otherwise the other half of this merged screen would show stale data.
+  const refreshBothStores = (): void => {
+    if (!activeRepo) return
+    void loadCommit(activeRepo.localPath, activeRepo)
+    void loadRemote(activeRepo.localPath, activeRepo)
+  }
+
+  const stagedFiles = useMemo(
+    () =>
+      (status?.files ?? []).filter(
+        (f) =>
+          f.indexStatus !== 'unmodified' &&
+          f.indexStatus !== 'untracked' &&
+          f.indexStatus !== 'ignored' &&
+          f.indexStatus !== 'conflicted'
+      ),
+    [status]
+  )
+
+  const safetyResult = useMemo(() => {
+    if (!status || !commitIdentity || !commitRepository) return null
+    return safetyCheckService.checkCommit({
+      repository: commitRepository,
+      activeProfile,
+      identity: commitIdentity,
+      status,
+      commitMessage: message,
+      stagedDiffs,
+    })
+  }, [status, commitIdentity, commitRepository, activeProfile, message, stagedDiffs])
+
+  const blockers = safetyResult?.issues.filter((i) => i.severity === 'blocker') ?? []
+  const warnings = safetyResult?.issues.filter((i) => i.severity === 'warning') ?? []
+  // One remediation per distinct action across the issues (model-driven; replaces the
+  // bespoke "Set local identity" button). Skip a navigate that points back to this tab
+  // (either of its former ids — 'commit' or 'remote' — both land here now).
+  const seenRemediationActions = new Set<string>()
+  const issueRemediations = [...blockers, ...warnings]
+    .map((i) => remediationForSafetyCode(i.code as SafetyCode))
+    .filter((rem) => {
+      if (rem.kind === 'navigate' && (rem.navigateTo === 'commit' || rem.navigateTo === 'remote'))
+        return false
+      if (seenRemediationActions.has(rem.action)) return false
+      seenRemediationActions.add(rem.action)
+      return true
+    })
+
+  const handleCommit = async () => {
+    if (!safetyResult?.canCommit || commitLoading) return
+    await doCommit(message)
+  }
 
   // The GitHub HTTPS-token push context for the selected remote — only engaged for an
   // HTTPS GitHub remote, so SSH/file remotes are unaffected.
@@ -72,7 +164,7 @@ export default function RemoteScreen(): React.ReactElement {
     if (!selectedRemote || !isHttpsGitHubRemoteUrl(selectedRemote.url)) return undefined
     // expectedGitHubActor overrides the profile's linked login for HTTPS actor verification.
     const assignedLogin =
-      repository?.pushPolicy?.expectedGitHubActor ?? assignedProfile?.linkedGitHub?.login
+      remoteRepository?.pushPolicy?.expectedGitHubActor ?? assignedProfile?.linkedGitHub?.login
     return {
       httpsToGitHub: true,
       assignedLogin,
@@ -81,15 +173,15 @@ export default function RemoteScreen(): React.ReactElement {
       effectiveLogin: pushStatus?.effectiveLogin,
       scopes: assignedProfile?.linkedGitHub?.scopes,
     }
-  }, [selectedRemote, repository, assignedProfile, pushStatus])
+  }, [selectedRemote, remoteRepository, assignedProfile, pushStatus])
 
   // Compute push safety for the selected remote
   const pushSafetyResult = useMemo(() => {
-    if (!repository || !identity || !selectedRemote) return null
+    if (!remoteRepository || !remoteIdentity || !selectedRemote) return null
     return safetyCheckService.checkPush({
-      repository,
+      repository: remoteRepository,
       activeProfile,
-      identity,
+      identity: remoteIdentity,
       remotes: [selectedRemote],
       currentBranch: currentBranch ?? undefined,
       upstream: upstream ?? undefined,
@@ -99,8 +191,8 @@ export default function RemoteScreen(): React.ReactElement {
       outgoingCommits: outgoingCommitsPending ? undefined : (outgoingCommits ?? undefined),
     })
   }, [
-    repository,
-    identity,
+    remoteRepository,
+    remoteIdentity,
     activeProfile,
     selectedRemote,
     currentBranch,
@@ -135,7 +227,7 @@ export default function RemoteScreen(): React.ReactElement {
     // Outgoing-authorship gate (Phase 100): fetch the commits this push would carry, for
     // ANY remote (not just HTTPS GitHub) — a wrong-author commit is wrong regardless of
     // transport.
-    const repoPath = repository?.localPath ?? activeRepo?.localPath
+    const repoPath = remoteRepository?.localPath ?? activeRepo?.localPath
     if (repoPath && currentBranch) {
       setOutgoingCommitsPending(true)
       void window.api.git
@@ -182,12 +274,14 @@ export default function RemoteScreen(): React.ReactElement {
   const pushWarnings = pushSafetyResult?.issues.filter((i) => i.severity === 'warning') ?? []
 
   // Model-driven one-click fixes for the push issues (dedup by action; skip a navigate
-  // back to this screen) so the user can resolve a push blocker right in the push sheet.
+  // back to this tab under either of its former ids) so the user can resolve a push
+  // blocker right in the push sheet.
   const pushSeenActions = new Set<string>()
   const pushIssueRemediations = [...pushBlockers, ...pushWarnings]
     .map((i) => remediationForSafetyCode(i.code as SafetyCode))
     .filter((rem) => {
-      if (rem.kind === 'navigate' && rem.navigateTo === 'remote') return false
+      if (rem.kind === 'navigate' && (rem.navigateTo === 'commit' || rem.navigateTo === 'remote'))
+        return false
       if (pushSeenActions.has(rem.action)) return false
       pushSeenActions.add(rem.action)
       return true
@@ -197,8 +291,8 @@ export default function RemoteScreen(): React.ReactElement {
     lastFailure?.code === 'pushRejectedWrongAccount' &&
     selectedRemote != null &&
     isHttpsGitHubRemoteUrl(selectedRemote.url) &&
-    repository?.assignedProfileId != null &&
-    activeProfileId === repository.assignedProfileId
+    remoteRepository?.assignedProfileId != null &&
+    activeProfileId === remoteRepository.assignedProfileId
 
   const recoveryRemediation = retryingWouldReuseAssignedHttpsCredential
     ? remediationForGitError('authenticationFailed')
@@ -209,31 +303,195 @@ export default function RemoteScreen(): React.ReactElement {
       ? STR.RECOVERY_RECONNECT_ASSIGNED_GITHUB(assignedProfile.displayName)
       : lastFailure?.message
 
+  const anyInitialLoading = commitInitialLoading || remoteInitialLoading
+
   return (
     <section
-      data-testid="screen-remote"
+      data-testid="screen-commit"
       className="gw-page gw-workflow-page"
-      aria-labelledby="remote-page-title"
-      aria-busy={loading}
+      aria-labelledby="commit-push-page-title"
+      aria-busy={anyInitialLoading}
     >
       <header className="gw-page-header gw-workflow-page-header">
-        <h1 id="remote-page-title" className="gw-page-title gw-workflow-page-title">
-          Remote
+        <h1 id="commit-push-page-title" className="gw-page-title gw-workflow-page-title">
+          {STR.NAV_COMMIT_PUSH}
         </h1>
       </header>
 
-      {loading && (
+      {anyInitialLoading && (
         <div className="gw-empty-state gw-workflow-state" role="status">
           Loading…
         </div>
       )}
 
-      {!loading && !repository && !activeRepo && (
+      {!anyInitialLoading && !commitRepository && !activeRepo && (
         <div className="gw-empty-state gw-workflow-empty">Add a repository to get started.</div>
       )}
 
-      {!loading && repository && (
+      {!anyInitialLoading && commitRepository && (
         <div className="gw-workflow-stack">
+          {/* Staged changes summary */}
+          <section className="gw-workflow-section" aria-labelledby="commit-staged-heading">
+            <h2 id="commit-staged-heading" className="gw-workflow-section-heading">
+              Staged Changes ({stagedFiles.length})
+            </h2>
+            <div
+              data-testid="commit-staged-summary"
+              className={`gw-card gw-workflow-card gw-commit-staged-list${
+                stagedFiles.length === 0 ? ' gw-commit-staged-list--empty' : ''
+              }`}
+            >
+              {stagedFiles.length === 0 ? (
+                <span>No staged changes</span>
+              ) : (
+                stagedFiles.map((f) => (
+                  <div key={f.path} className="gw-commit-file">
+                    <FileStatusBadge kind={f.indexStatus} />
+                    <span className="gw-commit-file-path">
+                      {f.originalPath ? `${f.path} ← ${f.originalPath}` : f.path}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+
+          {/* Commit message (with the one and only commit-message AI affordance) */}
+          <section className="gw-field gw-workflow-field gw-workflow-section">
+            <div className="gw-commit-message-header">
+              <label htmlFor="commit-message-input" className="gw-workflow-label">
+                Commit Message
+              </label>
+              {aiAvailable && (
+                <button
+                  type="button"
+                  data-testid="ai-commit-draft-toggle"
+                  onClick={() => void draftMessage()}
+                  disabled={draftLoading}
+                  data-tooltip={STR.AI_COMMIT_ASSISTANT_HINT}
+                  className="gw-button gw-button--secondary gw-workflow-button"
+                >
+                  {draftLoading ? STR.AI_COMMIT_DRAFT_LOADING : STR.AI_COMMIT_DRAFT_TOGGLE}
+                </button>
+              )}
+            </div>
+            <textarea
+              id="commit-message-input"
+              data-testid="commit-message"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Describe your changes…"
+              rows={10}
+              aria-describedby={draftError ? 'commit-draft-error' : undefined}
+              className="gw-workflow-input gw-commit-message"
+            />
+
+            {draftError && (
+              <div
+                id="commit-draft-error"
+                data-testid="ai-commit-assistant-error"
+                className="gw-notice gw-notice--danger gw-workflow-notice gw-workflow-notice--danger"
+                role="alert"
+              >
+                {draftError}
+              </div>
+            )}
+          </section>
+
+          {/* Commit safety issues */}
+          {safetyResult && safetyResult.issues.length > 0 && (
+            <section
+              data-testid="commit-safety-issues"
+              className="gw-card gw-workflow-card gw-workflow-card--flush gw-commit-issues"
+              aria-live="polite"
+            >
+              {blockers.map((issue) => (
+                <div
+                  key={issue.code}
+                  data-testid="commit-blocker"
+                  className="gw-notice gw-notice--danger gw-workflow-notice--danger gw-commit-issue"
+                >
+                  <span aria-hidden="true">⛔</span>
+                  <span>{issue.message}</span>
+                </div>
+              ))}
+              {warnings.map((issue) => (
+                <div
+                  key={issue.code}
+                  data-testid="commit-warning"
+                  className="gw-notice gw-notice--warning gw-workflow-notice--warning gw-commit-issue"
+                >
+                  <span aria-hidden="true">⚠</span>
+                  <span>{issue.message}</span>
+                </div>
+              ))}
+              {issueRemediations.length > 0 && (
+                <div
+                  data-testid="commit-remediations"
+                  className="gw-toolbar gw-commit-remediations"
+                >
+                  {issueRemediations.map((rem) => (
+                    <RemediationButton
+                      key={rem.action}
+                      remediation={rem}
+                      repoPath={commitRepository?.localPath ?? activeRepo?.localPath}
+                      assignedProfileId={commitRepository?.assignedProfileId}
+                      testId={
+                        rem.action === 'set-local-identity' ? 'commit-set-identity-btn' : undefined
+                      }
+                      onSuccess={refreshBothStores}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* Commit error */}
+          {commitError && (
+            <div
+              className="gw-notice gw-notice--danger gw-workflow-notice gw-workflow-notice--danger"
+              role="alert"
+            >
+              {commitError}
+            </div>
+          )}
+
+          {/* Commit success */}
+          {committedHash && (
+            <div
+              data-testid="commit-success"
+              className="gw-notice gw-notice--success gw-workflow-notice gw-workflow-notice--success"
+              role="status"
+            >
+              ✓ Committed {committedHash}
+            </div>
+          )}
+
+          {/* Commit button */}
+          <div className="gw-toolbar gw-workflow-actions gw-workflow-actions--end">
+            <span
+              data-tooltip={
+                safetyResult?.canCommit
+                  ? undefined
+                  : blockers.length > 0
+                    ? `Can't commit yet:\n• ${blockers.map((b) => b.message).join('\n• ')}`
+                    : 'Stage changes and enter a commit message to commit.'
+              }
+              data-tooltip-pos="left"
+              style={{ display: 'inline-block' }}
+            >
+              <button
+                data-testid="commit-btn"
+                onClick={handleCommit}
+                disabled={!safetyResult?.canCommit || commitLoading}
+                className="gw-button gw-button--primary gw-workflow-button"
+              >
+                {commitLoading ? 'Committing…' : 'Commit Changes'}
+              </button>
+            </span>
+          </div>
+
           {/* Current branch */}
           {currentBranch && (
             <div className="gw-remote-context">
@@ -353,14 +611,14 @@ export default function RemoteScreen(): React.ReactElement {
                 <div style={{ marginTop: '10px' }}>
                   <RemediationButton
                     remediation={recoveryRemediation}
-                    repoPath={repository?.localPath ?? activeRepo?.localPath}
-                    assignedProfileId={repository?.assignedProfileId}
+                    repoPath={remoteRepository?.localPath ?? activeRepo?.localPath}
+                    assignedProfileId={remoteRepository?.assignedProfileId}
                     remote={lastFailure.remote ?? selectedRemote?.name}
                     branch={lastFailure.branch ?? currentBranch ?? undefined}
                     onSuccess={(result) => {
                       if (result.deviceCode) return
                       clearMessages()
-                      if (activeRepo) void load(activeRepo.localPath, activeRepo)
+                      refreshBothStores()
                     }}
                     onFailure={(f) => setLastFailure(f)}
                   />
@@ -368,13 +626,13 @@ export default function RemoteScreen(): React.ReactElement {
               )}
             </div>
           ) : (
-            error && (
+            remoteError && (
               <div
                 data-testid="remote-error"
                 className="gw-notice gw-notice--danger gw-workflow-notice gw-workflow-notice--danger"
                 role="alert"
               >
-                {error}
+                {remoteError}
               </div>
             )
           )}
@@ -399,8 +657,8 @@ export default function RemoteScreen(): React.ReactElement {
 
             {/* Details table */}
             <div className="gw-remote-details">
-              <Row label="Repo" value={repository!.name} />
-              <Row label="Path" value={repository!.localPath} mono />
+              <Row label="Repo" value={remoteRepository!.name} />
+              <Row label="Path" value={remoteRepository!.localPath} mono />
               <Row label="Branch" value={currentBranch ?? '(unknown)'} mono />
               <Row label="Remote" value={selectedRemote.name} />
               <Row label="URL" value={selectedRemote.url} mono />
@@ -431,9 +689,9 @@ export default function RemoteScreen(): React.ReactElement {
             </div>
 
             {/* Branch Access block — shown only when a push policy is configured */}
-            {repository?.pushPolicy && (
+            {remoteRepository?.pushPolicy && (
               <BranchAccessBlock
-                policy={repository.pushPolicy}
+                policy={remoteRepository.pushPolicy}
                 currentBranch={currentBranch}
                 isHttps={isHttpsGitHubRemoteUrl(selectedRemote.url)}
               />
@@ -464,13 +722,11 @@ export default function RemoteScreen(): React.ReactElement {
                   <RemediationButton
                     key={rem.action}
                     remediation={rem}
-                    repoPath={repository?.localPath ?? activeRepo?.localPath}
-                    assignedProfileId={repository?.assignedProfileId}
+                    repoPath={remoteRepository?.localPath ?? activeRepo?.localPath}
+                    assignedProfileId={remoteRepository?.assignedProfileId}
                     remote={selectedRemote?.name}
                     branch={currentBranch ?? undefined}
-                    onSuccess={() => {
-                      if (activeRepo) void load(activeRepo.localPath, activeRepo)
-                    }}
+                    onSuccess={refreshBothStores}
                   />
                 ))}
               </div>

@@ -71,17 +71,9 @@ function buildSteps(): OnboardingStep[] {
       placement: 'bottom',
     },
     {
-      title: STR.ONBOARDING_STEP_COMMIT_TITLE,
-      body: STR.ONBOARDING_STEP_COMMIT_BODY,
-      target: '[data-testid="commit-repo-select"]',
+      title: STR.ONBOARDING_STEP_COMMIT_PUSH_TITLE,
+      body: STR.ONBOARDING_STEP_COMMIT_PUSH_BODY,
       screen: 'commit',
-      placement: 'bottom',
-    },
-    {
-      title: STR.ONBOARDING_STEP_REMOTE_TITLE,
-      body: STR.ONBOARDING_STEP_REMOTE_BODY,
-      target: '[data-testid="remote-repo-select"]',
-      screen: 'remote',
       placement: 'bottom',
     },
     {
