@@ -1771,3 +1771,7 @@ Moved the v0.5.1 tag to the previous commit and re-triggered: macOS green again,
 - Files: edited `landing/tests/e2e/live-demo.spec.ts`, `landing/tests/e2e/marketing.spec.ts`.
 - Tests: from `landing/`: `npm run lint` (ESLint + Prettier) clean, `npm run typecheck` clean, `npm test` passed **49/49** (unaffected — pure logic, no DOM), `RELEASE_MODE=fixture npm run build` green, and the full `npm run e2e` now passed **24/24 with 15 skipped** (14 live-demo tests + the no-JS describe) — zero failures.
 - Notes / follow-ups: Same follow-up as the prior entry, now made explicit in-code: whoever re-enables `#live-demo` must also strip the `.skip`s added here in the same change, not leave them behind as dead weight.
+
+### 2026-07-22 — v0.7.0 released
+
+- Minor release shipping History Commit Details (Phases 110–113: select any commit for an inline, resizable file/patch view) and Unified Commit & Push (Phases 114–116: Commit and Remote merged into one screen with a single combined confirmation), plus two fixes (History pagination/scroll-containment bug; duplicate header Update button removed). `CHANGELOG.md` rolled (`## Unreleased` → `## 0.7.0`), `package.json` bumped 0.6.0 → 0.7.0, and the landing changelog copy refreshed; `npm test` green (1212/1212). Landing-only commits since `v0.6.0` (live-demo rework, promo visual refresh, docs reconciliation) are omitted from the changelog as non-user-facing to the app. Push of the commit + tag left to the maintainer.

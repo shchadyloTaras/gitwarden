@@ -8,6 +8,23 @@ order: 9
 
 ## Unreleased
 
+## 0.7.0 — 2026-07-22
+
+### Added
+
+**Commit details in History (Phases 110–113)**
+
+- History now lets you select any commit to inspect its changed files and full patch inline, in a resizable side-by-side view, without leaving the screen.
+
+**Unified Commit & Push (Phases 114–116)**
+
+- Commit and Remote are now a single "Commit & Push" screen: stage, write your message, and push in one flow behind one combined confirmation instead of two separate steps.
+
+### Fixed
+
+- History's "Load more" could silently fail to append older commits if a background refresh landed at the same moment, and the commit list could fail to scroll at a constrained window height; both are fixed.
+- Removed the duplicate "Update available" button from the top header — the sidebar footer button is now the only in-app place that surfaces it, with its icon repositioned for clearer alignment.
+
 ## 0.6.0 — 2026-07-21
 
 ### Changed
