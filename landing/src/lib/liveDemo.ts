@@ -1,70 +1,117 @@
 /**
- * Pure state model for the landing live demo — a scripted reproduction of the real
- * app's Commit & Push screen. The scenario is fixed and mirrors the actual product
- * behavior: a repository assigned to the Client profile still has Personal active,
- * so the screen starts BLOCKED with the safety issues visible (exactly like the real
- * CommitPushScreen, which always shows blockers and disables committing). The only
- * way forward is the same one-click remediation the app offers ("Switch to "Client""),
- * after which the visitor can run the simulated Commit or Commit & Push.
+ * Pure state model for the landing live demo — a scripted, fully clickable
+ * reproduction of the real app with everything already connected. The visitor can
+ * open every sidebar screen, switch the active profile from the Profiles screen,
+ * check out another branch, open the AI Chat tab, and run the scripted mistake:
+ * a repository assigned to the Client profile still has Personal active, so
+ * Commit & Push starts BLOCKED (issues visible, committing disabled — exactly
+ * like the real screen) until the one-click remediation or a profile switch
+ * fixes the identity.
  */
-export type LiveDemoProfile = 'Personal' | 'Client'
+export const LIVE_DEMO_PROFILES = ['Personal', 'Work', 'Client'] as const
+export type LiveDemoProfile = (typeof LIVE_DEMO_PROFILES)[number]
 
-/**
- * blocked → the wrong profile is active; issues visible, committing disabled.
- * ready   → the fix was applied; Guard is green and both commit actions unlock.
- * committed / pushed → a simulated Commit Changes / Commit & Push completed.
- */
-export type LiveDemoOutcome = 'blocked' | 'ready' | 'committed' | 'pushed'
+export const LIVE_DEMO_SCREENS = [
+  'profiles',
+  'repositories',
+  'status',
+  'commit',
+  'branches',
+  'history',
+  'safety-center',
+  'settings',
+] as const
+export type LiveDemoScreen = (typeof LIVE_DEMO_SCREENS)[number]
+
+export const LIVE_DEMO_BRANCHES = ['main', 'feature/access-rules'] as const
+export type LiveDemoBranch = (typeof LIVE_DEMO_BRANCHES)[number]
+
+export type LiveDemoTab = 'context' | 'ai-chat'
+
+/** null until a simulated action completes; then which success banner to show. */
+export type LiveDemoCompletion = 'committed' | 'pushed' | null
 
 export interface LiveDemoState {
   activeProfile: LiveDemoProfile
-  outcome: LiveDemoOutcome
+  screen: LiveDemoScreen
+  branch: LiveDemoBranch
+  panelTab: LiveDemoTab
+  panelOpen: boolean
+  completed: LiveDemoCompletion
 }
 
 export type LiveDemoEvent =
-  | { type: 'apply-profile-fix' }
+  | { type: 'navigate'; screen: LiveDemoScreen }
+  | { type: 'set-profile'; profile: LiveDemoProfile }
+  | { type: 'set-branch'; branch: LiveDemoBranch }
+  | { type: 'set-panel-tab'; tab: LiveDemoTab }
+  | { type: 'toggle-panel' }
   | { type: 'commit' }
   | { type: 'commit-and-push' }
   | { type: 'reset' }
 
 export interface LiveDemoView {
   guard: 'ready' | 'blocked'
+  /** Identity issues are live checks — shown whenever the wrong profile is active. */
   issuesVisible: boolean
   canCommit: boolean
-  /** Which simulated success banner to show, if any. */
-  completed: 'committed' | 'pushed' | null
+  completed: LiveDemoCompletion
+  /** Legacy single-word outcome kept as a root data-attribute for tests/CSS. */
+  outcome: 'blocked' | 'ready' | 'committed' | 'pushed'
 }
 
 export const LIVE_DEMO_INITIAL_STATE: Readonly<LiveDemoState> = {
   activeProfile: 'Personal',
-  outcome: 'blocked',
+  screen: 'commit',
+  branch: 'main',
+  panelTab: 'context',
+  panelOpen: true,
+  completed: null,
+}
+
+function guardFor(profile: LiveDemoProfile): 'ready' | 'blocked' {
+  return profile === 'Client' ? 'ready' : 'blocked'
 }
 
 export function reduceLiveDemo(state: LiveDemoState, event: LiveDemoEvent): LiveDemoState {
   switch (event.type) {
-    case 'apply-profile-fix':
-      // The remediation only exists while blocked; applying it twice is a no-op.
-      return state.outcome === 'blocked' ? { activeProfile: 'Client', outcome: 'ready' } : state
+    case 'navigate':
+      return { ...state, screen: event.screen }
+    case 'set-profile':
+      // The Profiles screen's Set Active and the issues-card remediation both land
+      // here; a completed simulation stays completed (its banner is history, and
+      // the staged file is already gone) while the live identity checks re-derive.
+      return { ...state, activeProfile: event.profile }
+    case 'set-branch':
+      return { ...state, branch: event.branch }
+    case 'set-panel-tab':
+      return { ...state, panelTab: event.tab, panelOpen: true }
+    case 'toggle-panel':
+      return { ...state, panelOpen: !state.panelOpen }
     case 'commit':
-      // Committing is only possible once the identity is fixed — like the real
-      // screen, where blockers disable the Commit button outright.
-      return state.outcome === 'ready' ? { activeProfile: 'Client', outcome: 'committed' } : state
+      // Only possible with the right identity and something staged — mirrors the
+      // real screen, where blockers (or an empty stage) disable the button.
+      return guardFor(state.activeProfile) === 'ready' && state.completed === null
+        ? { ...state, completed: 'committed' }
+        : state
     case 'commit-and-push':
-      return state.outcome === 'ready' ? { activeProfile: 'Client', outcome: 'pushed' } : state
+      return guardFor(state.activeProfile) === 'ready' && state.completed === null
+        ? { ...state, completed: 'pushed' }
+        : state
     case 'reset':
       return { ...LIVE_DEMO_INITIAL_STATE }
   }
 }
 
 export function deriveLiveDemoView(state: LiveDemoState): LiveDemoView {
-  const guard = state.activeProfile === 'Client' ? 'ready' : 'blocked'
-  const completed =
-    state.outcome === 'committed' ? 'committed' : state.outcome === 'pushed' ? 'pushed' : null
+  const guard = guardFor(state.activeProfile)
+  const outcome = state.completed ?? (guard === 'ready' ? 'ready' : 'blocked')
 
   return {
     guard,
-    issuesVisible: state.outcome === 'blocked',
-    canCommit: state.outcome === 'ready',
-    completed,
+    issuesVisible: guard === 'blocked',
+    canCommit: guard === 'ready' && state.completed === null,
+    completed: state.completed,
+    outcome,
   }
 }

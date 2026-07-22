@@ -59,15 +59,37 @@ export const copy = {
       remoteName: 'origin',
       remoteUrl: 'git@github.com:northwind/northwind-portal.git',
       remoteHost: 'github.com',
+      /** The Repositories screen's list — northwind-portal is the open one. */
+      repositories: [
+        { name: 'northwind-portal', profile: 'Client', active: true },
+        { name: 'personal-site', profile: 'Personal', active: false },
+        { name: 'acme-app', profile: 'Work', active: false },
+      ],
+      /** Pre-existing history; the simulated commit is prepended on completion. */
+      commits: [
+        { hash: '9c41b7e', subject: 'Restrict client portal exports', when: '2 days ago' },
+        { hash: 'd08f3a2', subject: 'Add access audit log', when: '5 days ago' },
+        { hash: '5b76c19', subject: 'Initial client portal import', when: '3 weeks ago' },
+      ],
+      newCommitHash: '3f2a91c',
+      newCommitWhen: 'just now',
+      commitAuthor: 'Morgan Client',
     },
     profiles: {
       Personal: {
         name: 'Morgan Personal',
         email: 'morgan@personal.example',
+        github: '@morgan',
+      },
+      Work: {
+        name: 'Morgan Work',
+        email: 'morgan@work.example',
+        github: '@morgan-acme',
       },
       Client: {
         name: 'Morgan Client',
         email: 'morgan@northwind.example',
+        github: '@morgan-northwind',
       },
     },
     window: {
@@ -94,7 +116,10 @@ export const copy = {
       contextTab: 'Context',
       aiChatTab: 'AI Chat',
       aiButton: 'AI',
+      // Copied verbatim from src/renderer/strings.ts CHAT_OPEN_LABEL / INSPECTOR_TOGGLE.
+      aiButtonLabel: 'Open AI chat',
       infoButton: 'ⓘ',
+      infoButtonLabel: 'Toggle inspector',
       contextHeading: 'CONTEXT',
       profileLabel: 'PROFILE',
       nameLabel: 'Name',
@@ -115,6 +140,63 @@ export const copy = {
       remoteFetch: 'Fetch',
       remotePull: 'Pull',
       remotePush: 'Push',
+    },
+    /** Minimal replicas of the other real screens — labels copied verbatim where noted. */
+    screens: {
+      profiles: {
+        // Copied verbatim from src/renderer/strings.ts PROFILE_SET_ACTIVE / PROFILE_ACTIVE.
+        setActive: 'Set Active',
+        activeBadge: 'Active',
+        githubLabel: 'GitHub',
+      },
+      repositories: {
+        profileLabel: 'Profile',
+        activeBadge: 'Active',
+      },
+      status: {
+        // Copied verbatim from src/renderer/strings.ts WORKING_COPY_*.
+        workingCopyHeading: 'WORKING COPY',
+        uncommitted: '1 uncommitted change',
+        clean: 'Working copy clean',
+        cleanDetail: 'No changes are waiting to commit.',
+        commitConnector: 'COMMIT →',
+        destinationHeading: 'DESTINATION BRANCH',
+        branchDetail: 'Changes join this branch only after commit.',
+      },
+      branches: {
+        // Copied verbatim from src/renderer/strings.ts BRANCH_CURRENT_BADGE.
+        currentBadge: 'Current branch',
+        // Copied verbatim from src/renderer/screens/BranchesScreen.tsx.
+        switch: 'Switch',
+      },
+      history: {
+        // Copied verbatim from src/renderer/strings.ts HISTORY_UNPUSHED_MARKER.
+        unpushedBadge: 'Unpushed',
+      },
+      safetyCenter: {
+        // Copied verbatim from src/renderer/screens/SafetyCenterScreen.tsx.
+        allClear: '✓ No identity issues detected. This repository is safe to commit and push.',
+      },
+      settings: {
+        // Copied verbatim from src/renderer/strings.ts SETTINGS_APPEARANCE_* / AI_SECTION_LABEL.
+        appearanceLabel: 'Appearance',
+        appearanceValue: 'System',
+        aiLabel: 'AI Assistant',
+        aiValue: 'Connected · advisory only',
+        versionLabel: 'Version',
+        versionValue: '0.6.0',
+      },
+      chat: {
+        // Copied verbatim from src/renderer/strings.ts CHAT_YOU / CHAT_ASSISTANT / CHAT_INPUT_PLACEHOLDER.
+        you: 'You',
+        assistant: 'Git Warden AI',
+        placeholder: 'Ask about this repo, / for commands',
+        userMessage: 'Why is this commit blocked?',
+        assistantMessage:
+          'The active profile is Personal, but northwind-portal is assigned to Client. ' +
+          'Switch to "Client" and the author name and email will match. ' +
+          'I advise only — I never run Git for you.',
+      },
     },
     controls: {
       // Copied verbatim from src/renderer/strings.ts REMEDIATION_SWITCH_PROFILE('Client').
@@ -144,13 +226,15 @@ export const copy = {
       emailMismatch: 'Your Git author email does not match the active profile.',
     },
     accessibility: {
+      personalSelected: 'Personal profile selected. Guard blocked for this Client repository.',
+      workSelected: 'Work profile selected. Guard blocked for this Client repository.',
       fixApplied: 'Client profile selected. Guard ready. Commit unlocked.',
       committed: 'Simulated commit complete. No repository was changed.',
       pushed: 'Simulated commit and push complete. No repository was changed.',
       resetComplete: 'Demo reset. Personal profile active. Guard blocked.',
     },
     noScript:
-      'This is the real Commit & Push screen mid-mistake: the Personal profile is active in a repository assigned to Client, so the commit is blocked. Enable JavaScript to apply the one-click fix and run the simulated commit.',
+      'This is the real Commit & Push screen mid-mistake: the Personal profile is active in a repository assigned to Client, so the commit is blocked. Enable JavaScript to explore every screen, apply the one-click fix, and run the simulated commit.',
     completion: {
       // Mirrors CommitPushScreen's "✓ Committed {hash}" and COMMIT_AND_PUSH_SUCCESS banners.
       committed: '✓ Committed 3f2a91c',

@@ -1,15 +1,15 @@
 ---
 import { copy } from '../content/copy'
-import { LIVE_DEMO_INITIAL_STATE } from '../lib/liveDemo'
+import { LIVE_DEMO_BRANCHES, LIVE_DEMO_INITIAL_STATE, LIVE_DEMO_PROFILES } from '../lib/liveDemo'
 import LiveDemoIcon from './LiveDemoIcon.astro'
 
 const demo = copy.liveDemo
 const issues = [demo.issues.profileMismatch, demo.issues.nameMismatch, demo.issues.emailMismatch]
 
-// The window renders the true initial state server-side (blocked, Personal active),
-// so the no-JS page shows the real mid-mistake Commit & Push screen.
-const initialProfile = LIVE_DEMO_INITIAL_STATE.activeProfile
-const initialIdentity = demo.profiles[initialProfile]
+// The window renders the true initial state server-side (blocked, Personal active,
+// Commit & Push screen open), so the no-JS page shows the real mid-mistake screen.
+const initial = LIVE_DEMO_INITIAL_STATE
+const initialIdentity = demo.profiles[initial.activeProfile]
 
 type DemoNavIcon =
   | 'profiles'
@@ -23,8 +23,8 @@ type DemoNavIcon =
 
 interface DemoNavItem {
   icon: DemoNavIcon
+  screen: string
   label: string
-  selected?: boolean
 }
 
 // Mirrors src/renderer/components/Sidebar.tsx NAV_ITEMS (post Phase 115:
@@ -33,25 +33,42 @@ const navGroups: Array<{ label: string; items: DemoNavItem[] }> = [
   {
     label: demo.window.navigation.manageGroup,
     items: [
-      { icon: 'profiles', label: demo.window.navigation.profiles },
-      { icon: 'repositories', label: demo.window.navigation.repositories },
+      { icon: 'profiles', screen: 'profiles', label: demo.window.navigation.profiles },
+      {
+        icon: 'repositories',
+        screen: 'repositories',
+        label: demo.window.navigation.repositories,
+      },
     ],
   },
   {
     label: demo.window.navigation.gitGroup,
     items: [
-      { icon: 'status', label: demo.window.navigation.status },
-      { icon: 'commit', label: demo.window.navigation.commitPush, selected: true },
-      { icon: 'branches', label: demo.window.navigation.branches },
-      { icon: 'history', label: demo.window.navigation.history },
-      { icon: 'safety-center', label: demo.window.navigation.safetyCenter },
+      { icon: 'status', screen: 'status', label: demo.window.navigation.status },
+      { icon: 'commit', screen: 'commit', label: demo.window.navigation.commitPush },
+      { icon: 'branches', screen: 'branches', label: demo.window.navigation.branches },
+      { icon: 'history', screen: 'history', label: demo.window.navigation.history },
+      {
+        icon: 'safety-center',
+        screen: 'safety-center',
+        label: demo.window.navigation.safetyCenter,
+      },
     ],
   },
   {
     label: demo.window.navigation.appGroup,
-    items: [{ icon: 'settings', label: demo.window.navigation.settings }],
+    items: [{ icon: 'settings', screen: 'settings', label: demo.window.navigation.settings }],
   },
 ]
+
+const settingsRows = [
+  { label: demo.screens.settings.appearanceLabel, value: demo.screens.settings.appearanceValue },
+  { label: demo.screens.settings.aiLabel, value: demo.screens.settings.aiValue },
+  { label: demo.screens.settings.versionLabel, value: demo.screens.settings.versionValue },
+]
+
+const branchTestId = (branch: string): string =>
+  `live-demo-switch-${branch.replace(/[^a-z0-9]+/gi, '-')}`
 ---
 
 <section
@@ -59,9 +76,11 @@ const navGroups: Array<{ label: string; items: DemoNavItem[] }> = [
   class="live-demo"
   data-testid="live-demo"
   data-live-demo
-  data-profile={initialProfile}
+  data-profile={initial.activeProfile}
   data-guard="blocked"
   data-outcome="blocked"
+  data-screen={initial.screen}
+  data-branch={initial.branch}
   aria-labelledby="live-demo-heading"
 >
   <div class="live-demo-intro" data-reveal>
@@ -129,28 +148,48 @@ const navGroups: Array<{ label: string; items: DemoNavItem[] }> = [
       </span>
       <span class="live-demo-header-checked">{demo.window.checkedOut}</span>
       <span class="live-demo-header-picker live-demo-branch">
-        <code>{demo.scenario.branch}</code>
+        <code data-live-branch>{initial.branch}</code>
         <svg viewBox="0 0 12 12" aria-hidden="true">
           <path d="m3.25 4.75 2.75 2.5 2.75-2.5"></path>
         </svg>
       </span>
       <span class="live-demo-header-spacer"></span>
-      <span
+      <button
+        type="button"
         class="live-demo-guard live-demo-guard--blocked"
         data-live-guard
+        data-live-action="open-safety"
         data-testid="live-demo-guard"
       >
         {demo.status.guardBlocked}
-      </span>
+      </button>
       <span class="live-demo-divider live-demo-divider--profile" aria-hidden="true"></span>
       <span class="live-demo-active-profile">
         <span class="live-demo-profile-dot" aria-hidden="true"></span>
         <span data-live-active-profile data-testid="live-demo-active-profile">
-          {initialProfile}
+          {initial.activeProfile}
         </span>
       </span>
-      <span class="live-demo-header-action" aria-hidden="true">{demo.window.aiButton}</span>
-      <span class="live-demo-header-action" aria-hidden="true">{demo.window.infoButton}</span>
+      <button
+        type="button"
+        class="live-demo-header-action"
+        data-live-action="open-chat"
+        data-testid="live-demo-header-ai"
+        aria-label={demo.window.aiButtonLabel}
+      >
+        {demo.window.aiButton}
+      </button>
+      <button
+        type="button"
+        class="live-demo-header-action"
+        data-live-action="toggle-panel"
+        data-testid="live-demo-header-info"
+        aria-label={demo.window.infoButtonLabel}
+        aria-controls="live-demo-panel"
+        aria-expanded="true"
+      >
+        {demo.window.infoButton}
+      </button>
     </header>
 
     <div class="live-demo-shell">
@@ -164,142 +203,462 @@ const navGroups: Array<{ label: string; items: DemoNavItem[] }> = [
             <div class="live-demo-nav-group">
               <span class="live-demo-nav-group-label">{group.label}</span>
               {group.items.map((item) => (
-                <span class:list={['live-demo-nav-item', { 'is-selected': item.selected }]}>
+                <button
+                  type="button"
+                  class:list={[
+                    'live-demo-nav-item',
+                    { 'is-selected': item.screen === initial.screen },
+                  ]}
+                  data-live-nav={item.screen}
+                  data-testid={`live-demo-nav-${item.screen}`}
+                  aria-current={item.screen === initial.screen ? 'page' : undefined}
+                >
                   <span class="live-demo-nav-icon" aria-hidden="true">
                     <LiveDemoIcon name={item.icon} />
                   </span>
                   <span data-live-nav-label>{item.label}</span>
-                </span>
+                </button>
               ))}
             </div>
           ))
         }
       </nav>
 
-      <main class="live-demo-main" data-testid="live-demo-commit-screen">
-        <h3>{demo.window.navigation.commitPush}</h3>
-
-        <div class="live-demo-staged">
-          <span class="live-demo-panel-label" data-live-staged-heading>
-            {demo.window.stagedHeading}
-          </span>
-          <div class="live-demo-file-row" data-live-staged-file>
-            <span class="live-demo-file-status" aria-hidden="true">M</span>
-            <code>{demo.scenario.stagedFile}</code>
-          </div>
-          <div class="live-demo-file-row live-demo-file-row--empty" data-live-staged-empty hidden>
-            <span>{demo.window.stagedEmpty}</span>
-          </div>
-        </div>
-
-        <label class="live-demo-message">
-          <span>{demo.window.messageLabel}</span>
-          <textarea readonly rows="6" data-live-message>{demo.scenario.commitMessage}</textarea>
-        </label>
-
+      <main class="live-demo-main" data-testid="live-demo-main">
+        {/* ── Profiles ── */}
         <div
-          class="live-demo-alert"
-          data-live-issues
-          data-testid="live-demo-issues"
-          aria-labelledby="live-demo-blocked-heading"
-          aria-live="polite"
+          class="live-demo-screen"
+          data-live-screen="profiles"
+          data-testid="live-demo-screen-profiles"
+          hidden={initial.screen !== 'profiles'}
         >
-          <strong id="live-demo-blocked-heading" class="sr-only"
-            >{demo.window.blockedHeading}</strong
-          >
-          <div class="live-demo-issues">
+          <h3>{demo.window.navigation.profiles}</h3>
+          <div class="live-demo-stack">
             {
-              issues.map((issue) => (
-                <div class="live-demo-issue" data-testid="live-demo-issue">
-                  <span class="live-demo-issue-icon" aria-hidden="true">
-                    ⛔
-                  </span>
-                  <span>{issue}</span>
+              LIVE_DEMO_PROFILES.map((profile) => (
+                <div class="live-demo-list-card">
+                  <div class="live-demo-list-card-head">
+                    <span class="live-demo-profile-dot" aria-hidden="true" />
+                    <strong class="live-demo-list-card-title">{profile}</strong>
+                    <span
+                      class="live-demo-badge live-demo-badge--accent"
+                      data-live-active-badge={profile}
+                      hidden={profile !== initial.activeProfile}
+                    >
+                      {demo.screens.profiles.activeBadge}
+                    </span>
+                    <span class="live-demo-list-card-spacer" />
+                    <button
+                      type="button"
+                      class="live-demo-ghost-action"
+                      data-live-action="set-profile"
+                      data-profile={profile}
+                      data-testid={`live-demo-set-active-${profile}`}
+                      aria-label={`${demo.screens.profiles.setActive} — ${profile}`}
+                      hidden={profile === initial.activeProfile}
+                    >
+                      {demo.screens.profiles.setActive}
+                    </button>
+                  </div>
+                  <dl class="live-demo-kv">
+                    <div>
+                      <dt>{demo.window.nameLabel}</dt>
+                      <dd>{demo.profiles[profile].name}</dd>
+                    </div>
+                    <div>
+                      <dt>{demo.window.emailLabel}</dt>
+                      <dd>{demo.profiles[profile].email}</dd>
+                    </div>
+                    <div>
+                      <dt>{demo.screens.profiles.githubLabel}</dt>
+                      <dd>{demo.profiles[profile].github}</dd>
+                    </div>
+                  </dl>
                 </div>
               ))
             }
           </div>
-          <div class="live-demo-remediation">
-            <button
-              type="button"
-              class="live-demo-fix"
-              data-live-action="fix"
-              data-testid="live-demo-fix"
-            >
-              {demo.controls.quickFix}
-            </button>
+        </div>
+
+        {/* ── Repositories ── */}
+        <div
+          class="live-demo-screen"
+          data-live-screen="repositories"
+          data-testid="live-demo-screen-repositories"
+          hidden={initial.screen !== 'repositories'}
+        >
+          <h3>{demo.window.navigation.repositories}</h3>
+          <div class="live-demo-stack">
+            {
+              demo.scenario.repositories.map((repo) => (
+                <div class="live-demo-list-row">
+                  <div class="live-demo-list-row-main">
+                    <code class="live-demo-row-title">{repo.name}</code>
+                    <span class="live-demo-row-meta">
+                      {demo.screens.repositories.profileLabel} · {repo.profile}
+                    </span>
+                  </div>
+                  {repo.active && (
+                    <span class="live-demo-badge live-demo-badge--accent">
+                      {demo.screens.repositories.activeBadge}
+                    </span>
+                  )}
+                </div>
+              ))
+            }
           </div>
         </div>
 
+        {/* ── Status ── */}
         <div
-          class="live-demo-completion"
-          data-live-completion
-          data-testid="live-demo-completion"
-          role="status"
-          hidden
+          class="live-demo-screen"
+          data-live-screen="status"
+          data-testid="live-demo-screen-status"
+          hidden={initial.screen !== 'status'}
         >
-          <strong data-live-completion-text>{demo.completion.committed}</strong>
-          <span>{demo.completion.simNote}</span>
-        </div>
-
-        <div class="live-demo-actions">
-          <button
-            type="button"
-            class="live-demo-commit"
-            data-live-action="commit"
-            data-testid="live-demo-commit"
-            disabled
-          >
-            {demo.controls.commit}
-          </button>
-          <button
-            type="button"
-            class="live-demo-commit"
-            data-live-action="commit-and-push"
-            data-testid="live-demo-commit-and-push"
-            disabled
-          >
-            {demo.controls.commitAndPush}
-          </button>
-        </div>
-
-        <p class="live-demo-context-line">
-          {demo.window.branchContextLabel}
-          <code>{demo.scenario.branch}</code>
-        </p>
-
-        <div class="live-demo-remotes">
-          <span class="live-demo-panel-label">{demo.window.remotesHeading}</span>
-          <div class="live-demo-remote-card" data-testid="live-demo-remote">
-            <div class="live-demo-remote-meta">
-              <code class="live-demo-remote-name">{demo.scenario.remoteName}</code>
-              <code class="live-demo-remote-url">{demo.scenario.remoteUrl}</code>
-              <span class="live-demo-remote-host">{demo.scenario.remoteHost}</span>
+          <h3>{demo.window.navigation.status}</h3>
+          <div class="live-demo-status-flow">
+            <div class="live-demo-list-card">
+              <span class="live-demo-card-label">{demo.screens.status.workingCopyHeading}</span>
+              <strong class="live-demo-status-summary" data-live-status-summary>
+                {demo.screens.status.uncommitted}
+              </strong>
+              <span class="live-demo-row-meta" data-live-status-detail hidden>
+                {demo.screens.status.cleanDetail}
+              </span>
+              <div class="live-demo-file-row" data-live-status-file>
+                <span class="live-demo-file-status" aria-hidden="true">M</span>
+                <code>{demo.scenario.stagedFile}</code>
+              </div>
             </div>
-            <div class="live-demo-remote-actions" aria-hidden="true">
-              <span class="live-demo-ghost-button">{demo.window.remoteFetch}</span>
-              <span class="live-demo-ghost-button">{demo.window.remotePull}</span>
-              <span class="live-demo-ghost-button live-demo-ghost-button--primary">
-                {demo.window.remotePush}
+            <span class="live-demo-status-connector" aria-hidden="true">
+              {demo.screens.status.commitConnector}
+            </span>
+            <div class="live-demo-list-card">
+              <span class="live-demo-card-label">{demo.screens.status.destinationHeading}</span>
+              <strong class="live-demo-status-summary">
+                {demo.window.checkedOut}
+                <code data-live-branch>{initial.branch}</code>
+              </strong>
+              <span class="live-demo-row-meta">{demo.screens.status.branchDetail}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Commit & Push (the scripted scenario) ── */}
+        <div
+          class="live-demo-screen"
+          data-live-screen="commit"
+          data-testid="live-demo-screen-commit"
+          hidden={initial.screen !== 'commit'}
+        >
+          <h3>{demo.window.navigation.commitPush}</h3>
+
+          <div class="live-demo-staged">
+            <span class="live-demo-panel-label" data-live-staged-heading>
+              {demo.window.stagedHeading}
+            </span>
+            <div class="live-demo-file-row" data-live-staged-file>
+              <span class="live-demo-file-status" aria-hidden="true">M</span>
+              <code>{demo.scenario.stagedFile}</code>
+            </div>
+            <div class="live-demo-file-row live-demo-file-row--empty" data-live-staged-empty hidden>
+              <span>{demo.window.stagedEmpty}</span>
+            </div>
+          </div>
+
+          <label class="live-demo-message">
+            <span>{demo.window.messageLabel}</span>
+            <textarea readonly rows="6" data-live-message>{demo.scenario.commitMessage}</textarea>
+          </label>
+
+          <div
+            class="live-demo-alert"
+            data-live-issues
+            data-testid="live-demo-issues"
+            aria-labelledby="live-demo-blocked-heading"
+            aria-live="polite"
+          >
+            <strong id="live-demo-blocked-heading" class="sr-only"
+              >{demo.window.blockedHeading}</strong
+            >
+            <div class="live-demo-issues">
+              {
+                issues.map((issue) => (
+                  <div class="live-demo-issue" data-testid="live-demo-issue">
+                    <span class="live-demo-issue-icon" aria-hidden="true">
+                      ⛔
+                    </span>
+                    <span>{issue}</span>
+                  </div>
+                ))
+              }
+            </div>
+            <div class="live-demo-remediation">
+              <button
+                type="button"
+                class="live-demo-fix"
+                data-live-action="fix"
+                data-testid="live-demo-fix"
+              >
+                {demo.controls.quickFix}
+              </button>
+            </div>
+          </div>
+
+          <div
+            class="live-demo-completion"
+            data-live-completion
+            data-testid="live-demo-completion"
+            role="status"
+            hidden
+          >
+            <strong data-live-completion-text>{demo.completion.committed}</strong>
+            <span>{demo.completion.simNote}</span>
+          </div>
+
+          <div class="live-demo-actions">
+            <button
+              type="button"
+              class="live-demo-commit"
+              data-live-action="commit"
+              data-testid="live-demo-commit"
+              disabled
+            >
+              {demo.controls.commit}
+            </button>
+            <button
+              type="button"
+              class="live-demo-commit"
+              data-live-action="commit-and-push"
+              data-testid="live-demo-commit-and-push"
+              disabled
+            >
+              {demo.controls.commitAndPush}
+            </button>
+          </div>
+
+          <p class="live-demo-context-line">
+            {demo.window.branchContextLabel}
+            <code data-live-branch>{initial.branch}</code>
+          </p>
+
+          <div class="live-demo-remotes">
+            <span class="live-demo-panel-label">{demo.window.remotesHeading}</span>
+            <div class="live-demo-remote-card" data-testid="live-demo-remote">
+              <div class="live-demo-remote-meta">
+                <code class="live-demo-remote-name">{demo.scenario.remoteName}</code>
+                <code class="live-demo-remote-url">{demo.scenario.remoteUrl}</code>
+                <span class="live-demo-remote-host">{demo.scenario.remoteHost}</span>
+              </div>
+              <div class="live-demo-remote-actions" aria-hidden="true">
+                <span class="live-demo-ghost-button">{demo.window.remoteFetch}</span>
+                <span class="live-demo-ghost-button">{demo.window.remotePull}</span>
+                <span class="live-demo-ghost-button live-demo-ghost-button--primary">
+                  {demo.window.remotePush}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Branches ── */}
+        <div
+          class="live-demo-screen"
+          data-live-screen="branches"
+          data-testid="live-demo-screen-branches"
+          hidden={initial.screen !== 'branches'}
+        >
+          <h3>{demo.window.navigation.branches}</h3>
+          <div class="live-demo-stack">
+            {
+              LIVE_DEMO_BRANCHES.map((branch) => (
+                <div class="live-demo-list-row">
+                  <div class="live-demo-list-row-main">
+                    <code class="live-demo-row-title">{branch}</code>
+                  </div>
+                  <span
+                    class="live-demo-badge live-demo-badge--accent"
+                    data-live-current-badge={branch}
+                    hidden={branch !== initial.branch}
+                  >
+                    {demo.screens.branches.currentBadge}
+                  </span>
+                  <button
+                    type="button"
+                    class="live-demo-ghost-action"
+                    data-live-action="set-branch"
+                    data-branch={branch}
+                    data-testid={branchTestId(branch)}
+                    aria-label={`${demo.screens.branches.switch} — ${branch}`}
+                    hidden={branch === initial.branch}
+                  >
+                    {demo.screens.branches.switch}
+                  </button>
+                </div>
+              ))
+            }
+          </div>
+        </div>
+
+        {/* ── History ── */}
+        <div
+          class="live-demo-screen"
+          data-live-screen="history"
+          data-testid="live-demo-screen-history"
+          hidden={initial.screen !== 'history'}
+        >
+          <h3>{demo.window.navigation.history}</h3>
+          <div class="live-demo-stack">
+            <div
+              class="live-demo-list-row"
+              data-live-history-new
+              data-testid="live-demo-history-new"
+              hidden
+            >
+              <div class="live-demo-list-row-main">
+                <span class="live-demo-row-title-text">{demo.scenario.commitMessage}</span>
+                <span class="live-demo-row-meta">
+                  <code>{demo.scenario.newCommitHash}</code> · {demo.scenario.commitAuthor} ·{' '}
+                  {demo.scenario.newCommitWhen}
+                </span>
+              </div>
+              <span
+                class="live-demo-badge live-demo-badge--warning"
+                data-live-unpushed
+                data-testid="live-demo-history-unpushed"
+              >
+                {demo.screens.history.unpushedBadge}
               </span>
             </div>
+            {
+              demo.scenario.commits.map((commit) => (
+                <div class="live-demo-list-row">
+                  <div class="live-demo-list-row-main">
+                    <span class="live-demo-row-title-text">{commit.subject}</span>
+                    <span class="live-demo-row-meta">
+                      <code>{commit.hash}</code> · {demo.scenario.commitAuthor} · {commit.when}
+                    </span>
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+        </div>
+
+        {/* ── Safety Center ── */}
+        <div
+          class="live-demo-screen"
+          data-live-screen="safety-center"
+          data-testid="live-demo-screen-safety-center"
+          hidden={initial.screen !== 'safety-center'}
+        >
+          <h3>{demo.window.navigation.safetyCenter}</h3>
+          <div class="live-demo-alert" data-live-safety-issues>
+            <div class="live-demo-issues">
+              {
+                issues.map((issue) => (
+                  <div class="live-demo-issue">
+                    <span class="live-demo-issue-icon" aria-hidden="true">
+                      ⛔
+                    </span>
+                    <span>{issue}</span>
+                  </div>
+                ))
+              }
+            </div>
+            <div class="live-demo-remediation">
+              <button
+                type="button"
+                class="live-demo-fix"
+                data-live-action="fix"
+                data-testid="live-demo-safety-fix"
+              >
+                {demo.controls.quickFix}
+              </button>
+            </div>
+          </div>
+          <div
+            class="live-demo-completion"
+            data-live-safety-clear
+            data-testid="live-demo-safety-clear"
+            tabindex="-1"
+            hidden
+          >
+            <strong>{demo.screens.safetyCenter.allClear}</strong>
+          </div>
+        </div>
+
+        {/* ── Settings ── */}
+        <div
+          class="live-demo-screen"
+          data-live-screen="settings"
+          data-testid="live-demo-screen-settings"
+          hidden={initial.screen !== 'settings'}
+        >
+          <h3>{demo.window.navigation.settings}</h3>
+          <div class="live-demo-stack">
+            {
+              settingsRows.map((row) => (
+                <div class="live-demo-list-row">
+                  <div class="live-demo-list-row-main">
+                    <span class="live-demo-row-title-text">{row.label}</span>
+                  </div>
+                  <span class="live-demo-row-meta">{row.value}</span>
+                </div>
+              ))
+            }
           </div>
         </div>
       </main>
 
-      <aside class="live-demo-context-panel" data-testid="live-demo-context-panel">
+      <aside
+        class="live-demo-context-panel"
+        id="live-demo-panel"
+        data-live-panel
+        data-testid="live-demo-context-panel"
+      >
         <div class="live-demo-context-tabs" role="tablist">
-          <span role="tab" aria-selected="true">{demo.window.contextTab}</span>
-          <span role="tab" aria-selected="false">{demo.window.aiChatTab}</span>
+          <button
+            type="button"
+            role="tab"
+            id="live-demo-tab-context"
+            aria-selected="true"
+            aria-controls="live-demo-tabpanel-context"
+            data-live-action="tab"
+            data-tab="context"
+            data-testid="live-demo-tab-context"
+          >
+            {demo.window.contextTab}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="live-demo-tab-chat"
+            aria-selected="false"
+            aria-controls="live-demo-tabpanel-chat"
+            data-live-action="tab"
+            data-tab="ai-chat"
+            data-testid="live-demo-tab-chat"
+          >
+            {demo.window.aiChatTab}
+          </button>
         </div>
-        <div class="live-demo-inspector">
+
+        <div
+          class="live-demo-inspector"
+          role="tabpanel"
+          id="live-demo-tabpanel-context"
+          aria-labelledby="live-demo-tab-context"
+          data-live-tabpanel="context"
+        >
           <strong class="live-demo-inspector-heading">{demo.window.contextHeading}</strong>
 
           <div class="live-demo-inspector-section">
             <strong>{demo.window.profileLabel}</strong>
             <div class="live-demo-inspector-profile">
               <span class="live-demo-profile-dot" aria-hidden="true"></span>
-              <span data-live-inspector-profile>{initialProfile}</span>
+              <span data-live-inspector-profile>{initial.activeProfile}</span>
             </div>
             <dl>
               <div>
@@ -320,7 +679,7 @@ const navGroups: Array<{ label: string; items: DemoNavItem[] }> = [
 
           <div class="live-demo-inspector-section">
             <strong>{demo.window.branchLabel}</strong>
-            <code>{demo.scenario.branch}</code>
+            <code data-live-branch>{initial.branch}</code>
           </div>
 
           <div class="live-demo-inspector-section">
@@ -329,6 +688,32 @@ const navGroups: Array<{ label: string; items: DemoNavItem[] }> = [
               {demo.status.inspectorBlocked}
             </span>
           </div>
+        </div>
+
+        <div
+          class="live-demo-chat"
+          role="tabpanel"
+          id="live-demo-tabpanel-chat"
+          aria-labelledby="live-demo-tab-chat"
+          data-live-tabpanel="ai-chat"
+          data-testid="live-demo-chat"
+          hidden
+        >
+          <div class="live-demo-chat-msg live-demo-chat-msg--user">
+            <span class="live-demo-chat-author">{demo.screens.chat.you}</span>
+            <p>{demo.screens.chat.userMessage}</p>
+          </div>
+          <div class="live-demo-chat-msg">
+            <span class="live-demo-chat-author">{demo.screens.chat.assistant}</span>
+            <p>{demo.screens.chat.assistantMessage}</p>
+          </div>
+          <input
+            class="live-demo-chat-input"
+            type="text"
+            readonly
+            placeholder={demo.screens.chat.placeholder}
+            aria-label={demo.screens.chat.placeholder}
+          />
         </div>
       </aside>
     </div>
@@ -357,35 +742,64 @@ const navGroups: Array<{ label: string; items: DemoNavItem[] }> = [
     LIVE_DEMO_INITIAL_STATE,
     deriveLiveDemoView,
     reduceLiveDemo,
+    type LiveDemoBranch,
+    type LiveDemoProfile,
+    type LiveDemoScreen,
     type LiveDemoState,
+    type LiveDemoTab,
   } from '../lib/liveDemo'
 
   const demoCopy = copy.liveDemo
+  const profileAnnouncements: Record<LiveDemoProfile, string> = {
+    Personal: demoCopy.accessibility.personalSelected,
+    Work: demoCopy.accessibility.workSelected,
+    Client: demoCopy.accessibility.fixApplied,
+  }
 
   document.querySelectorAll<HTMLElement>('[data-live-demo]').forEach((root) => {
     if (root.dataset.enhanced === 'true') return
     root.dataset.enhanced = 'true'
 
     let state: LiveDemoState = { ...LIVE_DEMO_INITIAL_STATE }
-    const guard = root.querySelector<HTMLElement>('[data-live-guard]')
-    const activeProfile = root.querySelector<HTMLElement>('[data-live-active-profile]')
-    const inspectorProfile = root.querySelector<HTMLElement>('[data-live-inspector-profile]')
-    const inspectorName = root.querySelector<HTMLElement>('[data-live-inspector-name]')
-    const inspectorEmail = root.querySelector<HTMLElement>('[data-live-inspector-email]')
-    const inspectorGuard = root.querySelector<HTMLElement>('[data-live-inspector-guard]')
-    const issuesCard = root.querySelector<HTMLElement>('[data-live-issues]')
-    const completion = root.querySelector<HTMLElement>('[data-live-completion]')
-    const completionText = root.querySelector<HTMLElement>('[data-live-completion-text]')
-    const stagedHeading = root.querySelector<HTMLElement>('[data-live-staged-heading]')
-    const stagedFile = root.querySelector<HTMLElement>('[data-live-staged-file]')
-    const stagedEmpty = root.querySelector<HTMLElement>('[data-live-staged-empty]')
-    const message = root.querySelector<HTMLTextAreaElement>('[data-live-message]')
-    const announcement = root.querySelector<HTMLElement>('[data-live-announcement]')
-    const commit = root.querySelector<HTMLButtonElement>('[data-live-action="commit"]')
-    const commitAndPush = root.querySelector<HTMLButtonElement>(
-      '[data-live-action="commit-and-push"]'
-    )
-    const fix = root.querySelector<HTMLButtonElement>('[data-live-action="fix"]')
+    const q = <T extends HTMLElement>(selector: string): T | null => root.querySelector<T>(selector)
+    const qa = <T extends HTMLElement>(selector: string): T[] =>
+      Array.from(root.querySelectorAll<T>(selector))
+
+    const guard = q('[data-live-guard]')
+    const activeProfile = q('[data-live-active-profile]')
+    const inspectorProfile = q('[data-live-inspector-profile]')
+    const inspectorName = q('[data-live-inspector-name]')
+    const inspectorEmail = q('[data-live-inspector-email]')
+    const inspectorGuard = q('[data-live-inspector-guard]')
+    const issuesCard = q('[data-live-issues]')
+    const safetyIssues = q('[data-live-safety-issues]')
+    const safetyClear = q('[data-live-safety-clear]')
+    const completion = q('[data-live-completion]')
+    const completionText = q('[data-live-completion-text]')
+    const stagedHeading = q('[data-live-staged-heading]')
+    const stagedFile = q('[data-live-staged-file]')
+    const stagedEmpty = q('[data-live-staged-empty]')
+    const message = q<HTMLTextAreaElement>('[data-live-message]')
+    const statusSummary = q('[data-live-status-summary]')
+    const statusDetail = q('[data-live-status-detail]')
+    const statusFile = q('[data-live-status-file]')
+    const historyNew = q('[data-live-history-new]')
+    const unpushed = q('[data-live-unpushed]')
+    const panel = q('[data-live-panel]')
+    const infoButton = q<HTMLButtonElement>('[data-live-action="toggle-panel"]')
+    const announcement = q('[data-live-announcement]')
+    const commit = q<HTMLButtonElement>('[data-live-action="commit"]')
+    const commitAndPush = q<HTMLButtonElement>('[data-live-action="commit-and-push"]')
+    const fix = q<HTMLButtonElement>('[data-testid="live-demo-fix"]')
+    const navButtons = qa<HTMLButtonElement>('[data-live-nav]')
+    const screens = qa('[data-live-screen]')
+    const branchTexts = qa('[data-live-branch]')
+    const currentBadges = qa('[data-live-current-badge]')
+    const switchButtons = qa<HTMLButtonElement>('[data-live-action="set-branch"]')
+    const activeBadges = qa('[data-live-active-badge]')
+    const setActiveButtons = qa<HTMLButtonElement>('[data-live-action="set-profile"]')
+    const tabButtons = qa<HTMLButtonElement>('[data-live-action="tab"]')
+    const tabPanels = qa('[data-live-tabpanel]')
 
     function announce(text: string): void {
       if (announcement) announcement.textContent = text
@@ -397,8 +811,22 @@ const navGroups: Array<{ label: string; items: DemoNavItem[] }> = [
       const done = view.completed !== null
       root.dataset.profile = state.activeProfile
       root.dataset.guard = view.guard
-      root.dataset.outcome = state.outcome
+      root.dataset.outcome = view.outcome
+      root.dataset.screen = state.screen
+      root.dataset.branch = state.branch
 
+      // Sidebar navigation + screen switching
+      navButtons.forEach((button) => {
+        const selected = button.dataset.liveNav === state.screen
+        button.classList.toggle('is-selected', selected)
+        if (selected) button.setAttribute('aria-current', 'page')
+        else button.removeAttribute('aria-current')
+      })
+      screens.forEach((screen) => {
+        screen.hidden = screen.dataset.liveScreen !== state.screen
+      })
+
+      // Header + inspector identity
       if (guard) {
         guard.textContent =
           view.guard === 'ready' ? demoCopy.status.guardReady : demoCopy.status.guardBlocked
@@ -415,15 +843,42 @@ const navGroups: Array<{ label: string; items: DemoNavItem[] }> = [
         inspectorGuard.dataset.state = view.guard
       }
 
+      // Branch name everywhere + Branches screen rows
+      branchTexts.forEach((el) => {
+        el.textContent = state.branch
+      })
+      currentBadges.forEach((badge) => {
+        badge.hidden = badge.dataset.liveCurrentBadge !== state.branch
+      })
+      switchButtons.forEach((button) => {
+        button.hidden = button.dataset.branch === state.branch
+      })
+
+      // Profiles screen rows
+      activeBadges.forEach((badge) => {
+        badge.hidden = badge.dataset.liveActiveBadge !== state.activeProfile
+      })
+      setActiveButtons.forEach((button) => {
+        button.hidden = button.dataset.profile === state.activeProfile
+      })
+
+      // Right panel: visibility + tabs
+      if (panel) panel.hidden = !state.panelOpen
+      infoButton?.setAttribute('aria-expanded', String(state.panelOpen))
+      tabButtons.forEach((tab) => {
+        tab.setAttribute('aria-selected', String(tab.dataset.tab === state.panelTab))
+      })
+      tabPanels.forEach((tabPanel) => {
+        tabPanel.hidden = tabPanel.dataset.liveTabpanel !== state.panelTab
+      })
+
+      // Commit & Push screen
       if (issuesCard) issuesCard.hidden = !view.issuesVisible
       if (completion) completion.hidden = !done
       if (completionText && view.completed) {
         completionText.textContent =
           view.completed === 'pushed' ? demoCopy.completion.pushed : demoCopy.completion.committed
       }
-
-      // After a simulated commit the staged list empties and the message clears —
-      // exactly what the real screen does once a commit lands.
       if (stagedHeading) {
         stagedHeading.textContent = done
           ? demoCopy.window.stagedHeadingDone
@@ -432,23 +887,84 @@ const navGroups: Array<{ label: string; items: DemoNavItem[] }> = [
       if (stagedFile) stagedFile.hidden = done
       if (stagedEmpty) stagedEmpty.hidden = !done
       if (message) message.value = done ? '' : demoCopy.scenario.commitMessage
-
       if (commit) commit.disabled = !view.canCommit
       if (commitAndPush) commitAndPush.disabled = !view.canCommit
+
+      // Safety Center screen
+      if (safetyIssues) safetyIssues.hidden = !view.issuesVisible
+      if (safetyClear) safetyClear.hidden = view.issuesVisible
+
+      // Status screen (working copy empties after the simulated commit)
+      if (statusSummary) {
+        statusSummary.textContent = done
+          ? demoCopy.screens.status.clean
+          : demoCopy.screens.status.uncommitted
+      }
+      if (statusDetail) statusDetail.hidden = !done
+      if (statusFile) statusFile.hidden = done
+
+      // History screen (the simulated commit appears; Unpushed until pushed)
+      if (historyNew) historyNew.hidden = !done
+      if (unpushed) unpushed.hidden = view.completed !== 'committed'
+
       if (text) announce(text)
     }
 
     root.addEventListener('click', (event) => {
-      const button = (event.target as Element | null)?.closest<HTMLButtonElement>(
-        '[data-live-action]'
-      )
+      const target = event.target as Element | null
+
+      const navButton = target?.closest<HTMLButtonElement>('[data-live-nav]')
+      if (navButton && root.contains(navButton)) {
+        state = reduceLiveDemo(state, {
+          type: 'navigate',
+          screen: navButton.dataset.liveNav as LiveDemoScreen,
+        })
+        render()
+        return
+      }
+
+      const button = target?.closest<HTMLButtonElement>('[data-live-action]')
       if (!button || !root.contains(button)) return
 
       switch (button.dataset.liveAction) {
-        case 'fix':
-          state = reduceLiveDemo(state, { type: 'apply-profile-fix' })
+        case 'fix': {
+          state = reduceLiveDemo(state, { type: 'set-profile', profile: 'Client' })
           render(demoCopy.accessibility.fixApplied)
-          commit?.focus()
+          if (state.screen === 'commit') commit?.focus()
+          else if (state.screen === 'safety-center') safetyClear?.focus()
+          break
+        }
+        case 'set-profile': {
+          const profile = button.dataset.profile as LiveDemoProfile
+          state = reduceLiveDemo(state, { type: 'set-profile', profile })
+          render(profileAnnouncements[profile])
+          break
+        }
+        case 'set-branch': {
+          const branch = button.dataset.branch as LiveDemoBranch
+          state = reduceLiveDemo(state, { type: 'set-branch', branch })
+          render(`${demoCopy.window.checkedOut} ${branch}`)
+          break
+        }
+        case 'tab': {
+          state = reduceLiveDemo(state, {
+            type: 'set-panel-tab',
+            tab: button.dataset.tab as LiveDemoTab,
+          })
+          render()
+          break
+        }
+        case 'open-chat':
+          state = reduceLiveDemo(state, { type: 'set-panel-tab', tab: 'ai-chat' })
+          render()
+          break
+        case 'toggle-panel':
+          state = reduceLiveDemo(state, { type: 'toggle-panel' })
+          render()
+          break
+        case 'open-safety':
+          state = reduceLiveDemo(state, { type: 'navigate', screen: 'safety-center' })
+          render()
           break
         case 'commit':
           state = reduceLiveDemo(state, { type: 'commit' })
