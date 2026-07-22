@@ -8,15 +8,8 @@ test.beforeEach(async ({ context }) => {
 test.describe('marketing sections', () => {
   test('all §4 sections are present', async ({ page }) => {
     await page.goto('/')
-    for (const id of [
-      'live-demo',
-      'why',
-      'features',
-      'screenshots',
-      'all-downloads',
-      'install-steps',
-      'faq',
-    ]) {
+    // 'live-demo' omitted — the section is temporarily display:none (see global.css).
+    for (const id of ['why', 'features', 'screenshots', 'all-downloads', 'install-steps', 'faq']) {
       await expect(page.getByTestId(id)).toBeVisible()
     }
     await expect(page.getByTestId('footer')).toBeVisible()

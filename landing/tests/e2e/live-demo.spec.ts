@@ -1,5 +1,9 @@
 import { test, expect } from '@playwright/test'
 
+// The whole #live-demo section is temporarily display:none (see global.css — search for
+// "Temporarily disabled"). Every test below still describes real, working behavior — they're
+// skipped rather than deleted so re-enabling the section is a two-line CSS revert plus removing
+// ".skip" here (and on the "without JavaScript" describe below), not a rewrite.
 const PROFILE_MISMATCH = 'The active profile does not match this repository’s assigned profile.'
 const NAME_MISMATCH = 'Your Git author name does not match the active profile.'
 const EMAIL_MISMATCH = 'Your Git author email does not match the active profile.'
@@ -8,7 +12,9 @@ test.beforeEach(async ({ context }) => {
   await context.route('https://api.github.com/**', (route) => route.abort())
 })
 
-test('is the second section and keeps Download as the primary hero action', async ({ page }) => {
+test.skip('is the second section and keeps Download as the primary hero action', async ({
+  page,
+}) => {
   await page.goto('/')
 
   const sectionIds = await page
@@ -30,7 +36,7 @@ test('is the second section and keeps Download as the primary hero action', asyn
   await expect(page.getByTestId('live-demo')).toBeInViewport()
 })
 
-test('mirrors the real GitWarden shell — merged Commit & Push tab, no demo-only chrome', async ({
+test.skip('mirrors the real GitWarden shell — merged Commit & Push tab, no demo-only chrome', async ({
   page,
 }) => {
   await page.goto('/')
@@ -106,7 +112,7 @@ test('mirrors the real GitWarden shell — merged Commit & Push tab, no demo-onl
   expect(mainBox!.x + mainBox!.width).toBeLessThanOrEqual(contextBox!.x + 1)
 })
 
-test('starts blocked like the real screen, applies the one-click fix, commits, and resets', async ({
+test.skip('starts blocked like the real screen, applies the one-click fix, commits, and resets', async ({
   page,
 }) => {
   await page.goto('/')
@@ -166,7 +172,7 @@ test('starts blocked like the real screen, applies the one-click fix, commits, a
   await expect(page.getByTestId('live-demo-fix')).toBeFocused()
 })
 
-test('Commit & Push completes with the real combined success banner', async ({ page }) => {
+test.skip('Commit & Push completes with the real combined success banner', async ({ page }) => {
   await page.goto('/')
 
   await page.getByTestId('live-demo-fix').click()
@@ -181,7 +187,7 @@ test('Commit & Push completes with the real combined success banner', async ({ p
   )
 })
 
-test('every sidebar screen opens with its real content', async ({ page }) => {
+test.skip('every sidebar screen opens with its real content', async ({ page }) => {
   await page.goto('/')
   const root = page.getByTestId('live-demo')
 
@@ -250,7 +256,7 @@ test('every sidebar screen opens with its real content', async ({ page }) => {
   await expect(page.getByTestId('live-demo-screen-commit')).toBeVisible()
 })
 
-test('Profiles screen switches the active profile like the real app', async ({ page }) => {
+test.skip('Profiles screen switches the active profile like the real app', async ({ page }) => {
   await page.goto('/')
   const root = page.getByTestId('live-demo')
   const guard = page.getByTestId('live-demo-guard')
@@ -274,7 +280,7 @@ test('Profiles screen switches the active profile like the real app', async ({ p
   await expect(page.getByTestId('live-demo-commit')).toBeEnabled()
 })
 
-test('the header Guard badge opens Safety Center and its fix clears the issues', async ({
+test.skip('the header Guard badge opens Safety Center and its fix clears the issues', async ({
   page,
 }) => {
   await page.goto('/')
@@ -292,7 +298,7 @@ test('the header Guard badge opens Safety Center and its fix clears the issues',
   )
 })
 
-test('switching branches updates the checked-out branch everywhere', async ({ page }) => {
+test.skip('switching branches updates the checked-out branch everywhere', async ({ page }) => {
   await page.goto('/')
 
   await page.getByTestId('live-demo-nav-branches').click()
@@ -310,7 +316,7 @@ test('switching branches updates the checked-out branch everywhere', async ({ pa
   ).toHaveText('feature/access-rules')
 })
 
-test('History gains the simulated commit — Unpushed after commit, clean after push', async ({
+test.skip('History gains the simulated commit — Unpushed after commit, clean after push', async ({
   page,
 }) => {
   await page.goto('/')
@@ -335,7 +341,7 @@ test('History gains the simulated commit — Unpushed after commit, clean after 
   await expect(page.getByTestId('live-demo-history-unpushed')).toBeHidden()
 })
 
-test('the right panel switches tabs, opens AI Chat from the header, and toggles with ⓘ', async ({
+test.skip('the right panel switches tabs, opens AI Chat from the header, and toggles with ⓘ', async ({
   page,
 }) => {
   await page.goto('/')
@@ -364,7 +370,7 @@ test('the right panel switches tabs, opens AI Chat from the header, and toggles 
   await expect(panel).toBeVisible()
 })
 
-test('supports keyboard operation and announces every state change', async ({ page }) => {
+test.skip('supports keyboard operation and announces every state change', async ({ page }) => {
   await page.goto('/')
   const announcement = page.locator('[data-live-announcement]')
 
@@ -380,7 +386,9 @@ test('supports keyboard operation and announces every state change', async ({ pa
   await expect(announcement).toHaveText('Demo reset. Personal profile active. Guard blocked.')
 })
 
-test('uses the app dark/light Guard tokens and removes motion when requested', async ({ page }) => {
+test.skip('uses the app dark/light Guard tokens and removes motion when requested', async ({
+  page,
+}) => {
   await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' })
   await page.goto('/')
   const guard = page.getByTestId('live-demo-guard')
@@ -398,7 +406,7 @@ test('uses the app dark/light Guard tokens and removes motion when requested', a
   await expect(guard).toHaveCSS('background-color', 'rgb(24, 116, 79)')
 })
 
-test('keeps the full interaction readable and tappable at 375px', async ({ page }) => {
+test.skip('keeps the full interaction readable and tappable at 375px', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 })
   await page.goto('/')
 
@@ -434,7 +442,7 @@ test('keeps the full interaction readable and tappable at 375px', async ({ page 
   expect(offenders, offenders.join(' | ')).toEqual([])
 })
 
-test('keeps the compact app shell contained at tablet width', async ({ page }) => {
+test.skip('keeps the compact app shell contained at tablet width', async ({ page }) => {
   await page.setViewportSize({ width: 768, height: 900 })
   await page.goto('/')
 
@@ -451,7 +459,7 @@ test('keeps the compact app shell contained at tablet width', async ({ page }) =
   expect(offenders, offenders.join(' | ')).toEqual([])
 })
 
-test.describe('without JavaScript', () => {
+test.describe.skip('without JavaScript', () => {
   test.use({ javaScriptEnabled: false })
 
   test('shows the real blocked screen statically and keeps downloads useful', async ({ page }) => {
