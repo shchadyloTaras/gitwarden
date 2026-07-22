@@ -29,7 +29,7 @@ The API key is never logged and never sent anywhere except the provider's own AP
 
 ## What the AI assistant can do
 
-**Smart Commit** — suggests a commit message based on your staged diff. Trigger it with `/commit` in the chat panel or the "Generate message" button in the Commit screen.
+**Smart Commit** — suggests a commit message based on your staged diff. Trigger it with `/commit` in the chat panel or the "✨ Draft with AI" button on the Commit & Push screen.
 
 **Change Review** — writes a pull-request-style summary of your staged changes. Trigger with `/review`.
 

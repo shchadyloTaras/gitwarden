@@ -10,12 +10,12 @@ Connecting your GitHub account lets GitWarden verify the account behind your pus
 
 ## How to connect
 
-1. Open **Settings → GitHub Accounts** (or click the GitHub badge on a profile in the Profiles screen)
-2. Click **Connect GitHub**
+1. Open the **Profiles** screen and select (or create) the profile you want to link
+2. Click **Connect GitHub** on that profile
 3. A short code appears on screen
 4. Go to [github.com/login/device](https://github.com/login/device) in your browser and enter the code
 5. Approve the request on GitHub
-6. GitWarden confirms your GitHub username and avatar and stores the token securely
+6. GitWarden confirms your GitHub username and avatar, stores the token securely, and shows **Reconnect** / **Disconnect** on that profile going forward
 
 The token is encrypted at rest using the OS keychain. It is never written to disk in plain text and never sent anywhere except `api.github.com`.
 
@@ -31,7 +31,7 @@ You can connect a different GitHub account to each profile. GitWarden tracks whi
 
 ## Disconnecting
 
-Open **Settings → GitHub Accounts**, find the connected account, and click **Disconnect**. The stored token is deleted immediately from the OS keychain.
+Open the **Profiles** screen, select the connected profile, and click **Disconnect**. The stored token is deleted immediately from the OS keychain.
 
 ## SSH push
 
