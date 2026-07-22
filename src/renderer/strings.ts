@@ -293,6 +293,17 @@ export const STR = {
     return `✓ Verified ${checks.join(', ')} — safe to push.`
   },
 
+  // ── Commit & Push (one button, one confirmation) ────────────────────────────
+  COMMIT_AND_PUSH_BUTTON: 'Commit & Push',
+  COMMIT_AND_PUSH_COMMITTING: 'Committing…',
+  COMMIT_AND_PUSH_PUSHING: 'Pushing…',
+  COMMIT_AND_PUSH_SHEET_TITLE: 'Commit & Push',
+  COMMIT_AND_PUSH_CHOOSE_REMOTE: 'Choose a remote to push to:',
+  COMMIT_AND_PUSH_NO_TARGET_HINT: 'Add a remote to this repository to commit and push.',
+  COMMIT_AND_PUSH_SUCCESS: (hash: string, remote: string): string =>
+    `✓ Committed ${hash} and pushed to ${remote}.`,
+  COMMIT_AND_PUSH_COMMIT_FAILED: (message: string): string => `${message} — nothing was pushed.`,
+
   // ── Settings → AI (token-first single active connection) ───────────────────
   AI_SECTION_LABEL: 'AI Assistant',
   AI_SECTION_HINT:

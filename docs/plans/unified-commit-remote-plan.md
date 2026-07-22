@@ -1,6 +1,6 @@
 # Plan — Unified Commit & Remote: one tab for the whole commit → push journey
 
-**Status:** ⬜ not started — Phases 114–116 — **derived view**; the authoritative state is the
+**Status:** ✅ complete — Phases 114–116 — **derived view**; the authoritative state is the
 Phase Checklist in [`docs/progress-log.md`](../progress-log.md).
 **Phases:** 114 → 116.
 **Feature-complete stop point:** Phase 116.
