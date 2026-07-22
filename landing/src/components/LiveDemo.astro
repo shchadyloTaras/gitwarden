@@ -1,21 +1,21 @@
 ---
 import { copy } from '../content/copy'
-import { LIVE_DEMO_PROFILES } from '../lib/liveDemo'
+import { LIVE_DEMO_INITIAL_STATE } from '../lib/liveDemo'
 import LiveDemoIcon from './LiveDemoIcon.astro'
 
 const demo = copy.liveDemo
 const issues = [demo.issues.profileMismatch, demo.issues.nameMismatch, demo.issues.emailMismatch]
-const profileLabels = {
-  Personal: demo.controls.personalProfile,
-  Work: demo.controls.workProfile,
-  Client: demo.controls.clientProfile,
-}
+
+// The window renders the true initial state server-side (blocked, Personal active),
+// so the no-JS page shows the real mid-mistake Commit & Push screen.
+const initialProfile = LIVE_DEMO_INITIAL_STATE.activeProfile
+const initialIdentity = demo.profiles[initialProfile]
+
 type DemoNavIcon =
   | 'profiles'
   | 'repositories'
   | 'status'
   | 'commit'
-  | 'remote'
   | 'branches'
   | 'history'
   | 'safety-center'
@@ -27,6 +27,8 @@ interface DemoNavItem {
   selected?: boolean
 }
 
+// Mirrors src/renderer/components/Sidebar.tsx NAV_ITEMS (post Phase 115:
+// one "Commit & Push" tab — there is no separate Remote item anymore).
 const navGroups: Array<{ label: string; items: DemoNavItem[] }> = [
   {
     label: demo.window.navigation.manageGroup,
@@ -39,8 +41,7 @@ const navGroups: Array<{ label: string; items: DemoNavItem[] }> = [
     label: demo.window.navigation.gitGroup,
     items: [
       { icon: 'status', label: demo.window.navigation.status },
-      { icon: 'commit', label: demo.window.navigation.commit, selected: true },
-      { icon: 'remote', label: demo.window.navigation.remote },
+      { icon: 'commit', label: demo.window.navigation.commitPush, selected: true },
       { icon: 'branches', label: demo.window.navigation.branches },
       { icon: 'history', label: demo.window.navigation.history },
       { icon: 'safety-center', label: demo.window.navigation.safetyCenter },
@@ -58,52 +59,15 @@ const navGroups: Array<{ label: string; items: DemoNavItem[] }> = [
   class="live-demo"
   data-testid="live-demo"
   data-live-demo
-  data-profile="Personal"
+  data-profile={initialProfile}
   data-guard="blocked"
-  data-outcome="idle"
+  data-outcome="blocked"
   aria-labelledby="live-demo-heading"
 >
   <div class="live-demo-intro" data-reveal>
     <p class="live-demo-eyebrow">{demo.section.eyebrow}</p>
     <h2 id="live-demo-heading">{demo.section.heading}</h2>
     <p class="live-demo-subhead">{demo.section.subhead}</p>
-  </div>
-
-  <div class="live-demo-controls" data-testid="live-demo-controls" data-reveal>
-    <fieldset class="live-demo-profile-picker">
-      <legend>{demo.controls.profileGroupLabel}</legend>
-      <div class="live-demo-profile-options">
-        {
-          LIVE_DEMO_PROFILES.map((profile) => (
-            <label>
-              <input
-                type="radio"
-                name="live-demo-profile"
-                value={profile}
-                checked={profile === 'Personal'}
-                data-live-profile
-              />
-              <span>{profileLabels[profile]}</span>
-            </label>
-          ))
-        }
-      </div>
-    </fieldset>
-
-    <div class="live-demo-scenario-note">
-      <span>{demo.controls.scenarioLabel}</span>
-      <strong>{demo.scenario.assignedProfile}</strong>
-      <small>{demo.controls.scenarioHint}</small>
-    </div>
-
-    <button
-      type="button"
-      class="live-demo-reset"
-      data-live-action="reset"
-      data-testid="live-demo-reset"
-    >
-      {demo.controls.reset}
-    </button>
   </div>
 
   <div class="live-demo-window" data-testid="live-demo-window" data-reveal>
@@ -182,7 +146,7 @@ const navGroups: Array<{ label: string; items: DemoNavItem[] }> = [
       <span class="live-demo-active-profile">
         <span class="live-demo-profile-dot" aria-hidden="true"></span>
         <span data-live-active-profile data-testid="live-demo-active-profile">
-          {demo.controls.personalProfile}
+          {initialProfile}
         </span>
       </span>
       <span class="live-demo-header-action" aria-hidden="true">{demo.window.aiButton}</span>
@@ -213,27 +177,32 @@ const navGroups: Array<{ label: string; items: DemoNavItem[] }> = [
       </nav>
 
       <main class="live-demo-main" data-testid="live-demo-commit-screen">
-        <h3>{demo.window.navigation.commit}</h3>
+        <h3>{demo.window.navigation.commitPush}</h3>
 
         <div class="live-demo-staged">
-          <span class="live-demo-panel-label">{demo.window.stagedHeading}</span>
-          <div class="live-demo-file-row">
+          <span class="live-demo-panel-label" data-live-staged-heading>
+            {demo.window.stagedHeading}
+          </span>
+          <div class="live-demo-file-row" data-live-staged-file>
             <span class="live-demo-file-status" aria-hidden="true">M</span>
             <code>{demo.scenario.stagedFile}</code>
+          </div>
+          <div class="live-demo-file-row live-demo-file-row--empty" data-live-staged-empty hidden>
+            <span>{demo.window.stagedEmpty}</span>
           </div>
         </div>
 
         <label class="live-demo-message">
           <span>{demo.window.messageLabel}</span>
-          <textarea readonly rows="7">{demo.scenario.commitMessage}</textarea>
+          <textarea readonly rows="6" data-live-message>{demo.scenario.commitMessage}</textarea>
         </label>
 
         <div
           class="live-demo-alert"
-          data-live-alert
-          data-testid="live-demo-alert"
+          data-live-issues
+          data-testid="live-demo-issues"
           aria-labelledby="live-demo-blocked-heading"
-          hidden
+          aria-live="polite"
         >
           <strong id="live-demo-blocked-heading" class="sr-only"
             >{demo.window.blockedHeading}</strong
@@ -243,10 +212,7 @@ const navGroups: Array<{ label: string; items: DemoNavItem[] }> = [
               issues.map((issue) => (
                 <div class="live-demo-issue" data-testid="live-demo-issue">
                   <span class="live-demo-issue-icon" aria-hidden="true">
-                    <svg viewBox="0 0 16 16">
-                      <circle cx="8" cy="8" r="6.25" />
-                      <path d="M8 4.75v3.9M8 11.15v.1" />
-                    </svg>
+                    ⛔
                   </span>
                   <span>{issue}</span>
                 </div>
@@ -258,7 +224,6 @@ const navGroups: Array<{ label: string; items: DemoNavItem[] }> = [
               type="button"
               class="live-demo-fix"
               data-live-action="fix"
-              data-pending-label={demo.controls.fixing}
               data-testid="live-demo-fix"
             >
               {demo.controls.quickFix}
@@ -273,8 +238,8 @@ const navGroups: Array<{ label: string; items: DemoNavItem[] }> = [
           role="status"
           hidden
         >
-          <strong>{demo.completion.heading}</strong>
-          <span>{demo.completion.body}</span>
+          <strong data-live-completion-text>{demo.completion.committed}</strong>
+          <span>{demo.completion.simNote}</span>
         </div>
 
         <div class="live-demo-actions">
@@ -283,9 +248,42 @@ const navGroups: Array<{ label: string; items: DemoNavItem[] }> = [
             class="live-demo-commit"
             data-live-action="commit"
             data-testid="live-demo-commit"
+            disabled
           >
             {demo.controls.commit}
           </button>
+          <button
+            type="button"
+            class="live-demo-commit"
+            data-live-action="commit-and-push"
+            data-testid="live-demo-commit-and-push"
+            disabled
+          >
+            {demo.controls.commitAndPush}
+          </button>
+        </div>
+
+        <p class="live-demo-context-line">
+          {demo.window.branchContextLabel}
+          <code>{demo.scenario.branch}</code>
+        </p>
+
+        <div class="live-demo-remotes">
+          <span class="live-demo-panel-label">{demo.window.remotesHeading}</span>
+          <div class="live-demo-remote-card" data-testid="live-demo-remote">
+            <div class="live-demo-remote-meta">
+              <code class="live-demo-remote-name">{demo.scenario.remoteName}</code>
+              <code class="live-demo-remote-url">{demo.scenario.remoteUrl}</code>
+              <span class="live-demo-remote-host">{demo.scenario.remoteHost}</span>
+            </div>
+            <div class="live-demo-remote-actions" aria-hidden="true">
+              <span class="live-demo-ghost-button">{demo.window.remoteFetch}</span>
+              <span class="live-demo-ghost-button">{demo.window.remotePull}</span>
+              <span class="live-demo-ghost-button live-demo-ghost-button--primary">
+                {demo.window.remotePush}
+              </span>
+            </div>
+          </div>
         </div>
       </main>
 
@@ -301,16 +299,16 @@ const navGroups: Array<{ label: string; items: DemoNavItem[] }> = [
             <strong>{demo.window.profileLabel}</strong>
             <div class="live-demo-inspector-profile">
               <span class="live-demo-profile-dot" aria-hidden="true"></span>
-              <span data-live-inspector-profile>{demo.controls.personalProfile}</span>
+              <span data-live-inspector-profile>{initialProfile}</span>
             </div>
             <dl>
               <div>
                 <dt>{demo.window.nameLabel}</dt>
-                <dd data-live-inspector-name>{demo.profiles.Personal.name}</dd>
+                <dd data-live-inspector-name>{initialIdentity.name}</dd>
               </div>
               <div>
                 <dt>{demo.window.emailLabel}</dt>
-                <dd data-live-inspector-email>{demo.profiles.Personal.email}</dd>
+                <dd data-live-inspector-email>{initialIdentity.email}</dd>
               </div>
             </dl>
           </div>
@@ -336,6 +334,17 @@ const navGroups: Array<{ label: string; items: DemoNavItem[] }> = [
     </div>
   </div>
 
+  <div class="live-demo-footnote">
+    <button
+      type="button"
+      class="live-demo-reset"
+      data-live-action="reset"
+      data-testid="live-demo-reset"
+    >
+      {demo.controls.reset}
+    </button>
+  </div>
+
   <p class="live-demo-announcement sr-only" data-live-announcement aria-live="polite"></p>
   <noscript>
     <p class="live-demo-noscript" data-testid="live-demo-noscript">{demo.noScript}</p>
@@ -348,16 +357,10 @@ const navGroups: Array<{ label: string; items: DemoNavItem[] }> = [
     LIVE_DEMO_INITIAL_STATE,
     deriveLiveDemoView,
     reduceLiveDemo,
-    type LiveDemoProfile,
     type LiveDemoState,
   } from '../lib/liveDemo'
 
   const demoCopy = copy.liveDemo
-  const profileAnnouncements: Record<LiveDemoProfile, string> = {
-    Personal: demoCopy.accessibility.personalSelected,
-    Work: demoCopy.accessibility.workSelected,
-    Client: demoCopy.accessibility.clientSelected,
-  }
 
   document.querySelectorAll<HTMLElement>('[data-live-demo]').forEach((root) => {
     if (root.dataset.enhanced === 'true') return
@@ -370,19 +373,28 @@ const navGroups: Array<{ label: string; items: DemoNavItem[] }> = [
     const inspectorName = root.querySelector<HTMLElement>('[data-live-inspector-name]')
     const inspectorEmail = root.querySelector<HTMLElement>('[data-live-inspector-email]')
     const inspectorGuard = root.querySelector<HTMLElement>('[data-live-inspector-guard]')
-    const alert = root.querySelector<HTMLElement>('[data-live-alert]')
+    const issuesCard = root.querySelector<HTMLElement>('[data-live-issues]')
     const completion = root.querySelector<HTMLElement>('[data-live-completion]')
+    const completionText = root.querySelector<HTMLElement>('[data-live-completion-text]')
+    const stagedHeading = root.querySelector<HTMLElement>('[data-live-staged-heading]')
+    const stagedFile = root.querySelector<HTMLElement>('[data-live-staged-file]')
+    const stagedEmpty = root.querySelector<HTMLElement>('[data-live-staged-empty]')
+    const message = root.querySelector<HTMLTextAreaElement>('[data-live-message]')
     const announcement = root.querySelector<HTMLElement>('[data-live-announcement]')
     const commit = root.querySelector<HTMLButtonElement>('[data-live-action="commit"]')
-    const profileInputs = Array.from(root.querySelectorAll<HTMLInputElement>('[data-live-profile]'))
+    const commitAndPush = root.querySelector<HTMLButtonElement>(
+      '[data-live-action="commit-and-push"]'
+    )
+    const fix = root.querySelector<HTMLButtonElement>('[data-live-action="fix"]')
 
-    function announce(message: string): void {
-      if (announcement) announcement.textContent = message
+    function announce(text: string): void {
+      if (announcement) announcement.textContent = text
     }
 
-    function render(message?: string): void {
+    function render(text?: string): void {
       const view = deriveLiveDemoView(state)
       const identity = demoCopy.profiles[state.activeProfile]
+      const done = view.completed !== null
       root.dataset.profile = state.activeProfile
       root.dataset.guard = view.guard
       root.dataset.outcome = state.outcome
@@ -402,29 +414,29 @@ const navGroups: Array<{ label: string; items: DemoNavItem[] }> = [
           view.guard === 'ready' ? demoCopy.status.inspectorReady : demoCopy.status.inspectorBlocked
         inspectorGuard.dataset.state = view.guard
       }
-      profileInputs.forEach((input) => {
-        input.checked = input.value === state.activeProfile
-      })
 
-      if (alert) {
-        alert.hidden = !view.issuesVisible
-        if (view.issuesVisible) alert.setAttribute('role', 'alert')
-        else alert.removeAttribute('role')
+      if (issuesCard) issuesCard.hidden = !view.issuesVisible
+      if (completion) completion.hidden = !done
+      if (completionText && view.completed) {
+        completionText.textContent =
+          view.completed === 'pushed' ? demoCopy.completion.pushed : demoCopy.completion.committed
       }
-      if (completion) completion.hidden = state.outcome !== 'complete'
-      if (commit) commit.disabled = state.outcome === 'blocked' || state.outcome === 'complete'
-      if (message) announce(message)
-    }
 
-    root.addEventListener('change', (event) => {
-      const input = (event.target as Element | null)?.closest<HTMLInputElement>(
-        '[data-live-profile]'
-      )
-      if (!input || !root.contains(input)) return
-      const profile = input.value as LiveDemoProfile
-      state = reduceLiveDemo(state, { type: 'select-profile', profile })
-      render(profileAnnouncements[profile])
-    })
+      // After a simulated commit the staged list empties and the message clears —
+      // exactly what the real screen does once a commit lands.
+      if (stagedHeading) {
+        stagedHeading.textContent = done
+          ? demoCopy.window.stagedHeadingDone
+          : demoCopy.window.stagedHeading
+      }
+      if (stagedFile) stagedFile.hidden = done
+      if (stagedEmpty) stagedEmpty.hidden = !done
+      if (message) message.value = done ? '' : demoCopy.scenario.commitMessage
+
+      if (commit) commit.disabled = !view.canCommit
+      if (commitAndPush) commitAndPush.disabled = !view.canCommit
+      if (text) announce(text)
+    }
 
     root.addEventListener('click', (event) => {
       const button = (event.target as Element | null)?.closest<HTMLButtonElement>(
@@ -433,26 +445,24 @@ const navGroups: Array<{ label: string; items: DemoNavItem[] }> = [
       if (!button || !root.contains(button)) return
 
       switch (button.dataset.liveAction) {
-        case 'commit':
-          state = reduceLiveDemo(state, { type: 'attempt-commit' })
-          render(
-            state.outcome === 'complete'
-              ? demoCopy.completion.announcement
-              : demoCopy.accessibility.blockersRevealed
-          )
-          break
         case 'fix':
           state = reduceLiveDemo(state, { type: 'apply-profile-fix' })
-          render(demoCopy.accessibility.clientSelected)
+          render(demoCopy.accessibility.fixApplied)
           commit?.focus()
           break
-        case 'reset': {
+        case 'commit':
+          state = reduceLiveDemo(state, { type: 'commit' })
+          render(demoCopy.accessibility.committed)
+          break
+        case 'commit-and-push':
+          state = reduceLiveDemo(state, { type: 'commit-and-push' })
+          render(demoCopy.accessibility.pushed)
+          break
+        case 'reset':
           state = reduceLiveDemo(state, { type: 'reset' })
           render(demoCopy.accessibility.resetComplete)
-          const personal = profileInputs.find((input) => input.value === 'Personal')
-          personal?.focus()
+          fix?.focus()
           break
-        }
       }
     })
 

@@ -30,7 +30,7 @@ test('is the second section and keeps Download as the primary hero action', asyn
   await expect(page.getByTestId('live-demo')).toBeInViewport()
 })
 
-test('mirrors the real GitWarden shell instead of inventing demo-only app chrome', async ({
+test('mirrors the real GitWarden shell — merged Commit & Push tab, no demo-only chrome', async ({
   page,
 }) => {
   await page.goto('/')
@@ -39,7 +39,6 @@ test('mirrors the real GitWarden shell instead of inventing demo-only app chrome
   const sidebar = demoWindow.getByTestId('live-demo-sidebar')
   const commitScreen = demoWindow.getByTestId('live-demo-commit-screen')
   const contextPanel = demoWindow.getByTestId('live-demo-context-panel')
-  const controls = page.getByTestId('live-demo-controls')
 
   const titlebar = demoWindow.getByTestId('live-demo-titlebar')
   const appHeader = demoWindow.getByTestId('live-demo-app-header')
@@ -49,16 +48,17 @@ test('mirrors the real GitWarden shell instead of inventing demo-only app chrome
   await expect(titlebar).toHaveCSS('height', '40px')
   await expect(appHeader).toHaveCSS('height', '44px')
   await expect(appHeader.locator('.live-demo-brand-mark')).toHaveCount(1)
+  await expect(appHeader.locator('.live-demo-brand')).toContainText('Git Warden')
   await expect(appHeader.locator('.live-demo-header-picker')).toHaveCount(2)
-  await expect(sidebar.locator('.live-demo-nav-svg')).toHaveCount(9)
-  await expect(sidebar.locator('.live-demo-nav-item.is-selected')).toContainText('Commit')
+  // Post Phase 115 nav: one "Commit & Push" tab, no separate Remote item (8 entries).
+  await expect(sidebar.locator('.live-demo-nav-svg')).toHaveCount(8)
+  await expect(sidebar.locator('.live-demo-nav-item.is-selected')).toContainText('Commit & Push')
   await expect(sidebar.locator('.live-demo-nav-item.is-selected')).toHaveCSS('min-height', '36px')
   await expect(sidebar.locator('[data-live-nav-label]')).toHaveText([
     'Profiles',
     'Repositories',
     'Status',
-    'Commit',
-    'Remote',
+    'Commit & Push',
     'Branches',
     'History',
     'Safety Center',
@@ -67,7 +67,11 @@ test('mirrors the real GitWarden shell instead of inventing demo-only app chrome
   await expect(sidebar.getByText('MANAGE', { exact: true })).toBeVisible()
   await expect(sidebar.getByText('GIT', { exact: true })).toBeVisible()
   await expect(sidebar.getByText('APP', { exact: true })).toBeVisible()
-  await expect(commitScreen).toContainText('Commit')
+  await expect(commitScreen.locator('h3')).toHaveText('Commit & Push')
+  await expect(commitScreen).toContainText('Staged Changes (1)')
+  await expect(commitScreen).toContainText('Branch:')
+  await expect(commitScreen).toContainText('Remotes (1)')
+  await expect(commitScreen.getByTestId('live-demo-remote')).toContainText('origin')
   await expect(contextPanel).toContainText('Context')
   await expect(contextPanel).toContainText('AI Chat')
   await expect(contextPanel).toContainText('PROFILE')
@@ -75,12 +79,10 @@ test('mirrors the real GitWarden shell instead of inventing demo-only app chrome
   await expect(contextPanel).toContainText('BRANCH')
   await expect(contextPanel).toContainText('GUARD')
 
-  await expect(controls).toBeVisible()
-  await expect(controls.getByRole('radio')).toHaveCount(3)
-  await expect(demoWindow.getByTestId('live-demo-controls')).toHaveCount(0)
-
-  await expect(demoWindow.locator('.live-demo-context')).toHaveCount(0)
-  await expect(demoWindow.locator('.live-demo-safety')).toHaveCount(0)
+  // The old landing-only controls strip (profile radios + scenario note) is gone —
+  // the only interaction points are the ones the real screen offers.
+  await expect(page.getByTestId('live-demo-controls')).toHaveCount(0)
+  await expect(page.getByRole('radio')).toHaveCount(0)
 
   const [titlebarBox, headerBox, sidebarBox, commitBox, contextBox] = await Promise.all([
     titlebar.boundingBox(),
@@ -102,91 +104,95 @@ test('mirrors the real GitWarden shell instead of inventing demo-only app chrome
   expect(commitBox!.x + commitBox!.width).toBeLessThanOrEqual(contextBox!.x + 1)
 })
 
-test('switches Guard state immediately and clears stale outcomes', async ({ page }) => {
-  await page.goto('/')
-  const root = page.getByTestId('live-demo')
-  const guard = page.getByTestId('live-demo-guard')
-
-  await expect(root).toHaveAttribute('data-profile', 'Personal')
-  await expect(root).toHaveAttribute('data-outcome', 'idle')
-  await expect(guard).toHaveText('Guard · Blocked')
-
-  await page.getByRole('radio', { name: 'Work' }).check()
-  await expect(root).toHaveAttribute('data-profile', 'Work')
-  await expect(guard).toHaveText('Guard · Blocked')
-
-  await page.getByRole('radio', { name: 'Client' }).check()
-  await expect(root).toHaveAttribute('data-outcome', 'ready')
-  await expect(guard).toHaveText('Guard · Ready')
-
-  await page.getByTestId('live-demo-commit').click()
-  await expect(root).toHaveAttribute('data-outcome', 'complete')
-  await page.getByRole('radio', { name: 'Personal' }).check()
-  await expect(root).toHaveAttribute('data-outcome', 'idle')
-  await expect(page.getByTestId('live-demo-completion')).toBeHidden()
-  await expect(guard).toHaveText('Guard · Blocked')
-})
-
-test('blocks the wrong identity, applies the one-click fix, and completes safely', async ({
+test('starts blocked like the real screen, applies the one-click fix, commits, and resets', async ({
   page,
 }) => {
   await page.goto('/')
   const root = page.getByTestId('live-demo')
+  const guard = page.getByTestId('live-demo-guard')
+  const issues = page.getByTestId('live-demo-issues')
   const commit = page.getByTestId('live-demo-commit')
-  const alert = page.getByTestId('live-demo-alert')
+  const commitAndPush = page.getByTestId('live-demo-commit-and-push')
+  const profile = page.getByTestId('live-demo-active-profile')
 
-  await expect(commit).toBeEnabled()
-  await expect(alert).toBeHidden()
-  await expect(page.getByRole('alert')).toHaveCount(0)
-
-  await commit.click()
+  // Initial state: the mistake is already on screen — no demo choreography needed.
+  await expect(root).toHaveAttribute('data-profile', 'Personal')
   await expect(root).toHaveAttribute('data-outcome', 'blocked')
-  await expect(commit).toBeDisabled()
-  await expect(alert).toBeVisible()
-  await expect(alert).toHaveAttribute('role', 'alert')
+  await expect(guard).toHaveText('Guard · Blocked')
+  await expect(profile).toHaveText('Personal')
+  await expect(issues).toBeVisible()
   await expect(page.getByTestId('live-demo-issue')).toHaveCount(3)
-  await expect(alert).toContainText(PROFILE_MISMATCH)
-  await expect(alert).toContainText(NAME_MISMATCH)
-  await expect(alert).toContainText(EMAIL_MISMATCH)
+  await expect(issues).toContainText(PROFILE_MISMATCH)
+  await expect(issues).toContainText(NAME_MISMATCH)
+  await expect(issues).toContainText(EMAIL_MISMATCH)
+  await expect(commit).toBeDisabled()
+  await expect(commitAndPush).toBeDisabled()
 
+  // One click fixes the identity — same remediation as the real app.
   await page.getByTestId('live-demo-fix').click()
-  await expect(page.getByRole('radio', { name: 'Client' })).toBeChecked()
-  await expect(page.getByTestId('live-demo-guard')).toHaveText('Guard · Ready')
-  await expect(alert).toBeHidden()
-  await expect(alert).not.toHaveAttribute('role', 'alert')
+  await expect(root).toHaveAttribute('data-profile', 'Client')
+  await expect(root).toHaveAttribute('data-outcome', 'ready')
+  await expect(guard).toHaveText('Guard · Ready')
+  await expect(profile).toHaveText('Client')
+  await expect(page.locator('[data-live-inspector-name]')).toHaveText('Morgan Client')
+  await expect(page.locator('[data-live-inspector-email]')).toHaveText('morgan@northwind.example')
+  await expect(issues).toBeHidden()
   await expect(commit).toBeFocused()
   await expect(commit).toBeEnabled()
+  await expect(commitAndPush).toBeEnabled()
 
+  // Commit lands: success banner, staged list empties, message clears.
   await commit.click()
-  await expect(root).toHaveAttribute('data-outcome', 'complete')
-  await expect(page.getByTestId('live-demo-completion')).toContainText('Simulated commit passed')
-  await expect(page.getByTestId('live-demo-completion')).toContainText('No repository was changed.')
+  await expect(root).toHaveAttribute('data-outcome', 'committed')
+  await expect(page.getByTestId('live-demo-completion')).toBeVisible()
+  await expect(page.getByTestId('live-demo-completion')).toContainText('✓ Committed 3f2a91c')
+  await expect(page.getByTestId('live-demo-completion')).toContainText(
+    'Simulated — no repository was changed.'
+  )
+  await expect(page.getByTestId('live-demo-commit-screen')).toContainText('Staged Changes (0)')
+  await expect(page.getByTestId('live-demo-commit-screen')).toContainText('No staged changes')
   await expect(commit).toBeDisabled()
+  await expect(commitAndPush).toBeDisabled()
 
+  // Reset restores the scripted mistake and focuses the fix.
   await page.getByTestId('live-demo-reset').click()
   await expect(root).toHaveAttribute('data-profile', 'Personal')
-  await expect(root).toHaveAttribute('data-outcome', 'idle')
-  await expect(page.getByRole('radio', { name: 'Personal' })).toBeChecked()
-  await expect(page.getByRole('radio', { name: 'Personal' })).toBeFocused()
-  await expect(commit).toBeEnabled()
+  await expect(root).toHaveAttribute('data-outcome', 'blocked')
+  await expect(issues).toBeVisible()
+  await expect(page.getByTestId('live-demo-completion')).toBeHidden()
+  await expect(page.getByTestId('live-demo-commit-screen')).toContainText('Staged Changes (1)')
+  await expect(page.getByTestId('live-demo-fix')).toBeFocused()
 })
 
-test('supports native keyboard profile selection and announces state changes', async ({ page }) => {
+test('Commit & Push completes with the real combined success banner', async ({ page }) => {
   await page.goto('/')
-  const personal = page.getByRole('radio', { name: 'Personal' })
+
+  await page.getByTestId('live-demo-fix').click()
+  await page.getByTestId('live-demo-commit-and-push').click()
+
+  await expect(page.getByTestId('live-demo')).toHaveAttribute('data-outcome', 'pushed')
+  await expect(page.getByTestId('live-demo-completion')).toContainText(
+    '✓ Committed 3f2a91c and pushed to origin.'
+  )
+  await expect(page.getByTestId('live-demo-completion')).toContainText(
+    'Simulated — no repository was changed.'
+  )
+})
+
+test('supports keyboard operation and announces every state change', async ({ page }) => {
+  await page.goto('/')
   const announcement = page.locator('[data-live-announcement]')
 
-  await personal.focus()
-  await page.keyboard.press('ArrowRight')
-  await expect(page.getByRole('radio', { name: 'Work' })).toBeChecked()
-  await expect(announcement).toHaveText(
-    'Work profile selected. Guard blocked for this Client repository.'
-  )
-
-  await page.keyboard.press('ArrowRight')
-  await expect(page.getByRole('radio', { name: 'Client' })).toBeChecked()
+  await page.getByTestId('live-demo-fix').focus()
+  await page.keyboard.press('Enter')
   await expect(page.getByTestId('live-demo-guard')).toHaveText('Guard · Ready')
-  await expect(announcement).toHaveText('Client profile selected. Guard ready.')
+  await expect(announcement).toHaveText('Client profile selected. Guard ready. Commit unlocked.')
+
+  await page.keyboard.press('Enter') // focus moved to the Commit button after the fix
+  await expect(announcement).toHaveText('Simulated commit complete. No repository was changed.')
+
+  await page.getByTestId('live-demo-reset').click()
+  await expect(announcement).toHaveText('Demo reset. Personal profile active. Guard blocked.')
 })
 
 test('uses the app dark/light Guard tokens and removes motion when requested', async ({ page }) => {
@@ -197,13 +203,13 @@ test('uses the app dark/light Guard tokens and removes motion when requested', a
   await expect(guard).toHaveCSS('background-color', 'rgb(201, 61, 75)')
   await expect(guard).toHaveCSS('color', 'rgb(255, 255, 255)')
   await expect(guard).toHaveCSS('transition-duration', '0s')
-  await page.getByRole('radio', { name: 'Client' }).check()
+  await page.getByTestId('live-demo-fix').click()
   await expect(guard).toHaveCSS('background-color', 'rgb(29, 130, 85)')
-  await page.getByRole('radio', { name: 'Personal' }).check()
+  await page.getByTestId('live-demo-reset').click()
 
   await page.getByRole('button', { name: /toggle light and dark/i }).click()
   await expect(guard).toHaveCSS('background-color', 'rgb(189, 52, 68)')
-  await page.getByRole('radio', { name: 'Client' }).check()
+  await page.getByTestId('live-demo-fix').click()
   await expect(guard).toHaveCSS('background-color', 'rgb(24, 116, 79)')
 })
 
@@ -214,13 +220,12 @@ test('keeps the full interaction readable and tappable at 375px', async ({ page 
   await expect(page.locator('.live-demo-titlebar')).toBeHidden()
   await expect(page.locator('.live-demo-sidebar')).toBeHidden()
   await expect(page.getByTestId('live-demo-context-panel')).toBeHidden()
-  await page.getByTestId('live-demo-commit').click()
-  await expect(page.getByTestId('live-demo-alert')).toBeVisible()
+  await expect(page.getByTestId('live-demo-issues')).toBeVisible()
   await expect(page.getByTestId('live-demo-fix')).toBeVisible()
 
   for (const control of [
-    page.getByRole('radio', { name: 'Personal' }).locator('+ span'),
     page.getByTestId('live-demo-fix'),
+    page.getByTestId('live-demo-commit'),
     page.getByTestId('live-demo-reset'),
   ]) {
     expect(
@@ -258,12 +263,16 @@ test('keeps the compact app shell contained at tablet width', async ({ page }) =
 test.describe('without JavaScript', () => {
   test.use({ javaScriptEnabled: false })
 
-  test('keeps the scenario, anchor, and downloads useful', async ({ page }) => {
+  test('shows the real blocked screen statically and keeps downloads useful', async ({ page }) => {
     await page.goto('/')
     await expect(page.getByTestId('hero-fallback')).toBeVisible()
     await expect(page.getByTestId('hero-live-demo-link')).toHaveAttribute('href', '#live-demo')
     await expect(page.getByTestId('live-demo')).toContainText('northwind-portal')
     await expect(page.getByTestId('live-demo-guard')).toHaveText('Guard · Blocked')
+    // The server-rendered state IS the mid-mistake screen: issues visible, commit locked.
+    await expect(page.getByTestId('live-demo-issue')).toHaveCount(3)
+    await expect(page.getByTestId('live-demo-commit')).toBeDisabled()
+    await expect(page.getByTestId('live-demo-commit-and-push')).toBeDisabled()
     await expect(page.getByTestId('live-demo-noscript')).toBeVisible()
     await expect(page.getByTestId('all-downloads')).toBeVisible()
   })

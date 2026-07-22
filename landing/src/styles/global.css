@@ -680,18 +680,6 @@ section > h2::before {
     0 1px 0 rgb(255 255 255 / 5%) inset;
   font-size: 14px;
 }
-.live-demo-controls {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
-  padding: 14px 16px;
-  color: var(--color-gw-text);
-  background: var(--live-demo-raised);
-  border: 1px solid var(--color-gw-border);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 8%);
-}
 .live-demo-titlebar {
   display: flex;
   height: 40px;
@@ -939,87 +927,6 @@ section > h2::before {
   font-weight: 680;
   letter-spacing: -0.02em;
 }
-.live-demo-profile-picker {
-  min-width: 0;
-  flex: 1;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-.live-demo-profile-picker legend,
-.live-demo-scenario-note > span {
-  color: var(--color-gw-text-faint);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-.live-demo-profile-picker legend {
-  margin-bottom: 6px;
-}
-.live-demo-profile-options {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.live-demo-profile-options label {
-  position: relative;
-  display: inline-flex;
-  cursor: pointer;
-}
-.live-demo-profile-options input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-}
-.live-demo-profile-options span {
-  display: inline-flex;
-  min-height: 36px;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 14px;
-  color: var(--color-gw-text-muted);
-  background: var(--color-gw-surface);
-  border: 1px solid var(--color-gw-border-strong);
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  transition:
-    border-color 0.15s ease,
-    color 0.15s ease,
-    background-color 0.15s ease;
-}
-.live-demo-profile-options input:checked + span {
-  color: var(--color-gw-link);
-  background: var(--color-gw-accent-soft);
-  border-color: var(--color-gw-accent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-gw-accent) 45%, transparent);
-}
-.live-demo-profile-options input:focus-visible + span {
-  outline: 2px solid var(--color-gw-link);
-  outline-offset: 2px;
-}
-.live-demo-scenario-note {
-  display: grid;
-  min-width: 220px;
-  align-self: stretch;
-  align-content: center;
-  grid-template-columns: auto auto;
-  column-gap: 0.4rem;
-}
-.live-demo-scenario-note > span,
-.live-demo-scenario-note small {
-  grid-column: 1 / -1;
-}
-.live-demo-scenario-note strong {
-  color: var(--color-gw-text);
-  font-size: 13px;
-}
-.live-demo-scenario-note small {
-  color: var(--color-gw-text-muted);
-  font-size: 11px;
-}
 .live-demo-staged,
 .live-demo-message {
   margin-bottom: 16px;
@@ -1064,6 +971,10 @@ section > h2::before {
   font-size: 11px;
   font-weight: 700;
 }
+.live-demo-file-row--empty span {
+  color: var(--color-gw-text-muted);
+  font-size: 13px;
+}
 .live-demo-message {
   display: flex;
   flex-direction: column;
@@ -1076,7 +987,7 @@ section > h2::before {
 }
 .live-demo-message textarea {
   width: 100%;
-  min-height: 190px;
+  min-height: 140px;
   box-sizing: border-box;
   padding: 12px;
   resize: none;
@@ -1108,19 +1019,12 @@ section > h2::before {
 .live-demo-issue:first-child {
   border-top: 0;
 }
+/* The real screen prefixes each blocker with the ⛔ emoji (CommitPushScreen.tsx). */
 .live-demo-issue-icon {
   display: inline-flex;
-  width: 16px;
-  height: 16px;
   flex-shrink: 0;
-}
-.live-demo-issue-icon svg {
-  width: 16px;
-  height: 16px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.5;
-  stroke-linecap: round;
+  font-size: 13px;
+  line-height: 1.4;
 }
 .live-demo-remediation {
   padding: 12px;
@@ -1185,6 +1089,87 @@ section > h2::before {
 .live-demo-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
+}
+/* "Branch: main" context line + Remotes section — mirrors the merged screen's
+ * post-actions content (CommitPushScreen.tsx). */
+.live-demo-context-line {
+  margin: 16px 0;
+  color: var(--color-gw-text-muted);
+  font-size: 13px;
+}
+.live-demo-context-line code {
+  color: var(--live-demo-modified);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+}
+.live-demo-remote-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 12px;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  background: var(--live-demo-raised);
+  border: 1px solid var(--color-gw-border);
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 8%);
+}
+.live-demo-remote-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.live-demo-remote-meta code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+.live-demo-remote-name {
+  color: var(--color-gw-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+.live-demo-remote-url {
+  overflow: hidden;
+  min-width: 0;
+  color: var(--color-gw-text-muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.live-demo-remote-host {
+  color: var(--color-gw-text-faint);
+  font-size: 11px;
+}
+.live-demo-remote-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+/* Non-interactive replicas of the screen's Fetch / Pull / Push buttons. */
+.live-demo-ghost-button {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  padding: 4px 12px;
+  color: var(--color-gw-text-muted);
+  background: var(--color-gw-surface);
+  border: 1px solid var(--live-demo-border-subtle);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.live-demo-ghost-button--primary {
+  color: var(--color-gw-on-primary);
+  background: var(--color-gw-primary);
+  border-color: color-mix(in srgb, var(--color-gw-primary-strong) 70%, transparent);
+}
+.live-demo-footnote {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
 }
 .live-demo-context-panel {
   min-width: 0;
@@ -1764,19 +1749,6 @@ section > h2::before {
   .theme-toggle {
     display: inline-block;
   }
-  .live-demo-controls {
-    align-items: stretch;
-    flex-wrap: wrap;
-    gap: 12px;
-    padding: 0.75rem;
-  }
-  .live-demo-profile-picker,
-  .live-demo-scenario-note {
-    width: 100%;
-  }
-  .live-demo-scenario-note {
-    min-width: 0;
-  }
   .live-demo-titlebar,
   .live-demo-sidebar,
   .live-demo-context-panel {
@@ -1820,18 +1792,8 @@ section > h2::before {
     font-size: 20px;
   }
   .live-demo-message textarea {
-    min-height: 148px;
+    min-height: 110px;
   }
-  .live-demo-profile-options {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .live-demo-profile-options label,
-  .live-demo-profile-options span {
-    width: 100%;
-    box-sizing: border-box;
-  }
-  .live-demo-profile-options span,
   .live-demo-fix,
   .live-demo-commit,
   .live-demo-reset {
@@ -1841,11 +1803,10 @@ section > h2::before {
     font-size: 12.5px;
   }
   .live-demo-actions {
-    display: block;
+    flex-direction: column;
   }
   .live-demo-actions button,
-  .live-demo-fix,
-  .live-demo-reset {
+  .live-demo-fix {
     width: 100%;
   }
 }

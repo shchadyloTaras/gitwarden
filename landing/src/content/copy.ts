@@ -47,26 +47,23 @@ export const copy = {
       eyebrow: 'Interactive demo',
       heading: 'Catch the wrong Git identity before it becomes a commit.',
       subhead:
-        'Switch profiles, try the commit, and see GitWarden stop a Client repository from using the wrong identity.',
+        'This Client repository still has the Personal profile active — so GitWarden blocks the commit. Apply the one-click fix and commit safely.',
       heroAnchor: 'Try the live demo ↓',
     },
     scenario: {
       repository: 'northwind-portal',
       branch: 'main',
       assignedProfile: 'Client',
-      effectiveIdentityName: 'Morgan Client',
-      effectiveIdentityEmail: 'morgan@northwind.example',
       stagedFile: 'src/client/access.ts',
       commitMessage: 'Update client access rules',
+      remoteName: 'origin',
+      remoteUrl: 'git@github.com:northwind/northwind-portal.git',
+      remoteHost: 'github.com',
     },
     profiles: {
       Personal: {
         name: 'Morgan Personal',
         email: 'morgan@personal.example',
-      },
-      Work: {
-        name: 'Morgan Work',
-        email: 'morgan@work.example',
       },
       Client: {
         name: 'Morgan Client',
@@ -74,9 +71,12 @@ export const copy = {
       },
     },
     window: {
-      appName: 'GitWarden',
+      // Copied verbatim from src/renderer/strings.ts APP_TITLE.
+      appName: 'Git Warden',
       checkedOut: 'Checked out:',
       navigationLabel: 'Git navigation',
+      // Mirrors src/renderer/components/Sidebar.tsx NAV_ITEMS + GROUP_LABELS
+      // (post Phase 115: Commit and Remote are one "Commit & Push" tab).
       navigation: {
         manageGroup: 'MANAGE',
         gitGroup: 'GIT',
@@ -84,8 +84,8 @@ export const copy = {
         profiles: 'Profiles',
         repositories: 'Repositories',
         status: 'Status',
-        commit: 'Commit',
-        remote: 'Remote',
+        // Copied verbatim from src/renderer/strings.ts NAV_COMMIT_PUSH.
+        commitPush: 'Commit & Push',
         branches: 'Branches',
         history: 'History',
         safetyCenter: 'Safety Center',
@@ -102,24 +102,29 @@ export const copy = {
       repositoryLabel: 'REPOSITORY',
       branchLabel: 'BRANCH',
       guardLabel: 'GUARD',
+      // Mirrors CommitPushScreen's "Staged Changes ({n})" heading in both demo states.
       stagedHeading: 'Staged Changes (1)',
+      stagedHeadingDone: 'Staged Changes (0)',
+      // Copied verbatim from src/renderer/screens/CommitPushScreen.tsx empty state.
+      stagedEmpty: 'No staged changes',
       messageLabel: 'Commit Message',
       blockedHeading: 'Commit blocked',
+      // Mirrors CommitPushScreen's branch context line + "Remotes ({n})" section.
+      branchContextLabel: 'Branch:',
+      remotesHeading: 'Remotes (1)',
+      remoteFetch: 'Fetch',
+      remotePull: 'Pull',
+      remotePush: 'Push',
     },
     controls: {
-      activeProfileLabel: 'Active profile',
-      profileGroupLabel: 'Choose the active profile',
-      scenarioLabel: 'Repository profile',
-      scenarioHint: 'This repository is assigned to Client.',
-      personalProfile: 'Personal',
-      workProfile: 'Work',
-      clientProfile: 'Client',
       // Copied verbatim from src/renderer/strings.ts REMEDIATION_SWITCH_PROFILE('Client').
       quickFix: 'Switch to "Client"',
       // Copied verbatim from src/renderer/strings.ts REMEDIATION_FIXING.
       fixing: 'Fixing…',
-      // Copied verbatim from src/renderer/screens/CommitScreen.tsx.
+      // Copied verbatim from src/renderer/screens/CommitPushScreen.tsx.
       commit: 'Commit Changes',
+      // Copied verbatim from src/renderer/strings.ts COMMIT_AND_PUSH_BUTTON.
+      commitAndPush: 'Commit & Push',
       reset: 'Reset demo',
     },
     status: {
@@ -129,8 +134,6 @@ export const copy = {
       guardBlocked: 'Guard · Blocked',
       inspectorReady: 'Ready',
       inspectorBlocked: 'Blocked',
-      readyHint: 'Identity matches the Client profile. This simulated commit can continue.',
-      blockedHint: 'This Client repository is using the wrong active profile.',
     },
     issues: {
       // Copied verbatim from src/core/safety/safetyMessages.ts PROFILE_MISMATCH.
@@ -141,18 +144,18 @@ export const copy = {
       emailMismatch: 'Your Git author email does not match the active profile.',
     },
     accessibility: {
-      personalSelected: 'Personal profile selected. Guard blocked for this Client repository.',
-      workSelected: 'Work profile selected. Guard blocked for this Client repository.',
-      clientSelected: 'Client profile selected. Guard ready.',
-      blockersRevealed: 'Commit blocked. Three identity mismatches found.',
-      resetComplete: 'Demo reset. Personal profile selected. Guard blocked.',
+      fixApplied: 'Client profile selected. Guard ready. Commit unlocked.',
+      committed: 'Simulated commit complete. No repository was changed.',
+      pushed: 'Simulated commit and push complete. No repository was changed.',
+      resetComplete: 'Demo reset. Personal profile active. Guard blocked.',
     },
     noScript:
-      'Enable JavaScript to try the profile switch. This fixed scenario starts blocked because Personal is active for a repository assigned to Client.',
+      'This is the real Commit & Push screen mid-mistake: the Personal profile is active in a repository assigned to Client, so the commit is blocked. Enable JavaScript to apply the one-click fix and run the simulated commit.',
     completion: {
-      heading: 'Simulated commit passed',
-      body: 'GitWarden would allow this commit. No repository was changed.',
-      announcement: 'Simulation complete. Guard ready. No repository was changed.',
+      // Mirrors CommitPushScreen's "✓ Committed {hash}" and COMMIT_AND_PUSH_SUCCESS banners.
+      committed: '✓ Committed 3f2a91c',
+      pushed: '✓ Committed 3f2a91c and pushed to origin.',
+      simNote: 'Simulated — no repository was changed.',
     },
   },
 
