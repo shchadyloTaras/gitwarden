@@ -179,15 +179,13 @@ export default function Sidebar({
         <div className="gw-sidebar__footer">
           <button
             data-testid="sidebar-update-button"
-            className="gw-sidebar__update-button"
+            className={`gw-sidebar__update-button${
+              showExpandedLabels ? ' gw-sidebar__update-button--expanded' : ''
+            }`}
             onClick={() => void window.api.shell.openExternal(availableUpdate.url)}
             aria-label={STR.UPDATE_BUTTON_ARIA(availableUpdate.version)}
             data-tooltip={STR.UPDATE_AVAILABLE(availableUpdate.version)}
             data-tooltip-pos="right"
-            style={{
-              justifyContent: showExpandedLabels ? 'flex-start' : 'center',
-              padding: showExpandedLabels ? '0 12px' : '0',
-            }}
           >
             <span className="gw-sidebar__update-icon">
               <SidebarIcon name="update" size={16} />
