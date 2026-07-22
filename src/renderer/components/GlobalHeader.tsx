@@ -5,7 +5,6 @@ import { useProfilesStore, profileColor } from '../store/profilesStore'
 import { useRepositoriesStore } from '../store/repositoriesStore'
 import { useBranchStore } from '../store/branchStore'
 import { useHeaderGuardStore } from '../store/headerGuardStore'
-import { useUpdatesStore } from '../store/updatesStore'
 import { refreshActiveRepo } from '../store/refreshActiveRepo'
 import type { HeaderGuardState } from '../../core/safety/headerGuard'
 import Dropdown from './Dropdown'
@@ -91,10 +90,6 @@ export default function GlobalHeader(): React.ReactElement {
   const guardIssueCount = useHeaderGuardStore((s) => s.issueCount)
   const refreshGuard = useHeaderGuardStore((s) => s.refresh)
   const resetGuard = useHeaderGuardStore((s) => s.reset)
-
-  // Notifier: surface the Update button ONLY when a newer release has actually been published.
-  const updateResult = useUpdatesStore((s) => s.result)
-  const availableUpdate = updateResult?.status === 'update-available' ? updateResult.release : null
 
   // Load branches whenever the active repo changes; clear when no repo is selected.
   // Keyed on id/localPath, NOT the whole activeRepo object — a same-repo metadata save
@@ -363,39 +358,6 @@ export default function GlobalHeader(): React.ReactElement {
               {activeProfile.displayName}
             </span>
           </div>
-        )}
-
-        {availableUpdate && (
-          <button
-            data-testid="header-update-button"
-            className="gw-header__update"
-            aria-label={STR.UPDATE_BUTTON_ARIA(availableUpdate.version)}
-            data-tooltip={STR.UPDATE_AVAILABLE(availableUpdate.version)}
-            data-tooltip-pos="bottom"
-            onClick={() => void window.api.shell.openExternal(availableUpdate.url)}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 5,
-              height: 32,
-              padding: '0 10px',
-              marginLeft: 4,
-              background: 'var(--gw-accent, #6366f1)',
-              color: 'var(--gw-on-solid, #fff)',
-              border: 'none',
-              borderRadius: 4,
-              fontSize: 13,
-              fontWeight: 600,
-              fontFamily: 'inherit',
-              cursor: 'pointer',
-              flexShrink: 0,
-            }}
-          >
-            <span aria-hidden="true" style={{ fontSize: 13, lineHeight: 1 }}>
-              ↓
-            </span>
-            {STR.UPDATE_BUTTON_LABEL}
-          </button>
         )}
 
         <button

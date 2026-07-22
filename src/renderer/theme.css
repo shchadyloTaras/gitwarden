@@ -628,7 +628,6 @@ body {
 
 .gw-header__guard,
 .gw-header__profile,
-.gw-header__update,
 .gw-header__action {
   flex: 0 0 auto;
 }
@@ -911,7 +910,7 @@ body {
 
 .gw-sidebar__update-button--expanded .gw-sidebar__update-icon {
   position: absolute;
-  left: var(--gw-space-3);
+  right: var(--gw-space-3);
 }
 
 .gw-right-panel {
@@ -1053,18 +1052,6 @@ body {
 
   .gw-header__profile {
     max-width: 96px;
-  }
-
-  .gw-header__update {
-    width: var(--gw-control-height) !important;
-    padding: 0 !important;
-    justify-content: center;
-    gap: 0 !important;
-    font-size: 0 !important;
-  }
-
-  .gw-header__update > span {
-    font-size: 13px !important;
   }
 
   .gw-header__action {
