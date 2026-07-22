@@ -414,7 +414,8 @@ summary:focus-visible {
     center / contain no-repeat;
 }
 .hero-demo-link {
-  display: inline-block;
+  /* Temporarily disabled along with #live-demo below — remove this line to re-enable. */
+  display: none;
   margin-top: 1.4rem;
   color: var(--color-gw-text-muted);
   font-size: 0.9rem;
@@ -643,6 +644,12 @@ section > h2::before {
   --live-demo-raised: #ffffff;
   --live-demo-modified: #2467b2;
   --live-demo-shadow: rgb(42 47 65 / 14%);
+}
+
+/* Temporarily disabled — remove this rule (and the matching one on
+ * .hero-demo-link above) to bring the Interactive demo section back. */
+#live-demo {
+  display: none;
 }
 
 .live-demo-intro {
