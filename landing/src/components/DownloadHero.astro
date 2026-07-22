@@ -14,11 +14,23 @@ const hasAnyAsset =
 // Embed the build-time release so the client island can re-resolve for the detected OS
 // (and self-heal). Escaping `<` keeps the JSON safe inside a <script> tag.
 const embedded = JSON.stringify(release).replace(/</g, '\\u003c')
+
+// Split the tagline around the highlighted phrase so it can carry the red "caught
+// mistake" squiggle. Rendered textContent stays byte-identical to copy.tagline.
+const highlightAt = copy.tagline.indexOf(copy.taglineHighlight)
+const taglineBefore = highlightAt >= 0 ? copy.tagline.slice(0, highlightAt) : copy.tagline
+const taglineAfter =
+  highlightAt >= 0 ? copy.tagline.slice(highlightAt + copy.taglineHighlight.length) : ''
 ---
 
+<div class="hero-atmosphere" aria-hidden="true"></div>
 <section class="hero" data-testid="hero" data-reveal>
-  <p class="eyebrow">{copy.productName}</p>
-  <h1>{copy.tagline}</h1>
+  <p class="hero-badge"><span class="hero-badge-dot"></span>{copy.heroBadge}</p>
+  <h1>
+    {taglineBefore}{
+      highlightAt >= 0 && <span class="hero-highlight">{copy.taglineHighlight}</span>
+    }{taglineAfter}
+  </h1>
   <p class="subtitle">{copy.heroSubtitle}</p>
 
   <div class="cta" data-gw-cta data-testid="hero-cta">
@@ -45,6 +57,10 @@ const embedded = JSON.stringify(release).replace(/</g, '\\u003c')
       </p>
     )
   }
+
+  <ul class="hero-trust">
+    {copy.heroTrust.map((item) => <li>{item}</li>)}
+  </ul>
 
   <a class="hero-demo-link" href="#live-demo" data-testid="hero-live-demo-link">
     {copy.liveDemo.section.heroAnchor}

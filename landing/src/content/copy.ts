@@ -18,9 +18,15 @@ export const copy = {
   },
   productName: 'GitWarden',
   tagline: 'Never commit with the wrong Git account again.',
+  /** Substring of `tagline` that gets the red "caught mistake" squiggle in the hero. */
+  taglineHighlight: 'wrong Git account',
   heroSubtitle:
     'A desktop Git app that checks your identity before every commit and push — so your ' +
     'Personal, Work, and Client work never gets crossed.',
+  /** Promo badge chip above the hero headline. */
+  heroBadge: 'Free for macOS, Windows & Linux',
+  /** Trust chips under the hero call-to-action. */
+  heroTrust: ['No telemetry', 'No account needed', 'Local-first'],
 
   download: {
     downloadForMac: 'Download for macOS',

@@ -9,7 +9,13 @@ import { copy } from '../content/copy'
       {copy.productName}
     </a>
     <nav class="header-nav" aria-label="Primary">
-      {copy.nav.links.map((l) => <a href={l.href}>{l.label}</a>)}
+      {
+        copy.nav.links.map((l) => (
+          <a href={l.href} class:list={[{ 'nav-cta': l.href === '#downloads' }]}>
+            {l.label}
+          </a>
+        ))
+      }
       <button
         type="button"
         class="theme-toggle"

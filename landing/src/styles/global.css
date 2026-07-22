@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import '@fontsource-variable/bricolage-grotesque';
 
 /*
  * GitWarden design tokens — mirror the Electron app's src/renderer/theme.css
@@ -113,6 +114,13 @@
 }
 :root {
   color-scheme: dark;
+  --font-body:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-display: 'Bricolage Grotesque Variable', var(--font-body);
+  /* Promo atmosphere strengths — dialed down in light mode below. */
+  --gw-hero-glow-1: color-mix(in srgb, var(--color-gw-accent) 24%, transparent);
+  --gw-hero-glow-2: color-mix(in srgb, var(--color-gw-primary) 13%, transparent);
+  --gw-cta-glow: color-mix(in srgb, var(--color-gw-accent) 50%, transparent);
   --gw-code-bg: #121216;
   --gw-code-border: #3f3f46;
   --gw-code-text: #f4f4f5;
@@ -124,6 +132,9 @@
 }
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) {
+    --gw-hero-glow-1: color-mix(in srgb, var(--color-gw-accent) 13%, transparent);
+    --gw-hero-glow-2: color-mix(in srgb, var(--color-gw-primary) 7%, transparent);
+    --gw-cta-glow: color-mix(in srgb, var(--color-gw-accent) 32%, transparent);
     --gw-code-bg: #f7f9fc;
     --gw-code-border: #b9c5d4;
     --gw-code-text: #111827;
@@ -135,6 +146,9 @@
   }
 }
 :root[data-theme='light'] {
+  --gw-hero-glow-1: color-mix(in srgb, var(--color-gw-accent) 13%, transparent);
+  --gw-hero-glow-2: color-mix(in srgb, var(--color-gw-primary) 7%, transparent);
+  --gw-cta-glow: color-mix(in srgb, var(--color-gw-accent) 32%, transparent);
   --gw-code-bg: #f7f9fc;
   --gw-code-border: #b9c5d4;
   --gw-code-text: #111827;
@@ -151,15 +165,7 @@ html {
   scroll-padding-top: 4.5rem;
 }
 body {
-  font-family:
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    Helvetica,
-    Arial,
-    sans-serif;
+  font-family: var(--font-body);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   overflow-wrap: break-word;
@@ -167,8 +173,13 @@ body {
 h1,
 h2,
 h3 {
+  font-family: var(--font-display);
   line-height: 1.15;
   letter-spacing: -0.02em;
+}
+/* The live-demo window mimics the real app UI, which uses the system font. */
+.live-demo-window h3 {
+  font-family: var(--font-body);
 }
 a {
   color: var(--color-gw-link);
@@ -222,6 +233,7 @@ summary:focus-visible {
   gap: 1rem;
 }
 .brand {
+  font-family: var(--font-display);
   font-weight: 800;
   letter-spacing: -0.01em;
   color: var(--color-gw-text);
@@ -248,6 +260,23 @@ summary:focus-visible {
 .header-nav a:hover {
   color: var(--color-gw-text);
 }
+/* The Download nav link doubles as a compact promo CTA pill. */
+.header-nav a.nav-cta {
+  color: var(--color-gw-link);
+  background: color-mix(in srgb, var(--color-gw-accent) 13%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-gw-accent) 42%, transparent);
+  border-radius: 999px;
+  padding: 0.38rem 0.95rem;
+  font-weight: 600;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+.header-nav a.nav-cta:hover {
+  color: var(--color-gw-link);
+  background: color-mix(in srgb, var(--color-gw-accent) 22%, transparent);
+  border-color: var(--color-gw-accent);
+}
 .theme-toggle {
   background: var(--color-gw-surface);
   color: var(--color-gw-text);
@@ -261,29 +290,89 @@ summary:focus-visible {
 }
 
 /* Hero */
+/* Full-bleed promo atmosphere behind the hero: two soft accent glows + a dot grid,
+ * all fading out toward the first section. Sits behind the translucent sticky header. */
+.hero-atmosphere {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: min(46rem, 110vh);
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(58rem 30rem at 50% -6rem, var(--gw-hero-glow-1), transparent 70%),
+    radial-gradient(42rem 24rem at 82% 2rem, var(--gw-hero-glow-2), transparent 70%),
+    radial-gradient(
+        circle,
+        color-mix(in srgb, var(--color-gw-text) 8%, transparent) 1px,
+        transparent 1.5px
+      )
+      50% 50% / 26px 26px;
+  mask-image: linear-gradient(to bottom, black 45%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, black 45%, transparent);
+}
 .hero {
   text-align: center;
-  padding: 4.5rem 0 3rem;
+  padding: clamp(3.5rem, 8vw, 5.5rem) 0 3.25rem;
 }
-.hero .eyebrow {
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0 0 1.4rem;
+  padding: 0.4rem 1rem;
   color: var(--color-gw-link);
-  font-size: 0.8rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
+  background: color-mix(in srgb, var(--color-gw-accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-gw-accent) 38%, transparent);
+  border-radius: 999px;
+  font-size: 0.84rem;
   font-weight: 600;
-  margin: 0 0 0.75rem;
+  letter-spacing: 0.02em;
+}
+.hero-badge-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--color-gw-success);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hero-badge-dot {
+    animation: gw-pulse 2.4s ease-out infinite;
+  }
+  @keyframes gw-pulse {
+    0% {
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-gw-success) 55%, transparent);
+    }
+    70%,
+    100% {
+      box-shadow: 0 0 0 9px transparent;
+    }
+  }
 }
 .hero h1 {
-  font-size: clamp(2.1rem, 5vw, 3.25rem);
-  margin: 0 auto 1rem;
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  margin: 0 auto 1.15rem;
   max-width: 18ch;
   font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.06;
+}
+/* The mistake GitWarden catches — a spellcheck-style red squiggle. */
+.hero-highlight {
+  text-decoration-line: underline;
+  text-decoration-style: wavy;
+  text-decoration-color: var(--color-gw-danger);
+  text-decoration-thickness: 0.055em;
+  text-underline-offset: 0.14em;
+  text-decoration-skip-ink: none;
 }
 .hero .subtitle {
   color: var(--color-gw-text-muted);
-  font-size: 1.15rem;
-  max-width: 46ch;
-  margin: 0 auto 2rem;
+  font-size: 1.2rem;
+  max-width: 50ch;
+  margin: 0 auto 2.25rem;
 }
 .cta {
   display: flex;
@@ -294,11 +383,39 @@ summary:focus-visible {
 .version {
   color: var(--color-gw-text-muted);
   font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
   margin: 1rem 0 0;
+}
+.hero-trust {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 1.6rem;
+  list-style: none;
+  margin: 1.4rem auto 0;
+  padding: 0;
+}
+.hero-trust li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--color-gw-text-muted);
+  font-size: 0.9rem;
+}
+.hero-trust li::before {
+  content: '';
+  width: 0.95rem;
+  height: 0.95rem;
+  flex-shrink: 0;
+  background: var(--color-gw-success);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E")
+    center / contain no-repeat;
 }
 .hero-demo-link {
   display: inline-block;
-  margin-top: 1rem;
+  margin-top: 1.4rem;
   color: var(--color-gw-text-muted);
   font-size: 0.9rem;
   font-weight: 600;
@@ -310,17 +427,44 @@ summary:focus-visible {
 
 /* Buttons */
 .btn-primary {
+  position: relative;
   display: inline-block;
-  background: var(--color-gw-primary-strong);
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--color-gw-primary-strong), var(--color-gw-accent) 135%);
   color: var(--color-gw-on-primary);
-  font-weight: 600;
-  padding: 0.85rem 1.7rem;
-  border-radius: 0.6rem;
+  font-weight: 700;
+  padding: 0.95rem 2.1rem;
+  border-radius: 0.8rem;
   text-decoration: none;
-  font-size: 1.05rem;
+  font-size: 1.08rem;
+  box-shadow:
+    0 12px 32px -10px var(--gw-cta-glow),
+    inset 0 1px 0 rgb(255 255 255 / 16%);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    filter 0.18s ease;
+}
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -70%;
+  width: 45%;
+  background: linear-gradient(100deg, transparent, rgb(255 255 255 / 30%), transparent);
+  transform: skewX(-18deg);
+  transition: left 0.5s ease;
 }
 .btn-primary:hover {
-  filter: brightness(1.1);
+  transform: translateY(-2px);
+  filter: brightness(1.07);
+  box-shadow:
+    0 18px 42px -12px var(--gw-cta-glow),
+    inset 0 1px 0 rgb(255 255 255 / 16%);
+}
+.btn-primary:hover::after {
+  left: 125%;
 }
 .btn-secondary {
   color: var(--color-gw-link);
@@ -336,17 +480,45 @@ summary:focus-visible {
 
 /* Sections */
 section {
-  padding: 3rem 0;
-  border-top: 1px solid var(--color-gw-border);
+  position: relative;
+  padding: 3.25rem 0;
   scroll-margin-top: 4.5rem;
 }
-.hero {
-  border-top: none;
+/* Separator: a border that fades out at both ends. */
+section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-gw-border) 15%,
+    var(--color-gw-border-strong) 50%,
+    var(--color-gw-border) 85%,
+    transparent
+  );
+}
+.hero::before {
+  content: none;
 }
 section > h2 {
-  font-size: clamp(1.5rem, 3vw, 2rem);
-  font-weight: 700;
-  margin: 0 0 0.5rem;
+  font-size: clamp(1.6rem, 3.2vw, 2.15rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  margin: 0 0 0.6rem;
+}
+/* Gradient kicker bar above section headings. */
+section > h2::before {
+  content: '';
+  display: block;
+  width: 2.6rem;
+  height: 0.27rem;
+  margin-bottom: 1rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--color-gw-primary), var(--color-gw-accent));
 }
 .subhead,
 .lead {
@@ -1177,6 +1349,23 @@ section > h2 {
   font-size: 1.05rem;
   font-weight: 700;
 }
+/* Why-cards get editorial step numbers (01 / 02 / 03) instead of icons. */
+.why .cards {
+  counter-reset: why-step;
+}
+.why .card {
+  counter-increment: why-step;
+}
+.why .card::before {
+  content: counter(why-step, decimal-leading-zero);
+  display: block;
+  margin-bottom: 0.8rem;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--color-gw-link);
+}
 .card p {
   margin: 0;
   color: var(--color-gw-text-muted);
@@ -1233,9 +1422,19 @@ section > h2 {
   max-width: 100%;
   height: auto;
   border-radius: 0.85rem;
-  border: 1px solid var(--color-gw-border);
+  border: 1px solid color-mix(in srgb, var(--color-gw-accent) 22%, var(--color-gw-border));
   display: block;
   background: var(--color-gw-surface);
+  box-shadow: 0 22px 55px -22px var(--gw-cta-glow);
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.shots figure:hover img {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--color-gw-accent) 55%, var(--color-gw-border));
+  box-shadow: 0 30px 65px -22px var(--gw-cta-glow);
 }
 .shots figcaption {
   margin-top: 0.6rem;
@@ -1380,13 +1579,20 @@ section > h2 {
 .faq-item summary::-webkit-details-marker {
   display: none;
 }
+.faq-item summary:hover {
+  color: var(--color-gw-link);
+}
 .faq-item summary::after {
   content: '+';
   float: right;
   color: var(--color-gw-text-muted);
+  font-weight: 700;
+  transition: transform 0.18s ease;
 }
 .faq-item[open] summary::after {
-  content: '−';
+  content: '+';
+  transform: rotate(45deg);
+  color: var(--color-gw-link);
 }
 .faq-answer p {
   margin: 0 0 0.9rem;
