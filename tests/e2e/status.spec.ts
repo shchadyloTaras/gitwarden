@@ -3,7 +3,7 @@ import type { ElectronApplication, Page } from 'playwright'
 import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
-import { execSync } from 'node:child_process'
+import { execFileSync, execSync } from 'node:child_process'
 import { launchApp } from '../fixtures/launchApp'
 
 async function cleanupAll(win: Page): Promise<void> {
@@ -24,6 +24,8 @@ async function cleanupAll(win: Page): Promise<void> {
 let fixtureA: string
 // fixture B: world.txt staged in index AND further modified in worktree (MM)
 let fixtureB: string
+// fixture C: enough staged, unstaged, and untracked files to overflow every status list
+let fixtureC: string
 
 test.beforeAll(() => {
   // Fixture A: one modified (not staged) file
@@ -50,11 +52,39 @@ test.beforeAll(() => {
   execSync('git add world.txt', { cwd: fixtureB, stdio: 'pipe' })
   // Make a further worktree change (not staged) — now world.txt is MM
   fs.writeFileSync(path.join(fixtureB, 'world.txt'), 'staged content + worktree change\n')
+
+  // Fixture C: three independently overflowing status lists
+  fixtureC = fs.mkdtempSync(path.join(os.tmpdir(), 'gw-status-scroll-'))
+  execSync('git init -b main', { cwd: fixtureC, stdio: 'pipe' })
+  execSync('git config user.email "test@test.com"', { cwd: fixtureC, stdio: 'pipe' })
+  execSync('git config user.name "Test"', { cwd: fixtureC, stdio: 'pipe' })
+
+  const stagedFiles = Array.from({ length: 16 }, (_, index) => `staged-${index}.txt`)
+  const unstagedFiles = Array.from({ length: 16 }, (_, index) => `unstaged-${index}.txt`)
+
+  for (const fileName of [...stagedFiles, ...unstagedFiles]) {
+    fs.writeFileSync(path.join(fixtureC, fileName), 'initial\n')
+  }
+  execSync('git add .', { cwd: fixtureC, stdio: 'pipe' })
+  execSync('git commit -m "init"', { cwd: fixtureC, stdio: 'pipe' })
+
+  for (const fileName of stagedFiles) {
+    fs.writeFileSync(path.join(fixtureC, fileName), 'staged change\n')
+  }
+  execFileSync('git', ['add', '--', ...stagedFiles], { cwd: fixtureC, stdio: 'pipe' })
+
+  for (const fileName of unstagedFiles) {
+    fs.writeFileSync(path.join(fixtureC, fileName), 'unstaged change\n')
+  }
+  for (let index = 0; index < 16; index += 1) {
+    fs.writeFileSync(path.join(fixtureC, `new-${index}.txt`), 'new file\n')
+  }
 })
 
 test.afterAll(() => {
   fs.rmSync(fixtureA, { recursive: true, force: true })
   fs.rmSync(fixtureB, { recursive: true, force: true })
+  fs.rmSync(fixtureC, { recursive: true, force: true })
 })
 
 test.describe('Status & Staging UI', () => {
@@ -150,6 +180,47 @@ test.describe('Status & Staging UI', () => {
     await expect(win.getByTestId('working-copy-destination-card')).toContainText(
       'Not in any branch yet.'
     )
+  })
+
+  test('keeps staged, unstaged, and new-file lists independently scrollable', async () => {
+    await win.evaluate(async (repoPath: string) => {
+      return (window as Window & typeof globalThis).api.repositories.create({
+        name: 'status-scroll-fixture',
+        localPath: repoPath,
+        isFavorite: false,
+      })
+    }, fixtureC)
+
+    await win.reload()
+    await win.waitForSelector('[data-ready="true"]', { timeout: 10000 })
+    await win.getByTestId('nav-status').click()
+    await win.setViewportSize({ width: 1100, height: 720 })
+
+    const listTestIds = ['staged-list', 'unstaged-list', 'untracked-list'] as const
+    for (const testId of listTestIds) {
+      const metrics = await win.getByTestId(testId).evaluate((element) => ({
+        clientHeight: element.clientHeight,
+        scrollHeight: element.scrollHeight,
+        overflowY: getComputedStyle(element).overflowY,
+      }))
+
+      expect(metrics.overflowY).toBe('auto')
+      expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight)
+    }
+
+    await win.getByTestId('staged-list').evaluate((element) => {
+      element.scrollTop = 120
+    })
+
+    await expect
+      .poll(() => win.getByTestId('staged-list').evaluate((element) => element.scrollTop))
+      .toBeGreaterThan(0)
+    expect(await win.getByTestId('unstaged-list').evaluate((element) => element.scrollTop)).toBe(0)
+    expect(await win.getByTestId('untracked-list').evaluate((element) => element.scrollTop)).toBe(0)
+
+    const changesPane = win.getByTestId('status-changes-pane')
+    await expect(changesPane).toHaveCSS('overflow-y', 'hidden')
+    expect(await changesPane.evaluate((element) => element.scrollTop)).toBe(0)
   })
 
   test('switching branch via the header dropdown refreshes status without navigating away', async () => {

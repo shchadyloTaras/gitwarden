@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest'
-import { mkdtemp, realpath, rm, stat, writeFile } from 'fs/promises'
+import { mkdir, mkdtemp, realpath, rm, stat, writeFile } from 'fs/promises'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import * as os from 'os'
@@ -54,6 +54,20 @@ describe('GitService.getStatus integration', () => {
     expect(f).toBeDefined()
     expect(f!.indexStatus).toBe('untracked')
     expect(f!.worktreeStatus).toBe('untracked')
+  })
+
+  it('enumerates each file inside an untracked directory', async () => {
+    await mkdir(path.join(repoPath, 'nested', 'deep'), { recursive: true })
+    await writeFile(path.join(repoPath, 'nested', 'first.ts'), 'export const first = 1')
+    await writeFile(path.join(repoPath, 'nested', 'deep', 'second.ts'), 'export const second = 2')
+
+    const status = await service.getStatus(repoPath)
+
+    expect(status.files.map((file) => file.path).sort()).toEqual([
+      'nested/deep/second.ts',
+      'nested/first.ts',
+    ])
+    expect(status.files.every((file) => file.worktreeStatus === 'untracked')).toBe(true)
   })
 
   it('detects a staged new file', async () => {

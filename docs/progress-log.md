@@ -1609,6 +1609,11 @@ Moved the v0.5.1 tag to the previous commit and re-triggered: macOS green again,
 - Output: `docs/features/gitwarden/_fixes/2026-07-14-landing-live-demo-fidelity.md`; landing Live Demo markup, copy, styles, and regression tests
 - Summary: Replaced the invented marketing-card UI with a landing-local reproduction of the real titlebar, header, grouped sidebar, vertical Commit screen, and Context panel while preserving the scripted safety scenario and closed-source boundary.
 
+### sdd:fix gitwarden — 2026-07-29
+
+- Output: `docs/features/gitwarden/_fixes/2026-07-29-untracked-directory-counts.md`; `docs/features/gitwarden/spec.md`; `src/main/services/GitService.ts`; `tests/integration/git-service.test.ts`
+- Summary: Expanded wholly untracked directories to individual file paths so NEW FILES, WORKING COPY, and staged counts remain consistent before and after staging.
+
 ### 2026-07-15 — Fix: AI Chat now requires a saved API key before it shows itself as ready
 
 - Fixed: AI Chat rendered its full composer whenever any connection object existed, even one created without a working key (e.g. an interrupted setup) — inviting a send that then failed with a raw backend error instead of ever explaining what was missing. It now gates on an actual saved credential (`credentialMeta`), not just connection existence; a connection without one shows dedicated "Add an API key to use AI Chat" setup copy in `ChatInlineSetup`, and pasting a key repairs that same connection in place rather than creating a duplicate.

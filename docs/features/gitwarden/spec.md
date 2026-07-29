@@ -2,7 +2,7 @@
 status: draft
 owner: Taras Shchadylo (PM + Tech Lead)
 reviewers: []
-updated_at: 2026-06-28
+updated_at: 2026-07-29
 feature_size: XL
 ---
 
@@ -70,6 +70,9 @@ The committed approach: a **cross-platform desktop application** built around **
 - **AC-14 (US-05) — error:** Given a push fails because of an authentication problem, Then the failure is presented as a human-readable explanation rather than raw tool output.
 - **AC-15 (US-05) — cross-context:** Given commits were authored outside the app (for example in the terminal) with an identity differing from the Bound Profile, When the Developer pushes through the app, Then the verdict reflects the current identity configuration and the app does not claim to have verified the authorship of pre-existing commits.
 - **AC-16 (US-09) — happy:** Given an existing local Git repository on disk, When the Developer adds it by selecting its folder, Then it becomes a registered Repository available to open and to bind to a Profile. The app registers existing local repositories only — it does not clone or initialize repositories (§3).
+- **AC-17 (US-07) — cross-context:** Given a Repository contains untracked files, including files nested beneath wholly untracked directories, When Status is loaded or refreshed, Then NEW FILES lists and counts every individual untracked file path, and WORKING COPY counts each changed path once; staging those files changes their section without changing the total count unless the working tree changes.
+
+<!-- added-by-fix: 2026-07-29 -->
 
 ## 6. Non-functional requirements
 

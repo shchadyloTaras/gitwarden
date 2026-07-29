@@ -268,6 +268,7 @@ function SectionHeader({
 }): React.ReactElement {
   return (
     <div
+      className="gw-status-section-header"
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -648,7 +649,7 @@ export default function StatusScreen(): React.ReactElement {
       )}
 
       {/* Body */}
-      <div style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
+      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex' }}>
         {!activeRepo && (
           <div
             className="gw-empty-state gw-status-empty-state"
@@ -683,7 +684,7 @@ export default function StatusScreen(): React.ReactElement {
                   flex: 1,
                   minHeight: 0,
                   borderRight: '1px solid var(--gw-border, #27272a)',
-                  overflow: 'auto',
+                  overflow: 'hidden',
                   display: 'flex',
                   flexDirection: 'column',
                 }}
@@ -713,7 +714,7 @@ export default function StatusScreen(): React.ReactElement {
                 )}
 
                 {status && (
-                  <>
+                  <div className="gw-status-sections">
                     <section className="gw-status-section" data-testid="staged-section">
                       <SectionHeader
                         title="STAGED CHANGES"
@@ -722,7 +723,7 @@ export default function StatusScreen(): React.ReactElement {
                         bulkTestId="status-unstage-all"
                         onBulk={() => act(unstageAll)}
                       />
-                      <div data-testid="staged-list">
+                      <div className="gw-status-file-list" data-testid="staged-list">
                         {staged.length === 0 && (
                           <div
                             className="gw-empty-state gw-status-section-empty"
@@ -760,7 +761,7 @@ export default function StatusScreen(): React.ReactElement {
                         bulkTestId="status-stage-all"
                         onBulk={() => act(stageAll)}
                       />
-                      <div data-testid="unstaged-list">
+                      <div className="gw-status-file-list" data-testid="unstaged-list">
                         {unstaged.length === 0 && (
                           <div
                             className="gw-empty-state gw-status-section-empty"
@@ -811,7 +812,7 @@ export default function StatusScreen(): React.ReactElement {
                         bulkTestId="status-stage-untracked-all"
                         onBulk={() => act(stageAll)}
                       />
-                      <div data-testid="untracked-list">
+                      <div className="gw-status-file-list" data-testid="untracked-list">
                         {untracked.length === 0 && (
                           <div
                             className="gw-empty-state gw-status-section-empty"
@@ -853,7 +854,7 @@ export default function StatusScreen(): React.ReactElement {
                         ))}
                       </div>
                     </section>
-                  </>
+                  </div>
                 )}
               </div>
             }

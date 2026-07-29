@@ -214,15 +214,42 @@ button.gw-management-row-main:active:not(:disabled),
 }
 
 .gw-status-changes-pane {
+  min-height: 0;
+  overflow: hidden;
   background: var(--gw-bg, #09090b);
 }
 
+.gw-status-sections {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .gw-status-section {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 0;
+  flex-direction: column;
   margin: 10px;
   overflow: hidden;
   border: 1px solid var(--gw-border, #27272a);
   border-radius: 9px;
   background: var(--gw-surface, #18181b);
+}
+
+.gw-status-section-header {
+  flex: 0 0 auto;
+}
+
+.gw-status-file-list {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .gw-status-section + .gw-status-section {

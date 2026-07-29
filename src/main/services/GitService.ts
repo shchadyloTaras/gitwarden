@@ -121,7 +121,7 @@ export class GitService {
 
   async getStatus(repoPath: string): Promise<GitStatus> {
     const result = await this.readOnly({
-      args: ['status', '--porcelain=v2', '-z', '--branch'],
+      args: ['status', '--porcelain=v2', '-z', '--branch', '--untracked-files=all'],
       cwd: repoPath,
     })
     return parsePorcelainV2(result.stdout)
