@@ -1780,3 +1780,7 @@ Moved the v0.5.1 tag to the previous commit and re-triggered: macOS green again,
 ### 2026-07-22 — v0.7.0 released
 
 - Minor release shipping History Commit Details (Phases 110–113: select any commit for an inline, resizable file/patch view) and Unified Commit & Push (Phases 114–116: Commit and Remote merged into one screen with a single combined confirmation), plus two fixes (History pagination/scroll-containment bug; duplicate header Update button removed). `CHANGELOG.md` rolled (`## Unreleased` → `## 0.7.0`), `package.json` bumped 0.6.0 → 0.7.0, and the landing changelog copy refreshed; `npm test` green (1212/1212). Landing-only commits since `v0.6.0` (live-demo rework, promo visual refresh, docs reconciliation) are omitted from the changelog as non-user-facing to the app. Push of the commit + tag left to the maintainer.
+
+### 2026-07-29 — v0.7.1 released
+
+- Patch release cut from the single app commit since `v0.7.0` (`c1c829c`): `git status` now runs with `--untracked-files=all`, so a brand-new folder is enumerated as individual files instead of one entry — fixing the mismatch between the "New files" and "Staged changes" counts after staging it — and the Status screen's staged/unstaged/untracked lists scroll independently. `CHANGELOG.md` rolled (`## Unreleased` → `## 0.7.1 — 2026-07-29`, two user-facing Fixed bullets), `package.json` bumped 0.7.0 → 0.7.1, and the landing changelog copy refreshed. Gates at cut time: tree clean, `npm test` green (**1213/1213**, 127 files). Push of the commit + tag left to the maintainer.

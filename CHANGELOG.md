@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.7.1 — 2026-07-29
+
+### Fixed
+
+- Status now lists every untracked file individually, including files inside a brand-new folder. Previously such a folder counted as a single entry, so the "New files" and "Staged changes" counts could disagree after staging it.
+- The staged, unstaged, and untracked lists on the Status screen now scroll independently, so a long list in one section no longer pushes the others out of view.
+
 ## 0.7.0 — 2026-07-22
 
 ### Added
