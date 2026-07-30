@@ -51,9 +51,11 @@ function recordingSender(events: RecordedEvent[]): RepoWatchSender {
 
 // Phase 96 (W4 full), rename-proofed Phase 101: RepoWatcherService watches ONLY the
 // active repo's .git directory (HEAD/index/config, via one non-recursive directory
-// watch — Phase 101) and .git/refs (recursive), debounces (~400ms), and classifies
-// which target changed. Offline (real fixture repos, no network) — external git
-// operations via child_process prove the watch actually fires, with the right kind.
+// watch — Phase 101) and .git/refs (recursive), debounces (~400ms), and reports which
+// target changed — established by re-reading the targets' fingerprints, not by trusting
+// the filename the OS put on the notification (2026-07-30). Offline (real fixture repos,
+// no network) — external git operations via child_process prove the watch actually
+// fires, with the right kind.
 describe('RepoWatcherService (Phase 96, Phase 101)', () => {
   let tmpDir: string
   let repoPath: string
@@ -159,23 +161,12 @@ describe('RepoWatcherService (Phase 96, Phase 101)', () => {
     await writeFile(path.join(repoPath, 'c.txt'), 'c\n')
     await git(repoPath, 'add', 'c.txt')
 
-    // `fs.watch` is best-effort by contract: the OS can drop a notification outright
-    // when the machine is loaded (FSEvents coalescing on macOS, a full
-    // ReadDirectoryChangesW buffer on Windows). Observed twice on a 12-core Mac running
-    // the full suite — `git add` succeeded, then nothing arrived for a full 10s — and
-    // never reproducible with instrumentation attached (24 clean loops), which is itself
-    // characteristic of a delivery race rather than a defect in the service. Staging a
-    // SECOND file when the first produced nothing keeps the assertion intact ("staging
-    // is reported") while refusing to turn one lost kernel event into a red release
-    // build. See the progress-log follow-up: closing this properly means giving
-    // RepoWatcherService a low-frequency stat-poll safety net, not changing this test.
-    try {
-      await waitUntil(() => events.some((e) => e.kind === 'index'), 3000)
-    } catch {
-      await writeFile(path.join(repoPath, 'c2.txt'), 'c2\n')
-      await git(repoPath, 'add', 'c2.txt')
-      await waitUntil(() => events.some((e) => e.kind === 'index'))
-    }
+    // This used to fail intermittently (twice in 14 full-suite runs on a 12-core Mac)
+    // because it depended on the OS actually delivering a notification, which `fs.watch`
+    // does not promise. It no longer does: the service re-reads `.git` on a safety-net
+    // tick as well, so a dropped notification costs latency, not the event. The tests
+    // in the "dropped-notification safety net" group below pin that down directly.
+    await waitUntil(() => events.some((e) => e.kind === 'index'))
     expect(events.some((e) => e.repoPath === repoPath && e.kind === 'index')).toBe(true)
   })
 
@@ -275,6 +266,91 @@ describe('RepoWatcherService (Phase 96, Phase 101)', () => {
       expect(events.some((e) => e.repoPath === repoPath2 && e.kind === 'index')).toBe(true)
     } finally {
       await removeTempDir(tmpDir2)
+    }
+  })
+
+  // ── Dropped-notification safety net ─────────────────────────────────────────
+  // `fs.watch` is best-effort by contract, and both of its failure modes are silent:
+  // the OS can drop a notification outright (FSEvents coalescing on macOS, a full
+  // ReadDirectoryChangesW buffer on Windows), and libuv can report a change against
+  // the WATCHED DIRECTORY instead of naming the entry that changed. A watcher that
+  // trusts notifications alone therefore misses external changes — the exact failure
+  // this service exists to prevent. Both were observed for real: the suite's own
+  // `index` test waited a full 10s for a notification that never came, and a direct
+  // fs.watch experiment produced `change:.git` under churn.
+
+  /** A watcher that is wired up but will never deliver a single notification. */
+  function mockDeafWatchers(): { restore: () => void; count: () => number } {
+    const created: EventEmitter[] = []
+    const spy = vi.spyOn(fs, 'watch').mockImplementation((() => {
+      const fake = Object.assign(new EventEmitter(), { close(): void {} })
+      created.push(fake)
+      return fake as unknown as fs.FSWatcher
+    }) as unknown as typeof fs.watch)
+    return { restore: () => spy.mockRestore(), count: () => created.length }
+  }
+
+  it('detects an external change even when the OS delivers no notification at all', async () => {
+    const deaf = mockDeafWatchers()
+    const polling = new RepoWatcherService({ safetyNetIntervalMs: 100 })
+    try {
+      polling.watch(repoPath, sender)
+      expect(deaf.count()).toBeGreaterThan(0) // watchers exist; none of them will ever fire
+
+      await writeFile(path.join(repoPath, 'safety-net.txt'), 'x\n')
+      await git(repoPath, 'add', 'safety-net.txt')
+
+      await waitUntil(() => events.some((e) => e.repoPath === repoPath && e.kind === 'index'))
+      expect(events.some((e) => e.kind === 'index')).toBe(true)
+    } finally {
+      polling.unwatch()
+      deaf.restore()
+    }
+  })
+
+  it('acts on a notification that names no entry — the form libuv reports when it cannot attribute the change to one file', async () => {
+    const gitDirListeners: Array<(eventType: string, filename: string | null) => void> = []
+    const spy = vi.spyOn(fs, 'watch').mockImplementation(((...args: unknown[]) => {
+      const listener = (typeof args[1] === 'function' ? args[1] : args[2]) as
+        ((eventType: string, filename: string | null) => void) | undefined
+      if (listener && path.basename(String(args[0])) === '.git') gitDirListeners.push(listener)
+      return Object.assign(new EventEmitter(), { close(): void {} }) as unknown as fs.FSWatcher
+    }) as unknown as typeof fs.watch)
+    // A safety net that cannot possibly fire during this test, so the notification
+    // path alone has to be what produces the event.
+    const notificationOnly = new RepoWatcherService({ safetyNetIntervalMs: 60_000 })
+    try {
+      notificationOnly.watch(repoPath, sender)
+      expect(gitDirListeners).toHaveLength(1)
+
+      await git(repoPath, 'config', 'user.email', 'unnamed-notification@example.com')
+      gitDirListeners[0]('change', null)
+
+      await waitUntil(() => events.some((e) => e.repoPath === repoPath && e.kind === 'config'))
+      expect(events.some((e) => e.kind === 'config')).toBe(true)
+    } finally {
+      notificationOnly.unwatch()
+      spy.mockRestore()
+    }
+  })
+
+  it('does not re-report a change the notification path already reported', async () => {
+    // Notifications and the safety net both run against the same recorded state, so a
+    // change seen by one is not re-announced by the other. Without that, every external
+    // change would be delivered twice and the renderer would refresh twice for it.
+    const both = new RepoWatcherService({ safetyNetIntervalMs: 100 })
+    try {
+      both.watch(repoPath, sender)
+
+      await writeFile(path.join(repoPath, 'once.txt'), 'once\n')
+      await git(repoPath, 'add', 'once.txt')
+
+      await waitUntil(() => events.some((e) => e.kind === 'index'))
+      // Several safety-net cycles with nothing further changing on disk.
+      await new Promise((r) => setTimeout(r, 600))
+      expect(events.filter((e) => e.kind === 'index')).toHaveLength(1)
+    } finally {
+      both.unwatch()
     }
   })
 })

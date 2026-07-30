@@ -1,32 +1,44 @@
-// `.git` watcher (Phase 96, rename-proofed Phase 101) — instant external-change
-// detection for the ACTIVE repo only. Watches: the `.git` DIRECTORY itself
-// (non-recursive, filtered by filename) for `HEAD` (branch/detached-HEAD moves),
-// `index` (stage/unstage), `config` (identity/remote edits), and `packed-refs`
-// (folded into the `refs` kind); plus `refs/` (recursive, so nested
-// `refs/heads/feature/foo`-style names are covered) for loose ref creation,
-// deletion, and fast-forward.
+// `.git` watcher (Phase 96, rename-proofed Phase 101, drop-proofed 2026-07-30) —
+// instant external-change detection for the ACTIVE repo only. Reports four kinds:
+// `head` (branch/detached-HEAD moves), `index` (stage/unstage), `config`
+// (identity/remote edits), and `refs` (loose ref creation, deletion, fast-forward,
+// plus `packed-refs`).
 //
-// Phase 96 originally watched `HEAD`/`index` via `fs.watch` on the FILES
-// themselves — but git rewrites both via `*.lock` + `rename()` (write the new
-// content to `HEAD.lock`, then rename it over `HEAD`), and a per-file `fs.watch`
-// follows the original inode: once that inode is replaced, the watch is silently
-// dead after its first event (masked in practice by the separate `refs/` watch
-// surviving for branch-creating switches). A DIRECTORY watch instead tracks
-// entries BY NAME, so a rename-in event is reported like any other change — it
-// cannot be killed by git's lock-then-rename pattern, and every subsequent
-// external change (the 2nd, 3rd, Nth `git switch`) is detected exactly like the
-// first.
+// The service does NOT decide what changed from the notification itself. Every
+// notification — and a periodic safety-net tick — simply triggers one `check()` that
+// re-reads a fingerprint (mtime + size + inode) of `HEAD`, `index`, `config`,
+// `packed-refs` and the `refs/` tree, and emits an event only for the fingerprints
+// that actually moved since the last check. Notifications are therefore a latency
+// optimisation, not the source of truth, which is what makes the two silent failure
+// modes of `fs.watch` survivable:
+//
+//   1. A notification can be DROPPED outright — FSEvents coalescing on macOS, a full
+//      `ReadDirectoryChangesW` buffer on Windows. Both were observed here: the suite's
+//      own staging test once waited a full 10s for a notification that never arrived
+//      after `git add` had already returned. The safety-net tick catches it.
+//   2. A notification can name NO entry — libuv reports the change against the watched
+//      directory itself (a direct fs.watch experiment produced `change:.git` under
+//      churn) or omits the filename entirely on platforms that don't supply one. The
+//      previous implementation switched on that filename and silently dropped anything
+//      it didn't recognise; `check()` never looks at it.
+//
+// Phase 96 originally watched `HEAD`/`index` via `fs.watch` on the FILES themselves —
+// but git rewrites both via `*.lock` + `rename()`, and a per-file `fs.watch` follows
+// the original inode: once that inode is replaced the watch is silently dead after its
+// first event. Phase 101 moved to a DIRECTORY watch, which tracks entries by name and
+// survives every rename. That is still how the watches are set up here; the fingerprint
+// includes the inode for the same reason.
 //
 // Node's `fs.watch(dir, {recursive:true})` is unsupported on Linux (throws
-// ERR_FEATURE_UNAVAILABLE_ON_PLATFORM) — `refs/` falls back to periodic
-// stat-polling there, since a non-recursive watch would silently miss nested
-// branch-name directories. Debounced ~400ms; a burst of index+refs churn from a
-// single `git commit -a` collapses into (at most) one event per kind, not one per
-// filesystem notification.
+// ERR_FEATURE_UNAVAILABLE_ON_PLATFORM) — `refs/` falls back to periodic stat-polling
+// there, since a non-recursive watch would silently miss nested branch-name
+// directories. Debounced ~400ms; a burst of index+refs churn from a single
+// `git commit -a` collapses into (at most) one event per kind, not one per filesystem
+// notification.
 //
-// Watches only ONE repo at a time: `watch()` always closes any previous watch
-// first (the plan's own "watch ONLY the active repo" constraint), so the renderer
-// never has to reason about multiple live watchers.
+// Watches only ONE repo at a time: `watch()` always closes any previous watch first
+// (the plan's own "watch ONLY the active repo" constraint), so the renderer never has
+// to reason about multiple live watchers.
 
 import fs from 'node:fs'
 import path from 'node:path'
@@ -49,12 +61,50 @@ export interface IRepoWatcherService {
   unwatch(): void
 }
 
+export interface RepoWatcherOptions {
+  /**
+   * How often to re-read `.git` regardless of notifications, in ms. This is the floor
+   * on detection latency when the OS drops a notification entirely — not the normal
+   * path, which stays notification-driven and ~400ms. Injectable so tests can prove
+   * the safety net without waiting seconds for it.
+   */
+  safetyNetIntervalMs?: number
+}
+
 const DEBOUNCE_MS = 400
 /** Stat-polling fallback interval for `refs/` on platforms without recursive `fs.watch`. */
 const STAT_POLL_INTERVAL_MS = 400
+/** Default for {@link RepoWatcherOptions.safetyNetIntervalMs}. */
+const SAFETY_NET_INTERVAL_MS = 2000
 
 interface Closeable {
   close(): void
+}
+
+/**
+ * One thing worth watching, and the kind of change it represents. `read()` returns an
+ * opaque fingerprint string; any difference between two reads means "this changed".
+ */
+interface Probe {
+  id: string
+  kind: RepoChangeKind
+  read: () => string
+}
+
+/**
+ * mtime + size + inode. The inode matters: git replaces `HEAD` and `index` by renaming
+ * a `*.lock` file over them, so the entry can change identity while its size stays the
+ * same — and on a filesystem with coarse timestamps, while its mtime does too.
+ */
+function fileFingerprint(file: string): string {
+  try {
+    const stats = fs.statSync(file)
+    return `${stats.mtimeMs}:${stats.size}:${stats.ino}`
+  } catch {
+    // Absent is a state like any other: `packed-refs` appears on the first `git gc`,
+    // `index` on the first `git add` in a fresh repo.
+    return 'absent'
+  }
 }
 
 function snapshotDir(dir: string): Map<string, number> {
@@ -83,21 +133,35 @@ function snapshotDir(dir: string): Map<string, number> {
   return result
 }
 
-function snapshotsDiffer(a: Map<string, number>, b: Map<string, number>): boolean {
-  if (a.size !== b.size) return true
-  for (const [file, mtime] of a) {
-    if (b.get(file) !== mtime) return true
-  }
-  return false
+/** Fingerprint of a whole directory tree: every file below `dir`, with its mtime. */
+function dirFingerprint(dir: string): string {
+  return [...snapshotDir(dir)]
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([file, mtime]) => `${file}:${mtime}`)
+    .join('|')
+}
+
+function probesFor(gitDir: string): Probe[] {
+  return [
+    { id: 'HEAD', kind: 'head', read: () => fileFingerprint(path.join(gitDir, 'HEAD')) },
+    { id: 'index', kind: 'index', read: () => fileFingerprint(path.join(gitDir, 'index')) },
+    { id: 'config', kind: 'config', read: () => fileFingerprint(path.join(gitDir, 'config')) },
+    {
+      id: 'packed-refs',
+      kind: 'refs',
+      read: () => fileFingerprint(path.join(gitDir, 'packed-refs')),
+    },
+    { id: 'refs', kind: 'refs', read: () => dirFingerprint(path.join(gitDir, 'refs')) },
+  ]
 }
 
 /** Periodic stat-polling over every file under `dir` — the Linux fallback for a
  * recursive directory watch `fs.watch` doesn't support there. */
 function startStatPolling(dir: string, onChange: () => void): Closeable {
-  let last = snapshotDir(dir)
+  let last = dirFingerprint(dir)
   const interval = setInterval(() => {
-    const next = snapshotDir(dir)
-    if (snapshotsDiffer(last, next)) {
+    const next = dirFingerprint(dir)
+    if (next !== last) {
       last = next
       onChange()
     }
@@ -123,32 +187,17 @@ function watchRefsDir(refsDir: string, onChange: () => void): Closeable {
 }
 
 /**
- * Non-recursive watch on the `.git` DIRECTORY itself, filtered by filename — rename-proof
- * by construction (a directory watch reports rename-replaced entries by name, so git's
- * `*.lock` + `rename()` pattern can no longer kill it after one event, unlike a per-file
- * `fs.watch`). Tolerant of the directory briefly not existing (never true for `.git`
- * itself in practice, but matches the defensive shape of the file-watch this replaces).
+ * Non-recursive watch on the `.git` DIRECTORY itself — rename-proof by construction (a
+ * directory watch reports rename-replaced entries by name, so git's `*.lock` + `rename()`
+ * pattern can no longer kill it after one event, unlike a per-file `fs.watch`). The
+ * reported filename is deliberately ignored: it is unreliable (see the file header), and
+ * the caller's `check()` establishes what actually changed. Tolerant of the directory
+ * briefly not existing (never true for `.git` itself in practice, but matches the
+ * defensive shape of the file-watch this replaces).
  */
-function watchGitDirTopLevel(gitDir: string, onChange: (kind: RepoChangeKind) => void): Closeable {
+function watchGitDirTopLevel(gitDir: string, onChange: () => void): Closeable {
   try {
-    const watcher = fs.watch(gitDir, (_eventType, filename) => {
-      switch (filename) {
-        case 'HEAD':
-          onChange('head')
-          break
-        case 'index':
-          onChange('index')
-          break
-        case 'config':
-          onChange('config')
-          break
-        case 'packed-refs':
-          onChange('refs')
-          break
-        default:
-          break
-      }
-    })
+    const watcher = fs.watch(gitDir, () => onChange())
     // See the matching comment in `watchRefsDir` — the watched directory can go
     // away out from under an active watch; don't let an unhandled 'error' crash
     // the process over a now-stale watch.
@@ -160,49 +209,75 @@ function watchGitDirTopLevel(gitDir: string, onChange: (kind: RepoChangeKind) =>
 }
 
 export class RepoWatcherService implements IRepoWatcherService {
+  private readonly safetyNetIntervalMs: number
+
   private active: {
     watchers: Closeable[]
     debounceTimer: NodeJS.Timeout | null
-    pendingKinds: Set<RepoChangeKind>
+    safetyNet: NodeJS.Timeout | null
   } | null = null
+
+  constructor(options: RepoWatcherOptions = {}) {
+    this.safetyNetIntervalMs = options.safetyNetIntervalMs ?? SAFETY_NET_INTERVAL_MS
+  }
 
   watch(repoPath: string, sender: RepoWatchSender): void {
     this.unwatch()
 
     const gitDir = path.join(repoPath, '.git')
-    const pendingKinds = new Set<RepoChangeKind>()
+    const probes = probesFor(gitDir)
+    // Baseline taken up front, so a notification replayed from just BEFORE this call
+    // (macOS FSEvents does that) reports nothing rather than a phantom change.
+    const lastSeen = new Map(probes.map((probe) => [probe.id, probe.read()]))
+
     const state = {
       watchers: [] as Closeable[],
       debounceTimer: null as NodeJS.Timeout | null,
-      pendingKinds,
+      safetyNet: null as NodeJS.Timeout | null,
     }
     this.active = state
 
-    const scheduleEmit = (kind: RepoChangeKind): void => {
-      pendingKinds.add(kind)
+    /**
+     * The single place an event can be born. Both the notification path and the safety
+     * net run this against the same `lastSeen` state, so whichever observes a change
+     * first consumes it and the other stays silent — one change, one event.
+     */
+    const check = (): void => {
+      const changed: RepoChangeKind[] = []
+      for (const probe of probes) {
+        const current = probe.read()
+        if (lastSeen.get(probe.id) === current) continue
+        lastSeen.set(probe.id, current)
+        if (!changed.includes(probe.kind)) changed.push(probe.kind)
+      }
+      if (changed.length === 0) return
+      if (sender.isDestroyed?.()) return
+      for (const kind of changed) {
+        const validated = RepoChangedEventPayload.parse({ repoPath, kind })
+        sender.send(REPO_CHANGED_CHANNEL, validated)
+      }
+    }
+
+    const scheduleCheck = (): void => {
       if (state.debounceTimer) clearTimeout(state.debounceTimer)
       state.debounceTimer = setTimeout(() => {
         state.debounceTimer = null
-        const kinds = [...pendingKinds]
-        pendingKinds.clear()
-        if (sender.isDestroyed?.()) return
-        for (const emittedKind of kinds) {
-          const validated = RepoChangedEventPayload.parse({ repoPath, kind: emittedKind })
-          sender.send(REPO_CHANGED_CHANNEL, validated)
-        }
+        check()
       }, DEBOUNCE_MS)
     }
 
     state.watchers.push(
-      watchGitDirTopLevel(gitDir, (kind) => scheduleEmit(kind)),
-      watchRefsDir(path.join(gitDir, 'refs'), () => scheduleEmit('refs'))
+      watchGitDirTopLevel(gitDir, scheduleCheck),
+      watchRefsDir(path.join(gitDir, 'refs'), scheduleCheck)
     )
+    state.safetyNet = setInterval(check, this.safetyNetIntervalMs)
   }
 
   unwatch(): void {
     if (!this.active) return
     for (const watcher of this.active.watchers) watcher.close()
     if (this.active.debounceTimer) clearTimeout(this.active.debounceTimer)
+    if (this.active.safetyNet) clearInterval(this.active.safetyNet)
     this.active = null
   }
 }
