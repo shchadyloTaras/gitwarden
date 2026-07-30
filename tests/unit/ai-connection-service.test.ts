@@ -6,6 +6,7 @@ import { JsonStore } from '../../src/main/storage/JsonStore.js'
 import { AiConnectionsDataSchema, type AiConnectionsData } from '../../src/core/ai/schemas.js'
 import { AiConnectionService } from '../../src/main/services/AiConnectionService.js'
 import { isAiSendAllowed } from '../../src/core/ai/precedence.js'
+import { removeTempDir } from '../fixtures/tempDir'
 
 let tmpDir: string
 let storePath: string
@@ -16,7 +17,7 @@ beforeEach(async () => {
 })
 
 afterEach(async () => {
-  await fsPromises.rm(tmpDir, { recursive: true, force: true })
+  await removeTempDir(tmpDir)
 })
 
 function createService(): AiConnectionService {

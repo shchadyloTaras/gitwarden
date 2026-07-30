@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest'
-import { mkdtemp, rm, writeFile, chmod } from 'fs/promises'
+import { mkdtemp, writeFile, chmod } from 'fs/promises'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import * as os from 'os'
@@ -7,6 +7,7 @@ import * as path from 'path'
 import { GitLocator } from '../../src/main/git/GitLocator'
 import { GitRunner } from '../../src/main/git/GitRunner'
 import { GitError } from '../../src/main/git/ErrorMapper'
+import { removeTempDir } from '../fixtures/tempDir'
 
 const execFileAsync = promisify(execFile)
 
@@ -30,7 +31,7 @@ describe('GitRunner integration', () => {
   })
 
   afterEach(async () => {
-    await rm(tmpDir, { recursive: true, force: true })
+    await removeTempDir(tmpDir)
   })
 
   it('runs a real git command in a temp repo', async () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { mkdtemp, rm, writeFile, mkdir } from 'fs/promises'
+import { mkdtemp, writeFile, mkdir } from 'fs/promises'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import * as os from 'os'
@@ -12,6 +12,7 @@ import {
 } from '../../src/core/changelog/commits'
 import { renderLandingChangelog } from '../../src/core/changelog/render'
 import { readFileSync } from 'fs'
+import { removeTempDir } from '../fixtures/tempDir'
 
 describe('landing changelog copy', () => {
   // The landing docs page renders a synced copy of the root CHANGELOG.md. The astro build
@@ -47,7 +48,7 @@ describe('release-changelog git integration', () => {
   })
 
   afterEach(async () => {
-    await rm(tmpDir, { recursive: true, force: true })
+    await removeTempDir(tmpDir)
   })
 
   async function commit(file: string, message: string): Promise<void> {

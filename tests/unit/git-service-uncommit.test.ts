@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest'
-import { mkdtemp, rm, writeFile } from 'fs/promises'
+import { mkdtemp, writeFile } from 'fs/promises'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import * as os from 'os'
@@ -7,6 +7,7 @@ import * as path from 'path'
 import { GitLocator } from '../../src/main/git/GitLocator'
 import { GitRunner } from '../../src/main/git/GitRunner'
 import { GitService } from '../../src/main/services/GitService'
+import { removeTempDir } from '../fixtures/tempDir'
 
 const execFileAsync = promisify(execFile)
 
@@ -35,7 +36,7 @@ describe('GitService uncommit primitives integration', () => {
   })
 
   afterEach(async () => {
-    await rm(tmpDir, { recursive: true, force: true })
+    await removeTempDir(tmpDir)
   })
 
   /** A local bare repo as the "remote", with `main` pushed and tracking set up. */

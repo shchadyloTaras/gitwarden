@@ -6,6 +6,7 @@ import { ProfilesDataSchema } from '../../src/core/schemas.js'
 import { JsonStore } from '../../src/main/storage/JsonStore.js'
 import { ProfileService } from '../../src/main/services/ProfileService.js'
 import { profileFixture } from '../fixtures/profiles'
+import { removeTempDir } from '../fixtures/tempDir'
 
 const BASE_PROFILE = profileFixture('personal', {
   gitAuthorName: 'Alice',
@@ -26,7 +27,7 @@ beforeEach(async () => {
 })
 
 afterEach(async () => {
-  await fsPromises.rm(tmpDir, { recursive: true, force: true })
+  await removeTempDir(tmpDir)
 })
 
 describe('ProfileService', () => {

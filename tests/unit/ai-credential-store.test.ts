@@ -12,6 +12,7 @@ import {
   type AiCredentialStoreData,
 } from '../../src/main/storage/AiCredentialStore.js'
 import { ConsoleLogger, type Logger } from '../../src/main/services/Logger.js'
+import { removeTempDir } from '../fixtures/tempDir'
 
 // Reversible fake encryptor (same shape as token-store.test.ts) so the round-trip
 // is exercised without Electron safeStorage.
@@ -51,7 +52,7 @@ beforeEach(async () => {
 })
 
 afterEach(async () => {
-  await fsPromises.rm(tmpDir, { recursive: true, force: true })
+  await removeTempDir(tmpDir)
 })
 
 function createJsonStore(): JsonStore<AiCredentialStoreData> {

@@ -6,6 +6,7 @@ import { RepositoriesDataSchema } from '../../src/core/schemas.js'
 import { JsonStore } from '../../src/main/storage/JsonStore.js'
 import { RepositoryService } from '../../src/main/services/RepositoryService.js'
 import type { RepositoryRecord } from '../../src/core/types.js'
+import { removeTempDir } from '../fixtures/tempDir'
 
 const BASE_REPO: Omit<RepositoryRecord, 'id'> = {
   name: 'my-project',
@@ -25,7 +26,7 @@ beforeEach(async () => {
 })
 
 afterEach(async () => {
-  await fsPromises.rm(tmpDir, { recursive: true, force: true })
+  await removeTempDir(tmpDir)
 })
 
 describe('RepositoryService', () => {

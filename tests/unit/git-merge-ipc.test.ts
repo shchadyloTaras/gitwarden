@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest'
-import { mkdtemp, rm, stat, writeFile } from 'fs/promises'
+import { mkdtemp, stat, writeFile } from 'fs/promises'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import * as os from 'os'
@@ -9,6 +9,7 @@ import { GitRunner } from '../../src/main/git/GitRunner'
 import { GitService } from '../../src/main/services/GitService'
 import { runGitMerge } from '../../src/main/ipc/gitMergeHandler'
 import { toIpcFailure } from '../../src/main/ipc/ipcFailure'
+import { removeTempDir } from '../fixtures/tempDir'
 
 const execFileAsync = promisify(execFile)
 
@@ -37,7 +38,7 @@ describe('git:merge handler (runGitMerge) integration (Phase 83)', () => {
   })
 
   afterEach(async () => {
-    await rm(tmpDir, { recursive: true, force: true })
+    await removeTempDir(tmpDir)
   })
 
   it('merges cleanly on a clean tree and returns ok (no thrown error)', async () => {

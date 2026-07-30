@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest'
-import { mkdtemp, rm, writeFile } from 'fs/promises'
+import { mkdtemp, writeFile } from 'fs/promises'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import * as os from 'os'
@@ -13,6 +13,7 @@ import {
   returnUnpushed,
   type UncommitExecutorDeps,
 } from '../../src/main/ipc/uncommitExecutor'
+import { removeTempDir } from '../fixtures/tempDir'
 
 const execFileAsync = promisify(execFile)
 
@@ -43,7 +44,7 @@ describe('uncommitExecutor integration', () => {
   })
 
   afterEach(async () => {
-    await rm(tmpDir, { recursive: true, force: true })
+    await removeTempDir(tmpDir)
   })
 
   async function setUpTrackedRemote(): Promise<void> {

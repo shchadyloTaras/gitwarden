@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest'
-import { mkdtemp, rm, mkdir, stat, writeFile, realpath } from 'fs/promises'
+import { mkdtemp, mkdir, stat, writeFile, realpath } from 'fs/promises'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import * as os from 'os'
@@ -8,6 +8,7 @@ import { GitLocator } from '../../src/main/git/GitLocator'
 import { GitRunner } from '../../src/main/git/GitRunner'
 import { GitService } from '../../src/main/services/GitService'
 import { runGitInitialize, type GitInitializeDeps } from '../../src/main/ipc/gitInitializeHandler'
+import { removeTempDir } from '../fixtures/tempDir'
 
 const execFileAsync = promisify(execFile)
 
@@ -33,7 +34,7 @@ describe('Initialize Repository (Phase 86)', () => {
   })
 
   afterEach(async () => {
-    await rm(tmpDir, { recursive: true, force: true })
+    await removeTempDir(tmpDir)
   })
 
   describe('GitService.initRepository', () => {

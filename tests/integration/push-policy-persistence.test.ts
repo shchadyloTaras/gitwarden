@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { mkdtemp, rm } from 'fs/promises'
+import { mkdtemp } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { JsonStore } from '../../src/main/storage/JsonStore.js'
@@ -14,6 +14,7 @@ import type {
   EffectiveGitIdentity,
   GitRemote,
 } from '../../src/core/types.js'
+import { removeTempDir } from '../fixtures/tempDir'
 
 let tmpDir: string
 let service: RepositoryService
@@ -23,7 +24,7 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  await rm(tmpDir, { recursive: true, force: true })
+  await removeTempDir(tmpDir)
 })
 
 const POLICY: RepositoryPushPolicy = {

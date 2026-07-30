@@ -6,6 +6,7 @@ import { AppSettingsSchema } from '../../src/core/schemas.js'
 import { JsonStore } from '../../src/main/storage/JsonStore.js'
 import { SettingsService } from '../../src/main/services/SettingsService.js'
 import type { AppSettings } from '../../src/core/types.js'
+import { removeTempDir } from '../fixtures/tempDir'
 
 const DEFAULTS: AppSettings = { appearance: 'system' }
 
@@ -19,7 +20,7 @@ beforeEach(async () => {
 })
 
 afterEach(async () => {
-  await fsPromises.rm(tmpDir, { recursive: true, force: true })
+  await removeTempDir(tmpDir)
 })
 
 describe('SettingsService', () => {

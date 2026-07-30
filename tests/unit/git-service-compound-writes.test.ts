@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest'
-import { mkdtemp, rm, writeFile } from 'fs/promises'
+import { mkdtemp, writeFile } from 'fs/promises'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import * as os from 'os'
@@ -8,6 +8,7 @@ import { GitLocator } from '../../src/main/git/GitLocator'
 import { GitRunner } from '../../src/main/git/GitRunner'
 import { GitService } from '../../src/main/services/GitService'
 import { GitError } from '../../src/main/git/ErrorMapper'
+import { removeTempDir } from '../fixtures/tempDir'
 
 const execFileAsync = promisify(execFile)
 
@@ -40,7 +41,7 @@ describe('GitService compound-write primitives (Phase 91)', () => {
     // it wrote) can hold a transient handle into tmpDir for a few hundred ms after the
     // child's 'close' event fires, even though nothing is actually still using it — retry
     // with backoff is Node's own documented remedy for EBUSY/EPERM in this exact situation.
-    await rm(tmpDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 })
+    await removeTempDir(tmpDir)
   })
 
   async function addCommit(name: string): Promise<void> {
@@ -77,65 +78,59 @@ describe('GitService compound-write primitives (Phase 91)', () => {
       return bare
     }
 
-    // Each of these two tests chains ~18 real (unmocked) git process spawns — comfortably
-    // past vitest's 5000ms default on a loaded Windows CI runner, where process creation is
-    // markedly slower than on macOS/Linux (confirmed flaky in CI: v0.7.1 release build).
-    it(
-      'adds -u for a non-current branch that has no upstream, even though HEAD does',
-      async () => {
-        const bare = await setUpRemote()
-        await addCommit('c1')
-        await service.push(repoPath, 'origin', 'main') // main now has an upstream
-        await git(repoPath, 'checkout', '-b', 'feature')
-        await addCommit('feature-work')
-        await git(repoPath, 'checkout', 'main') // HEAD is back on main (has upstream)
+    // Each of these two tests chains ~18 real (unmocked) git process spawns, which is well
+    // past vitest's 5000ms default on a loaded Windows CI runner. They no longer carry a
+    // per-test override: vitest.config.ts now raises testTimeout suite-wide, and a local
+    // 15_000 would give the two slowest tests in the repo a *tighter* budget than everyone
+    // else — exactly backwards.
+    it('adds -u for a non-current branch that has no upstream, even though HEAD does', async () => {
+      const bare = await setUpRemote()
+      await addCommit('c1')
+      await service.push(repoPath, 'origin', 'main') // main now has an upstream
+      await git(repoPath, 'checkout', '-b', 'feature')
+      await addCommit('feature-work')
+      await git(repoPath, 'checkout', 'main') // HEAD is back on main (has upstream)
 
-        // Push the NON-current 'feature' branch, which has never been pushed.
-        await service.push(repoPath, 'origin', 'feature')
+      // Push the NON-current 'feature' branch, which has never been pushed.
+      await service.push(repoPath, 'origin', 'feature')
 
-        // -u must have been applied to feature specifically — proven by the tracking
-        // ref now resolving, NOT by HEAD's own (unrelated) upstream.
-        const upstream = await git(
-          repoPath,
-          'rev-parse',
-          '--abbrev-ref',
-          '--symbolic-full-name',
-          'feature@{u}'
-        )
-        expect(upstream).toBe('origin/feature')
-        const remoteBranches = await git(bare, 'branch', '--list')
-        expect(remoteBranches).toContain('feature')
-      },
-      15_000
-    )
+      // -u must have been applied to feature specifically — proven by the tracking
+      // ref now resolving, NOT by HEAD's own (unrelated) upstream.
+      const upstream = await git(
+        repoPath,
+        'rev-parse',
+        '--abbrev-ref',
+        '--symbolic-full-name',
+        'feature@{u}'
+      )
+      expect(upstream).toBe('origin/feature')
+      const remoteBranches = await git(bare, 'branch', '--list')
+      expect(remoteBranches).toContain('feature')
+    })
 
-    it(
-      'does NOT re-add -u for a non-current branch that already has an upstream',
-      async () => {
-        await setUpRemote()
-        await addCommit('c1')
-        await git(repoPath, 'checkout', '-b', 'feature')
-        await addCommit('feature-work')
-        await service.push(repoPath, 'origin', 'feature') // establishes feature's upstream
-        await git(repoPath, 'checkout', 'main') // HEAD has NO upstream at all
-        await addCommit('main-work-2')
+    it('does NOT re-add -u for a non-current branch that already has an upstream', async () => {
+      await setUpRemote()
+      await addCommit('c1')
+      await git(repoPath, 'checkout', '-b', 'feature')
+      await addCommit('feature-work')
+      await service.push(repoPath, 'origin', 'feature') // establishes feature's upstream
+      await git(repoPath, 'checkout', 'main') // HEAD has NO upstream at all
+      await addCommit('main-work-2')
 
-        // Re-pushing feature while HEAD (main) has no upstream must not force -u onto a
-        // branch that already tracks correctly — the old HEAD-relative check would have
-        // reported hasUpstream:false here (since HEAD/main has none) and added -u
-        // needlessly (harmless, but proves the fix reads the right ref either way).
-        await expect(service.push(repoPath, 'origin', 'feature')).resolves.toBeUndefined()
-        const upstream = await git(
-          repoPath,
-          'rev-parse',
-          '--abbrev-ref',
-          '--symbolic-full-name',
-          'feature@{u}'
-        )
-        expect(upstream).toBe('origin/feature')
-      },
-      15_000
-    )
+      // Re-pushing feature while HEAD (main) has no upstream must not force -u onto a
+      // branch that already tracks correctly — the old HEAD-relative check would have
+      // reported hasUpstream:false here (since HEAD/main has none) and added -u
+      // needlessly (harmless, but proves the fix reads the right ref either way).
+      await expect(service.push(repoPath, 'origin', 'feature')).resolves.toBeUndefined()
+      const upstream = await git(
+        repoPath,
+        'rev-parse',
+        '--abbrev-ref',
+        '--symbolic-full-name',
+        'feature@{u}'
+      )
+      expect(upstream).toBe('origin/feature')
+    })
   })
 
   describe('getCommitsAhead error narrowing (W29)', () => {

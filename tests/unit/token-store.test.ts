@@ -12,6 +12,7 @@ import {
   type TokenStoreData,
 } from '../../src/main/storage/TokenStore.js'
 import { ConsoleLogger, type Logger } from '../../src/main/services/Logger.js'
+import { removeTempDir } from '../fixtures/tempDir'
 
 class FakeSafeStorage implements SafeStorageLike {
   isEncryptionAvailable(): boolean {
@@ -51,7 +52,7 @@ beforeEach(async () => {
 })
 
 afterEach(async () => {
-  await fsPromises.rm(tmpDir, { recursive: true, force: true })
+  await removeTempDir(tmpDir)
 })
 
 function createTokenStore(logger?: Logger): TokenStore {

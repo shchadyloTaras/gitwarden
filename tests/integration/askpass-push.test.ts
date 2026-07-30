@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest'
-import { mkdtemp, rm, readFile } from 'fs/promises'
+import { mkdtemp, readFile } from 'fs/promises'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import * as os from 'os'
@@ -15,6 +15,7 @@ import {
   ensureAskpassHelper,
   resetAskpassHelperCache,
 } from '../../src/main/git/askpass'
+import { removeTempDir } from '../fixtures/tempDir'
 
 const execFileAsync = promisify(execFile)
 const TOKEN = 'gho_INTEGRATIONsecretTOKEN0000000000'
@@ -39,7 +40,7 @@ describe('GIT_ASKPASS helper', () => {
 
   afterEach(async () => {
     resetAskpassHelperCache()
-    await rm(tmpDir, { recursive: true, force: true })
+    await removeTempDir(tmpDir)
   })
 
   // The Windows .cmd helper is exercised only on Windows; CI runs Unix.
@@ -101,7 +102,7 @@ describe('GitService.push token wiring — no token leaks', () => {
   })
 
   afterEach(async () => {
-    await rm(tmpDir, { recursive: true, force: true })
+    await removeTempDir(tmpDir)
   })
 
   it('passes the token via extraEnv (never argv); URL and .git/config stay clean', async () => {

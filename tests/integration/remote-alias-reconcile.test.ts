@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { mkdtemp, rm } from 'fs/promises'
+import { mkdtemp } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { execFileSync } from 'child_process'
@@ -11,6 +11,7 @@ import {
   type RemoteReconcileDeps,
 } from '../../src/main/ipc/remoteReconcile.js'
 import type { Profile, RepositoryRecord } from '../../src/core/types.js'
+import { removeTempDir } from '../fixtures/tempDir'
 
 // Offline integration: drive reconcileAssignedProfileRemote against a real temp git repo,
 // asserting the `--local` origin host via `git remote get-url`. No network — the remote URL
@@ -26,7 +27,7 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  await Promise.all(tmpDirs.map((d) => rm(d, { recursive: true, force: true })))
+  await Promise.all(tmpDirs.map((d) => removeTempDir(d)))
 })
 
 async function repoWithOrigin(originUrl: string): Promise<RepositoryRecord> {

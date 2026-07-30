@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { mkdtemp, rm, mkdir, symlink } from 'fs/promises'
+import { mkdtemp, mkdir, symlink } from 'fs/promises'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import * as os from 'os'
 import * as path from 'path'
 import { PathValidator } from '../../src/main/git/PathValidator'
+import { removeTempDir } from '../fixtures/tempDir'
 
 const execFileAsync = promisify(execFile)
 
@@ -20,7 +21,7 @@ describe('PathValidator', () => {
   })
 
   afterEach(async () => {
-    await rm(tmpDir, { recursive: true, force: true })
+    await removeTempDir(tmpDir)
   })
 
   it('returns the canonical path for a valid git repo', async () => {

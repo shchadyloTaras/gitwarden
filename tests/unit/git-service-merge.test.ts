@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest'
-import { mkdtemp, rm, stat, writeFile } from 'fs/promises'
+import { mkdtemp, stat, writeFile } from 'fs/promises'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import * as os from 'os'
@@ -8,6 +8,7 @@ import { GitLocator } from '../../src/main/git/GitLocator'
 import { GitRunner } from '../../src/main/git/GitRunner'
 import type { GitError } from '../../src/main/git/ErrorMapper'
 import { GitService } from '../../src/main/services/GitService'
+import { removeTempDir } from '../fixtures/tempDir'
 
 const execFileAsync = promisify(execFile)
 
@@ -36,7 +37,7 @@ describe('GitService.mergeBranch integration (Phase 82)', () => {
   })
 
   afterEach(async () => {
-    await rm(tmpDir, { recursive: true, force: true })
+    await removeTempDir(tmpDir)
   })
 
   it('fast-forwards when the target branch is a direct ancestor', async () => {

@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { mkdtemp, rm, writeFile } from 'fs/promises'
+import { mkdtemp, writeFile } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { execFileSync } from 'child_process'
 import { GitRunner } from '../../src/main/git/GitRunner.js'
 import { GitLocator } from '../../src/main/git/GitLocator.js'
 import { GitService } from '../../src/main/services/GitService.js'
+import { removeTempDir } from '../fixtures/tempDir'
 
 let tmpDir: string
 let gitPath: string
@@ -33,7 +34,7 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  await rm(tmpDir, { recursive: true, force: true })
+  await removeTempDir(tmpDir)
 })
 
 describe('GitService.getEffectiveIdentity', () => {
@@ -65,7 +66,7 @@ describe('GitService.getEffectiveIdentity', () => {
         expect(identity.emailSource).toBeDefined()
       }
     } finally {
-      await rm(noIdentityDir, { recursive: true, force: true })
+      await removeTempDir(noIdentityDir)
     }
   })
 
@@ -104,8 +105,8 @@ describe('GitService.getEffectiveIdentity', () => {
       expect(out).not.toMatch(/\/\.git\/config$/)
       expect(out).toContain('Global User')
     } finally {
-      await rm(fakeHome, { recursive: true, force: true })
-      await rm(repoDir, { recursive: true, force: true })
+      await removeTempDir(fakeHome)
+      await removeTempDir(repoDir)
     }
   })
 })

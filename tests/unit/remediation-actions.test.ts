@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest'
-import { mkdtemp, rm, stat, writeFile } from 'fs/promises'
+import { mkdtemp, stat, writeFile } from 'fs/promises'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import * as os from 'os'
@@ -19,6 +19,7 @@ import type {
   GitHubDeviceCode,
   GitStatus,
 } from '../../src/core/types'
+import { removeTempDir } from '../fixtures/tempDir'
 
 // Offline fixtures — real git in a temp dir, with a LOCAL bare repo as the "remote".
 // The device-flow + GitHub services are mocked; no network, no real account, no token.
@@ -98,7 +99,7 @@ describe('executeRemediation (offline fixtures)', () => {
   })
 
   afterEach(async () => {
-    await rm(tmpDir, { recursive: true, force: true })
+    await removeTempDir(tmpDir)
   })
 
   it('set-local-identity writes the profile identity to --local config', async () => {
@@ -348,13 +349,11 @@ describe('executeRemediation (offline fixtures)', () => {
         setLocalIdentity: vi.fn(async () => {}),
         push: vi.fn(async () => {}),
         getRemotes: vi.fn(async () => []),
-        getStatus: vi.fn(
-          async (): Promise<GitStatus> => ({
-            files: [{ path: 'dirty.txt', indexStatus: 'unmodified', worktreeStatus: 'modified' }],
-            ahead: 0,
-            behind: 0,
-          })
-        ),
+        getStatus: vi.fn(async (): Promise<GitStatus> => ({
+          files: [{ path: 'dirty.txt', indexStatus: 'unmodified', worktreeStatus: 'modified' }],
+          ahead: 0,
+          behind: 0,
+        })),
         mergeRemoteBranch,
         enqueueJob: stubEnqueueJob,
         verifyHeadBranch: stubVerifyHeadBranch,

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest'
-import { mkdir, mkdtemp, realpath, rm, stat, writeFile } from 'fs/promises'
+import { mkdir, mkdtemp, realpath, stat, writeFile } from 'fs/promises'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import * as os from 'os'
@@ -8,6 +8,7 @@ import { GitLocator } from '../../src/main/git/GitLocator'
 import { GitRunner } from '../../src/main/git/GitRunner'
 import type { GitError } from '../../src/main/git/ErrorMapper'
 import { GitService } from '../../src/main/services/GitService'
+import { removeTempDir } from '../fixtures/tempDir'
 
 const execFileAsync = promisify(execFile)
 
@@ -36,7 +37,7 @@ describe('GitService.getStatus integration', () => {
   })
 
   afterEach(async () => {
-    await rm(tmpDir, { recursive: true, force: true })
+    await removeTempDir(tmpDir)
   })
 
   it('returns empty files and branch name for a fresh repo', async () => {
@@ -192,7 +193,7 @@ describe('GitService.getStatus integration', () => {
 
     // Deleted out-of-band — NOT via `git worktree remove` — exactly the Finder/
     // Explorer scenario W22 describes: git's own registration doesn't know.
-    await rm(linkedPath, { recursive: true, force: true })
+    await removeTempDir(linkedPath)
 
     const afterDelete = await service.getBranches(repoPath)
     const staleBranch = afterDelete.find((b) => b.name === 'orphaned-worktree')

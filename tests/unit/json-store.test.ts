@@ -4,6 +4,7 @@ import * as path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { z } from 'zod'
 import { JsonStore } from '../../src/main/storage/JsonStore.js'
+import { removeTempDir } from '../fixtures/tempDir'
 
 const ItemSchema = z.object({ value: z.number() })
 type Item = z.infer<typeof ItemSchema>
@@ -19,7 +20,7 @@ beforeEach(async () => {
 })
 
 afterEach(async () => {
-  await fsPromises.rm(tmpDir, { recursive: true, force: true })
+  await removeTempDir(tmpDir)
 })
 
 describe('JsonStore', () => {

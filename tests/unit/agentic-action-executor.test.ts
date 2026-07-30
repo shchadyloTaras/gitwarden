@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest'
-import { mkdtemp, rm, readFile, writeFile } from 'fs/promises'
+import { mkdtemp, readFile, writeFile } from 'fs/promises'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import * as os from 'os'
@@ -10,6 +10,7 @@ import { GitService } from '../../src/main/services/GitService'
 import { AgenticActionExecutor } from '../../src/main/ai/AgenticActionExecutor'
 import type { IRepositoryService } from '../../src/main/services/RepositoryService'
 import type { RepositoryRecord } from '../../src/core/types'
+import { removeTempDir } from '../fixtures/tempDir'
 
 const execFileAsync = promisify(execFile)
 
@@ -62,7 +63,7 @@ describe('AgenticActionExecutor (Phase 94)', () => {
   })
 
   afterEach(async () => {
-    await rm(tmpDir, { recursive: true, force: true })
+    await removeTempDir(tmpDir)
   })
 
   it('rejects an unknown repositoryId with a clear error', async () => {
