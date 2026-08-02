@@ -1,6 +1,6 @@
 # Plan — Profile Repository Summary: assigned repositories at a glance
 
-**Status:** 🟡 in progress — Phase 117 complete; Phase 118 open — **derived view**; the
+**Status:** ✅ complete — Phases 117–118 complete — **derived view**; the
 authoritative state is the Phase Checklist in [`docs/progress-log.md`](../progress-log.md).
 **Phases:** 117 → 118.
 **Feature-complete stop point:** Phase 118.

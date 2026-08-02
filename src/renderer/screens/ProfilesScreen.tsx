@@ -1,6 +1,13 @@
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import type { GitHubAccount, Profile } from '../../core/types'
+import { buildProfileRepositorySummary } from '../../core/profiles/profileRepositorySummary'
 import { useProfilesStore, profileStatusColor } from '../store/profilesStore'
+import { useRepositoriesStore } from '../store/repositoriesStore'
+import { useAppStore } from '../store/appStore'
+import {
+  deriveRepositoryDataState,
+  type RepositoryDataState,
+} from '../profileRepositoryPresentation'
 import { GITHUB_CLIENT_ID } from '../../core/config/github'
 import ConnectGitHubModal from '../components/ConnectGitHubModal'
 import ResizableMainSplit from '../components/ResizableMainSplit'
@@ -51,19 +58,62 @@ function formFromProfile(p: Profile): FormData {
   }
 }
 
+function repositoryBadgePresentation(
+  count: number,
+  state: RepositoryDataState
+): { value: number | '—'; label: string; visualState: RepositoryDataState | 'zero' } {
+  switch (state) {
+    case 'loading':
+      return {
+        value: '—',
+        label: STR.PROFILE_REPOSITORY_BADGE_LOADING,
+        visualState: state,
+      }
+    case 'unavailable':
+      return {
+        value: '—',
+        label: STR.PROFILE_REPOSITORY_BADGE_UNAVAILABLE,
+        visualState: state,
+      }
+    case 'refreshing':
+      return {
+        value: count,
+        label: STR.PROFILE_REPOSITORY_BADGE_REFRESHING(count),
+        visualState: state,
+      }
+    case 'stale':
+      return {
+        value: count,
+        label: STR.PROFILE_REPOSITORY_BADGE_STALE(count),
+        visualState: state,
+      }
+    case 'ready':
+      return {
+        value: count,
+        label: STR.PROFILE_REPOSITORY_BADGE_LABEL(count),
+        visualState: count === 0 ? 'zero' : state,
+      }
+  }
+}
+
 export default function ProfilesScreen(): React.ReactElement {
   const {
     profiles,
     activeProfileId,
+    loading: profilesLoading,
     createProfile,
     updateProfile,
     deleteProfile,
     setActiveProfile,
     load,
   } = useProfilesStore()
+  const selectedProfileId = useAppStore((s) => s.selectedProfileId)
+  const setSelectedProfileId = useAppStore((s) => s.setSelectedProfileId)
+  const repos = useRepositoriesStore((s) => s.repos)
+  const repositoriesLoading = useRepositoriesStore((s) => s.loading)
+  const repositoriesError = useRepositoriesStore((s) => s.error)
 
   const [mode, setMode] = useState<FormMode>('idle')
-  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [form, setForm] = useState<FormData>(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -73,11 +123,56 @@ export default function ProfilesScreen(): React.ReactElement {
   const [connecting, setConnecting] = useState(false)
   const [confirmDisconnect, setConfirmDisconnect] = useState(false)
 
-  const selectedProfile = profiles.find((p) => p.id === selectedId) ?? null
+  const selectedProfile = profiles.find((p) => p.id === selectedProfileId) ?? null
   const linkedGitHub = selectedProfile?.linkedGitHub ?? null
+  const repositoryDataState = deriveRepositoryDataState({
+    cachedRepositoryCount: repos.length,
+    loading: repositoriesLoading,
+    error: repositoriesError,
+  })
+  const repositorySummaries = useMemo(
+    () =>
+      new Map(
+        profiles.map((profile) => [profile.id, buildProfileRepositorySummary(profile.id, repos)])
+      ),
+    [profiles, repos]
+  )
+
+  useEffect(() => {
+    if (profilesLoading) return
+
+    if (!selectedProfileId) {
+      if (mode === 'edit') {
+        setMode('idle')
+        setForm(EMPTY_FORM)
+      }
+      return
+    }
+
+    const selected = profiles.find((profile) => profile.id === selectedProfileId)
+    if (!selected) {
+      setSelectedProfileId(null)
+      setMode('idle')
+      setForm(EMPTY_FORM)
+      setError(null)
+      setSuccessMessage(null)
+      setWarning(null)
+      setConfirmDelete(false)
+      setConfirmDisconnect(false)
+      setConnecting(false)
+      return
+    }
+
+    // Selection survives navigation because it is shared with Context; restore only
+    // the initial form when this screen remounts, never overwrite in-progress edits.
+    if (mode === 'idle') {
+      setForm(formFromProfile(selected))
+      setMode('edit')
+    }
+  }, [mode, profiles, profilesLoading, selectedProfileId, setSelectedProfileId])
 
   function selectProfile(p: Profile) {
-    setSelectedId(p.id)
+    setSelectedProfileId(p.id)
     setForm(formFromProfile(p))
     setMode('edit')
     setError(null)
@@ -88,7 +183,7 @@ export default function ProfilesScreen(): React.ReactElement {
   }
 
   function startCreate() {
-    setSelectedId(null)
+    setSelectedProfileId(null)
     setForm(EMPTY_FORM)
     setMode('create')
     setError(null)
@@ -147,7 +242,7 @@ export default function ProfilesScreen(): React.ReactElement {
     setSaving(true)
     try {
       const created = await createProfile(formToInput())
-      setSelectedId(created.id)
+      setSelectedProfileId(created.id)
       setMode('edit')
       setSuccessMessage(STR.PROFILE_CREATED_NOT_CONNECTED)
       setConnecting(true)
@@ -185,10 +280,10 @@ export default function ProfilesScreen(): React.ReactElement {
       const wasCreate = mode === 'create'
       if (mode === 'create') {
         const created = await createProfile(input)
-        setSelectedId(created.id)
+        setSelectedProfileId(created.id)
         setMode('edit')
-      } else if (mode === 'edit' && selectedId) {
-        await updateProfile(selectedId, input)
+      } else if (mode === 'edit' && selectedProfileId) {
+        await updateProfile(selectedProfileId, input)
       }
       setError(null)
       setSuccessMessage(wasCreate ? STR.PROFILE_CREATED : STR.PROFILE_SAVED)
@@ -200,12 +295,12 @@ export default function ProfilesScreen(): React.ReactElement {
   }
 
   async function handleDelete() {
-    if (!selectedId) return
+    if (!selectedProfileId) return
     setSaving(true)
     setSuccessMessage(null)
     try {
-      await deleteProfile(selectedId)
-      setSelectedId(null)
+      await deleteProfile(selectedProfileId)
+      setSelectedProfileId(null)
       setMode('idle')
       setForm(EMPTY_FORM)
       setConfirmDelete(false)
@@ -226,15 +321,15 @@ export default function ProfilesScreen(): React.ReactElement {
   }
 
   async function handleSetActive() {
-    if (!selectedId) return
-    await handleSetActiveById(selectedId)
+    if (!selectedProfileId) return
+    await handleSetActiveById(selectedProfileId)
   }
 
   // On a successful GitHub link, auto-fill identity (displayName only if still empty)
   // and persist it — which also pulls the linkedGitHub record main just wrote into the
   // store, so the linked badge appears.
   async function handleAuthorized(identity: GitHubAccount) {
-    if (!selectedId) return
+    if (!selectedProfileId) return
     setSuccessMessage(null)
     // Safety check: if the user already declared a GitHub username for this profile and it
     // differs from the account they actually authorized as, surface a mismatch warning
@@ -251,7 +346,7 @@ export default function ProfilesScreen(): React.ReactElement {
     if (!form.displayName.trim()) patch.displayName = resolvedName
 
     try {
-      await updateProfile(selectedId, patch)
+      await updateProfile(selectedProfileId, patch)
       setForm((f) => ({
         ...f,
         gitAuthorName: patch.gitAuthorName ?? f.gitAuthorName,
@@ -267,11 +362,11 @@ export default function ProfilesScreen(): React.ReactElement {
   }
 
   async function handleDisconnect() {
-    if (!selectedId) return
+    if (!selectedProfileId) return
     setSaving(true)
     setSuccessMessage(null)
     try {
-      const res = await window.api.github.disconnect(selectedId)
+      const res = await window.api.github.disconnect(selectedProfileId)
       if (!res.ok) throw new Error(res.error)
       // Refresh so the cleared linkedGitHub is reflected in the badge.
       await load()
@@ -285,7 +380,7 @@ export default function ProfilesScreen(): React.ReactElement {
     }
   }
 
-  const isActive = selectedId === activeProfileId
+  const isActive = selectedProfileId === activeProfileId
 
   return (
     <div
@@ -349,26 +444,31 @@ export default function ProfilesScreen(): React.ReactElement {
               )}
               {profiles.map((p) => {
                 const isActiveRow = p.id === activeProfileId
+                const repositoryCount = repositorySummaries.get(p.id)?.count ?? 0
+                const repositoryBadge = repositoryBadgePresentation(
+                  repositoryCount,
+                  repositoryDataState
+                )
                 return (
                   <div
                     key={p.id}
                     data-testid="profile-item"
                     role="listitem"
-                    className={`gw-list-row gw-management-row gw-management-profile-row${selectedId === p.id ? ' gw-management-row--selected' : ''}`}
+                    className={`gw-list-row gw-management-row gw-management-profile-row${selectedProfileId === p.id ? ' gw-management-row--selected' : ''}`}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
                       gap: 8,
                       width: '100%',
                       background:
-                        selectedId === p.id ? 'var(--gw-surface2, #27272a)' : 'transparent',
+                        selectedProfileId === p.id ? 'var(--gw-surface2, #27272a)' : 'transparent',
                       borderBottom: '1px solid var(--gw-border, #27272a)',
                     }}
                   >
                     <button
                       type="button"
                       className="gw-management-row-main"
-                      aria-pressed={selectedId === p.id}
+                      aria-pressed={selectedProfileId === p.id}
                       aria-current={isActiveRow ? 'true' : undefined}
                       onClick={() => selectProfile(p)}
                       style={{
@@ -407,6 +507,16 @@ export default function ProfilesScreen(): React.ReactElement {
                         }}
                       >
                         {p.displayName}
+                      </span>
+                      <span
+                        data-testid="profile-repository-count-badge"
+                        data-profile-id={p.id}
+                        data-repository-state={repositoryBadge.visualState}
+                        className="gw-profile-repository-badge"
+                        aria-label={repositoryBadge.label}
+                        title={repositoryBadge.label}
+                      >
+                        {repositoryBadge.value}
                       </span>
                     </button>
                     {isActiveRow ? (
@@ -1009,9 +1119,9 @@ export default function ProfilesScreen(): React.ReactElement {
         }
       />
 
-      {connecting && selectedId && (
+      {connecting && selectedProfileId && (
         <ConnectGitHubModal
-          profileId={selectedId}
+          profileId={selectedProfileId}
           onAuthorized={handleAuthorized}
           onClose={() => {
             setConnecting(false)

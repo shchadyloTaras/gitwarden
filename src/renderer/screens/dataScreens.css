@@ -66,6 +66,45 @@
   padding: 0 !important;
 }
 
+.gw-profile-repository-badge {
+  display: inline-flex;
+  min-width: 21px;
+  height: 20px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  border: 1px solid var(--gw-border-subtle, #3f3f46);
+  border-radius: 999px;
+  background: var(--gw-surface3, #2a2e3a);
+  color: var(--gw-text-muted, #b3b7c5);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  line-height: 1;
+}
+
+.gw-profile-repository-badge[data-repository-state='zero'] {
+  background: transparent;
+  color: var(--gw-text-faint, #858b9c);
+  font-weight: 550;
+}
+
+.gw-profile-repository-badge[data-repository-state='loading'],
+.gw-profile-repository-badge[data-repository-state='refreshing'] {
+  color: var(--gw-text-faint, #858b9c);
+}
+
+.gw-profile-repository-badge[data-repository-state='unavailable'],
+.gw-profile-repository-badge[data-repository-state='stale'] {
+  border-style: dashed;
+}
+
+.gw-profile-repository-badge[data-repository-state='unavailable'] {
+  background: transparent;
+  color: var(--gw-text-dim, #798092);
+}
+
 .gw-management-row {
   position: relative;
   margin: 2px 0;

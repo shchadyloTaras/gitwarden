@@ -70,6 +70,14 @@ export const STR = {
   PROFILE_EMAIL_INVALID: 'Enter a valid email address.',
   PROFILE_CREATED_NOT_CONNECTED: 'Profile saved as a draft — GitHub not connected.',
   PROFILE_REMOVE_EXPECTED_HOST: (host: string): string => `Remove ${host}`,
+  PROFILE_REPOSITORY_BADGE_LABEL: (count: number): string =>
+    `${count} assigned ${count === 1 ? 'repository' : 'repositories'}`,
+  PROFILE_REPOSITORY_BADGE_LOADING: 'Loading assigned repositories',
+  PROFILE_REPOSITORY_BADGE_REFRESHING: (count: number): string =>
+    `${count} assigned ${count === 1 ? 'repository' : 'repositories'}; refreshing`,
+  PROFILE_REPOSITORY_BADGE_UNAVAILABLE: 'Assigned repository data unavailable',
+  PROFILE_REPOSITORY_BADGE_STALE: (count: number): string =>
+    `${count} assigned ${count === 1 ? 'repository' : 'repositories'}; may be outdated`,
 
   // ── Repositories screen ───────────────────────────────────────────────────
   REPOSITORY_SAVED: 'Repository saved.',
@@ -595,6 +603,18 @@ export const STR = {
   INSPECTOR_NO_PROFILE: 'No profile selected',
   INSPECTOR_NO_REPO: 'No repository selected',
   INSPECTOR_NO_BRANCH: '—',
+  INSPECTOR_ACTIVE_WORKSPACE: 'Active workspace',
+  INSPECTOR_SELECTED_PROFILE: 'Selected profile',
+  INSPECTOR_SELECT_PROFILE: 'Select a profile',
+  INSPECTOR_ASSIGNED_REPOSITORIES: (count: number | string): string =>
+    `Assigned repositories · ${count}`,
+  INSPECTOR_REPOSITORIES_LOADING: 'Loading repositories…',
+  INSPECTOR_REPOSITORIES_REFRESHING: 'Refreshing repositories…',
+  INSPECTOR_REPOSITORIES_UNAVAILABLE: 'Repository data unavailable',
+  INSPECTOR_REPOSITORIES_STALE: 'May be outdated',
+  INSPECTOR_REPOSITORIES_EMPTY: 'No repositories assigned',
+  INSPECTOR_REPOSITORY_PATH_LABEL: (repositoryName: string, localPath: string): string =>
+    `Local path for ${repositoryName}: ${localPath}`,
 
   // ── Keyboard shortcuts ─────────────────────────────────────────────────────
   KB_NAV_HINT: 'Cmd+1–9 to navigate screens',

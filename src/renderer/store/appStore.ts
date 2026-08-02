@@ -57,6 +57,8 @@ interface AppState {
   activeScreen: NavScreen
   activeRepo: RepositoryRecord | null
   currentBranch: string | null
+  /** Profile selected for inspection/editing on Profiles; transient renderer state only. */
+  selectedProfileId: string | null
   /** Whether the right panel column is visible (kept as `inspectorOpen` for compat). */
   inspectorOpen: boolean
   /** Active tab inside the right panel. */
@@ -67,6 +69,7 @@ interface AppState {
   navigate: (screen: NavScreen) => void
   setActiveRepo: (repo: RepositoryRecord | null) => void
   setCurrentBranch: (branch: string | null) => void
+  setSelectedProfileId: (profileId: string | null) => void
   toggleInspector: () => void
   setRightPanelTab: (tab: RightPanelTab) => void
   /** Open the right panel on a specific tab (used by the header chat affordance). */
@@ -79,6 +82,7 @@ export const useAppStore = create<AppState>((set) => ({
   activeScreen: 'repositories',
   activeRepo: null,
   currentBranch: null,
+  selectedProfileId: null,
   inspectorOpen: true,
   rightPanelTab: 'context',
   chatFocusNonce: 0,
@@ -111,6 +115,7 @@ export const useAppStore = create<AppState>((set) => ({
     if (shouldSyncProfile) syncProfileToRepo(repo)
   },
   setCurrentBranch: (branch) => set({ currentBranch: branch }),
+  setSelectedProfileId: (profileId) => set({ selectedProfileId: profileId }),
   toggleInspector: () => set((s) => ({ inspectorOpen: !s.inspectorOpen })),
   setRightPanelTab: (tab) => set({ rightPanelTab: tab }),
   openRightPanel: (tab) => set({ inspectorOpen: true, rightPanelTab: tab }),

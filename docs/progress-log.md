@@ -192,7 +192,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 ### Profile Repository Summary feature (plan: `docs/plans/profile-repository-summary-plan.md`, prompts: `docs/prompts/profile-repository-summary-prompts.md`)
 
 - [x] Phase 117 — Profile repository summary selector (pure core)
-- [ ] Phase 118 — Profile badges and screen-aware Context details (renderer + e2e) — feature-complete stop point
+- [x] Phase 118 — Profile badges and screen-aware Context details (renderer + e2e) — feature-complete stop point
 
 ### Agentic DX track (plan: `docs/plans/agentic-dx-plan.md`, prompts: `docs/prompts/dx-execution-prompts.md`)
 
@@ -238,7 +238,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | Landing Live Demo            | 108–109   | ✅ complete                                                   |
 | History Commit Details       | 110–113   | ✅ complete                                                   |
 | Unified Commit & Remote      | 114–116   | ✅ complete                                                   |
-| Profile Repository Summary   | 117–118   | 🟡 Phase 117 done; 118 open                                   |
+| Profile Repository Summary   | 117–118   | ✅ complete                                                   |
 | Agentic DX                   | DX-0–DX-6 | ✅ complete (DX-6 = à la carte; project-factory/sdd deferred) |
 
 ## Progress Log
@@ -1847,3 +1847,11 @@ Moved the v0.5.1 tag to the previous commit and re-triggered: macOS green again,
 - Files: updated `package.json`, `package-lock.json`, `.github/workflows/release.yml`, `src/renderer/components/AiConnectionSettings.tsx`, and `tests/e2e/ai-connections.spec.ts`.
 - Tests: in a clean maintenance-only snapshot, both TypeScript project checks passed; full Vitest passed **1212/1212** (129 files); `npm run lint` passed clean; full Electron Playwright passed **156/156** with no retry; the formerly flaky save flow passed **20/20** stress repetitions. `npm run dist:dir` packaged an Electron 42.8.0 arm64 `GitWarden.app`; `codesign --verify --deep --strict` passed, and an isolated packaged-app smoke launch opened `Git Warden` and reached `[data-ready="true"]`. `npm audit --omit=dev --audit-level=moderate` reported **0** production vulnerabilities.
 - Notes / follow-ups: the local package is intentionally ad-hoc signed because this machine has no Developer ID Application identity; public distribution still requires the existing signing/notarization release track. The full development dependency audit still reports 16 issues in the older build-tool chain (3 moderate, 11 high, 2 critical); automatic major-version fixes were not mixed into this runtime recovery. This is an unnumbered maintenance change, so the Phase Checklist and Feature Track Status remain unchanged. No push was performed.
+
+### 2026-08-02 — Phase 118: Profile badges and screen-aware Context details (renderer + e2e) — feature-complete stop point
+
+- Built: every Profiles row now shows an honest assigned-local-repository badge (muted zero, numeric ready count, dash for initial loading/unavailable data, and retained counts with refreshing/stale semantics). Profile selection is transient shared renderer state, so Profiles-only Context now separates the current **Active workspace** from the independently **Selected profile** and lists that profile's read-only repository names and full local paths without activating it, modifying Edit Profile, opening the panel, or switching away from AI Chat. Duplicate working copies remain separate and use the Phase 117 selector as the single counting/list source.
+- Files: added `src/renderer/profileRepositoryPresentation.ts` and `tests/unit/profile-repository-presentation.test.ts`; updated `src/renderer/store/appStore.ts`, `src/renderer/screens/ProfilesScreen.tsx`, `src/renderer/components/Inspector.tsx`, `src/renderer/strings.ts`, `src/renderer/screens/dataScreens.css`, `src/renderer/theme.css`, `tests/e2e/profiles.spec.ts`, `tsconfig.node.json`, and `tsconfig.web.json`.
+- Tests: both TypeScript project checks passed; full Vitest passed **1217/1217** (130 files), including **5/5** repository-presentation state cases; `npm run lint` passed clean; the targeted Profiles Playwright spec passed **10/10**; full Electron Playwright passed **159/159** with no retry. Independent renderer review reported `CLEAN`.
+- Exit criteria: ✅ met — automated coverage includes zero/one/many counts, duplicate names/remotes at distinct local paths, active Personal while selected Eleken, accessible full paths and real CSS truncation, create/deleted-selection cleanup, screen-aware hiding, badge independence from a closed panel/AI Chat, and unchanged Edit Profile/activation behavior. Loading, refreshing, unavailable, and stale classification is table-tested **5/5**, with each corresponding badge/Context render branch explicitly reviewed.
+- Notes / follow-ups: dark-theme manual QA used 480 px and 260 px right-panel widths plus 12 assigned repositories. Badge-to-`Active`/`Set Active` geometry retained a 12 px gap at both widths; the list was independently scrollable (684 px content in a 280 px viewport); long paths ellipsized while preserving the full `title`. The temporary Playwright script and screenshots stayed outside the repository. The user's separate repository-mismatch-icon work was preserved and excluded from this phase. Feature-complete stop point reached; no main/preload/IPC/persistence/Git authority was added and no push was performed.
