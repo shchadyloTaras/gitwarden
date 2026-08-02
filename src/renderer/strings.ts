@@ -83,6 +83,7 @@ export const STR = {
   REPOSITORY_SAVED: 'Repository saved.',
   REPOSITORY_PATH_COPY: 'Copy path',
   REPOSITORY_PATH_COPIED: 'Copied',
+  REPOSITORY_PROFILE_MISMATCH: 'Profile mismatch',
 
   // ── Initialize Repository (Phase 88) ──────────────────────────────────────
   INITIALIZE_REPO_BUTTON: 'Initialize Git repository',

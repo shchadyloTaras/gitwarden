@@ -47,6 +47,33 @@ function editFormFromRepo(r: RepositoryRecord): EditForm {
   }
 }
 
+function RepositoryListIcon({ mismatch }: { mismatch: boolean }): React.ReactElement {
+  return (
+    <span data-testid="repo-item-icon" className="gw-repository-list-icon">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M3.75 7.25A1.75 1.75 0 0 1 5.5 5.5h4l1.75 2h7.25a1.75 1.75 0 0 1 1.75 1.75v8.25a1.75 1.75 0 0 1-1.75 1.75h-13a1.75 1.75 0 0 1-1.75-1.75V7.25Z" />
+      </svg>
+      {mismatch && (
+        <span
+          data-testid="repo-item-mismatch"
+          className="gw-repository-list-icon__mismatch"
+          role="img"
+          aria-label={STR.REPOSITORY_PROFILE_MISMATCH}
+          title={STR.REPOSITORY_PROFILE_MISMATCH}
+        />
+      )}
+    </span>
+  )
+}
+
 export default function RepositoriesScreen(): React.ReactElement {
   const { repos, addRepository, initializeRepository, updateRepo, removeRepo } =
     useRepositoriesStore()
@@ -343,37 +370,14 @@ export default function RepositoriesScreen(): React.ReactElement {
                       gap: 2,
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {mismatch && (
-                        <span
-                          data-testid="repo-item-mismatch"
-                          title="Profile mismatch"
-                          style={{ color: 'var(--gw-warning, #fbbf24)', fontSize: 14 }}
-                        >
-                          ⚠
+                    <div className="gw-repository-list-row-content">
+                      <RepositoryListIcon mismatch={Boolean(mismatch)} />
+                      <div className="gw-repository-list-row-copy">
+                        <span className="gw-repository-list-row-name">{r.name}</span>
+                        <span className="gw-repository-list-row-profile">
+                          {assigned ? assigned.displayName : 'Unassigned'}
                         </span>
-                      )}
-                      <span
-                        style={{
-                          fontSize: 14,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {r.name}
-                      </span>
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 14,
-                        color: 'var(--gw-text-dim, #52525b)',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {assigned ? assigned.displayName : 'Unassigned'}
+                      </div>
                     </div>
                   </button>
                 )

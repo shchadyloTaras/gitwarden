@@ -138,15 +138,22 @@ test.describe('Repository management', () => {
 
     await win.getByTestId('nav-repositories').click()
     await expect(win.getByTestId('screen-repositories')).toBeVisible()
-    await win.getByTestId('repo-item').filter({ hasText: repoName }).click()
+    const repositoryRow = win.getByTestId('repo-item').filter({ hasText: repoName })
+    await repositoryRow.click()
 
     // Mismatch warning must appear: active=Personal, assigned=Work
     await expect(win.getByTestId('repo-mismatch-warning')).toBeVisible({ timeout: 5000 })
     await expect(win.getByTestId('repo-mismatch-warning')).toContainText('Work')
     await expect(win.getByTestId('repo-mismatch-warning')).toContainText('Personal')
 
-    // List item should show the mismatch indicator
-    await expect(win.getByTestId('repo-item-mismatch')).toBeVisible()
+    // Every row has a neutral repository icon; mismatch is a subtle, accessible dot.
+    const repositoryIcon = repositoryRow.getByTestId('repo-item-icon')
+    const mismatchIndicator = repositoryRow.getByTestId('repo-item-mismatch')
+    await expect(repositoryIcon).toBeVisible()
+    await expect(mismatchIndicator).toBeVisible()
+    await expect(mismatchIndicator).toHaveAttribute('aria-label', 'Profile mismatch')
+    await expect(mismatchIndicator).toHaveText('')
+    await expect(repositoryRow).not.toContainText('⚠')
 
     // Remove the repo from the app (not from disk)
     await win.getByTestId('repo-remove-btn').click()
@@ -206,6 +213,12 @@ test.describe('Repository management', () => {
     await win.getByTestId('repo-form-profile').click()
     await win.getByTestId(`repo-form-profile-option-${personalId}`).click()
     await win.getByTestId('repo-save-btn').click()
+
+    const repositoryRow = win
+      .getByTestId('repo-item')
+      .filter({ hasText: path.basename(fixtureRepo) })
+    await expect(repositoryRow.getByTestId('repo-item-icon')).toBeVisible()
+    await expect(repositoryRow.getByTestId('repo-item-mismatch')).toHaveCount(0)
 
     // No active profile → no mismatch warning
     await expect(win.getByTestId('repo-mismatch-warning')).not.toBeVisible()
