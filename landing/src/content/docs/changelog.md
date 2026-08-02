@@ -8,6 +8,12 @@ order: 9
 
 ## Unreleased
 
+## 0.7.2 — 2026-08-02
+
+### Changed
+
+- Commit and Commit & Push no longer inspect staged file contents or block commits based on detected secret-like text. Commit safety now focuses on repository/profile identity, staged state, the commit message, and conflicts; optional AI `/review` remains user-invoked and advisory.
+
 ## 0.7.1 — 2026-07-29
 
 ### Fixed
