@@ -312,7 +312,8 @@ describe('RepoWatcherService (Phase 96, Phase 101)', () => {
     const gitDirListeners: Array<(eventType: string, filename: string | null) => void> = []
     const spy = vi.spyOn(fs, 'watch').mockImplementation(((...args: unknown[]) => {
       const listener = (typeof args[1] === 'function' ? args[1] : args[2]) as
-        ((eventType: string, filename: string | null) => void) | undefined
+        | ((eventType: string, filename: string | null) => void)
+        | undefined
       if (listener && path.basename(String(args[0])) === '.git') gitDirListeners.push(listener)
       return Object.assign(new EventEmitter(), { close(): void {} }) as unknown as fs.FSWatcher
     }) as unknown as typeof fs.watch)

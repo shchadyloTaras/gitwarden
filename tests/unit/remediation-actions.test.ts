@@ -349,11 +349,13 @@ describe('executeRemediation (offline fixtures)', () => {
         setLocalIdentity: vi.fn(async () => {}),
         push: vi.fn(async () => {}),
         getRemotes: vi.fn(async () => []),
-        getStatus: vi.fn(async (): Promise<GitStatus> => ({
-          files: [{ path: 'dirty.txt', indexStatus: 'unmodified', worktreeStatus: 'modified' }],
-          ahead: 0,
-          behind: 0,
-        })),
+        getStatus: vi.fn(
+          async (): Promise<GitStatus> => ({
+            files: [{ path: 'dirty.txt', indexStatus: 'unmodified', worktreeStatus: 'modified' }],
+            ahead: 0,
+            behind: 0,
+          })
+        ),
         mergeRemoteBranch,
         enqueueJob: stubEnqueueJob,
         verifyHeadBranch: stubVerifyHeadBranch,

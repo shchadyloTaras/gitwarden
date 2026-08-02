@@ -21,7 +21,9 @@ function draftKey(repositoryId: string, branch: string | null): string {
  * draft from silently vanishing when you start it, switch account, and come back.
  */
 type DraftEntry =
-  { status: 'loading' } | { status: 'ready'; message: string } | { status: 'error'; error: string }
+  | { status: 'loading' }
+  | { status: 'ready'; message: string }
+  | { status: 'error'; error: string }
 
 interface CommitState {
   repoPath: string | null

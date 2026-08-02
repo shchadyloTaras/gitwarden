@@ -189,6 +189,11 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 - [x] Phase 115 — One "Commit & Push" tab replacing Commit and Remote (renderer + e2e)
 - [x] Phase 116 — The Commit & Push button with one confirmation (renderer + e2e)
 
+### Profile Repository Summary feature (plan: `docs/plans/profile-repository-summary-plan.md`, prompts: `docs/prompts/profile-repository-summary-prompts.md`)
+
+- [x] Phase 117 — Profile repository summary selector (pure core)
+- [ ] Phase 118 — Profile badges and screen-aware Context details (renderer + e2e) — feature-complete stop point
+
 ### Agentic DX track (plan: `docs/plans/agentic-dx-plan.md`, prompts: `docs/prompts/dx-execution-prompts.md`)
 
 > Not product phases — a separate developer-experience track (steps DX-0…DX-6, no global phase
@@ -233,6 +238,7 @@ Project status and the per-phase build log. **Kept out of `CLAUDE.md` / `AGENTS.
 | Landing Live Demo            | 108–109   | ✅ complete                                                   |
 | History Commit Details       | 110–113   | ✅ complete                                                   |
 | Unified Commit & Remote      | 114–116   | ✅ complete                                                   |
+| Profile Repository Summary   | 117–118   | 🟡 Phase 117 done; 118 open                                   |
 | Agentic DX                   | DX-0–DX-6 | ✅ complete (DX-6 = à la carte; project-factory/sdd deferred) |
 
 ## Progress Log
@@ -1825,3 +1831,11 @@ Moved the v0.5.1 tag to the previous commit and re-triggered: macOS green again,
 ### 2026-08-02 — v0.7.2 released
 
 - Patch release cut from the single app commit since `v0.7.1` (`4c9fef0`): Commit and Commit & Push no longer inspect staged content or block secret-like text, while repository/profile identity, staged state, commit-message, and conflict safety checks remain; optional AI `/review` stays user-invoked and advisory. `CHANGELOG.md` rolled (`## Unreleased` → `## 0.7.2 — 2026-08-02`), `package.json` bumped 0.7.1 → 0.7.2, and the landing changelog copy refreshed. Gates at cut time: tree clean, `npm test` green (**1205/1205**, 128 files), release diff approved by the maintainer. Push of the commit + tag left to the maintainer.
+
+### 2026-08-02 — Phase 117: Profile repository summary selector (pure core)
+
+- Built: added one pure, deterministic `buildProfileRepositorySummary` selector that filters by exact `assignedProfileId`, preserves duplicate local working copies, returns only read-only renderer fields, and sorts a copied result by case-insensitive name, local path, then id; added table-driven coverage for empty, one, many, unrelated/dangling assignments, duplicates, ordering, count consistency, and input immutability.
+- Files: added `src/core/profiles/profileRepositorySummary.ts` and `tests/unit/profile-repository-summary.test.ts`; registered the approved Phase 117–118 track in `AGENTS.md`, `docs/plans/profile-repository-summary-plan.md`, `docs/prompts/profile-repository-summary-prompts.md`, and `docs/progress-log.md`; routed the existing renderer-only `profile-status-color.test.ts` through `tsconfig.web.json` instead of `tsconfig.node.json`; applied user-approved Prettier-only cleanup to `src/renderer/store/commitStore.ts`, `tests/unit/remediation-actions.test.ts`, and `tests/unit/repo-watcher-service.test.ts` so the repository lint gate is green.
+- Tests: core-purity reviewer `CLEAN`; `npx tsc -p tsconfig.node.json --noEmit` and `npx tsc -p tsconfig.web.json --noEmit` passed; full Vitest passed **1212/1212** (129 files, including 7 new selector tests); `npm run lint` passed with all files matching Prettier.
+- Exit criteria: ✅ met.
+- Notes / follow-ups: `npm ci` restored the lockfile-declared `electron-vite@2.3.0` after the local ignored dependency tree had drifted to incompatible `5.0.0`; no dependency manifest changed. The three unrelated formatting diffs were inspected before retention and contain no logic change. Next: Phase 118 — profile badges and screen-aware Context details (renderer + e2e, feature-complete stop point).

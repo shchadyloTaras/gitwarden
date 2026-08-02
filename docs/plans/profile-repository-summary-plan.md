@@ -1,9 +1,10 @@
 # Plan — Profile Repository Summary: assigned repositories at a glance
 
-**Status:** proposed — awaiting plan review — Phases 117–118.
+**Status:** 🟡 in progress — Phase 117 complete; Phase 118 open — **derived view**; the
+authoritative state is the Phase Checklist in [`docs/progress-log.md`](../progress-log.md).
 **Phases:** 117 → 118.
 **Feature-complete stop point:** Phase 118.
-**Prompts:** not generated until this plan is approved.
+**Prompts:** [`docs/prompts/profile-repository-summary-prompts.md`](../prompts/profile-repository-summary-prompts.md).
 
 ## Goal
 
@@ -66,18 +67,18 @@ provide the always-visible summary.
 
 ### State matrix
 
-| State | Profile badge | Selected-profile Context |
-| --- | --- | --- |
-| No profile selected / creating a profile | Counts still shown per row | Compact `Select a profile` prompt; no repository list |
-| Selected profile, zero assignments | Muted `0` | `ASSIGNED REPOSITORIES · 0` + `No repositories assigned` |
-| Selected profile, one assignment | Neutral `1` | One repository name/path row |
-| Selected profile, many assignments | Neutral count | Scroll-safe list; every local record shown separately |
-| Duplicate name or remote at different local paths | Each record contributes to the count | Separate rows distinguished by path |
-| Initial repository load with no cached data | `—`/loading treatment, never a false `0` | `Loading repositories…` |
-| Repository load failed with no cached data | `—`, never a false `0` | `Repository data unavailable` |
-| Refresh failed but last-known data exists | Last-known count with stale indication | Last-known list + `May be outdated` |
-| Selected profile is deleted or becomes invalid | Remaining badges recalculate | Selection clears to `Select a profile` |
-| User leaves Profiles | Badges are no longer on screen | Selected-profile section is hidden; normal Context remains |
+| State                                             | Profile badge                            | Selected-profile Context                                   |
+| ------------------------------------------------- | ---------------------------------------- | ---------------------------------------------------------- |
+| No profile selected / creating a profile          | Counts still shown per row               | Compact `Select a profile` prompt; no repository list      |
+| Selected profile, zero assignments                | Muted `0`                                | `ASSIGNED REPOSITORIES · 0` + `No repositories assigned`   |
+| Selected profile, one assignment                  | Neutral `1`                              | One repository name/path row                               |
+| Selected profile, many assignments                | Neutral count                            | Scroll-safe list; every local record shown separately      |
+| Duplicate name or remote at different local paths | Each record contributes to the count     | Separate rows distinguished by path                        |
+| Initial repository load with no cached data       | `—`/loading treatment, never a false `0` | `Loading repositories…`                                    |
+| Repository load failed with no cached data        | `—`, never a false `0`                   | `Repository data unavailable`                              |
+| Refresh failed but last-known data exists         | Last-known count with stale indication   | Last-known list + `May be outdated`                        |
+| Selected profile is deleted or becomes invalid    | Remaining badges recalculate             | Selection clears to `Select a profile`                     |
+| User leaves Profiles                              | Badges are no longer on screen           | Selected-profile section is hidden; normal Context remains |
 
 ## Codebase findings (grounding)
 
