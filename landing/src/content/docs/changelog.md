@@ -8,6 +8,16 @@ order: 9
 
 ## Unreleased
 
+## 0.8.0 — 2026-08-02
+
+### Added
+
+- Profiles now show their assigned repository count, and the selected profile includes read-only context details for its repositories.
+
+### Changed
+
+- Profile status colors, repository list icons, and the profile-mismatch indicator are clearer and more consistent.
+
 ## 0.7.2 — 2026-08-02
 
 ### Changed
