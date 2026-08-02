@@ -235,7 +235,6 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
         if (saved && fetched.some((entry) => entry.id === saved)) return saved
         return fetched[0]?.id ?? ''
       })
-      setSaved(false)
     },
     [conn.defaultModel]
   )
@@ -265,9 +264,7 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
   }, [applyModelSelection, conn.id, listModels, testConnection])
 
   // Auto-load models whenever a credential is saved or restored (Change key → Save included).
-  // Keyed on updatedAt, not the credentialMeta object: load() rebuilds that object after many
-  // actions (e.g. saving the model default) with an unchanged updatedAt, and we don't want those
-  // to re-fetch models — only an actual credential change should.
+  // load() clears the model cache, so a refreshed connection/default also needs to repopulate it.
   useEffect(() => {
     if (!credentialMeta) {
       setModelStatus(null)
@@ -285,7 +282,7 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
     return () => {
       cancelled = true
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on updatedAt (see above)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- credential identity is its stable updatedAt
   }, [credentialMeta?.updatedAt, refreshModels])
 
   const dirty = (model.trim() || '') !== (conn.defaultModel ?? '')
@@ -319,6 +316,7 @@ function ActiveConnectionCard({ conn }: { conn: AiConnection }): React.ReactElem
     setCredKey('')
     setCredError(null)
     setModelStatus(null)
+    setSaved(false)
   }
 
   function handleCancelCredentialEdit(): void {

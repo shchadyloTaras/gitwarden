@@ -71,7 +71,7 @@ test.describe('AI Connections (injected fake credential store)', () => {
     await expect(masked).not.toContainText('sk-or-v1-e2e')
 
     // Saving the key turned AI on automatically — no separate consent step.
-    expect(await aiEnabledSetting(win)).toBe(true)
+    await expect.poll(() => aiEnabledSetting(win)).toBe(true)
 
     // ── pick a model from the provider's live list ──────────────────────────────
     await win.getByTestId('ai-model-select').click()
@@ -104,7 +104,7 @@ test.describe('AI Connections (injected fake credential store)', () => {
     await win.getByTestId('ai-save-connection').click()
     await expect(win.getByTestId('ai-connection-card')).toBeVisible()
 
-    expect(await aiEnabledSetting(win)).toBe(true)
+    await expect.poll(() => aiEnabledSetting(win)).toBe(true)
   })
 
   test('ambiguous sk- key prompts for one base URL field; LM Studio pre-fills the local port', async () => {
