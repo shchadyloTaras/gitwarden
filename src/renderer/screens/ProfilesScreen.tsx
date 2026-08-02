@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import type { GitHubAccount, Profile } from '../../core/types'
-import { useProfilesStore, profileColor } from '../store/profilesStore'
+import { useProfilesStore, profileStatusColor } from '../store/profilesStore'
 import { GITHUB_CLIENT_ID } from '../../core/config/github'
 import ConnectGitHubModal from '../components/ConnectGitHubModal'
 import ResizableMainSplit from '../components/ResizableMainSplit'
@@ -387,11 +387,14 @@ export default function ProfilesScreen(): React.ReactElement {
                       }}
                     >
                       <div
+                        data-testid="profile-status-indicator"
+                        data-profile-state={isActiveRow ? 'active' : 'inactive'}
+                        aria-hidden="true"
                         style={{
                           width: 8,
                           height: 8,
                           borderRadius: '50%',
-                          background: profileColor(p.id),
+                          background: profileStatusColor(isActiveRow),
                           flexShrink: 0,
                         }}
                       />

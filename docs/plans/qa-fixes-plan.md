@@ -218,6 +218,11 @@ needs UI wording.
 
 ## Phase 99 — Secret scan runs at the commit gate (core + main + IPC + renderer)
 
+> **Superseded 2026-08-02:** the automatic staged-content scan and
+> `STAGED_SECRET_DETECTED` commit blocker were intentionally removed. Commit safety is now
+> content-neutral; users retain responsibility for what they commit. The optional AI `/review`
+> flow remains available only when explicitly requested.
+
 **Goal:** committing a staged API key is blocked deterministically — no AI connection, no manual
 `/review` required.
 

@@ -28,7 +28,6 @@ export const ALL_SAFETY_CODES = [
   'GITHUB_TOKEN_INVALID',
   'GITHUB_TOKEN_SCOPE_MISSING',
   'GITHUB_NOT_CONNECTED',
-  'STAGED_SECRET_DETECTED',
 ] as const satisfies readonly SafetyCode[]
 
 export function suggestedActionFor(code: SafetyCode) {

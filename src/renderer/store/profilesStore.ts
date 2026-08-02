@@ -5,12 +5,8 @@ import { createRequestTracker } from '../../core/concurrency/requestGuard'
 
 const activeProfileTracker = createRequestTracker()
 
-const COLORS = ['#4ade80', '#60a5fa', '#f472b6', '#fb923c', '#a78bfa', '#34d399']
-
-export function profileColor(id: string): string {
-  let h = 5381
-  for (let i = 0; i < id.length; i++) h = ((h << 5) + h) ^ id.charCodeAt(i)
-  return COLORS[Math.abs(h) % COLORS.length]
+export function profileStatusColor(isActive: boolean): string {
+  return isActive ? 'var(--gw-success, #4ade80)' : 'var(--gw-warning, #fbbf24)'
 }
 
 interface ProfilesState {

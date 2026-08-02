@@ -1,6 +1,6 @@
 import React from 'react'
 import { useAppStore } from '../store/appStore'
-import { useProfilesStore, profileColor } from '../store/profilesStore'
+import { useProfilesStore, profileStatusColor } from '../store/profilesStore'
 import { useHeaderGuardStore } from '../store/headerGuardStore'
 import type { HeaderGuardState } from '../../core/safety/headerGuard'
 import { STR } from '../strings'
@@ -59,11 +59,13 @@ export default function Inspector(): React.ReactElement {
         {activeProfile ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div
+              data-testid="inspector-profile-status-indicator"
+              aria-hidden="true"
               style={{
                 width: 8,
                 height: 8,
                 borderRadius: '50%',
-                background: profileColor(activeProfile.id),
+                background: profileStatusColor(true),
               }}
             />
             <span style={{ color: 'var(--gw-text, #f4f4f5)' }}>{activeProfile.displayName}</span>

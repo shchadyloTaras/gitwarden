@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import { useAppStore } from '../store/appStore'
 import type { NavScreen } from '../store/appStore'
-import { useProfilesStore, profileColor } from '../store/profilesStore'
+import { useProfilesStore, profileStatusColor } from '../store/profilesStore'
 import { useRepositoriesStore } from '../store/repositoriesStore'
 import { useBranchStore } from '../store/branchStore'
 import { useHeaderGuardStore } from '../store/headerGuardStore'
@@ -346,11 +346,13 @@ export default function GlobalHeader(): React.ReactElement {
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}
           >
             <div
+              data-testid="header-profile-status-indicator"
+              aria-hidden="true"
               style={{
                 width: 10,
                 height: 10,
                 borderRadius: '50%',
-                background: profileColor(activeProfile.id),
+                background: profileStatusColor(true),
                 flexShrink: 0,
               }}
             />

@@ -22,7 +22,6 @@ const aiGetState = vi.hoisted(() =>
 const apiGit = vi.hoisted(() => ({
   getStatus: vi.fn(),
   getEffectiveIdentity: vi.fn(),
-  getStagedDiffs: vi.fn(),
   setLocalIdentity: vi.fn(),
   commit: vi.fn(),
 }))
@@ -46,7 +45,6 @@ function reset(): void {
     message: '',
     status: null,
     identity: null,
-    stagedDiffs: [],
     loading: false,
     identityLoading: false,
     commitLoading: false,
@@ -66,7 +64,6 @@ describe('commitStore AI draft', () => {
     vi.clearAllMocks()
     apiGit.getStatus.mockResolvedValue({ ok: true, data: { branch: 'main', files: [] } })
     apiGit.getEffectiveIdentity.mockResolvedValue({ ok: true, data: { name: 'A', email: 'a@b.c' } })
-    apiGit.getStagedDiffs.mockResolvedValue({ ok: true, data: [] })
   })
 
   it('exposes draft state on the store (not in a component) so it survives navigation', () => {
@@ -179,7 +176,6 @@ describe('commitStore AI draft survives switching accounts / repos mid-draft', (
     vi.clearAllMocks()
     apiGit.getStatus.mockResolvedValue({ ok: true, data: { branch: 'main', files: [] } })
     apiGit.getEffectiveIdentity.mockResolvedValue({ ok: true, data: { name: 'A', email: 'a@b.c' } })
-    apiGit.getStagedDiffs.mockResolvedValue({ ok: true, data: [] })
   })
 
   it('applies a draft that finished while you were on another repo when you return', async () => {
@@ -256,7 +252,6 @@ describe('commitStore stale-request guard (Phase 89)', () => {
     let resolveA: (v: unknown) => void = () => {}
     apiGit.getStatus.mockImplementationOnce(() => new Promise((r) => (resolveA = r)))
     apiGit.getEffectiveIdentity.mockResolvedValue({ ok: true, data: { name: 'A', email: 'a@b.c' } })
-    apiGit.getStagedDiffs.mockResolvedValue({ ok: true, data: [] })
 
     const pendingA = useCommitStore.getState().load('/repo-A', repo('repo-A'))
 
@@ -280,7 +275,6 @@ describe('commitStore per-repo typed message (W23)', () => {
     vi.clearAllMocks()
     apiGit.getStatus.mockResolvedValue({ ok: true, data: { branch: 'main', files: [] } })
     apiGit.getEffectiveIdentity.mockResolvedValue({ ok: true, data: { name: 'A', email: 'a@b.c' } })
-    apiGit.getStagedDiffs.mockResolvedValue({ ok: true, data: [] })
   })
 
   it('does not carry a half-typed message from one repo into another', async () => {
@@ -319,7 +313,6 @@ describe('commitStore AI drafts keyed by repo AND branch (#5)', () => {
     vi.clearAllMocks()
     apiGit.getStatus.mockResolvedValue({ ok: true, data: { branch: 'main', files: [] } })
     apiGit.getEffectiveIdentity.mockResolvedValue({ ok: true, data: { name: 'A', email: 'a@b.c' } })
-    apiGit.getStagedDiffs.mockResolvedValue({ ok: true, data: [] })
     useAppStore.setState({ currentBranch: null })
   })
 
@@ -371,7 +364,6 @@ describe('commitStore keeps an AI draft inserted before the Commit screen is fir
     vi.clearAllMocks()
     apiGit.getStatus.mockResolvedValue({ ok: true, data: { branch: 'main', files: [] } })
     apiGit.getEffectiveIdentity.mockResolvedValue({ ok: true, data: { name: 'A', email: 'a@b.c' } })
-    apiGit.getStagedDiffs.mockResolvedValue({ ok: true, data: [] })
     useAppStore.setState({ activeRepo: null, currentBranch: null })
   })
 
@@ -394,49 +386,6 @@ describe('commitStore keeps an AI draft inserted before the Commit screen is fir
   })
 })
 
-describe('commitStore stagedDiffs (Phase 99: commit-gate secret scan)', () => {
-  beforeEach(() => {
-    reset()
-    aiStoreError = null
-    vi.clearAllMocks()
-    apiGit.getStatus.mockResolvedValue({ ok: true, data: { branch: 'main', files: [] } })
-    apiGit.getEffectiveIdentity.mockResolvedValue({ ok: true, data: { name: 'A', email: 'a@b.c' } })
-  })
-
-  it('populates stagedDiffs from the new IPC channel on load()', async () => {
-    apiGit.getStagedDiffs.mockResolvedValue({
-      ok: true,
-      data: [{ path: 'a.env', diff: '+TOKEN=x' }],
-    })
-
-    await useCommitStore.getState().load('/repo-1', repo('repo-1'))
-    expect(useCommitStore.getState().stagedDiffs).toEqual([{ path: 'a.env', diff: '+TOKEN=x' }])
-  })
-
-  it('falls back to an empty array when the channel fails, without surfacing a load error', async () => {
-    apiGit.getStagedDiffs.mockResolvedValue({ ok: false, error: 'boom' })
-
-    await useCommitStore.getState().load('/repo-1', repo('repo-1'))
-    expect(useCommitStore.getState().stagedDiffs).toEqual([])
-    expect(useCommitStore.getState().error).toBeNull()
-  })
-
-  it('clears stagedDiffs after a successful commit', async () => {
-    apiGit.getStagedDiffs.mockResolvedValue({
-      ok: true,
-      data: [{ path: 'a.env', diff: '+TOKEN=x' }],
-    })
-    await useCommitStore.getState().load('/repo-1', repo('repo-1'))
-    expect(useCommitStore.getState().stagedDiffs).toHaveLength(1)
-
-    apiGit.commit.mockResolvedValue({ ok: true, data: { hash: 'abc123' } })
-    apiGit.getStatus.mockResolvedValue({ ok: true, data: { branch: 'main', files: [] } })
-    await useCommitStore.getState().doCommit('a commit')
-
-    expect(useCommitStore.getState().stagedDiffs).toEqual([])
-  })
-})
-
 describe('commitStore committedHash survival (Phase 102)', () => {
   beforeEach(() => {
     reset()
@@ -444,7 +393,6 @@ describe('commitStore committedHash survival (Phase 102)', () => {
     vi.clearAllMocks()
     apiGit.getStatus.mockResolvedValue({ ok: true, data: { branch: 'main', files: [] } })
     apiGit.getEffectiveIdentity.mockResolvedValue({ ok: true, data: { name: 'A', email: 'a@b.c' } })
-    apiGit.getStagedDiffs.mockResolvedValue({ ok: true, data: [] })
   })
 
   it('survives a same-repo load() a watcher event would trigger — an operation OUTCOME, not loaded data', async () => {

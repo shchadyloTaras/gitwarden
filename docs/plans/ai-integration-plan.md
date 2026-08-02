@@ -463,12 +463,13 @@ Phase 39 is the only phase that lets AI influence file/action proposals, and it 
 - Separate deterministic findings from AI findings via `AiReviewFinding.source`.
 - Add confidence labels and "why this matters."
 - Ship deterministic secret scanner in pure core that works with AI disabled, built on the **same** redaction ruleset from Phase 31 (one implementation, not a parallel pattern table).
+- Keep change review user-invoked and advisory; it does not participate in the commit gate.
 - Externalize all strings.
 
 **Exit criteria:**
 
 - Fake AI review renders grouped findings with source/confidence labels.
-- Deterministic secret scanner warns/blocks with AI disabled.
+- A user-invoked deterministic review reports secret-like patterns with AI disabled.
 - A model "all clear" cannot clear a deterministic finding.
 
 ### Phase 34 — Safety Copilot _(recommended MVP stop point)_

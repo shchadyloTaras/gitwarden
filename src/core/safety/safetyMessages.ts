@@ -19,7 +19,6 @@ export const SAFETY_SEVERITY: Record<SafetyCode, Severity> = {
   GITHUB_TOKEN_INVALID: 'blocker',
   GITHUB_TOKEN_SCOPE_MISSING: 'blocker',
   GITHUB_NOT_CONNECTED: 'warning',
-  STAGED_SECRET_DETECTED: 'blocker',
   PROTECTED_BRANCH_PUSH: 'blocker',
   BRANCH_NOT_ALLOWED: 'blocker',
   REMOTE_OWNER_MISMATCH: 'blocker',
@@ -53,8 +52,6 @@ export const SAFETY_MESSAGES: Record<SafetyCode, string> = {
     'The linked GitHub token can verify this account but does not have push permission. Reconnect GitHub to grant repository access.',
   GITHUB_NOT_CONNECTED:
     'This profile has no linked GitHub account. Connect GitHub to verify the push account.',
-  STAGED_SECRET_DETECTED:
-    'Staged changes contain secret-like content. Remove or redact before committing.',
   PROTECTED_BRANCH_PUSH:
     'This branch is protected by the push policy. Open a pull request instead of pushing directly.',
   BRANCH_NOT_ALLOWED: "This branch is not in the allowed list for this repository's push policy.",
@@ -66,13 +63,6 @@ export const SAFETY_MESSAGES: Record<SafetyCode, string> = {
     'The push policy requires specific branches but none are configured. Add allowed branch patterns to enable pushing.',
   OUTGOING_WRONG_AUTHOR:
     'One or more commits about to be pushed are authored by someone other than this profile’s identity.',
-}
-
-export function stagedSecretMessage(file?: string): string {
-  if (file) {
-    return `Staged changes in ${file} contain secret-like content. Remove or redact before committing.`
-  }
-  return SAFETY_MESSAGES.STAGED_SECRET_DETECTED
 }
 
 /**

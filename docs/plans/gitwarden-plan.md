@@ -371,6 +371,9 @@ export interface SafetyCheckService {
 
 1. active profile exists; 2. repo valid; 3. repo has assigned profile; 4. active == assigned; 5/6. effective name & email set; 7. email == profile email; 8. identity comes from **local** config (warn if global-only); 9. staged changes exist; 10. message valid; 11. no unresolved conflicts. → block on blockers.
 
+The commit gate is deliberately **content-neutral**: it does not inspect staged diffs or classify
+what a user is committing. Optional AI `/review` remains user-invoked and advisory only.
+
 ### Before push
 
 1–8 as above (identity match); 9. **remote host ∈ profile.expectedRemoteHosts** (`REMOTE_HOST_MISMATCH` — catches "right email, wrong key/account"); 10. auth configured (ssh alias for ssh profiles); 11. current branch & remote exist. → block on blockers.

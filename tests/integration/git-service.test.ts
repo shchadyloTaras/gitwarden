@@ -483,37 +483,4 @@ describe('GitService.getStatus integration', () => {
     expect(seenTimeouts.length).toBeGreaterThan(0)
     expect(seenTimeouts.every((t) => typeof t === 'number' && t > 0)).toBe(true)
   })
-
-  // ── Phase 99: getStagedDiffs (bulk staged-diff fetch for the commit-gate secret scan) ──
-  describe('getStagedDiffs', () => {
-    it('returns a diff per staged file, excluding untracked and unstaged-modified files', async () => {
-      await writeFile(path.join(repoPath, 'tracked.ts'), 'export const a = 1\n')
-      await git(repoPath, 'add', 'tracked.ts')
-      await git(repoPath, 'commit', '-m', 'init')
-
-      await writeFile(path.join(repoPath, 'tracked.ts'), 'export const a = 2\n')
-      await git(repoPath, 'add', 'tracked.ts') // staged modification
-      await writeFile(path.join(repoPath, 'untracked.ts'), 'export const b = 1\n') // not staged
-
-      const diffs = await service.getStagedDiffs(repoPath)
-      expect(diffs).toHaveLength(1)
-      expect(diffs[0].path).toBe('tracked.ts')
-      expect(diffs[0].diff).toContain('+export const a = 2')
-    })
-
-    it('returns one entry per staged file when multiple are staged', async () => {
-      await writeFile(path.join(repoPath, 'a.ts'), 'export const a = 1\n')
-      await writeFile(path.join(repoPath, 'b.ts'), 'export const b = 1\n')
-      await git(repoPath, 'add', 'a.ts', 'b.ts')
-
-      const diffs = await service.getStagedDiffs(repoPath)
-      expect(diffs.map((d) => d.path).sort()).toEqual(['a.ts', 'b.ts'])
-    })
-
-    it('returns an empty array when nothing is staged', async () => {
-      await writeFile(path.join(repoPath, 'untracked.ts'), 'export const a = 1\n')
-      const diffs = await service.getStagedDiffs(repoPath)
-      expect(diffs).toEqual([])
-    })
-  })
 })

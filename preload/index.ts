@@ -16,7 +16,6 @@ import type {
   GitHubAccount,
   GitHubAuthStatus,
   GitHubAuthErrorCode,
-  StagedDiff,
 } from '../src/core/types.js'
 import type { RemediationResult, ExecutableAction } from '../src/core/safety/remediation.js'
 import type { UncommitReturnState, UncommitActionResult } from '../src/core/history/uncommit.js'
@@ -171,8 +170,6 @@ export const api = {
       invoke('git:unstageAll', { repoPath }),
     getDiff: (repoPath: string, filePath: string, staged: boolean): Promise<IpcResult<string>> =>
       invoke('git:getDiff', { repoPath, filePath, staged }),
-    getStagedDiffs: (repoPath: string): Promise<IpcResult<StagedDiff[]>> =>
-      invoke('git:getStagedDiffs', { repoPath }),
     getOutgoingCommits: (
       repoPath: string,
       remote: string,

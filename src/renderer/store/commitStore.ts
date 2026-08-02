@@ -1,10 +1,5 @@
 import { create } from 'zustand'
-import type {
-  GitStatus,
-  EffectiveGitIdentity,
-  RepositoryRecord,
-  StagedDiff,
-} from '../../core/types'
+import type { GitStatus, EffectiveGitIdentity, RepositoryRecord } from '../../core/types'
 import { useAiStore } from './aiStore'
 import { useAppStore } from './appStore'
 import { STR } from '../strings'
@@ -26,9 +21,7 @@ function draftKey(repositoryId: string, branch: string | null): string {
  * draft from silently vanishing when you start it, switch account, and come back.
  */
 type DraftEntry =
-  | { status: 'loading' }
-  | { status: 'ready'; message: string }
-  | { status: 'error'; error: string }
+  { status: 'loading' } | { status: 'ready'; message: string } | { status: 'error'; error: string }
 
 interface CommitState {
   repoPath: string | null
@@ -36,8 +29,6 @@ interface CommitState {
   message: string
   status: GitStatus | null
   identity: EffectiveGitIdentity | null
-  /** Staged files' unified diffs, for the commit gate's deterministic secret scan (Phase 99). */
-  stagedDiffs: StagedDiff[]
   loading: boolean
   identityLoading: boolean
   commitLoading: boolean
@@ -80,7 +71,6 @@ export const useCommitStore = create<CommitState>((set, get) => ({
   message: '',
   status: null,
   identity: null,
-  stagedDiffs: [],
   loading: false,
   identityLoading: false,
   commitLoading: false,
@@ -114,7 +104,6 @@ export const useCommitStore = create<CommitState>((set, get) => ({
       repository,
       status: null,
       identity: null,
-      stagedDiffs: [],
       ...(isRepoChange ? { committedHash: null } : {}),
       // W23: the per-repo typed message wins unless a ready draft is surfacing now.
       message: entry?.status === 'ready' ? entry.message : savedMessage,
@@ -130,19 +119,14 @@ export const useCommitStore = create<CommitState>((set, get) => ({
       })
     }
     try {
-      const [statusRes, identityRes, stagedDiffsRes] = await Promise.all([
+      const [statusRes, identityRes] = await Promise.all([
         window.api.git.getStatus(repoPath),
         window.api.git.getEffectiveIdentity(repoPath),
-        window.api.git.getStagedDiffs(repoPath),
       ])
       if (tracker.isCurrent(token)) {
         set({
           status: statusRes.ok ? statusRes.data : null,
           identity: identityRes.ok ? identityRes.data : null,
-          // A fetch failure here silently skips the secret scan (empty diffs) rather than
-          // surfacing as a load error — it's a defense-in-depth extra, not core to loading
-          // the commit screen's status/identity.
-          stagedDiffs: stagedDiffsRes.ok ? stagedDiffsRes.data : [],
           error: !statusRes.ok ? statusRes.error : !identityRes.ok ? identityRes.error : null,
         })
       }
@@ -204,10 +188,8 @@ export const useCommitStore = create<CommitState>((set, get) => ({
           : s.messagesByRepo,
       }))
       // doCommit's status refresh: dropped if a newer load() already landed fresher data.
-      // A commit stages nothing new of its own, so the staged set is now empty — clear
-      // stagedDiffs directly rather than an extra now-pointless getStagedDiffs round trip.
       const statusRes = await window.api.git.getStatus(repoPath)
-      if (statusRes.ok && tracker.isCurrent(token)) set({ status: statusRes.data, stagedDiffs: [] })
+      if (statusRes.ok && tracker.isCurrent(token)) set({ status: statusRes.data })
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) })
     } finally {

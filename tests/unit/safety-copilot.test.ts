@@ -96,13 +96,11 @@ describe('buildActiveSafetyIssuesExplanation (bare /explain)', () => {
   it('lists blockers before warnings across identity and push issues', () => {
     const text = buildActiveSafetyIssuesExplanation([
       issue('EMAIL_FROM_GLOBAL_ONLY', 'warning'),
-      issue('STAGED_SECRET_DETECTED', 'blocker'),
+      issue('IDENTITY_UNSET', 'blocker'),
     ])
     expect(text).toContain('EMAIL_FROM_GLOBAL_ONLY')
-    expect(text).toContain('STAGED_SECRET_DETECTED')
-    expect(text.indexOf('STAGED_SECRET_DETECTED')).toBeLessThan(
-      text.indexOf('EMAIL_FROM_GLOBAL_ONLY')
-    )
+    expect(text).toContain('IDENTITY_UNSET')
+    expect(text.indexOf('IDENTITY_UNSET')).toBeLessThan(text.indexOf('EMAIL_FROM_GLOBAL_ONLY'))
   })
 
   it('deduplicates the same code reported by more than one check', () => {

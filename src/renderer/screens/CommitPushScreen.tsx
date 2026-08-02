@@ -97,7 +97,6 @@ export default function CommitPushScreen(): React.ReactElement {
     message,
     status,
     identity: commitIdentity,
-    stagedDiffs,
     loading: commitInitialLoading,
     commitLoading,
     draftLoading,
@@ -215,9 +214,8 @@ export default function CommitPushScreen(): React.ReactElement {
       identity: commitIdentity,
       status,
       commitMessage: message,
-      stagedDiffs,
     })
-  }, [status, commitIdentity, commitRepository, activeProfile, message, stagedDiffs])
+  }, [status, commitIdentity, commitRepository, activeProfile, message])
 
   const blockers = safetyResult?.issues.filter((i) => i.severity === 'blocker') ?? []
   const warnings = safetyResult?.issues.filter((i) => i.severity === 'warning') ?? []
@@ -379,7 +377,6 @@ export default function CommitPushScreen(): React.ReactElement {
         identity: commitIdentity,
         status,
         commitMessage: message,
-        stagedDiffs,
       },
       push: {
         repository: remoteRepository,
@@ -401,7 +398,6 @@ export default function CommitPushScreen(): React.ReactElement {
     cpSelectedRemote,
     activeProfile,
     message,
-    stagedDiffs,
     currentBranch,
     upstream,
     cpGithubContext,

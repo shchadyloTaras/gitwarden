@@ -40,8 +40,6 @@ export function explainSafetyIssue(code: SafetyCode): string {
       return 'The stored GitHub token proves which account is connected, but it was authorized without repository push permission. GitHub can still reject HTTPS pushes with HTTP 403 until the profile is reconnected with repository access.'
     case 'GITHUB_NOT_CONNECTED':
       return 'This profile has no linked GitHub account. Connect GitHub so GitWarden can confirm which account an HTTPS push would use.'
-    case 'STAGED_SECRET_DETECTED':
-      return 'Staged changes contain content that looks like a secret or credential. Committing would permanently store it in Git history, where it is very hard to remove.'
     case 'PROTECTED_BRANCH_PUSH':
       return 'This branch is protected by the push policy for this repository. Direct pushes are blocked to prevent accidental changes to shared or production branches. Open a pull request instead.'
     case 'BRANCH_NOT_ALLOWED':
@@ -85,7 +83,6 @@ export const SAFETY_ACTION_BY_CODE: Record<SafetyCode, SafetySuggestedAction> = 
   GITHUB_TOKEN_INVALID: 'reconnect-github',
   GITHUB_TOKEN_SCOPE_MISSING: 'reconnect-github',
   GITHUB_NOT_CONNECTED: 'reconnect-github',
-  STAGED_SECRET_DETECTED: 'review-staged-changes',
   PROTECTED_BRANCH_PUSH: 'switch-branch',
   BRANCH_NOT_ALLOWED: 'switch-branch',
   REMOTE_OWNER_MISMATCH: 'configure-remote',

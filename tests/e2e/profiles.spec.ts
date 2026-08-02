@@ -33,6 +33,17 @@ async function fillAndSubmitProfile(
   await win.getByTestId('profile-form-submit').click()
 }
 
+async function resolvedThemeColor(win: Page, token: '--gw-success' | '--gw-warning') {
+  return win.evaluate((cssToken) => {
+    const probe = document.createElement('div')
+    probe.style.backgroundColor = `var(${cssToken})`
+    document.body.appendChild(probe)
+    const color = getComputedStyle(probe).backgroundColor
+    probe.remove()
+    return color
+  }, token)
+}
+
 test.describe('Profile management', () => {
   let app: ElectronApplication
   let win: Page
@@ -111,6 +122,39 @@ test.describe('Profile management', () => {
     await expect(win.getByTestId('header-profile')).toContainText('Personal')
     // Button should now show "Active"
     await expect(win.getByTestId('profile-set-active-btn')).toHaveText('Active')
+  })
+
+  test('uses green for the active profile and yellow for inactive profiles', async () => {
+    await fillAndSubmitProfile(win, profileFixture('personal'))
+    await fillAndSubmitProfile(win, profileFixture('work', { gitAuthorEmail: 'jane@company.com' }))
+
+    const personalRow = win.getByTestId('profile-item').filter({ hasText: 'Personal' })
+    const workRow = win.getByTestId('profile-item').filter({ hasText: 'Work' })
+    await workRow.getByTestId('profile-row-set-active-btn').click()
+
+    const activeColor = await resolvedThemeColor(win, '--gw-success')
+    const inactiveColor = await resolvedThemeColor(win, '--gw-warning')
+
+    await expect(workRow.getByTestId('profile-status-indicator')).toHaveAttribute(
+      'data-profile-state',
+      'active'
+    )
+    await expect(workRow.getByTestId('profile-status-indicator')).toHaveCSS(
+      'background-color',
+      activeColor
+    )
+    await expect(personalRow.getByTestId('profile-status-indicator')).toHaveAttribute(
+      'data-profile-state',
+      'inactive'
+    )
+    await expect(personalRow.getByTestId('profile-status-indicator')).toHaveCSS(
+      'background-color',
+      inactiveColor
+    )
+    await expect(win.getByTestId('header-profile-status-indicator')).toHaveCSS(
+      'background-color',
+      activeColor
+    )
   })
 
   test('active profile survives an app relaunch', async () => {
