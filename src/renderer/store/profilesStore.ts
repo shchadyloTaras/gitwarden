@@ -6,7 +6,9 @@ import { createRequestTracker } from '../../core/concurrency/requestGuard'
 const activeProfileTracker = createRequestTracker()
 
 export function profileStatusColor(isActive: boolean): string {
-  return isActive ? 'var(--gw-success, #4ade80)' : 'var(--gw-warning, #fbbf24)'
+  return isActive
+    ? 'var(--gw-profile-active-indicator, #7be0b0)'
+    : 'var(--gw-profile-inactive-indicator, #ffd166)'
 }
 
 interface ProfilesState {

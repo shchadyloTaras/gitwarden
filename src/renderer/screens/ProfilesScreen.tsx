@@ -414,8 +414,8 @@ export default function ProfilesScreen(): React.ReactElement {
                         data-testid="profile-active-badge"
                         style={{
                           fontSize: 14,
-                          color: 'var(--gw-success, #4ade80)',
-                          fontWeight: 600,
+                          color: 'var(--gw-profile-active-text, #7be0b0)',
+                          fontWeight: 700,
                           paddingRight: 12,
                           flexShrink: 0,
                         }}
@@ -902,7 +902,9 @@ export default function ProfilesScreen(): React.ReactElement {
                           : 'var(--gw-surface3, #3f3f46)',
                         border: 'none',
                         borderRadius: 4,
-                        color: isActive ? 'var(--gw-success, #4ade80)' : 'var(--gw-text, #f4f4f5)',
+                        color: isActive
+                          ? 'var(--gw-profile-active-text, #7be0b0)'
+                          : 'var(--gw-text, #f4f4f5)',
                         cursor: isActive ? 'default' : 'pointer',
                         fontSize: 14,
                         fontWeight: 600,

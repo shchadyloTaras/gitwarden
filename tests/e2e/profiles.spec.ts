@@ -33,7 +33,13 @@ async function fillAndSubmitProfile(
   await win.getByTestId('profile-form-submit').click()
 }
 
-async function resolvedThemeColor(win: Page, token: '--gw-success' | '--gw-warning') {
+async function resolvedThemeColor(
+  win: Page,
+  token:
+    | '--gw-profile-active-indicator'
+    | '--gw-profile-inactive-indicator'
+    | '--gw-profile-active-text'
+) {
   return win.evaluate((cssToken) => {
     const probe = document.createElement('div')
     probe.style.backgroundColor = `var(${cssToken})`
@@ -132,8 +138,9 @@ test.describe('Profile management', () => {
     const workRow = win.getByTestId('profile-item').filter({ hasText: 'Work' })
     await workRow.getByTestId('profile-row-set-active-btn').click()
 
-    const activeColor = await resolvedThemeColor(win, '--gw-success')
-    const inactiveColor = await resolvedThemeColor(win, '--gw-warning')
+    const activeColor = await resolvedThemeColor(win, '--gw-profile-active-indicator')
+    const inactiveColor = await resolvedThemeColor(win, '--gw-profile-inactive-indicator')
+    const activeTextColor = await resolvedThemeColor(win, '--gw-profile-active-text')
 
     await expect(workRow.getByTestId('profile-status-indicator')).toHaveAttribute(
       'data-profile-state',
@@ -155,6 +162,7 @@ test.describe('Profile management', () => {
       'background-color',
       activeColor
     )
+    await expect(workRow.getByTestId('profile-active-badge')).toHaveCSS('color', activeTextColor)
   })
 
   test('active profile survives an app relaunch', async () => {

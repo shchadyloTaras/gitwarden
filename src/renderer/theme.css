@@ -38,6 +38,9 @@
   --gw-warning-solid: #a16915;
   --gw-warning-bg: #32250f;
   --gw-warning-border: #72521d;
+  --gw-profile-active-indicator: #7be0b0;
+  --gw-profile-inactive-indicator: #ffd166;
+  --gw-profile-active-text: #7be0b0;
   --gw-code-muted: #9aa8bf;
   --gw-overlay: rgba(5, 6, 10, 0.76);
   --gw-shadow: rgba(0, 0, 0, 0.32);
@@ -118,6 +121,9 @@
   --gw-warning-solid: #9c6817;
   --gw-warning-bg: #fff5df;
   --gw-warning-border: #dbbd77;
+  --gw-profile-active-indicator: #39b980;
+  --gw-profile-inactive-indicator: #e6b83f;
+  --gw-profile-active-text: #13875a;
   --gw-code-muted: #53637e;
   --gw-overlay: rgba(18, 20, 28, 0.5);
   --gw-shadow: rgba(28, 31, 43, 0.1);
